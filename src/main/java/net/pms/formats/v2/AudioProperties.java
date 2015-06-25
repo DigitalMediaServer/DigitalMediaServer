@@ -69,7 +69,7 @@ public class AudioProperties {
 	 */
 	public void setNumberOfChannels(int numberOfChannels) {
 		if (numberOfChannels < 1) {
-			throw new IllegalArgumentException("Channel number can't be less than 1.");
+			throw new IllegalArgumentException("The number of channels can't be less than 1.");
 		}
 		this.numberOfChannels = numberOfChannels;
 	}

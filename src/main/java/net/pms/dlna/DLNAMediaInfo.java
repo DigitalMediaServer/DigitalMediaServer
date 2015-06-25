@@ -611,9 +611,9 @@ public class DLNAMediaInfo implements Cloneable {
 		double thumbnailRatio  = 1.78;
 		boolean isThumbnailPadding = true;
 		if (renderer != null) {
-			thumbnailWidth     = renderer.getThumbnailWidth();
-			thumbnailHeight    = renderer.getThumbnailHeight();
-			thumbnailRatio     = renderer.getThumbnailRatio();
+			thumbnailWidth = renderer.getThumbnailWidth();
+			thumbnailHeight = renderer.getThumbnailHeight();
+			thumbnailRatio = renderer.getThumbnailRatio();
 			isThumbnailPadding = renderer.isThumbnailPadding();
 		}
 
@@ -762,15 +762,14 @@ public class DLNAMediaInfo implements Cloneable {
 		return pw;
 	}
 
-	private String getFfmpegPath() {
+	private static String getFfmpegPath() {
 		String value = configuration.getFfmpegPath();
 
 		if (value == null) {
 			LOGGER.info("No FFmpeg - unable to thumbnail");
 			throw new RuntimeException("No FFmpeg - unable to thumbnail");
-		} else {
-			return value;
 		}
+		return value;
 	}
 
 	@Deprecated
@@ -838,19 +837,31 @@ public class DLNAMediaInfo implements Cloneable {
 							durationSec = (double) length;
 							bitrate = (int) ah.getBitRateAsNumber();
 
-							audio.getAudioProperties().setNumberOfChannels(2); // set default value of channels to 2
-							String channels = ah.getChannels().toLowerCase(Locale.ROOT);
+							String channels = ah.getChannels().trim().toLowerCase(Locale.ROOT);
 							if (StringUtils.isNotBlank(channels)) {
-								if (channels.equals("1") || channels.contains("mono")) { // parse value "1" or "Mono"
+								if (channels.equals("1") || channels.contains("mono")) {
 									audio.getAudioProperties().setNumberOfChannels(1);
-								} else if (!(channels.equals("2") || channels.equals("0") || channels.contains("stereo"))) {
-									// No need to parse stereo as it's set as default
+								} else if (channels.equals("2") || channels.contains("stereo")) {
+									audio.getAudioProperties().setNumberOfChannels(2);
+								} else {
 									try {
 										audio.getAudioProperties().setNumberOfChannels(Integer.parseInt(channels));
-									} catch (IllegalArgumentException e) {
-										LOGGER.debug("Could not parse number of audio channels from \"{}\"", channels);
+									} catch (IllegalArgumentException e) { // Includes NumberFormatException
+										LOGGER.error(
+											"Couldn't parse the number of audio channels ({}) for file: \"{}\"",
+											channels,
+											af.getFile().getName()
+										);
 									}
 								}
+							}
+							if (audio.getAudioProperties().getNumberOfChannels() < 1) {
+								LOGGER.error(
+									"Invalid number of audio channels parsed ({}) for file \"{}\", defaulting to stereo",
+									audio.getAudioProperties().getNumberOfChannels(),
+									af.getFile().getName()
+								);
+								audio.getAudioProperties().setNumberOfChannels(2); // set default value of channels to 2
 							}
 
 							if (StringUtils.isNotBlank(ah.getEncodingType())) {
@@ -1421,9 +1432,8 @@ public class DLNAMediaInfo implements Cloneable {
 		if (container != null) {
 			if (container.equals("mp4")) {
 				return isH264();
-			} else {
-				return true;
 			}
+			return true;
 		}
 
 		return false;
@@ -1765,10 +1775,6 @@ public class DLNAMediaInfo implements Cloneable {
 			}
 			return videoWithinH264LevelLimits;
 		}
-	}
-
-	public boolean isMuxable(String filename, String codecA) {
-		return codecA != null && (codecA.startsWith("dts") || codecA.equals("dca"));
 	}
 
 	public boolean isLossless(String codecA) {
@@ -2340,21 +2346,19 @@ public class DLNAMediaInfo implements Cloneable {
 	public String getFormattedAspectRatio(String aspect) {
 		if (isBlank(aspect)) {
 			return null;
+		}
+		if (aspect.contains(":")) {
+			return aspect;
+		}
+		double exactAspectRatio = Double.parseDouble(aspect);
+		if (exactAspectRatio > 1.7 && exactAspectRatio <= 1.8) {
+			return "16:9";
+		} else if (exactAspectRatio > 1.3 && exactAspectRatio < 1.4) {
+			return "4:3";
+		} else if (exactAspectRatio > 1.2 && exactAspectRatio < 1.3) {
+			return "5:4";
 		} else {
-			if (aspect.contains(":")) {
-				return aspect;
-			} else {
-				double exactAspectRatio = Double.parseDouble(aspect);
-				if (exactAspectRatio > 1.7 && exactAspectRatio <= 1.8) {
-					return "16:9";
-				} else if (exactAspectRatio > 1.3 && exactAspectRatio < 1.4) {
-					return "4:3";
-				} else if (exactAspectRatio > 1.2 && exactAspectRatio < 1.3) {
-					return "5:4";
-				} else {
-					return null;
-				}
-			}
+			return null;
 		}
 	}
 
@@ -2555,9 +2559,8 @@ public class DLNAMediaInfo implements Cloneable {
 	public ArrayList<DLNAMediaAudio> getAudioCodes() {
 		if (audioTracks instanceof ArrayList) {
 			return (ArrayList<DLNAMediaAudio>) audioTracks;
-		} else {
-			return new ArrayList<>();
 		}
+		return new ArrayList<>();
 	}
 
 	/**
@@ -2595,9 +2598,8 @@ public class DLNAMediaInfo implements Cloneable {
 	public ArrayList<DLNAMediaSubtitle> getSubtitlesCodes() {
 		if (subtitleTracks instanceof ArrayList) {
 			return (ArrayList<DLNAMediaSubtitle>) subtitleTracks;
-		} else {
-			return new ArrayList<>();
 		}
+		return new ArrayList<>();
 	}
 
 	/**
