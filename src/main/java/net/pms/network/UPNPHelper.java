@@ -457,7 +457,7 @@ public class UPNPHelper extends UPNPControl {
 							if (ni != null) {
 								multicastSocket.setNetworkInterface(ni);
 								LOGGER.trace("Setting multicast network interface: {}", ni);
-							} else if (PMS.get().getServer().getNetworkInterface() != null) {
+							} else if (PMS.get().getServer() != null && PMS.get().getServer().getNetworkInterface() != null) {
 								multicastSocket.setNetworkInterface(PMS.get().getServer().getNetworkInterface());
 								LOGGER.trace("Setting multicast network interface: {}", PMS.get().getServer().getNetworkInterface());
 							}

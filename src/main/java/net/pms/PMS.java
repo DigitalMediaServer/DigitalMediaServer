@@ -1238,6 +1238,9 @@ public class PMS {
 				traceMode = LoggingConfig.getRootLevel().toInt() <= Level.TRACE_INT ? 1 : 0;
 			}
 
+			// Initiate the OS clock check
+			checkOSClock();
+
 			// Configure syslog unless in forced trace mode
 			if (traceMode != 2 && configuration.getLoggingUseSyslog()) {
 				LoggingConfig.setSyslog();
@@ -1944,5 +1947,25 @@ public class PMS {
 
 	public static void setKey(String key, String val) {
 		instance.keysDb.set(key, val);
+	}
+
+	/**
+	 * Starts a thread that compares the OS clock to a NTP server and reports
+	 * to the user if the discrepancy is to big via the log and a message dialog
+	 * if GUI is available. This can take some time under some
+	 * circumstances, and is thus handles by a thread in parallel. The check
+	 * respects {@link PmsConfiguration.getExternalNetwork()}.
+	 * @throws IllegalStateException If configuration is not initialized.
+	 */
+	private static void checkOSClock() throws IllegalStateException {
+		if (configuration == null) {
+			throw new IllegalStateException("checkOSClock cannot be called until configuration is initialized!");
+		}
+		if (configuration.getExternalNetwork()) {
+			LOGGER.trace("Starting CheckOSClock thread");
+			new Thread(new CheckOSClock(), "CheckOSClock").start();
+		} else if (LOGGER.isDebugEnabled()) {
+			LOGGER.debug("Skipping computer clock check because external network access is disabled");
+		}
 	}
 }
