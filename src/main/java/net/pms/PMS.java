@@ -33,6 +33,7 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.logging.LogManager;
@@ -156,7 +157,23 @@ public class PMS {
 	 */
 	private static PMS instance = null;
 
+	private static CountDownLatch guiReadyLatch;
+
 	/**
+	 * @return The {@link java.util.concurrent.CountDownLatch} used by the
+	 * <code>CheckOSClock</code> thread. Any thread that needs to wait for
+	 * the GUI to be ready before proceeding can simply wait for this.
+	 */
+	public static CountDownLatch getGUIReadyLatch() {
+		return guiReadyLatch;
+	}
+
+	static {
+		guiReadyLatch = new CountDownLatch(1);
+	}
+
+	/**
+	 * Array of {@link net.pms.configuration.RendererConfiguration} that have been found by PMS.
 	 * Array of {@link net.pms.configuration.RendererConfiguration} that have
 	 * been found by UMS.<br><br>
 	 *
@@ -418,6 +435,7 @@ public class PMS {
 		displayBanner();
 
 		// Initialize database
+		checkOSClock();
 		Tables.checkTables();
 
 		// Log registered ImageIO plugins
@@ -1237,9 +1255,6 @@ public class PMS {
 				// Remember whether logging level was TRACE/ALL at startup
 				traceMode = LoggingConfig.getRootLevel().toInt() <= Level.TRACE_INT ? 1 : 0;
 			}
-
-			// Initiate the OS clock check
-			checkOSClock();
 
 			// Configure syslog unless in forced trace mode
 			if (traceMode != 2 && configuration.getLoggingUseSyslog()) {
