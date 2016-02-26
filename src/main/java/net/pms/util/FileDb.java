@@ -99,9 +99,9 @@ public class FileDb {
 				if (StringUtils.isEmpty(line) || line.startsWith("#")) {
 					continue;
 				}
-				if(useNullObj) {
+				if (useNullObj) {
 					String re = ".*" + separator + NULLOBJ_STR + "$";
-					if(line.matches(re)) {
+					if (line.matches(re)) {
 						// we got a line which is key, NULL
 						// translate to nullobj
 						String[] key = Pattern.compile(separator, Pattern.LITERAL).split(line);
@@ -168,13 +168,14 @@ public class FileDb {
 			out.write(data.toString().getBytes(StandardCharsets.UTF_8));
 			for (Entry<String, Object> entry : db.entrySet()) {
 				Object obj = entry.getValue();
+				data = new StringBuilder(Pattern.compile(separator, Pattern.LITERAL).
+										 matcher(entry.getKey()).
+										 replaceAll(Matcher.quoteReplacement(encodedSeparator)));
 				if (isNull(obj)) {
-					data = new StringBuilder(entry.getKey());
-					if(useNullObj) {
+					if (useNullObj) {
 						data.append(separator);
 						data.append(NULLOBJ_STR);
-					}
-					else {
+					} else {
 						for (int i = 1; i < minCnt; i++) {
 							data.append(separator);
 						}
@@ -187,8 +188,6 @@ public class FileDb {
 					for (int i = 0; i < data1.length; i++) {
 						data1[i] = Pattern.compile(separator, Pattern.LITERAL).matcher(data1[i]).replaceAll(Matcher.quoteReplacement(encodedSeparator));
 					}
-
-					data = new StringBuilder(Pattern.compile(separator, Pattern.LITERAL).matcher(entry.getKey()).replaceAll(Matcher.quoteReplacement(encodedSeparator)));
 					data.append(separator).append(StringUtils.join(data1, separator)).append("\n");
 				}
 				out.write(data.toString().getBytes(StandardCharsets.UTF_8));
