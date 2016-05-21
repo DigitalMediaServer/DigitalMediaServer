@@ -367,7 +367,7 @@ public class UPNPHelper extends UPNPControl {
 					sendAlive();
 
 					// If a renderer is connected, broadcast every 30 seconds, otherwise every 10.
-					if (getRenderers(1).size() > 0) {
+					if (PMS.get().getFoundRenderers().size() > 0) {
 						delay = 30000;
 					} else {
 						delay = 10000;
@@ -548,13 +548,9 @@ public class UPNPHelper extends UPNPControl {
 
 		if (message.equals(ALIVE)) {
 			sb.append("CACHE-CONTROL: max-age=1800").append(CRLF);
-		}
-
-		if (message.equals(ALIVE)) {
 			sb.append("SERVER: ").append(PMS.get().getServerName()).append(CRLF);
 		}
 
-		sb.append(CRLF);
 		return sb.toString();
 	}
 
