@@ -368,13 +368,14 @@ public class UPNPHelper extends UPNPControl {
 
 					// The first delay for sending an ALIVE message is 10 seconds,
 					// the second delay is for 20 seconds. From then on, all other
-					// delays are for 180 seconds.
+					// delays are standard for 180 seconds. It can be set less to
+					// make the recognition more aggressive.
 					switch (delay) {
 						case 10000:
 							delay = 20000;
 							break;
 						case 20000:
-							delay = 180000;
+							delay = configuration.aliveDelay();
 							break;
 						default:
 							break;
@@ -555,9 +556,6 @@ public class UPNPHelper extends UPNPControl {
 
 		if (message.equals(ALIVE)) {
 			sb.append("CACHE-CONTROL: max-age=1800").append(CRLF);
-		}
-
-		if (message.equals(ALIVE)) {
 			sb.append("SERVER: ").append(PMS.get().getServerName()).append(CRLF);
 		}
 
