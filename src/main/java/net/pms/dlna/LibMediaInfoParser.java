@@ -1,6 +1,7 @@
 package net.pms.dlna;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.StringTokenizer;
 import java.util.regex.Matcher;
@@ -12,7 +13,7 @@ import net.pms.formats.v2.SubtitleType;
 import net.pms.util.FileUtil;
 import net.pms.util.ImagesUtil;
 import org.apache.commons.codec.binary.Base64;
-import org.apache.sanselan.ImageInfo;
+import org.apache.commons.imaging.ImageReadException;
 import static org.apache.commons.lang3.StringUtils.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -66,7 +67,7 @@ public class LibMediaInfoParser {
 	public synchronized static void parse(DLNAMediaInfo media, InputFile inputFile, int type, RendererConfiguration renderer) {
 		File file = inputFile.getFile();
 		if (!media.isMediaparsed() && file != null && MI.isValid() && MI.Open(file.getAbsolutePath()) > 0) {
-			try {
+//			try {
 				StreamType general = StreamType.General;
 				StreamType video = StreamType.Video;
 				StreamType audio = StreamType.Audio;
@@ -229,13 +230,23 @@ public class LibMediaInfoParser {
 				// set Image
 				media.setImageCount(MI.Count_Get(image));
 				if (media.getImageCount() > 0) {
-					getFormat(image, media, currentAudioTrack, MI.Get(image, 0, "Format"), file);
-					media.setWidth(getPixelValue(MI.Get(image, 0, "Width")));
-					media.setHeight(getPixelValue(MI.Get(image, 0, "Height")));
-					media.setColorType(getColorType(MI.Get(image, 0, "Color_space")));
-					if (media.getContainer() == FormatConfiguration.JPG) {
-						ImagesUtil.parseImageMetadata (file, media);
+					boolean parseByMediainfo = false;
+					// for image parsing use Imaging instead of the MediaInfo which doesn't provide enough information
+					try {
+						ImagesUtil.parseImageByImaging(file, media);
+						media.setContainer(media.getCodecV());
+					} catch (ImageReadException | IOException e) {
+						LOGGER.info("Error parsing image ({}) with Imaging, switching to MediaInfo.", file.getAbsolutePath());
+						parseByMediainfo = true;
 					}
+
+					if (parseByMediainfo) {
+						getFormat(image, media, currentAudioTrack, MI.Get(image, 0, "Format"), file);
+						media.setWidth(getPixelValue(MI.Get(image, 0, "Width")));
+						media.setHeight(getPixelValue(MI.Get(image, 0, "Height")));
+					}
+					
+//					media.setImageCount(media.getImageCount() + 1);
 				}
 
 				// set Subs in text format
@@ -348,9 +359,9 @@ public class LibMediaInfoParser {
 				}
 
 				media.finalize(type, inputFile);
-			} catch (Exception e) {
-				LOGGER.error("Error in MediaInfo parsing:", e);
-			} finally {
+//			} catch (Exception e) {
+//				LOGGER.error("Error in MediaInfo parsing:", e);
+//			} finally {
 				MI.Close();
 				if (media.getContainer() == null) {
 					media.setContainer(DLNAMediaLang.UND);
@@ -361,7 +372,7 @@ public class LibMediaInfoParser {
 				}
 
 				media.setMediaparsed(true);
-			}
+//			}
 		}
 	}
 
@@ -763,26 +774,5 @@ public class LibMediaInfoParser {
 		}
 
 		return (h * 3600) + (m * 60) + s;
-	}
-
-	/**
-	 * Convert Color Space string provided by MediaInfo to the Sanselan.ColorType value.
-	 * 
-	 * @param value Color Space value to convert.
-	 * @return Sanselan ColorType.
-	 */
-	public static int getColorType(String value) {
-		switch (value) {
-			case "Y":
-				return ImageInfo.COLOR_TYPE_GRAYSCALE;
-			case "RGB":
-			case "YUV":
-				return ImageInfo.COLOR_TYPE_RGB;
-			case "YCCB":
-				return ImageInfo.COLOR_TYPE_CMYK;
-
-			default:
-				return ImageInfo.COLOR_TYPE_UNKNOWN;
-		}
 	}
 }
