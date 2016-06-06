@@ -10,7 +10,9 @@ import net.pms.configuration.RendererConfiguration;
 import net.pms.dlna.MediaInfo.StreamType;
 import net.pms.formats.v2.SubtitleType;
 import net.pms.util.FileUtil;
+import net.pms.util.ImagesUtil;
 import org.apache.commons.codec.binary.Base64;
+import org.apache.sanselan.ImageInfo;
 import static org.apache.commons.lang3.StringUtils.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -230,6 +232,10 @@ public class LibMediaInfoParser {
 					getFormat(image, media, currentAudioTrack, MI.Get(image, 0, "Format"), file);
 					media.setWidth(getPixelValue(MI.Get(image, 0, "Width")));
 					media.setHeight(getPixelValue(MI.Get(image, 0, "Height")));
+					media.setColorType(getColorType(MI.Get(image, 0, "Color_space")));
+					if (media.getContainer() == FormatConfiguration.JPG) {
+						ImagesUtil.parseImageMetadata (file, media);
+					}
 				}
 
 				// set Subs in text format
@@ -757,5 +763,26 @@ public class LibMediaInfoParser {
 		}
 
 		return (h * 3600) + (m * 60) + s;
+	}
+
+	/**
+	 * Convert Color Space string provided by MediaInfo to the Sanselan.ColorType value.
+	 * 
+	 * @param value Color Space value to convert.
+	 * @return Sanselan ColorType.
+	 */
+	public static int getColorType(String value) {
+		switch (value) {
+			case "Y":
+				return ImageInfo.COLOR_TYPE_GRAYSCALE;
+			case "RGB":
+			case "YUV":
+				return ImageInfo.COLOR_TYPE_RGB;
+			case "YCCB":
+				return ImageInfo.COLOR_TYPE_CMYK;
+
+			default:
+				return ImageInfo.COLOR_TYPE_UNKNOWN;
+		}
 	}
 }
