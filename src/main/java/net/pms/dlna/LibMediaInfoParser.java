@@ -660,6 +660,10 @@ public class LibMediaInfoParser {
 	}
 
 	public static int getBitrate(String value) {
+		if (value.isEmpty()) {
+			return 0;
+		}
+
 		if (value.contains("/")) {
 			value = value.substring(0, value.indexOf('/')).trim();
 		}
