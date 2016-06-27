@@ -3,8 +3,8 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 
 	<!--
-		UMS consists of two major parts: UMS itself and the third party software needed to
-		run it. While UMS itself is 100% pure Java, some of the third party software is
+		DMS consists of two major parts: DMS itself and the third party software needed to
+		run it. While DMS itself is 100% pure Java, some of the third party software is
 		not. This means building a platform specific distribution boils down to first
 		building the pms.jar and then assembling all application resources.
 
@@ -13,7 +13,7 @@
 
 		mvn external:install
 
-		To build UMS, do:
+		To build DMS, do:
 
 			mvn clean package
 
@@ -26,17 +26,17 @@
 	-->
 
 	<modelVersion>4.0.0</modelVersion>
-	<groupId>net.pms</groupId>
-	<artifactId>ums</artifactId>
-	<name>Universal Media Server</name>
+	<groupId>org.digitalmediaserver</groupId>
+	<artifactId>dms</artifactId>
+	<name>Digital Media Server</name>
 	<packaging>jar</packaging>
-	<version>6.7.2</version>
-	<url>http://www.universalmediaserver.com/</url>
-	<inceptionYear>2012</inceptionYear>
+	<version>0.0.1-SNAPSHOT</version>
+	<url>http://www.digitalmediaserver.org/</url>
+	<inceptionYear>2016</inceptionYear>
 
 	<organization>
-		<name>Universal Media Server</name>
-		<url>http://www.universalmediaserver.com/</url>
+		<name>Digital Media Server</name>
+		<url>http://www.digitalmediaserver.org/</url>
 	</organization>
 	<licenses>
 		<license>
@@ -46,24 +46,24 @@
 		</license>
 	</licenses>
 	<description>
-		Universal Media Server is a cross-platform DLNA-compliant UPnP Media Server.
-		Originally written to support the PlayStation 3, Universal Media Server has been
-		expanded to support a range of other media renderers, including smartphones,
-		televisions, music players and more.
+		Digital Media Server is a cross-platform DLNA-compliant UPnP Media Server.
+		based on PS3 Media Server and the fork Universal Media Server.
+		Digital Media Server supports a range of media renderers, including
+		smartphones, televisions, music players and more.
 	</description>
 	<scm>
-		<connection>scm:git:git://github.com/UniversalMediaServer/UniversalMediaServer.git</connection>
-		<developerConnection>scm:git:git@github.com:UniversalMediaServer/UniversalMediaServer.git</developerConnection>
+		<connection>scm:git:git://github.com/DigitalMediaServer/DigitalMediaServer.git</connection>
+		<developerConnection>scm:git:git@github.com:DigitalMediaServer/DigitalMediaServer.git</developerConnection>
 		<tag>master</tag>
-		<url>https://github.com/UniversalMediaServer/UniversalMediaServer</url>
+		<url>https://github.com/DigitalMediaServer/DigitalMediaServer</url>
 	</scm>
 	<issueManagement>
 		<system>GitHub</system>
-		<url>https://github.com/UniversalMediaServer/UniversalMediaServer/issues</url>
+		<url>https://github.com/DigitalMediaServer/DigitalMediaServer/issues</url>
 	</issueManagement>
 	<properties>
 		<!-- NSIS needs a version without "-SNAPSHOT" or "-b1" -->
-		<project.version.short>6.7.2</project.version.short>
+		<project.version.short>0.0.1</project.version.short>
 		<cuelib-version>1.2.1-2008-06-13</cuelib-version>
 
 		<!-- In versions after 1.6.0, they removed code that the MovieInfo plugin relies on -->
@@ -474,7 +474,7 @@
 				Check the commons-logging:commons-logging version of the other libraries before upgrading
 
 				commons-io:commons-io is shared with
-					- net.pms:ums
+					- net.pms:dms
 
 				Check the commons-io:commons-io version before upgrading
 			-->
@@ -503,7 +503,7 @@
 				Check the org.slf4j:slf4j-api version of the other libraries before upgrading
 
 				net.java.dev.jna:jna-platform is shared with
-					- net.pms:ums
+					- net.pms:dms
 
 				Check the net.java.dev.jna:jna-platform version before upgrading
 			-->
@@ -624,10 +624,10 @@
 						<languageFilesFolder>${project.basedir}/src/main/resources/i18n</languageFilesFolder>
 						<downloadFolder>${project.basedir}/extras/crowdin</downloadFolder>
 						<statusFile>${project.basedir}/src/main/resources/languages.properties</statusFile>
-						<crowdinServerId>crowdin-ums</crowdinServerId>
+						<crowdinServerId>crowdin-dms</crowdinServerId>
 						<pushFileName>messages.properties</pushFileName>
-						<pushFileTitle>Universal Media Server</pushFileTitle>
-						<projectName>Universal Media Server</projectName>
+						<pushFileTitle>Digital Media Server</pushFileTitle>
+						<projectName>Digital Media Server</projectName>
 					</configuration>
 				</plugin>
 
@@ -1172,7 +1172,7 @@
 									<target>
 										<!-- Copy the pms-x.x.x-jar-with-dependencies.jar to pms.jar -->
 										<copy file="${project.basedir}/target/${project.artifactId}-${project.version}-jar-with-dependencies.jar"
-										      tofile="${project.basedir}/target/ums.jar" overwrite="true" />
+										      tofile="${project.basedir}/target/dms.jar" overwrite="true" />
 
 										<!-- MediaInfo library needs to be in the standard library path to be found -->
 										<copy file="${project.binaries}/MediaInfo.dll" todir="${project.basedir}" />
@@ -1199,7 +1199,7 @@
 								<id>build-pms-windows</id>
 								<configuration>
 									<makensisBin>${makensis-bin}</makensisBin>
-									<outputFile>${project.build.directory}/UMS.exe</outputFile>
+									<outputFile>${project.build.directory}/DMS.exe</outputFile>
 									<setupScript>${project.external-resources}/nsis/pms.nsi</setupScript>
 								</configuration>
 								<phase>package</phase>
@@ -1213,7 +1213,7 @@
 								<id>build-setup-windows</id>
 								<configuration>
 									<makensisBin>${makensis-bin}</makensisBin>
-									<outputFile>${project.build.directory}/UMS-setup.exe</outputFile>
+									<outputFile>${project.build.directory}/DMS-setup.exe</outputFile>
 									<setupScript>${project.external-resources}/nsis/setup.nsi</setupScript>
 								</configuration>
 								<phase>package</phase>
@@ -1292,7 +1292,7 @@
 						Use the antrun plugin to:
 
 						Download the tsMuxeR binary to ${project.binaries}/tsMuxeR
-						Copy the pms-x.x.x-jar-with-dependencies.jar to ums.jar
+						Copy the dms-x.x.x-jar-with-dependencies.jar to dms.jar
 					-->
 					<plugin>
 						<groupId>org.apache.maven.plugins</groupId>
@@ -1328,7 +1328,7 @@
 								<configuration>
 									<target>
 										<copy file="${project.basedir}/target/${project.artifactId}-${project.version}-jar-with-dependencies.jar"
-											tofile="${project.basedir}/target/ums.jar" overwrite="true" />
+											tofile="${project.basedir}/target/dms.jar" overwrite="true" />
 									</target>
 								</configuration>
 							</execution>
@@ -1445,11 +1445,11 @@
 								<configuration>
 									<target>
 										<taskdef name="bundleapp" classname="com.oracle.appbundler.AppBundlerTask"
-											classpath="${basedir}/src/main/external-resources/lib/appbundler-1.2.UMS.jar"/>
+											classpath="${basedir}/src/main/external-resources/lib/appbundler-1.3.DMS.jar"/>
 										<bundleapp outputdirectory="${project.build.directory}/${project.build.finalName}-distribution"
 										           name="${project.name}"
 										           displayname="${project.name}"
-										           executableName="UMS"
+										           executableName="DMS"
 										           identifier="net.pms.PMS"
 										           shortversion="${project.version}"
 										           version="${project.version}"
@@ -1493,7 +1493,7 @@
 								</configuration>
 							</execution>
 							<!--
-								Assemble the UMS files in the right place before
+								Assemble the DMS files in the right place before
 								moving them to the app Bundle.
 							-->
 							<execution>
@@ -1626,11 +1626,11 @@
 								<configuration>
 									<target>
 										<taskdef name="bundleapp" classname="com.oracle.appbundler.AppBundlerTask"
-											classpath="${basedir}/src/main/external-resources/lib/appbundler-1.2.UMS.jar"/>
+											classpath="${basedir}/src/main/external-resources/lib/appbundler-1.3.DMS.jar"/>
 										<bundleapp outputdirectory="${project.build.directory}/${project.build.finalName}-distribution"
 										           name="${project.name}"
 										           displayname="${project.name}"
-										           executableName="UMS"
+										           executableName="DMS"
 										           identifier="net.pms.PMS"
 										           shortversion="${project.version}"
 										           version="${project.version}"
@@ -1673,7 +1673,7 @@
 								</configuration>
 							</execution>
 							<!--
-								Assemble the UMS files in the right place before
+								Assemble the DMS files in the right place before
 								moving them to the app Bundle.
 							-->
 							<execution>
@@ -1775,7 +1775,7 @@
 		</profile>
 
 		<!--
-			This profile allows running UMS from inside Eclipse
+			This profile allows running DMS from inside Eclipse
 			(Requires a "mvn clean package" to download the binaries first)
 		-->
 		<profile>
