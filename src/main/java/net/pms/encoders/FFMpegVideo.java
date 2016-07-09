@@ -34,7 +34,6 @@ import java.util.regex.Pattern;
 import javax.swing.JCheckBox;
 import javax.swing.JComponent;
 import net.pms.Messages;
-import net.pms.PMS;
 import net.pms.configuration.DeviceConfiguration;
 import net.pms.configuration.PmsConfiguration;
 import net.pms.configuration.RendererConfiguration;
@@ -93,9 +92,7 @@ public class FFMpegVideo extends Player {
 		this();
 	}
 
-	// FIXME we have an id() accessor for this; no need for the field to be public
-	@Deprecated
-	public static final String ID = "ffmpegvideo";
+	public static final String ID = "FFmpegVideo";
 
 	/**
 	 * Returns a list of strings representing the rescale options for this transcode i.e. the ffmpeg -vf
@@ -324,10 +321,10 @@ public class FFMpegVideo extends Player {
 			transcodeOptions.add("-f");
 			transcodeOptions.add("asf");
 		} else { // MPEGPSMPEG2AC3, MPEGTSMPEG2AC3, MPEGTSH264AC3 or MPEGTSH264AAC
-			final boolean isTsMuxeRVideoEngineEnabled = configuration.getEnginesAsList(PMS.get().getRegistry()).contains(TsMuxeRVideo.ID);
+			final boolean isTsMuxeRVideoEngineActive = PlayerFactory.isPlayerActive(TsMuxeRVideo.ID);
 
 			// Output audio codec
-			dtsRemux = isTsMuxeRVideoEngineEnabled &&
+			dtsRemux = isTsMuxeRVideoEngineActive &&
 				configuration.isAudioEmbedDtsInPcm() &&
 				params.aid != null &&
 				params.aid.isDTS() &&
@@ -627,7 +624,6 @@ public class FFMpegVideo extends Player {
 	}
 
 	@Override
-	// TODO make this static so it can replace ID, instead of having both
 	public String id() {
 		return ID;
 	}
@@ -796,7 +792,7 @@ public class FFMpegVideo extends Player {
 			cmdList.add(String.valueOf(nThreads));
 		}
 
-		final boolean isTsMuxeRVideoEngineEnabled = configuration.getEnginesAsList(PMS.get().getRegistry()).contains(TsMuxeRVideo.ID);
+		final boolean isTsMuxeRVideoEngineActive = PlayerFactory.isPlayerActive(TsMuxeRVideo.ID);
 		final boolean isXboxOneWebVideo = params.mediaRenderer.isXboxOne() && purpose() == VIDEO_WEBSTREAM_PLAYER;
 
 		ac3Remux = false;
@@ -815,7 +811,7 @@ public class FFMpegVideo extends Player {
 			ac3Remux = true;
 		} else {
 			// Now check for DTS remux and LPCM streaming
-			dtsRemux = isTsMuxeRVideoEngineEnabled &&
+			dtsRemux = isTsMuxeRVideoEngineActive &&
 				configuration.isAudioEmbedDtsInPcm() &&
 				params.aid != null &&
 				params.aid.isDTS() &&

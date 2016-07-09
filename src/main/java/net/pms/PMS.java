@@ -1633,11 +1633,6 @@ public class PMS {
 		tfm.add(f, cleanTime);
 	}
 
-	@Deprecated
-	public void registerPlayer(Player player) {
-		PlayerFactory.registerPlayer(player);
-	}
-
 	private static ReadWriteLock headlessLock = new ReentrantReadWriteLock();
 	private static Boolean headless = null;
 
