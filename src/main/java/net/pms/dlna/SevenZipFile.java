@@ -33,7 +33,7 @@ import org.slf4j.LoggerFactory;
 public class SevenZipFile extends DLNAResource {
 	private static final Logger LOGGER = LoggerFactory.getLogger(SevenZipFile.class);
 	private File file;
-	private IInArchive arc;
+	private ISevenZipInArchive arc;
 
 	public SevenZipFile(File f) {
 		file = f;

@@ -42,7 +42,7 @@ public class SevenZipEntry extends ZippedEntry implements IPushOutput {
 	private File file;
 	private String zeName;
 	private long length;
-	private IInArchive arc;
+	private ISevenZipInArchive arc;
 
 	public SevenZipEntry(File file, String zeName, long length) {
 		super(file, zeName, length);
