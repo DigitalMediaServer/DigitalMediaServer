@@ -180,7 +180,11 @@ public class FFmpegAudio extends FFMpegVideo {
 		}
 
 		cmdList.add("-i");
-		cmdList.add(filename);
+		if (params.stdin == null) {
+			cmdList.add(filename);
+		} else {
+			cmdList.add("-");
+		}
 
 		// Make sure FFmpeg doesn't try to encode embedded images into the stream
 		cmdList.add("-vn");

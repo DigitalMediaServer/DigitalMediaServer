@@ -855,12 +855,14 @@ public class FFMpegVideo extends Player {
 		if (avisynth && !filename.toLowerCase().endsWith(".iso")) {
 			File avsFile = AviSynthFFmpeg.getAVSScript(filename, params.sid, params.fromFrame, params.toFrame, frameRateRatio, frameRateNumber, configuration);
 			cmdList.add(ProcessUtil.getShortFileNameIfWideChars(avsFile.getAbsolutePath()));
-		} else {
+		} else if (params.stdin == null) //TODO: (Nad) Hack
 			if (params.stdin != null) {
 				cmdList.add("pipe:");
 			} else {
 				cmdList.add(filename);
 			}
+		else {
+			cmdList.add("-");
 		}
 
 		/**

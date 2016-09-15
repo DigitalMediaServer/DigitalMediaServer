@@ -166,7 +166,9 @@ public class RealFile extends MapFile {
 			boolean found = false;
 			InputFile input = new InputFile();
 			input.setFile(file);
-			String fileName = file.getAbsolutePath();
+			if (this instanceof IPushOutput)
+				input.setPush((IPushOutput) this);
+			String fileName = getSystemName();//file.getAbsolutePath(); //TODO: (Nad) Hack
 			if (getSplitTrack() > 0) {
 				fileName += "#SplitTrack" + getSplitTrack();
 			}

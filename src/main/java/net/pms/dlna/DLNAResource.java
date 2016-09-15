@@ -3317,6 +3317,7 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 		if (player == null && !isResume()) {
 			// No transcoding
 			if (this instanceof IPushOutput) {
+				// Archive browsing
 				PipedOutputStream out = new PipedOutputStream();
 				InputStream fis = new PipedInputStream(out);
 				((IPushOutput) this).push(out);
