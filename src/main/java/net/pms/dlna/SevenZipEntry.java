@@ -21,11 +21,9 @@ package net.pms.dlna;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.RandomAccessFile;
-import net.pms.formats.Format;
-import net.pms.util.FileUtil;
+
 import net.sf.sevenzipjbinding.ExtractOperationResult;
 import net.sf.sevenzipjbinding.IInArchive;
 import net.sf.sevenzipjbinding.ISequentialOutStream;
@@ -34,6 +32,7 @@ import net.sf.sevenzipjbinding.SevenZipException;
 import net.sf.sevenzipjbinding.impl.RandomAccessFileInStream;
 import net.sf.sevenzipjbinding.simple.ISimpleInArchive;
 import net.sf.sevenzipjbinding.simple.ISimpleInArchiveItem;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,64 +41,13 @@ public class SevenZipEntry extends ZippedEntry implements IPushOutput {
 	private File file;
 	private String zeName;
 	private long length;
-	private ISevenZipInArchive arc;
+	private IInArchive arc;
 
 	public SevenZipEntry(File file, String zeName, long length) {
 		super(file, zeName, length);
 		this.zeName = zeName;
 		this.file = file;
 		this.length = length;
-	}
-
-	@Override
-	protected String getThumbnailURL(DLNAImageProfile profile) {
-		if (getType() == Format.IMAGE || getType() == Format.AUDIO) {
-			// no thumbnail support for now for zipped videos
-			return null;
-		}
-
-		return super.getThumbnailURL(profile);
-	}
-
-	@Override
-	public InputStream getInputStream() {
-		return null;
-	}
-
-	@Override
-	public String getName() {
-		return zeName;
-	}
-
-	@Override
-	public long length() {
-		if (getPlayer() != null && getPlayer().type() != Format.IMAGE) {
-			return DLNAMediaInfo.TRANS_SIZE;
-		}
-
-		return length;
-	}
-
-	@Override
-	public boolean isFolder() {
-		return false;
-	}
-
-	@Override
-	public String getSystemName() {
-		return FileUtil.getFileNameWithoutExtension(file.getAbsolutePath()) + "." + FileUtil.getExtension(zeName);
-	}
-
-	@Override
-	public boolean isValid() {
-		resolveFormat();
-		setHasExternalSubtitles(FileUtil.isSubtitlesExists(file, null));
-		return getFormat() != null;
-	}
-
-	@Override
-	public boolean isUnderlyingSeekSupported() {
-		return length() < MAX_ARCHIVE_SIZE_SEEK;
 	}
 
 	@Override
@@ -155,53 +103,13 @@ public class SevenZipEntry extends ZippedEntry implements IPushOutput {
 						out.close();
 					} catch (IOException e) {
 						LOGGER.debug("Caught exception", e);
+//					} catch (SevenZipException e) {
+//						LOGGER.debug("Caught 7-Zip exception", e);
 					}
 				}
 			}
 		};
 
 		new Thread(r, "7Zip Extractor").start();
-	}
-
-	@Override
-	public synchronized void resolve() {
-		if (getFormat() == null || !getFormat().isVideo()) {
-			return;
-		}
-
-		boolean found = false;
-
-		if (!found) {
-			if (getMedia() == null) {
-				setMedia(new DLNAMediaInfo());
-			}
-
-			found = !getMedia().isMediaparsed() && !getMedia().isParsing();
-
-			if (getFormat() != null) {
-				InputFile input = new InputFile();
-				input.setPush(this);
-				input.setSize(length());
-				getFormat().parse(getMedia(), input, getType(), null);
-				if (getMedia() != null && getMedia().isSLS()) {
-					setFormat(getMedia().getAudioVariantFormat());
-				}
-			}
-		}
-
-		super.resolve();
-	}
-
-	@Override
-	public DLNAThumbnailInputStream getThumbnailInputStream() throws IOException {
-		if (getMedia() != null && getMedia().getThumb() != null) {
-			return getMedia().getThumbnailInputStream();
-		}
-		return super.getThumbnailInputStream();
-	}
-
-	@Override
-	public String write() {
-		return getName() + ">" + file.getAbsolutePath() + ">" + length;
 	}
 }

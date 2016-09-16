@@ -33,7 +33,7 @@ import org.slf4j.LoggerFactory;
 public class SevenZipFile extends DLNAResource {
 	private static final Logger LOGGER = LoggerFactory.getLogger(SevenZipFile.class);
 	private File file;
-	private ISevenZipInArchive arc;
+	private IInArchive arc;
 
 	public SevenZipFile(File f) {
 		file = f;
@@ -55,6 +55,8 @@ public class SevenZipFile extends DLNAResource {
 			arc.close();
 		} catch (IOException e) {
 			LOGGER.error("Error reading archive file", e);
+//		} catch (SevenZipException e) {
+//			LOGGER.error("Caught 7-Zip exception", e);
 		} catch (NullPointerException e) {
 			LOGGER.error("Caught 7-Zip Null-Pointer Exception", e);
 		}
