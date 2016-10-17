@@ -66,6 +66,7 @@ import net.pms.network.HTTPServer;
 import net.pms.network.ProxyServer;
 import net.pms.network.UPNPHelper;
 import net.pms.newgui.*;
+import net.pms.newgui.StatusTab.ConnectionState;
 import net.pms.remote.RemoteWeb;
 import net.pms.update.AutoUpdater;
 import net.pms.util.*;
@@ -208,18 +209,16 @@ public class PMS {
 	 * @since 1.82.0
 	 */
 	public void setRendererFound(RendererConfiguration renderer) {
-		synchronized (foundRenderers) {
-			if (!foundRenderers.contains(renderer) && !renderer.isFDSSDP()) {
-				LOGGER.debug("Adding status button for " + renderer.getRendererName());
-				foundRenderers.add(renderer);
-				frame.addRenderer(renderer);
-				frame.setStatusCode(0, Messages.getString("PMS.18"), "icon-status-connected.png");
-			}
+		if (!foundRenderers.contains(renderer) && !renderer.isFDSSDP()) { //TODO: (Nad) Check synchronization need
+			LOGGER.debug("Adding status button for {}", renderer.getRendererName());
+			foundRenderers.add(renderer);
+			frame.addRenderer(renderer);
+			frame.setConnectionState(ConnectionState.CONNECTED);
 		}
 	}
 
 	public void updateRenderer(RendererConfiguration renderer) {
-		LOGGER.debug("Updating status button for " + renderer.getRendererName());
+		LOGGER.debug("Updating status button for {}", renderer.getRendererName());
 		frame.updateRenderer(renderer);
 	}
 
@@ -691,7 +690,7 @@ public class PMS {
 			}
 		}
 
-		frame.setStatusCode(0, Messages.getString("PMS.130"), "icon-status-connecting.png");
+		frame.setConnectionState(ConnectionState.SEARCHING);
 
 		// Check the existence of VSFilter / DirectVobSub
 		if (registry.isAvis() && registry.getAvsPluginsDir() != null) {
@@ -796,9 +795,9 @@ public class PMS {
 				}
 
 				if (foundRenderers.isEmpty()) {
-					frame.setStatusCode(0, Messages.getString("PMS.0"), "icon-status-notconnected.png");
+					frame.setConnectionState(ConnectionState.DISCONNECTED);
 				} else {
-					frame.setStatusCode(0, Messages.getString("PMS.18"), "icon-status-connected.png");
+					frame.setConnectionState(ConnectionState.CONNECTED);
 				}
 			}
 		}.start();
