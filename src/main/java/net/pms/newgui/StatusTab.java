@@ -36,7 +36,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
-import java.text.DecimalFormat;
+import java.text.NumberFormat;
 import java.util.List;
 import javax.imageio.ImageIO;
 import javax.swing.*;
@@ -159,7 +159,7 @@ public class StatusTab {
 	private JLabel peakBitrateLabel;
 	private long rc = 0;
 	private long peak;
-	private static DecimalFormat formatter = new DecimalFormat("#,###");
+	private static NumberFormat formatter = NumberFormat.getNumberInstance(PMS.getLocale());
 	private static int bufferSize;
 
 	StatusTab(PmsConfiguration configuration) {

@@ -272,7 +272,8 @@ public class UPNPControl {
 				item.alert();
 			}
 		} catch (Exception e) {
-			LOGGER.debug("Error parsing xml: " + e);
+			LOGGER.debug("Error parsing xml: {}", e.getMessage());
+			LOGGER.trace("", e);
 		}
 	}
 
