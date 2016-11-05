@@ -36,7 +36,7 @@ public interface SystemUtils {
 
 	public abstract String getVlcVersion();
 
-	public abstract boolean isAvis();
+	public abstract boolean isAviSynthAvailable();
 
 	/**
 	 * Open HTTP URLs in the default browser.
