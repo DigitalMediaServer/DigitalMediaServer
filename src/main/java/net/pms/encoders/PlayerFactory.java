@@ -31,23 +31,29 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import net.pms.Messages;
 import net.pms.PMS;
 import net.pms.configuration.PmsConfiguration;
 import net.pms.dlna.DLNAResource;
 import net.pms.formats.FormatFactory;
+import net.pms.io.ListProcessWrapperResult;
+import net.pms.io.SimpleProcessWrapper;
 import net.pms.io.SystemUtils;
 import net.pms.util.FilePermissions;
 import net.pms.util.FileUtil;
+import net.pms.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+
 /**
- * This class handles players. Creating an instance will initialize the list of
- * known players.
- *
- * @since 1.51.0
+ * This utility class handles {@link Player} creation and keeps a registry over
+ * instances.
  */
 public final class PlayerFactory {
+
 	/**
 	 * Logger used for all logging.
 	 */
@@ -64,15 +70,15 @@ public final class PlayerFactory {
 	private static final ArrayList<Player> PLAYERS = new ArrayList<>();
 
 	/**
-	 * Interface to Windows specific functions, like Windows Registry. The
-	 * registry is set by the constructor.
+	 * An interface to OS specific functions, like Windows registry. The
+	 * registry is set in {@link #initialize()}.
 	 */
 	private static SystemUtils utils;
 
 	private static PmsConfiguration configuration = PMS.getConfiguration();
 
 	/**
-	 * This takes care of sorting the players by the given DMS configuration.
+	 * This sorts {@link Player}s according to their configured priorities.
 	 */
 	@SuppressWarnings("serial")
 	private static class PlayerSort implements Comparator<Player>, Serializable {
@@ -96,33 +102,31 @@ public final class PlayerFactory {
 	}
 
 	/**
-	 * This class is not meant to be instantiated.
+	 * Not to be instantiated.
 	 */
 	private PlayerFactory() {
 	}
 
-	@Deprecated
-	public static void initialize(final PmsConfiguration configuration) {
-		initialize();
-	}
-
 	/**
-	 * Constructor that registers all players based on the given configuration,
-	 * frame and registry.
+	 * Registers all players based on the given configuration, frame and
+	 * registry.
+	 *
+	 * @throws InterruptedException If the operation is interrupted.
 	 */
-	public static void initialize() {
+	public static void initialize() throws InterruptedException {
 		utils = PMS.get().getRegistry();
 		registerPlayers();
 	}
 
 	/**
-	 * Register a known set of audio or video transcoders.
+	 * Registers a known set transcoding engines.
+	 *
+	 * @throws InterruptedException
 	 */
-	private static void registerPlayers() {
+	private static void registerPlayers() throws InterruptedException {
 		if (Platform.isWindows()) {
 			registerPlayer(new AviSynthFFmpeg());
 			registerPlayer(new AviSynthMEncoder());
-			registerPlayer(new FFmpegDVRMSRemux());
 		}
 
 		registerPlayer(new FFmpegAudio());
@@ -140,80 +144,88 @@ public final class PlayerFactory {
 	}
 
 	/**
-	 * Adds a single {@link Player} to the list of Players. Before the player is
-	 * added to the list, it is verified to be okay.
+	 * Adds a single {@link Player} to the list of {@link Player}s after making
+	 * some checks.
 	 *
-	 * @param player Player to be added to the list.
+	 * @param player the {@link Player} to be added.
+	 * @throws InterruptedException If the operation is interrupted.
 	 */
-	public static void registerPlayer(final Player player) {
+	public static void registerPlayer(final Player player) throws InterruptedException {
+		if (player == null) {
+			throw new IllegalArgumentException("player cannot be null");
+		}
 		configuration.capitalizeEngineId(player);
 		PLAYERS_LOCK.writeLock().lock();
 		try {
-			if (PLAYERS.contains(player)) {
-				LOGGER.info("Transcoding engine {} already exists, skipping registering...", player);
+			if (isPlayerRegistered(player.id())) {
+				LOGGER.debug("Transcoding engine {} already exists, skipping registration...", player);
 				return;
 			}
 
-			boolean ok = false;
+			LOGGER.debug("Checking transcoding engine {}", player);
 			PLAYERS.add(player);
 			player.setEnabled(configuration.isEngineEnabled(player));
 
-			if (Player.NATIVE.equals(player.executable())) {
-				player.setAvailable(true);
-				ok = true;
-			} else {
-				if (player.executable() == null) {
-					player.setAvailable(false);
-					LOGGER.warn("Executable of transcoding engine {} is undefined", player);
-					return;
-				}
-
-				Path executable;
-				if (Platform.isWindows()) {
-					String[] validExtensions = {"exe", "com", "bat"};
-					String extension = FileUtil.getExtension(player.executable());
-					if (extension == null || !Arrays.asList(validExtensions).contains(extension.toLowerCase())) {
-						executable = Paths.get(player.executable() + ".exe");
-					} else {
-						executable = Paths.get(player.executable());
-					}
-				} else if (player.avisynth()) {
-					LOGGER.debug("Skipping transcoding engine {} as it's not compatible with this platform");
-					player.setAvailable(false);
-					return;
-				} else {
-					executable = Paths.get(player.executable());
-				}
-
-				try {
-					FilePermissions permissions = new FilePermissions(executable);
-					ok = permissions.isExecutable();
-					if (!ok) {
-						LOGGER.warn(
-							"Insufficient permission to execute \"{}\" for transcoding engine {}",
-							executable.toAbsolutePath(),
-							player
-						);
-					} else if (Platform.isWindows() && player.avisynth()) {
-						ok = utils.isAvis();
-						if (!ok) {
-							LOGGER.warn("Transcoding engine {} is unavailable since AviSynth couldn't be found", player);
-						}
-					}
-				} catch (FileNotFoundException e) {
-					LOGGER.warn(
-						"Executable \"{}\" of transcoding engine {} not found: {}",
-						executable.toAbsolutePath(),
-						player,
-						e.getMessage()
-					);
-					LOGGER.trace("", e);
-				}
+			if (player.getExecutable() == null) {
+				player.setUnavailable(String.format(Messages.getString("Engine.ExecutableNotDefined"), player));
+				LOGGER.warn("Executable of transcoding engine {} is undefined", player);
+				return;
 			}
 
-			player.setAvailable(ok);
-			if (ok) {
-				LOGGER.info("Registering transcoding engine: {}", player);
+			Path executable;
+			if (Platform.isWindows()) {
+				String[] validExtensions = {"exe", "com", "bat"};
+				String extension = FileUtil.getExtension(player.getExecutable());
+				if (extension == null || !Arrays.asList(validExtensions).contains(extension.toLowerCase())) {
+					executable = Paths.get(player.getExecutable() + ".exe");
+				} else {
+					executable = Paths.get(player.getExecutable());
+				}
+			} else if (player.avisynth()) {
+				LOGGER.debug("Skipping transcoding engine {} as it's not compatible with this platform", player);
+				player.setUnavailable(String.format(Messages.getString("Engine.ExecutablePlatformIncompatible"), player));
+				return;
+			} else {
+				executable = Paths.get(player.getExecutable());
+			}
+
+			try {
+				FilePermissions permissions = new FilePermissions(executable);
+				if (!permissions.isExecutable()) {
+					LOGGER.warn(
+						"Insufficient permission to execute \"{}\" for transcoding engine {}",
+						executable.toAbsolutePath(),
+						player
+					);
+					player.setUnavailable(
+						String.format(Messages.getString("Engine.MissingExecutePermission"), executable.toAbsolutePath(), player)
+					);
+					return;
+				} else if (Platform.isWindows() && player.avisynth() && !utils.isAviSynthAvailable()) {
+					LOGGER.warn("Transcoding engine {} is unavailable since AviSynth couldn't be found", player);
+					player.setUnavailable(String.format(Messages.getString("Engine.AviSynthNotFound"), player));
+					return;
+				} else if (!playerTest(player, executable)) {
+					// Only set available if this isn't already done by the test to avoid overwriting the status
+					player.setAvailable(null);
+				}
+			} catch (FileNotFoundException e) {
+				LOGGER.warn(
+					"Executable \"{}\" of transcoding engine {} not found: {}",
+					executable.toAbsolutePath(),
+					player,
+					e.getMessage()
+				);
+				player.setUnavailable(
+					String.format(Messages.getString("Engine.ExecutableNotFound"), executable.toAbsolutePath(), player)
+				);
+				return;
+			}
+
+			if (player.isAvailable()) {
+				LOGGER.info("Transcoding engine \"{}\" is available", player);
+			} else {
+				LOGGER.warn("Transcoding engine \"{}\" is not available", player);
 			}
 
 			// Sort the players according to the configuration settings. This
@@ -227,9 +239,9 @@ public final class PlayerFactory {
 	}
 
 	/**
-	 * Used to (re)sort {@link #PLAYERS} every time either {@link #PLAYERS}
-	 * or {@link PmsConfiguration#enginesPriority} has changed so that
-	 * {@link #PLAYERS} always is sorted according to priority.
+	 * Used to (re)sort {@link #PLAYERS} every time either {@link #PLAYERS} or
+	 * {@link PmsConfiguration#enginesPriority} has changed so that
+	 * {@link #PLAYERS} are always sorted according to priority.
 	 */
 	public static void sortPlayers() {
 		PLAYERS_LOCK.writeLock().lock();
@@ -241,8 +253,8 @@ public final class PlayerFactory {
 	}
 
 	/**
-	 * Returns the a copy of the list of all {@link Player}s. This includes the
-	 * ones not verified as being okay.
+	 * Returns a copy of the list of all {@link Player}s. This includes the ones
+	 * not verified as being okay.
 	 *
 	 * @return A {@link List} of {@link Player}s.
 	 */
@@ -285,6 +297,30 @@ public final class PlayerFactory {
 	 */
 	public static ArrayList<Player> getPlayers() {
 		return getPlayers(true, true);
+	}
+
+	/**
+	 * Checks if a {@link Player} of the given type is registered.
+	 *
+	 * @param id the {@link Player} type to check for.
+	 * @return The result.
+	 */
+	public static boolean isPlayerRegistered(String id) {
+		if (isBlank(id)) {
+			return false;
+		}
+
+		PLAYERS_LOCK.readLock().lock();
+		try {
+			for (Player player : PLAYERS) {
+				if (id.equals(player.id())) {
+					return true;
+				}
+			}
+			return false;
+		} finally {
+			PLAYERS_LOCK.readLock().unlock();
+		}
 	}
 
 	/**
@@ -331,8 +367,7 @@ public final class PlayerFactory {
 	 *
 	 * @param id the {@link Player} type to check for.
 	 * @param onlyEnabled whether or not to filter on enabled {@link Player}s.
-	 * @param onlyAvailable whether or not to filter on available
-	 *        {@link Player}s.
+	 * @param onlyAvailable whether or not to filter on available {@link Player}s.
 	 * @return The {@link Player} if found or {@code null}.
 	 */
 	public static Player getPlayer(String id, boolean onlyEnabled, boolean onlyAvailable) {
@@ -356,15 +391,14 @@ public final class PlayerFactory {
 	}
 
 	/**
-	 * Returns the first {@link Player} that matches the given mediaInfo or
-	 * format. Each of the available players is passed the provided information
-	 * and the first that reports it is compatible will be returned.
+	 * Returns the first {@link Player} that matches the given
+	 * {@link DLNAResource}. Each of the available {@link Player} instances are
+	 * passed the provided information and the first that reports that it is
+	 * compatible will be returned.
 	 *
-	 * @param resource
-	 *            The {@link DLNAResource} to match
-	 * @return The player if a match could be found, <code>null</code>
+	 * @param resource the {@link DLNAResource} to match.
+	 * @return The {@link Player} if a match could be found, {@code null}
 	 *         otherwise.
-	 * @since 1.60.0
 	 */
 	public static Player getPlayer(final DLNAResource resource) {
 		if (resource == null) {
@@ -388,8 +422,9 @@ public final class PlayerFactory {
 						// Player is enabled and compatible
 						LOGGER.trace("Returning compatible player \"{}\"", player.name());
 						return player;
+					} else if (LOGGER.isTraceEnabled()) {
+						LOGGER.trace("Player \"{}\" is incompatible", player.name());
 					}
-					LOGGER.trace("Player \"{}\" is incompatible", player.name());
 				} else if (LOGGER.isTraceEnabled()) {
 					if (available) {
 						LOGGER.trace("Player \"{}\" is disabled", player.name());
@@ -411,14 +446,13 @@ public final class PlayerFactory {
 
 	/**
 	 * Returns all {@link Player}s that match the given resource and are
-	 * enabled. Each of the available players is passed the provided information
-	 * and each player that reports it is compatible will be returned.
+	 * enabled. Each of the available {@link Player}s are passed the provided
+	 * information and each {@link Player} that reports that it is compatible
+	 * will be returned.
 	 *
-	 * @param resource
-	 *        The {@link DLNAResource} to match
-	 * @return The list of compatible players if a match could be found,
-	 *         <code>null</code> otherwise.
-	 * @since 1.60.0
+	 * @param resource the {@link DLNAResource} to match.
+	 * @return A list of compatible {@link Player}s if a match could be found,
+	 *         {@code null} otherwise.
 	 */
 	public static ArrayList<Player> getPlayers(final DLNAResource resource) {
 		if (resource == null) {
@@ -442,6 +476,208 @@ public final class PlayerFactory {
 	}
 
 	/**
+	 * Protected by {@link #playersLock}.
+	 */
+	private static final List<PlayerTestRecord> TEST_RECORDS = new ArrayList<>();
+
+	/**
+	 * Must only be called when a lock is held on {@link #playersLock}.
+	 *
+	 * @param player the {@link Player} whose executable to test.
+	 * @return {@code true} if a test was performed, {@code false} otherwise.
+	 * @throws InterruptedException If the operation is interrupted.
+	 */
+	private static boolean playerTest(Player player, Path executable) throws InterruptedException {
+		if (executable == null) {
+			return false;
+		}
+
+		for (PlayerTestRecord testRecord : TEST_RECORDS) {
+			if (executable.equals(testRecord.executable)) {
+				player.setAvailable(testRecord.pass, testRecord.status);
+				return true;
+			}
+		}
+
+		// Return true if a test is performed and availability is set
+		if (player instanceof FFMpegVideo) {
+			final String arg = "-version";
+			String status = null;
+			ListProcessWrapperResult result = SimpleProcessWrapper.runProcessListOutput(
+				1000,
+				500,
+				executable.toString(),
+				arg
+			);
+			if (result.getError() != null) {
+				LOGGER.warn("\"{}\" failed with error: {}", executable.toString(), result.getError().getMessage());
+				LOGGER.trace("", result.getError());
+				status = String.format(Messages.getString("Engine.Error"), player) + " \n" + result.getError().getMessage();
+				player.setUnavailable(status);
+				return true;
+			}
+			if (result.getExitCode() == 0) {
+				if (result.getOutput() != null && result.getOutput().size() > 0) {
+					Pattern pattern = Pattern.compile("^ffmpeg version\\s+(.*?)\\s+Copyright", Pattern.CASE_INSENSITIVE);
+					Matcher matcher = pattern.matcher(result.getOutput().get(0));
+					if (matcher.find()) {
+						status = matcher.group(1);
+						player.setAvailable(status);
+					} else {
+						player.setAvailable(null);
+					}
+				} else {
+					player.setAvailable(null);
+				}
+			} else {
+				if (result.getOutput().size() > 2) {
+					status =
+						String.format(Messages.getString("Engine.Error"), player) + " \n" +
+						result.getOutput().get(result.getOutput().size() - 2) + " " +
+						result.getOutput().get(result.getOutput().size() - 1);
+					player.setUnavailable(status);
+				} else if (result.getOutput().size() > 1) {
+					status =
+						String.format(Messages.getString("Engine.Error"), player) + " \n" +
+						result.getOutput().get(result.getOutput().size() - 1);
+					player.setUnavailable(status);
+				} else {
+					status = String.format(Messages.getString("Engine.Error"), player) + Messages.getString("General.3");
+					player.setUnavailable(status);
+				}
+			}
+			TEST_RECORDS.add(new PlayerTestRecord(executable, player.isAvailable(), status));
+			return true;
+		} else if (player instanceof MEncoderVideo || player instanceof MEncoderWebVideo) {
+			final String arg = "-info:help";
+			String status = null;
+			ListProcessWrapperResult result = SimpleProcessWrapper.runProcessListOutput(
+				1000,
+				500,
+				executable.toString(),
+				arg
+			);
+			if (result.getError() != null) {
+				LOGGER.warn("\"{}\" failed with error: {}", executable.toString(), result.getError().getMessage());
+				LOGGER.trace("", result.getError());
+				status = String.format(Messages.getString("Engine.Error"), player) + " \n" + result.getError().getMessage();
+				player.setUnavailable(status);
+				return true;
+			}
+			if (result.getExitCode() == 0) {
+				if (result.getOutput() != null && result.getOutput().size() > 0) {
+					Pattern pattern = Pattern.compile("^MEncoder\\s+(.*?)\\s+\\(C\\)", Pattern.CASE_INSENSITIVE);
+					Matcher matcher = pattern.matcher(result.getOutput().get(0));
+					if (matcher.find()) {
+						status = matcher.group(1);
+						player.setAvailable(status);
+					} else {
+						player.setAvailable(null);
+					}
+				} else {
+					player.setAvailable(null);
+				}
+			} else {
+				if (result.getOutput() != null &&
+					result.getOutput().size() > 3 &&
+					StringUtil.hasValue(result.getOutput().get(result.getOutput().size() - 1)) &&
+					!StringUtil.hasValue(result.getOutput().get(result.getOutput().size() - 2)) &&
+					StringUtil.hasValue(result.getOutput().get(result.getOutput().size() - 3))
+				) {
+					status =
+						String.format(Messages.getString("Engine.Error"), player) + " \n" +
+						result.getOutput().get(result.getOutput().size() - 3);
+					player.setUnavailable(status);
+				} else {
+					status = String.format(Messages.getString("Engine.Error"), player) + Messages.getString("General.3");
+					player.setUnavailable(status);
+				}
+			}
+			TEST_RECORDS.add(new PlayerTestRecord(executable, player.isAvailable(), status));
+			return true;
+		} else if (player instanceof TsMuxeRVideo) {
+			final String arg = "-v";
+			String status = null;
+			ListProcessWrapperResult result = SimpleProcessWrapper.runProcessListOutput(
+				1000,
+				500,
+				executable.toString(),
+				arg
+			);
+			if (result.getError() != null) {
+				LOGGER.warn("\"{}\" failed with error: {}", executable.toString(), result.getError().getMessage());
+				LOGGER.trace("", result.getError());
+				status = String.format(Messages.getString("Engine.Error"), player) + " \n" + result.getError().getMessage();
+				player.setUnavailable(status);
+				return true;
+			}
+			if (result.getExitCode() == 0) {
+				if (result.getOutput() != null && result.getOutput().size() > 0) {
+					Pattern pattern = Pattern.compile("tsMuxeR\\.\\s+Version\\s(\\S+)\\s+", Pattern.CASE_INSENSITIVE);
+					Matcher matcher = pattern.matcher(result.getOutput().get(0));
+					if (matcher.find()) {
+						status = matcher.group(1);
+						player.setAvailable(status);
+					} else {
+						player.setAvailable(null);
+					}
+				} else {
+					player.setAvailable(null);
+				}
+			} else {
+				status = String.format(Messages.getString("Engine.ExitCode"), player, result.getExitCode());
+				if (Platform.isLinux() && Platform.is64Bit()) {
+					status += ". \n" + Messages.getString("Engine.tsMuxerErrorLinux");
+				}
+				player.setUnavailable(status);
+			}
+			TEST_RECORDS.add(new PlayerTestRecord(executable, player.isAvailable(), status));
+			return true;
+		} else if (player instanceof DCRaw) {
+			String status = null;
+			ListProcessWrapperResult result = SimpleProcessWrapper.runProcessListOutput(
+				1000,
+				500,
+				executable.toString()
+			);
+			if (result.getError() != null) {
+				LOGGER.warn("\"{}\" failed with error: {}", executable.toString(), result.getError().getMessage());
+				LOGGER.trace("", result.getError());
+				status = String.format(Messages.getString("Engine.Error"), player) + " \n" + result.getError().getMessage();
+				player.setUnavailable(status);
+				return true;
+			}
+			if (!StringUtil.hasValue(result.getOutput().get(0))) {
+				if (result.getOutput() != null && result.getOutput().size() > 1) {
+					Pattern pattern = Pattern.compile("decoder\\s\"dcraw\"\\s(\\S+)", Pattern.CASE_INSENSITIVE);
+					Matcher matcher = pattern.matcher(result.getOutput().get(1));
+					if (matcher.find()) {
+						status = matcher.group(1);
+						player.setAvailable(status);
+					} else {
+						player.setAvailable(null);
+					}
+				} else {
+					player.setAvailable(null);
+				}
+			} else if (result.getOutput().size() > 0) {
+				status =
+					String.format(Messages.getString("Engine.Error"), player) + " \n" +
+					result.getOutput().get(0);
+				player.setUnavailable(status);
+			} else {
+				status = String.format(Messages.getString("Engine.Error"), player) + Messages.getString("General.3");
+				player.setUnavailable(status);
+			}
+			TEST_RECORDS.add(new PlayerTestRecord(executable, player.isAvailable(), status));
+			return true;
+		}
+		// No test has been made for VLC, found no way to get feedback on stdout: https://forum.videolan.org/viewtopic.php?t=73665
+
+		return false;
+	}
+
+	/**
 	 * @deprecated Use {@link #getPlayers(DLNAResource)} instead.
 	 *
 	 * @param resource the resource to match
@@ -450,5 +686,17 @@ public final class PlayerFactory {
 	@Deprecated
 	public static ArrayList<Player> getEnabledPlayers(final DLNAResource resource) {
 		return getPlayers(resource);
+	}
+
+	private static class PlayerTestRecord {
+		public final Path executable;
+		public final boolean pass;
+		public final String status;
+
+		public PlayerTestRecord(Path executable, boolean pass, String status) {
+			this.executable = executable;
+			this.pass = pass;
+			this.status = status;
+		}
 	}
 }

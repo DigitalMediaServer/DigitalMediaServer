@@ -18,11 +18,15 @@
  */
 package net.pms.encoders;
 
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import java.io.File;
 import java.io.IOException;
 import java.util.StringTokenizer;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import javax.annotation.concurrent.GuardedBy;
+import javax.annotation.concurrent.ThreadSafe;
 import javax.swing.JComponent;
+import net.pms.Messages;
 import net.pms.PMS;
 import net.pms.configuration.PmsConfiguration;
 import net.pms.configuration.RendererConfiguration;
@@ -41,6 +45,10 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * The base class for all transcoding engines.
+ */
+@ThreadSafe
 public abstract class Player {
 	private static final Logger LOGGER = LoggerFactory.getLogger(Player.class);
 
@@ -49,31 +57,51 @@ public abstract class Player {
 	public static final int VIDEO_WEBSTREAM_PLAYER = 2;
 	public static final int AUDIO_WEBSTREAM_PLAYER = 3;
 	public static final int MISC_PLAYER = 4;
-	public static final String NATIVE = "NATIVE";
 
 	public abstract int purpose();
 	public abstract JComponent config();
 	public abstract String id();
 	public abstract String name();
 	public abstract int type();
+
 	/**
 	 * Must be used to control all access to {@link #available}
 	 */
 	protected final ReentrantReadWriteLock availableLock = new ReentrantReadWriteLock();
+
 	/**
-	 * Used to determine if the player can be used, e.g if the binary is
+	 * Used to store if this {@link Player} can be used, e.g if the binary is
 	 * accessible. All access must be guarded with {@link #availableLock}.
 	 */
-	boolean available = false;
+	@GuardedBy("availableLock")
+	protected boolean available = false;
+
+	/**
+	 * Used to store a localized error text if the {@link Player} is
+	 * unavailable. All access must be guarded with {@link #availableLock}.
+	 */
+	@GuardedBy("availableLock")
+	protected String errorText;
+
+	/**
+	 * Used to store the executable version if the {@link Player} is available
+	 * and the information could be parsed. All access must be guarded with
+	 * {@link #availableLock}.
+	 */
+	@GuardedBy("availableLock")
+	protected String versionText;
 
 	/**
 	 * Must be used to control all access to {@link #enabled}
 	 */
 	protected final ReentrantReadWriteLock enabledLock = new ReentrantReadWriteLock();
+
 	/**
-	 * All access must be guarded with {@link #enabledLock}.
+	 * Used to store if this {@link Player} is enabled in the configuration. All
+	 * access must be guarded with {@link #enabledLock}.
 	 */
-	boolean enabled = false;
+	@GuardedBy("enabledLock")
+	protected boolean enabled = false;
 
 	// FIXME this is an implementation detail (and not a very good one).
 	// it's entirely up to engines how they construct their command lines.
@@ -81,7 +109,7 @@ public abstract class Player {
 	public abstract String[] args();
 
 	public abstract String mimeType();
-	public abstract String executable();
+	public abstract String getExecutable();
 	protected static final PmsConfiguration _configuration = PMS.getConfiguration();
 	protected PmsConfiguration configuration = _configuration;
 
@@ -110,40 +138,131 @@ public abstract class Player {
 	}
 
 	/**
-	 * Used to determine if the player can be used, e.g if the binary is
-	 * accessible. Threadsafe.
+	 * Used to determine if this {@link Player} can be used, e.g if the binary
+	 * is accessible.
+	 *
+	 * @return {@code true} if this is available, {@code false} otherwise.
 	 */
 	public boolean isAvailable() {
 		availableLock.readLock().lock();
 		try {
-			return available == true;
+			return available;
 		} finally {
 			availableLock.readLock().unlock();
 		}
 	}
 
-	void setAvailable(boolean available) {
+	/**
+	 * Returns the current engine status (enabled, available) as a localized
+	 * text. If there is an error, a generic text is returned.
+	 *
+	 * @return The localized status text.
+	 */
+	public String getStatusText() {
+		return getStatusText(false);
+	}
+
+	/**
+	 * Returns the current engine status (enabled, available) as a localized
+	 * text. If there is an error, the full error text is returned.
+	 *
+	 * @return The localized status text.
+	 */
+	public String getStatusTextFull() {
+		return getStatusText(true);
+	}
+
+	/**
+	 * Returns the current engine status (enabled, available) as a localized
+	 * text.
+	 *
+	 * @param fullText if {@code true} the full error text is returned in case
+	 *            of an error, if {@code false} only a generic text is returned
+	 *            in case of an error.
+	 * @return The localized status text.
+	 */
+	public String getStatusText(boolean fullText) {
+		availableLock.readLock().lock();
+		try {
+			if (isActive()) {
+				if (isNotBlank(versionText)) {
+					return String.format(Messages.getString("Engine.EnabledVersion"), name(), versionText);
+				}
+				return String.format(Messages.getString("Engine.Enabled"), name());
+			} else if (isAvailable()) {
+				return String.format(Messages.getString("Engine.Disabled"), name());
+			} else {
+				return fullText ? errorText : String.format(Messages.getString("Engine.ErrorShort"), name());
+			}
+		} finally {
+			availableLock.readLock().unlock();
+		}
+	}
+
+	/**
+	 * Sets the engine available status and a related text. Note that
+	 * {@code statusText} has a "dual function".
+	 *
+	 * @param available whether or not the player is available.
+	 * @param statusText if {@code available} is {@code true}, the executable
+	 *            version or {@code null} the version if unknown. If
+	 *            {@code available} is {@code false}, a localized description of
+	 *            the current error.
+	 */
+	public void setAvailable(boolean available, String statusText) {
 		availableLock.writeLock().lock();
 		try {
 			this.available = available;
+			if (available) {
+				versionText = statusText;
+			} else {
+				errorText = statusText;
+			}
 		} finally {
 			availableLock.writeLock().unlock();
 		}
 	}
 
 	/**
-	 * Threadsafe.
+	 * Marks the engine as available for use.
+	 *
+	 * @param versionText the parsed version string for the executable, or
+	 *            {@code null} if the version is unknown.
+	 */
+	public void setAvailable(String versionText) {
+		setAvailable(true, versionText);
+	}
+
+	/**
+	 * Marks the engine as unavailable.
+	 *
+	 * @param errorText the localized error description.
+	 */
+	public void setUnavailable(String errorText) {
+		setAvailable(false, errorText);
+	}
+
+	/**
+	 * Used to determine if this {@link Player} is enabled in the configuration.
+	 *
+	 * @return {@code true} if this is enabled, {@code false} otherwise.
 	 */
 	public boolean isEnabled() {
 		enabledLock.readLock().lock();
 		try {
-			return enabled == true;
+			return enabled;
 		} finally {
 			enabledLock.readLock().unlock();
 		}
 	}
 
-	void setEnabled(boolean enabled) {
+	/**
+	 * Sets the enabled status for this {@link Player}.
+	 *
+	 * @param enabled {@code true} if this {@link Player} is enabled,
+	 *            {@code false} otherwise.
+	 */
+	public void setEnabled(boolean enabled) {
 		enabledLock.writeLock().lock();
 		try {
 			this.enabled = enabled;
@@ -153,6 +272,9 @@ public abstract class Player {
 		_configuration.setEngineEnabled(id(), enabled);
 	}
 
+	/**
+	 * Toggles the enabled status for this {@link Player}.
+	 */
 	public void toggleEnabled() {
 		enabledLock.writeLock().lock();
 		try {
@@ -164,19 +286,24 @@ public abstract class Player {
 	}
 
 	/**
-	 * Convenience method to check that a player is both available and enabled
+	 * Convenience method to check if this {@link Player} is both available and
+	 * enabled.
+	 *
+	 * @return {@code true} if this {@link Player} is both available and
+	 *         enabled, {@code false} otherwise.
 	 */
 	public boolean isActive() {
 		return isAvailable() && isEnabled();
 	}
 
 	/**
-	 * Each engine capable of video hardware acceleration must override this
-	 * method and set
+	 * Returns whether or not this {@link Player} supports GPU acceleration.
 	 * <p>
-	 * <code>return true</code>.
+	 * Each {@link Player} capable of video hardware acceleration must override
+	 * this method and return {@code true}.
 	 *
-	 * @return false
+	 * @return {@code true} if GPU acceleration is supported, {@code false}
+	 *         otherwise.
 	 */
 	public boolean isGPUAccelerationReady() {
 		return false;
@@ -210,15 +337,14 @@ public abstract class Player {
 	}
 
 	/**
-	 * This method populates the supplied {@link OutputParams} object with the correct audio track (aid)
-	 * and subtitles (sid), based on the given filename, its MediaInfo metadata and DMS configuration settings.
+	 * This method populates the supplied {@link OutputParams} object with the
+	 * correct audio track (aid) and subtitles (sid), based on the given
+	 * filename, its MediaInfo metadata and DMS configuration settings.
 	 *
-	 * @param fileName
-	 * The file name used to determine the availability of subtitles.
-	 * @param media
-	 * The MediaInfo metadata for the file.
-	 * @param params
-	 * The parameters to populate.
+	 * @param fileName The file name used to determine the availability of
+	 *            subtitles.
+	 * @param media The MediaInfo metadata for the file.
+	 * @param params The parameters to populate.
 	 */
 	public static void setAudioAndSubs(String fileName, DLNAMediaInfo media, OutputParams params) {
 		setAudioOutputParameters(media, params);
@@ -226,13 +352,12 @@ public abstract class Player {
 	}
 
 	/**
-	 * This method populates the supplied {@link OutputParams} object with the correct audio track (aid)
-	 * based on the MediaInfo metadata and DMS configuration settings.
+	 * This method populates the supplied {@link OutputParams} object with the
+	 * correct audio track (aid) based on the MediaInfo metadata and DMS
+	 * configuration settings.
 	 *
-	 * @param media
-	 * The MediaInfo metadata for the file.
-	 * @param params
-	 * The parameters to populate.
+	 * @param media The MediaInfo metadata for the file.
+	 * @param params The parameters to populate.
 	 */
 	public static void setAudioOutputParameters(DLNAMediaInfo media, OutputParams params) {
 		// Use device-specific DMS conf
@@ -269,17 +394,16 @@ public abstract class Player {
 	}
 
 	/**
-	 * This method populates the supplied {@link OutputParams} object with the correct subtitles (sid)
-	 * based on the given filename, its MediaInfo metadata and DMS configuration settings.
+	 * This method populates the supplied {@link OutputParams} object with the
+	 * correct subtitles (sid) based on the given filename, its MediaInfo
+	 * metadata and DMS configuration settings.
 	 *
 	 * TODO: Rewrite this crazy method to be more concise and logical.
 	 *
-	 * @param fileName
-	 * The file name used to determine the availability of subtitles.
-	 * @param media
-	 * The MediaInfo metadata for the file.
-	 * @param params
-	 * The parameters to populate.
+	 * @param fileName The file name used to determine the availability of
+	 *            subtitles.
+	 * @param media The MediaInfo metadata for the file.
+	 * @param params The parameters to populate.
 	 */
 	public static void setSubtitleOutputParameters(String fileName, DLNAMediaInfo media, OutputParams params) {
 		// Use device-specific DMS conf
@@ -316,9 +440,9 @@ public abstract class Player {
 
 		StringTokenizer st = new StringTokenizer(configuration.getAudioSubLanguages(), ";");
 
-		/**
-		 * Check for external and internal subtitles matching the user's language
-		 * preferences
+		/*
+		 * Check for external and internal subtitles matching the user's
+		 * language preferences
 		 */
 		boolean matchedInternalSubtitles = false;
 		boolean matchedExternalSubtitles = false;
@@ -333,14 +457,17 @@ public abstract class Player {
 
 				if (Iso639.isCodesMatching(audio, currentLang) || (currentLang != null && audio.equals("*"))) {
 					if (sub.equals("off")) {
-						/**
-						 * Ignore the "off" language for external subtitles if the user setting is enabled
-						 * TODO: Prioritize multiple external subtitles properly instead of just taking the first one we load
+						/*
+						 * Ignore the "off" language for external subtitles if
+						 * the user setting is enabled.
+						 *
+						 * TODO: Prioritize multiple external subtitles properly
+						 * instead of just taking the first one we load
 						 */
 						if (configuration.isForceExternalSubtitles()) {
-							for (DLNAMediaSubtitle present_sub : media.getSubtitleTracksList()) {
-								if (present_sub.getExternalFile() != null) {
-									matchedSub = present_sub;
+							for (DLNAMediaSubtitle subPresent : media.getSubtitleTracksList()) {
+								if (subPresent.getExternalFile() != null) {
+									matchedSub = subPresent;
 									matchedExternalSubtitles = true;
 									LOGGER.trace("Ignoring the \"off\" language because there are external subtitles");
 									break;
@@ -352,20 +479,19 @@ public abstract class Player {
 							matchedSub.setLang("off");
 						}
 					} else {
-						for (DLNAMediaSubtitle present_sub : media.getSubtitleTracksList()) {
-							if (present_sub.matchCode(sub) || sub.equals("*")) {
-								if (present_sub.getExternalFile() != null) {
+						for (DLNAMediaSubtitle subPresent : media.getSubtitleTracksList()) {
+							if (subPresent.matchCode(sub) || sub.equals("*")) {
+								if (subPresent.getExternalFile() != null) {
 									if (configuration.isAutoloadExternalSubtitles()) {
 										// Subtitle is external and we want external subtitles, look no further
-										matchedSub = present_sub;
+										matchedSub = subPresent;
 										LOGGER.trace("Matched external subtitles track: " + matchedSub);
 										break;
-									} else {
-										// Subtitle is external but we do not want external subtitles, keep searching
-										LOGGER.trace("External subtitles ignored because of user setting: " + present_sub);
 									}
+									// Subtitle is external but we do not want external subtitles, keep searching
+									LOGGER.trace("External subtitles ignored because of user setting: " + subPresent);
 								} else if (!matchedInternalSubtitles) {
-									matchedSub = present_sub;
+									matchedSub = subPresent;
 									LOGGER.trace("Matched internal subtitles track: " + matchedSub);
 									if (configuration.isAutoloadExternalSubtitles()) {
 										// Subtitle is internal and we will wait to see if an external one is available instead
@@ -386,27 +512,27 @@ public abstract class Player {
 			}
 		}
 
-		/**
-		 * Check for external subtitles that were skipped in the above code block
-		 * because they didn't match language preferences, if there wasn't already
-		 * a match and the user settings specify it.
+		/*
+		 * Check for external subtitles that were skipped in the above code
+		 * block because they didn't match language preferences, if there wasn't
+		 * already a match and the user settings specify it.
 		 */
 		if (matchedSub == null && configuration.isForceExternalSubtitles()) {
-			for (DLNAMediaSubtitle present_sub : media.getSubtitleTracksList()) {
-				if (present_sub.getExternalFile() != null) {
-					matchedSub = present_sub;
+			for (DLNAMediaSubtitle subPresent : media.getSubtitleTracksList()) {
+				if (subPresent.getExternalFile() != null) {
+					matchedSub = subPresent;
 					LOGGER.trace("Matched external subtitles track that did not match language preferences: " + matchedSub);
 					break;
 				}
 			}
 		}
 
-		/**
-		 * Disable chosen subtitles if the user has disabled all subtitles or
-		 * if the language preferences have specified the "off" language.
+		/*
+		 * Disable chosen subtitles if the user has disabled all subtitles or if
+		 * the language preferences have specified the "off" language.
 		 *
-		 * TODO: Can't we save a bunch of looping by checking for isDisableSubtitles
-		 * just after the Live Subtitles check above?
+		 * TODO: Can't we save a bunch of looping by checking for
+		 * isDisableSubtitles just after the Live Subtitles check above?
 		 */
 		if (matchedSub != null && params.sid == null) {
 			if (configuration.isDisableSubtitles() || (matchedSub.getLang() != null && matchedSub.getLang().equals("off"))) {
@@ -416,7 +542,7 @@ public abstract class Player {
 			}
 		}
 
-		/**
+		/*
 		 * Check for forced subtitles.
 		 */
 		if (!configuration.isDisableSubtitles() && params.sid == null && media != null) {
@@ -439,7 +565,9 @@ public abstract class Player {
 								sub.getSubtitlesTrackTitleFromMetadata().toLowerCase().contains(forcedTags) &&
 								Iso639.isCodesMatching(sub.getLang(), configuration.getForcedSubtitleLanguage())
 							) {
-								LOGGER.trace("Forcing preferred subtitles: " + sub.getLang() + "/" + sub.getSubtitlesTrackTitleFromMetadata());
+								LOGGER.trace(
+									"Forcing preferred subtitles: {}/{}", sub.getLang(), sub.getSubtitlesTrackTitleFromMetadata()
+								);
 								LOGGER.trace("Forced subtitles track: " + sub);
 
 								if (sub.getExternalFile() != null) {
@@ -450,7 +578,7 @@ public abstract class Player {
 								break;
 							}
 						}
-						if (forcedSubsFound == true) {
+						if (forcedSubsFound) {
 							break;
 						}
 					} else {
@@ -509,7 +637,6 @@ public abstract class Player {
 	 *
 	 * @param number the number to convert
 	 * @param mod the number to divide by
-	 *
 	 * @return the number divisible by mod
 	 */
 	public static int convertToModX(int number, int mod) {
@@ -521,20 +648,19 @@ public abstract class Player {
 	}
 
 	/**
-	 * Returns whether or not the player can handle a given resource.
-	 * If the resource is <code>null</code> compatibility cannot be
-	 * determined and <code>false</code> will be returned.
+	 * Returns whether or not this {@link Player} can handle a given
+	 * {@link DLNAResource}. If {@code resource} is {@code null} {@code false}
+	 * will be returned.
 	 *
-	 * @param resource
-	 * The {@link DLNAResource} to be matched.
-	 * @return True when the resource can be handled, false otherwise.
-	 * @since 1.60.0
+	 * @param resource the {@link DLNAResource} to be matched.
+	 * @return {@code true} if {@code resource} can be handled, {@code false}
+	 *         otherwise.
 	 */
 	public abstract boolean isCompatible(DLNAResource resource);
 
 	/**
-	 * Returns whether or not another player has the same
-	 * name and id as this one.
+	 * Checks if {@code object} is a {@link Player} and has the same
+	 * {@link #id()} as this.
 	 *
 	 * @param other
 	 * The other player.
