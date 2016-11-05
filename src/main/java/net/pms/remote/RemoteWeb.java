@@ -60,8 +60,8 @@ public class RemoteWeb {
 
 			public RemoteUtil.ResourceManager run() {
 				return new RemoteUtil.ResourceManager(
-					"file:" + configuration.getProfileDirectory() + "/web/",
-					"jar:file:" + configuration.getProfileDirectory() + "/web.zip!/",
+					"file:" + configuration.getProfileFolder() + "/web/",
+					"jar:file:" + configuration.getProfileFolder() + "/web.zip!/",
 					"file:" + configuration.getWebPath() + "/"
 				);
 			}

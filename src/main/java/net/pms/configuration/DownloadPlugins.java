@@ -82,7 +82,7 @@ public class DownloadPlugins {
 			connection.setReadTimeout(5000);
 			BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
 			parse_list(res, in, false);
-			File test = new File(configuration.getPluginDirectory() + File.separator + PLUGIN_TEST_FILE);
+			File test = new File(configuration.getPluginFolder() + File.separator + PLUGIN_TEST_FILE);
 			if (test.exists()) {
 				in = new BufferedReader(new InputStreamReader(new FileInputStream(test)));
 				parse_list(res, in, true);
@@ -378,7 +378,7 @@ public class DownloadPlugins {
 
 		// Everything after the "," is what we're supposed to run
 		// First make note of jars we got
-		File[] oldJar = new File(configuration.getPluginDirectory()).listFiles();
+		File[] oldJar = new File(configuration.getPluginFolder()).listFiles();
 
 		// Before we start external installers better save the config
 		configuration.save();
@@ -398,7 +398,7 @@ public class DownloadPlugins {
 		configuration.reload();
 		pid.waitFor();
 
-		File[] newJar = new File(configuration.getPluginDirectory()).listFiles();
+		File[] newJar = new File(configuration.getPluginFolder()).listFiles();
 		for (File f : newJar) {
 			if (!f.getAbsolutePath().endsWith(".jar")) {
 				// skip non jar files
@@ -491,7 +491,7 @@ public class DownloadPlugins {
 				}
 
 				String[] tmp = str.split(",", 3);
-				String dir = configuration.getPluginDirectory();
+				String dir = configuration.getPluginFolder();
 				String filename = "";
 
 				if (command(tmp[0], str)) {

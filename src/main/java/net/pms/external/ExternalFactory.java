@@ -364,7 +364,7 @@ public class ExternalFactory {
 	public static void lookup() {
 		// Start by purging files
 		purgeFiles();
-		File pluginsFolder = new File(configuration.getPluginDirectory());
+		File pluginsFolder = new File(configuration.getPluginFolder());
 		LOGGER.info("Searching for plugins in " + pluginsFolder.getAbsolutePath());
 
 		try {

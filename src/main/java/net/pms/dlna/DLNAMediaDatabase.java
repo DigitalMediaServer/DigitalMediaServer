@@ -88,11 +88,11 @@ public class DLNAMediaDatabase implements Runnable {
 
 	public DLNAMediaDatabase(String name) {
 		dbName = name;
-		File profileDirectory = new File(configuration.getProfileDirectory());
-		dbDir = new File(profileDirectory.isDirectory() ? configuration.getProfileDirectory() : null, "database").getAbsolutePath();
+		File profileFolder = new File(configuration.getProfileFolder());
+		dbDir = new File(profileFolder.isDirectory() ? profileFolder : null, "database").getAbsolutePath();
 		url = Constants.START_URL + dbDir + File.separator + dbName;
-		LOGGER.debug("Using database URL: " + url);
-		LOGGER.info("Using database located at: " + dbDir);
+		LOGGER.debug("Using database URL: {}", url);
+		LOGGER.info("Using database located at: \"{}\"", dbDir);
 
 		try {
 			Class.forName("org.h2.Driver");

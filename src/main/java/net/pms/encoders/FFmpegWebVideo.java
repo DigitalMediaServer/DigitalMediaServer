@@ -70,7 +70,7 @@ public class FFmpegWebVideo extends FFMpegVideo {
 	protected static final List<String> protocols = new ArrayList<String>();
 
 	static {
-		readWebFilters(_configuration.getProfileDirectory() + File.separator + "ffmpeg.webfilters");
+		readWebFilters(_configuration.getProfileFolder() + File.separator + "ffmpeg.webfilters");
 
 		Path executable = Paths.get(_configuration.getFfmpegPath());
 		try {
