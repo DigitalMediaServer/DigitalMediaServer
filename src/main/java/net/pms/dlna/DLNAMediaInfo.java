@@ -581,11 +581,6 @@ public class DLNAMediaInfo implements Cloneable {
 		String args[] = new String[14];
 		args[0] = getFfmpegPath();
 		File file = media.getFile();
-		boolean dvrms = file != null && file.getAbsolutePath().toLowerCase().endsWith("dvr-ms");
-
-		if (dvrms && isNotBlank(configuration.getFfmpegAlternativePath())) {
-			args[0] = configuration.getFfmpegAlternativePath();
-		}
 
 		args[1] = "-ss";
 		if (resume) {
@@ -635,7 +630,7 @@ public class DLNAMediaInfo implements Cloneable {
 		if (
 			!configuration.isThumbnailGenerationEnabled() ||
 			renderer != null && !renderer.isThumbnails() ||
-			configuration.isUseMplayerForVideoThumbs() && !dvrms
+			configuration.isUseMplayerForVideoThumbs()
 		) {
 			args[2] = "0";
 			for (int i = 5; i <= 13; i++) {
@@ -1042,12 +1037,10 @@ public class DLNAMediaInfo implements Cloneable {
 					pw = getFFmpegThumbnail(inputFile, resume, renderer);
 				}
 
-				boolean dvrms = false;
 				String input = "-";
 
 				if (file != null) {
 					input = ProcessUtil.getShortFileNameIfWideChars(file.getAbsolutePath());
-					dvrms = file.getAbsolutePath().toLowerCase().endsWith("dvr-ms");
 				}
 
 				synchronized (ffmpeg_failureLock) {
@@ -1075,7 +1068,7 @@ public class DLNAMediaInfo implements Cloneable {
 					}
 				}
 
-				if (configuration.isUseMplayerForVideoThumbs() && type == Format.VIDEO && !dvrms) {
+				if (configuration.isUseMplayerForVideoThumbs() && type == Format.VIDEO) {
 					try {
 						getMplayerThumbnail(inputFile, resume, renderer);
 						String frameName = "" + inputFile.hashCode();

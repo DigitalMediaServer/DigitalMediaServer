@@ -128,7 +128,7 @@ public class VLCVideo extends Player {
 	}
 
 	@Override
-	public String executable() {
+	public String getExecutable() {
 		return configuration.getVlcPath();
 	}
 
@@ -267,7 +267,7 @@ public class VLCVideo extends Player {
 		return args;
 	}
 
-	private int[] getVideoBitrateConfig(String bitrate) {
+	private static int[] getVideoBitrateConfig(String bitrate) {
 		int bitrates[] = new int[2];
 
 		if (bitrate.contains("(") && bitrate.contains(")")) {
@@ -462,7 +462,7 @@ public class VLCVideo extends Player {
 		params.secondread_minsize = 100000;
 
 		List<String> cmdList = new ArrayList<>();
-		cmdList.add(executable());
+		cmdList.add(getExecutable());
 		cmdList.add("-I");
 		cmdList.add("dummy");
 

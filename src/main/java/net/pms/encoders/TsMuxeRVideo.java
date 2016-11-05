@@ -102,7 +102,7 @@ public class TsMuxeRVideo extends Player {
 	}
 
 	@Override
-	public String executable() {
+	public String getExecutable() {
 		return configuration.getTsmuxerPath();
 	}
 
@@ -622,7 +622,7 @@ public class TsMuxeRVideo extends Player {
 		 * Use the newer version of tsMuxeR on PS3 since other renderers
 		 * like Panasonic TVs don't always recognize the new output
 		 */
-		String executable = executable();
+		String executable = getExecutable();
 		if (params.mediaRenderer.isPS3()) {
 			executable = configuration.getTsmuxerNewPath();
 		}

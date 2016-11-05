@@ -99,11 +99,6 @@ public class BasicSystemUtils implements SystemUtils {
 		return vlcv;
 	}
 
-	/*
-	 * (non-Javadoc)
-	 *
-	 * @see net.pms.io.SystemUtils#isAvis()
-	 */
 	@Override
 	public boolean isAvis() {
 		return avis;
