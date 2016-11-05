@@ -28,6 +28,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@SuppressWarnings("restriction")
 public class RemoteUtil {
 	private static final Logger LOGGER = LoggerFactory.getLogger(RemoteUtil.class);
 
@@ -468,6 +469,8 @@ public class RemoteUtil {
 					t = compile(getInputStream(filename));
 					templates.put(filename, t);
 					PMS.getFileWatcher().add(new FileWatcher.Watch(url.getFile(), recompiler));
+				} else {
+					LOGGER.warn("Couldn't find web template \"{}\"", filename);
 				}
 			}
 			return t;
@@ -479,6 +482,7 @@ public class RemoteUtil {
 		FileWatcher.Listener recompiler = new FileWatcher.Listener() {
 			@Override
 			public void notify(String filename, String event, FileWatcher.Watch watch, boolean isDir) {
+				//TODO: (Nad) Potential bug, hardcoded path
 				String path = watch.fspec.startsWith("web/") ? watch.fspec.substring(4) : watch.fspec;
 				if (templates.containsKey(path)) {
 					templates.put(path, compile(getInputStream(path)));
