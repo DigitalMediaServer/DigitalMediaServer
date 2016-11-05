@@ -35,10 +35,10 @@ import net.pms.configuration.PmsConfiguration;
 import net.pms.configuration.RendererConfiguration;
 import net.pms.network.NetworkConfiguration;
 import net.pms.newgui.components.CustomJButton;
+import net.pms.service.PreventSleepMode;
+import net.pms.service.SleepManager;
 import net.pms.util.FormLayoutUtil;
 import net.pms.util.KeyedComboBoxModel;
-import net.pms.util.PreventSleepMode;
-import net.pms.util.SleepManager;
 import net.pms.util.WindowsUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -260,6 +260,7 @@ public class GeneralTab {
 		if (!configuration.isHideAdvancedOptions()) {
 			// Edit DMS configuration file manually
 			CustomJButton confEdit = new CustomJButton(Messages.getString("NetworkTab.51"));
+			confEdit.setToolTipText(configuration.getProfilePath());
 			confEdit.addActionListener(new ActionListener() {
 				@Override
 				public void actionPerformed(ActionEvent e) {

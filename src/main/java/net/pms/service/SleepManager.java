@@ -16,7 +16,7 @@
  * You should have received a copy of the GNU General Public License along with
  * this program. If not, see http://www.gnu.org/licenses/.
  */
-package net.pms.util;
+package net.pms.service;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import org.slf4j.Logger;
@@ -31,8 +31,7 @@ import net.pms.util.jna.macos.iokit.IOKitUtils;
 
 /**
  * This class manages system sleep prevention. It must not be instantiated until
- * {@link PMS#getConfiguration()} and {@link PMS#getRegistry()} have been
- * initialized.
+ * {@link PMS#getConfiguration()} has been initialized.
  * <p>
  * This class spawns a worker thread that will do the actual calls to the OS on
  * demand. Once spawned, this thread will be kept alive until {@link #stop()} is
@@ -195,7 +194,7 @@ public class SleepManager {
 			try {
 				worker.join();
 			} catch (InterruptedException e) {
-				LOGGER.debug("SleepManager was interrupted while waiting for worker to terminate");
+				LOGGER.debug("SleepManager was interrupted while waiting for the sleep worker to terminate");
 			}
 			worker = null;
 		}
