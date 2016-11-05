@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.StringTokenizer;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import javax.swing.JComponent;
+import net.pms.Messages;
 import net.pms.PMS;
 import net.pms.configuration.PmsConfiguration;
 import net.pms.configuration.RendererConfiguration;
@@ -42,6 +43,7 @@ import net.pms.io.ProcessWrapper;
 import net.pms.util.FileUtil;
 import net.pms.util.Iso639;
 import net.pms.util.OpenSubtitle;
+import net.pms.util.StringUtil;
 import net.pms.util.UMSUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -55,7 +57,10 @@ public abstract class Player {
 	public static final int VIDEO_WEBSTREAM_PLAYER = 2;
 	public static final int AUDIO_WEBSTREAM_PLAYER = 3;
 	public static final int MISC_PLAYER = 4;
-	public static final String NATIVE = "NATIVE";
+
+	private final String enabledText = String.format(Messages.getString("Engine.Enabled"), name());
+	private final String enabledVersionText = Messages.getString("Engine.EnabledVersion");
+	private final String disabledText = String.format(Messages.getString("Engine.Disabled"), name());
 
 	public abstract int purpose();
 	public abstract JComponent config();
@@ -70,16 +75,22 @@ public abstract class Player {
 	 * Used to determine if the player can be used, e.g if the binary is
 	 * accessible. All access must be guarded with {@link #availableLock}.
 	 */
-	boolean available = false;
+	private boolean available = false;
+
+	/**
+	 * All access must be guarded with {@link #availableLock}.
+	 */
+	private String stateText = null;
 
 	/**
 	 * Must be used to control all access to {@link #enabled}
 	 */
 	protected final ReentrantReadWriteLock enabledLock = new ReentrantReadWriteLock();
+
 	/**
 	 * All access must be guarded with {@link #enabledLock}.
 	 */
-	boolean enabled = false;
+	private boolean enabled = false;
 
 	// FIXME this is an implementation detail (and not a very good one).
 	// it's entirely up to engines how they construct their command lines.
@@ -137,13 +148,62 @@ public abstract class Player {
 		}
 	}
 
-	void setAvailable(boolean available) {
+	/**
+	 * Returns the current engine state (enabled, available) as a localized text. Threadsafe.
+	 *
+	 * @return The status
+	 */
+	public String getStateText() {
+		availableLock.readLock().lock();
+		try {
+			if (isActive()) {
+				if (StringUtil.hasValue(stateText)) {
+					return String.format(enabledVersionText, name(), stateText);
+				} else {
+					return enabledText;
+				}
+			} else if (isAvailable()) {
+				return disabledText;
+			} else {
+				return stateText;
+			}
+		} finally {
+			availableLock.readLock().unlock();
+		}
+	}
+
+	/**
+	 * Sets the engine available status with a localized explanation
+	 *
+	 * @param available whether or not the player is available
+	 * @param stateText the localized description of the current availability state
+	 */
+	public void setAvailable(boolean available, String stateText) {
 		availableLock.writeLock().lock();
 		try {
 			this.available = available;
+			this.stateText = stateText;
 		} finally {
 			availableLock.writeLock().unlock();
 		}
+	}
+
+	/**
+	 * Marks the engine as available for use with a localized explanation
+	 *
+	 * @param stateText the localized description of the current availability state
+	 */
+	public void setAvailable(String stateText) {
+		setAvailable(true, stateText);
+	}
+
+	/**
+	 * Marks the engine as unavailable for use with a localized explanation
+	 *
+	 * @param stateText the localized description of the current availability state
+	 */
+	public void setUnavailable(String stateText) {
+		setAvailable(false, stateText);
 	}
 
 	/**
@@ -158,7 +218,7 @@ public abstract class Player {
 		}
 	}
 
-	void setEnabled(boolean enabled) {
+	public void setEnabled(boolean enabled) {
 		enabledLock.writeLock().lock();
 		try {
 			this.enabled = enabled;
