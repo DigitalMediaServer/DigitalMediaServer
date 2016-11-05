@@ -12,7 +12,7 @@ public class CodeDb implements DbHandler {
 	private FileDb db;
 
 	public CodeDb() {
-		db = new FileDb(PMS.getConfiguration().getProfileDirectory() + File.separator + name(), this);
+		db = new FileDb(PMS.getConfiguration().getProfileFolder() + File.separator + name(), this);
 		db.setMinCnt(2);
 		db.init();
 	}

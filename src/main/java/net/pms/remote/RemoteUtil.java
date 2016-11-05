@@ -360,16 +360,23 @@ public class RemoteUtil {
 	public static class ResourceManager extends URLClassLoader {
 		private HashSet<File> files;
 		private HashMap<String, Template> templates;
+		private final String[] searchPaths;
 
 		public ResourceManager(String... urls) {
 			super(new URL[]{}, null);
-			try {
-				for (String url : urls) {
-					addURL(new URL(url));
+			List<String> searchPathsList = new ArrayList<String>();
+			for (String url : urls) {
+				try {
+					URL tmpUrl = new URL(url);
+					addURL(tmpUrl);
+					if ("file".equals(tmpUrl.getProtocol())) {
+						searchPathsList.add(tmpUrl.getPath());
+					}
+				} catch (MalformedURLException e) {
+					LOGGER.debug("Error adding resource url: " + e);
 				}
-			} catch (MalformedURLException e) {
-				LOGGER.debug("Error adding resource url: " + e);
 			}
+			searchPaths = searchPathsList.toArray(new String[searchPathsList.size()]);
 			files = new HashSet<>();
 			templates = new HashMap<>();
 		}
@@ -479,7 +486,16 @@ public class RemoteUtil {
 		FileWatcher.Listener recompiler = new FileWatcher.Listener() {
 			@Override
 			public void notify(String filename, String event, FileWatcher.Watch watch, boolean isDir) {
-				String path = watch.fspec.startsWith("web/") ? watch.fspec.substring(4) : watch.fspec;
+				String path = null;
+				for (String searchPath : searchPaths) {
+					if (watch.fspec.startsWith(searchPath)) {
+						path = watch.fspec.substring(searchPath.length());
+						break;
+					}
+				}
+				if (path == null) {
+					path = watch.fspec;
+				}
 				if (templates.containsKey(path)) {
 					templates.put(path, compile(getInputStream(path)));
 					LOGGER.info("Recompiling template: {}", path);

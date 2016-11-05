@@ -345,7 +345,7 @@ public class PMS {
 		}
 
 		String profilePath = configuration.getProfilePath();
-		String profileDirectoryPath = configuration.getProfileDirectory();
+		String profileDirectoryPath = configuration.getProfileFolder();
 
 		LOGGER.info("");
 		LOGGER.info("Profile directory: {}", profileDirectoryPath);
