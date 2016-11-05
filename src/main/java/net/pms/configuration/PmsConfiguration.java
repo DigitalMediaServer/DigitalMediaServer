@@ -266,7 +266,7 @@ public class PmsConfiguration extends RendererConfiguration {
 	protected static final String KEY_PLAYLIST_AUTO_ADD_ALL= "playlist_auto_add_all";
 	protected static final String KEY_PLAYLIST_AUTO_CONT = "playlist_auto_continue";
 	protected static final String KEY_PLAYLIST_AUTO_PLAY= "playlist_auto_play";
-	protected static final String KEY_PLUGIN_DIRECTORY = "plugins";
+	protected static final String KEY_PLUGIN_FOLDER = "plugins";
 	protected static final String KEY_PLUGIN_PURGE_ACTION = "plugin_purge";
 	protected static final String KEY_PRETTIFY_FILENAMES = "prettify_filenames";
 	/**
@@ -375,7 +375,7 @@ public class PmsConfiguration extends RendererConfiguration {
 
 	// The name of the subdirectory under which UMS config files are stored for this build (default: UMS).
 	// See Build for more details
-	protected static final String PROFILE_DIRECTORY_NAME = Build.getProfileDirectoryName();
+	protected static final String PROFILE_FOLDER_NAME = Build.getProfileFolderName();
 
 	// The default profile name displayed on the renderer
 	protected static String HOSTNAME;
@@ -388,7 +388,7 @@ public class PmsConfiguration extends RendererConfiguration {
 	public final String ALL_RENDERERS = "All renderers";
 
 	// Path to default logfile directory
-	protected String defaultLogFileDir = null;
+	protected String defaultLogFileFolder = null;
 
 	public TempFolder tempFolder;
 	public ProgramPaths programPaths;
@@ -481,7 +481,7 @@ public class PmsConfiguration extends RendererConfiguration {
 	protected static final String DEFAULT_CREDENTIALS_FILENAME = "UMS.cred";
 
 	// Path to directory containing UMS config files
-	protected static final String PROFILE_DIRECTORY;
+	protected static final String PROFILE_FOLDER;
 
 	// Absolute path to profile file e.g. /path/to/UMS.conf
 	protected static final String PROFILE_PATH;
@@ -494,7 +494,7 @@ public class PmsConfiguration extends RendererConfiguration {
 	protected static final String SKEL_PROFILE_PATH;
 
 	protected static final String PROPERTY_PROFILE_PATH = "ums.profile.path";
-	protected static final String SYSTEM_PROFILE_DIRECTORY;
+	protected static final String SYSTEM_PROFILE_FOLDER;
 
 	static {
 		// first of all, set up the path to the default system profile directory
@@ -502,24 +502,24 @@ public class PmsConfiguration extends RendererConfiguration {
 			String programData = System.getenv("ALLUSERSPROFILE");
 
 			if (programData != null) {
-				SYSTEM_PROFILE_DIRECTORY = String.format("%s\\%s", programData, PROFILE_DIRECTORY_NAME);
+				SYSTEM_PROFILE_FOLDER = String.format("%s\\%s", programData, PROFILE_FOLDER_NAME);
 			} else {
-				SYSTEM_PROFILE_DIRECTORY = ""; // i.e. current (working) directory
+				SYSTEM_PROFILE_FOLDER = ""; // i.e. current (working) directory
 			}
 		} else if (Platform.isMac()) {
-			SYSTEM_PROFILE_DIRECTORY = String.format(
+			SYSTEM_PROFILE_FOLDER = String.format(
 				"%s/%s/%s",
 				System.getProperty("user.home"),
 				"/Library/Application Support",
-				PROFILE_DIRECTORY_NAME
+				PROFILE_FOLDER_NAME
 			);
 		} else {
 			String xdgConfigHome = System.getenv("XDG_CONFIG_HOME");
 
 			if (xdgConfigHome == null) {
-				SYSTEM_PROFILE_DIRECTORY = String.format("%s/.config/%s", System.getProperty("user.home"), PROFILE_DIRECTORY_NAME);
+				SYSTEM_PROFILE_FOLDER = String.format("%s/.config/%s", System.getProperty("user.home"), PROFILE_FOLDER_NAME);
 			} else {
-				SYSTEM_PROFILE_DIRECTORY = String.format("%s/%s", xdgConfigHome, PROFILE_DIRECTORY_NAME);
+				SYSTEM_PROFILE_FOLDER = String.format("%s/%s", xdgConfigHome, PROFILE_FOLDER_NAME);
 			}
 		}
 
@@ -535,11 +535,11 @@ public class PmsConfiguration extends RendererConfiguration {
 		// if customProfilePath is still blank, the default profile dir/filename is used
 		FileLocation profileLocation = FileUtil.getFileLocation(
 			customProfilePath,
-			SYSTEM_PROFILE_DIRECTORY,
+			SYSTEM_PROFILE_FOLDER,
 			DEFAULT_PROFILE_FILENAME
 		);
 		PROFILE_PATH = profileLocation.getFilePath();
-		PROFILE_DIRECTORY = profileLocation.getDirectoryPath();
+		PROFILE_FOLDER = profileLocation.getDirectoryPath();
 
 		// Set SKEL_PROFILE_PATH for Linux systems
 		String skelDir = PropertiesUtil.getProjectProperties().get("project.skelprofile.dir");
@@ -548,7 +548,7 @@ public class PmsConfiguration extends RendererConfiguration {
 				new File(
 					new File(
 						skelDir,
-						PROFILE_DIRECTORY_NAME
+						PROFILE_FOLDER_NAME
 					).getAbsolutePath(),
 					DEFAULT_PROFILE_FILENAME
 				).getAbsolutePath()
@@ -704,7 +704,7 @@ public class PmsConfiguration extends RendererConfiguration {
 	 * </p>
 	 */
 	public synchronized String getDefaultLogFileFolder() {
-		if (defaultLogFileDir == null) {
+		if (defaultLogFileFolder == null) {
 			if (Platform.isLinux()) {
 				if (LOGGER.isTraceEnabled()) {
 					LOGGER.trace("getDefaultLogFileFolder: System is Linux, trying \"/var/log/UMS/{}/\"", System.getProperty("user.name"));
@@ -723,27 +723,27 @@ public class PmsConfiguration extends RendererConfiguration {
 						LOGGER.debug("Could not create \"{}\": {}", logDirectory.getAbsolutePath(), e.getMessage());
 					}
 				}
-				defaultLogFileDir = verifyLogFolder(logDirectory, "profile folder");
+				defaultLogFileFolder = verifyLogFolder(logDirectory, "profile folder");
 			}
 
-			if (defaultLogFileDir == null) {
+			if (defaultLogFileFolder == null) {
 				// Log to profile directory if it is writable.
-				final File profileDirectory = new File(PROFILE_DIRECTORY);
-				defaultLogFileDir = verifyLogFolder(profileDirectory, "temporary folder");
+				final File profileDirectory = new File(PROFILE_FOLDER);
+				defaultLogFileFolder = verifyLogFolder(profileDirectory, "temporary folder");
 			}
 
-			if (defaultLogFileDir == null) {
+			if (defaultLogFileFolder == null) {
 				// Try user-defined temporary folder or fall back to system temporary folder.
 				try {
-					defaultLogFileDir = verifyLogFolder(getTempFolder(), "working folder");
+					defaultLogFileFolder = verifyLogFolder(getTempFolder(), "working folder");
 				} catch (IOException e) {
 					LOGGER.error("Could not determine default logfile folder, falling back to working directory: {}", e.getMessage());
-					defaultLogFileDir = "";
+					defaultLogFileFolder = "";
 				}
 			}
 		}
 
-		return defaultLogFileDir;
+		return defaultLogFileFolder;
 	}
 
 	public String getDefaultLogFileName() {
@@ -3321,8 +3321,8 @@ public class PmsConfiguration extends RendererConfiguration {
 		return PROFILE_PATH;
 	}
 
-	public String getProfileDirectory() {
-		return PROFILE_DIRECTORY;
+	public String getProfileFolder() {
+		return PROFILE_FOLDER;
 	}
 
 	/**
@@ -3340,7 +3340,7 @@ public class PmsConfiguration extends RendererConfiguration {
 		if (WEB_CONF_PATH == null) {
 			WEB_CONF_PATH = FileUtil.getFileLocation(
 				getString(KEY_WEB_CONF_PATH, null),
-				PROFILE_DIRECTORY,
+				PROFILE_FOLDER,
 				DEFAULT_WEB_CONF_FILENAME
 			).getFilePath();
 		}
@@ -3348,12 +3348,12 @@ public class PmsConfiguration extends RendererConfiguration {
 		return getString(KEY_WEB_CONF_PATH, WEB_CONF_PATH);
 	}
 
-	public String getPluginDirectory() {
-		return getString(KEY_PLUGIN_DIRECTORY, "plugins");
+	public String getPluginFolder() {
+		return getString(KEY_PLUGIN_FOLDER, "plugins");
 	}
 
-	public void setPluginDirectory(String value) {
-		configuration.setProperty(KEY_PLUGIN_DIRECTORY, value);
+	public void setPluginFolder(String value) {
+		configuration.setProperty(KEY_PLUGIN_FOLDER, value);
 	}
 
 	public String getProfileName() {
@@ -3563,7 +3563,7 @@ public class PmsConfiguration extends RendererConfiguration {
 		if (path != null && !path.trim().isEmpty()) {
 			return new File(path);
 		}
-		return new File(getProfileDirectory(), DEFAULT_CREDENTIALS_FILENAME);
+		return new File(getProfileFolder(), DEFAULT_CREDENTIALS_FILENAME);
 	}
 
 	public int getATZLimit() {
@@ -3593,7 +3593,7 @@ public class PmsConfiguration extends RendererConfiguration {
 	}
 
 	public String getDataDir() {
-		return getProfileDirectory() + File.separator + "data";
+		return getProfileFolder() + File.separator + "data";
 	}
 
 	public String getDataFile(String str) {
@@ -3946,7 +3946,15 @@ public class PmsConfiguration extends RendererConfiguration {
 	public File getWebPath() {
 		File path = new File(getString(KEY_WEB_PATH, "web"));
 		if (!path.exists()) {
-			path.mkdirs();
+			// Make it work while debugging
+			File debugPath = new File("src/main/external-resources/" + getString(KEY_WEB_PATH, "web"));
+			if (debugPath.exists()) {
+				return debugPath;
+			}
+
+			if (!path.mkdirs()) {
+				path = null;
+			}
 		}
 		return path;
 	}

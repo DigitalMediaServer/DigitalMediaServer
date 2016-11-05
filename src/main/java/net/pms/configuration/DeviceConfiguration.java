@@ -177,7 +177,7 @@ public class DeviceConfiguration extends PmsConfiguration {
 	public static void loadDeviceConfigurations(PmsConfiguration pmsConf) {
 		deviceConfs = new HashMap<>();
 		xref = new HashMap<>();
-		deviceDir = new File(pmsConf.getProfileDirectory(), "renderers");
+		deviceDir = new File(pmsConf.getProfileFolder(), "renderers");
 		if (deviceDir.exists()) {
 			LOGGER.info("Loading device configurations from " + deviceDir.getAbsolutePath());
 			File[] files = deviceDir.listFiles();

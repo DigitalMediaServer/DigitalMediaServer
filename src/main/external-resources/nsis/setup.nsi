@@ -170,7 +170,7 @@ Function AdvancedSettingsAfterwards
 	${NSD_GetState} $CheckboxCleanInstall $CheckboxCleanInstallState
 	${If} $CheckboxCleanInstallState == ${BST_CHECKED}
 		ReadENVStr $R1 ALLUSERSPROFILE
-		RMDir /r $R1\UMS
+		RMDir /r $R1\DigitalMediaServer
 		RMDir /r $TEMP\fontconfig
 		RMDir /r $LOCALAPPDATA\fontconfig
 		RMDir /r $INSTDIR
@@ -303,7 +303,7 @@ Section "Program Files"
 	WriteUnInstaller "uninst.exe"
 
 	ReadENVStr $R0 ALLUSERSPROFILE
-	SetOutPath "$R0\UMS"
+	SetOutPath "$R0\DigitalMediaServer"
 
 	CreateDirectory "$R0\UMS\data"
 

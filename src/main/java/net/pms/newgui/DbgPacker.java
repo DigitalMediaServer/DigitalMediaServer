@@ -142,7 +142,7 @@ public class DbgPacker implements ActionListener {
 		}
 
 		// add core items with the default logfile last (LinkedHashMap preserves insertion order)
-		String profileDirectory = configuration.getProfileDirectory();
+		String profileDirectory = configuration.getProfileFolder();
 
 		// add virtual folders file if it exists
 		String vfolders = configuration.getVirtualFoldersFile(null);
