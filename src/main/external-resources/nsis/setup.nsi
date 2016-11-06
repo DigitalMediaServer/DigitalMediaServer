@@ -27,7 +27,7 @@ SetCompressorDictSize 32
 
 !define MUI_ABORTWARNING
 !define MUI_FINISHPAGE_RUN
-!define MUI_FINISHPAGE_RUN_FUNCTION RunUMS
+!define MUI_FINISHPAGE_RUN_FUNCTION RunDMS
 !define MUI_WELCOMEFINISHPAGE_BITMAP "${NSISDIR}\Contrib\Graphics\Wizard\win.bmp"
 !define MUI_PAGE_CUSTOMFUNCTION_LEAVE WelcomeLeave
 
@@ -77,7 +77,7 @@ FunctionEnd
 Function LockedListShow
 	StrCmp $R1 0 +2 ; Skip the page if clicking Back from the next page.
 		Abort
-	!insertmacro MUI_HEADER_TEXT `UMS must be closed before installation` `Clicking Next will automatically close it.`
+	!insertmacro MUI_HEADER_TEXT `Digital Media Server must be closed before installation` `Clicking Next will automatically close it.`
 
 	${If} ${RunningX64}
 		File /oname=$PLUGINSDIR\LockedList64.dll `${NSISDIR}\Plugins\LockedList64.dll`
@@ -154,7 +154,7 @@ Function AdvancedSettings
 	${NSD_CreateText} 3% 30% 10% 12u $MaximumMemoryJava
 	Pop $Text
 
-	${NSD_CreateLabel} 0 50% 100% 20u "This allows you to take advantage of improved defaults. It deletes the UMS configuration directory, the UMS program directory and font cache."
+	${NSD_CreateLabel} 0 50% 100% 20u "This allows you to take advantage of improved defaults. It deletes the DMS configuration directory, the DMS program directory and font cache."
 	Pop $DescCleanInstall
 
 	${NSD_CreateCheckbox} 3% 65% 100% 12u "Clean install"
@@ -179,12 +179,12 @@ FunctionEnd
 
 ;Run program through explorer.exe to de-evaluate user from admin to regular one.
 ;http://mdb-blog.blogspot.ru/2013/01/nsis-lunch-program-as-user-from-uac.html
-Function RunUMS
-	Exec '"$WINDIR\explorer.exe" "$INSTDIR\UMS.exe"'
+Function RunDMS
+	Exec '"$WINDIR\explorer.exe" "$INSTDIR\DMS.exe"'
 FunctionEnd 
 
 Function CreateDesktopShortcut
-	CreateShortCut "$DESKTOP\${PROJECT_NAME}.lnk" "$INSTDIR\UMS.exe"
+	CreateShortCut "$DESKTOP\${PROJECT_NAME}.lnk" "$INSTDIR\DMS.exe"
 FunctionEnd
 
 Section "Program Files"
@@ -198,10 +198,10 @@ Section "Program Files"
 	File /r "${PROJECT_BASEDIR}\src\main\external-resources\documentation"
 	File /r "${PROJECT_BASEDIR}\src\main\external-resources\renderers"
 	File /r "${PROJECT_BASEDIR}\target\bin\win32"
-	File "${PROJECT_BUILD_DIR}\UMS.exe"
-	File "${PROJECT_BASEDIR}\src\main\external-resources\UMS.bat"
+	File "${PROJECT_BUILD_DIR}\DMS.exe"
+	File "${PROJECT_BASEDIR}\src\main\external-resources\DMS.bat"
 	File /r "${PROJECT_BASEDIR}\src\main\external-resources\web"
-	File "${PROJECT_BUILD_DIR}\ums.jar"
+	File "${PROJECT_BUILD_DIR}\dms.jar"
 	File "${PROJECT_BASEDIR}\MediaInfo.dll"
 	File "${PROJECT_BASEDIR}\MediaInfo64.dll"
 	File "${PROJECT_BASEDIR}\MediaInfo-License.html"
@@ -305,10 +305,10 @@ Section "Program Files"
 	ReadENVStr $R0 ALLUSERSPROFILE
 	SetOutPath "$R0\DigitalMediaServer"
 
-	CreateDirectory "$R0\UMS\data"
+	CreateDirectory "$R0\DigitalMediaServer\data"
 
-	AccessControl::GrantOnFile "$R0\UMS" "(S-1-5-32-545)" "FullAccess"
-; 	AccessControl::GrantOnFile "$R0\UMS\data" "(BU)" "FullAccess"
+	AccessControl::GrantOnFile "$R0\DigitalMediaServer" "(S-1-5-32-545)" "FullAccess"
+; 	AccessControl::GrantOnFile "$R0\DigitalMediaServer\data" "(BU)" "FullAccess"
 	File "${PROJECT_BASEDIR}\src\main\external-resources\UMS.conf"
 	File "${PROJECT_BASEDIR}\src\main\external-resources\WEB.conf"
 	File "${PROJECT_BASEDIR}\src\main\external-resources\ffmpeg.webfilters"
@@ -318,18 +318,18 @@ SectionEnd
 Section "Start Menu Shortcuts"
 	SetShellVarContext all
 	CreateDirectory "$SMPROGRAMS\${PROJECT_NAME}"
-	CreateShortCut "$SMPROGRAMS\${PROJECT_NAME}\${PROJECT_NAME}.lnk" "$INSTDIR\UMS.exe" "" "$INSTDIR\UMS.exe" 0
-	CreateShortCut "$SMPROGRAMS\${PROJECT_NAME}\${PROJECT_NAME} (Select Profile).lnk" "$INSTDIR\UMS.exe" "profiles" "$INSTDIR\UMS.exe" 0
+	CreateShortCut "$SMPROGRAMS\${PROJECT_NAME}\${PROJECT_NAME}.lnk" "$INSTDIR\DMS.exe" "" "$INSTDIR\DMS.exe" 0
+	CreateShortCut "$SMPROGRAMS\${PROJECT_NAME}\${PROJECT_NAME} (Select Profile).lnk" "$INSTDIR\DMS.exe" "profiles" "$INSTDIR\DMS.exe" 0
 	CreateShortCut "$SMPROGRAMS\${PROJECT_NAME}\Uninstall.lnk" "$INSTDIR\uninst.exe" "" "$INSTDIR\uninst.exe" 0
 
-	; Only start UMS with Windows when it is a new install
+	; Only start DMS with Windows when it is a new install
 	IfFileExists "$SMPROGRAMS\${PROJECT_NAME}.lnk" 0 shortcut_file_not_found
 		goto end_of_startup_section
 	shortcut_file_not_found:
-		CreateShortCut "$SMSTARTUP\${PROJECT_NAME}.lnk" "$INSTDIR\UMS.exe" "" "$INSTDIR\UMS.exe" 0
+		CreateShortCut "$SMSTARTUP\${PROJECT_NAME}.lnk" "$INSTDIR\DMS.exe" "" "$INSTDIR\DMS.exe" 0
 	end_of_startup_section:
 
-	CreateShortCut "$SMPROGRAMS\${PROJECT_NAME}.lnk" "$INSTDIR\UMS.exe" "" "$INSTDIR\UMS.exe" 0
+	CreateShortCut "$SMPROGRAMS\${PROJECT_NAME}.lnk" "$INSTDIR\DMS.exe" "" "$INSTDIR\DMS.exe" 0
 SectionEnd
 
 Section "Uninstall"
@@ -553,9 +553,9 @@ Section "Uninstall"
 	Delete /REBOOTOK "$INSTDIR\renderers\YamahaRXV3900.conf"
 
 	RMDir /REBOOTOK "$INSTDIR\renderers"
-	Delete /REBOOTOK "$INSTDIR\UMS.exe"
-	Delete /REBOOTOK "$INSTDIR\UMS.bat"
-	Delete /REBOOTOK "$INSTDIR\ums.jar"
+	Delete /REBOOTOK "$INSTDIR\DMS.exe"
+	Delete /REBOOTOK "$INSTDIR\DMS.bat"
+	Delete /REBOOTOK "$INSTDIR\dms.jar"
 	Delete /REBOOTOK "$INSTDIR\MediaInfo.dll"
 	Delete /REBOOTOK "$INSTDIR\MediaInfo64.dll"
 	Delete /REBOOTOK "$INSTDIR\MediaInfo-License.html"
