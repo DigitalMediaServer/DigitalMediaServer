@@ -58,7 +58,7 @@ public class TreeNodeSettings extends DefaultMutableTreeNode {
 
 	public String id() {
 		if (player != null) {
-			return player.id();
+			return player.id().toString();
 		} else if (otherConfigPanel != null) {
 			return "" + otherConfigPanel.hashCode();
 		} else {

@@ -18,32 +18,47 @@
  */
 package net.pms.encoders;
 
-import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import javax.annotation.concurrent.GuardedBy;
 import javax.annotation.concurrent.ThreadSafe;
 import javax.swing.JComponent;
 import net.pms.Messages;
 import net.pms.PMS;
+import net.pms.configuration.ExecutableInfo;
+import net.pms.configuration.ExternalProgramInfo;
 import net.pms.configuration.PmsConfiguration;
+import net.pms.configuration.ProgramExecutableType;
 import net.pms.configuration.RendererConfiguration;
+import net.pms.configuration.ExecutableInfo.ExecutableInfoBuilder;
 import net.pms.dlna.DLNAMediaAudio;
 import net.pms.dlna.DLNAMediaInfo;
 import net.pms.dlna.DLNAMediaSubtitle;
 import net.pms.dlna.DLNAResource;
 import net.pms.formats.Format;
+import net.pms.io.BasicSystemUtils;
 import net.pms.io.OutputParams;
 import net.pms.io.ProcessWrapper;
+import net.pms.util.FilePermissions;
 import net.pms.util.FileUtil;
 import net.pms.util.Iso639;
 import net.pms.util.OpenSubtitle;
 import net.pms.util.UMSUtils;
+import net.pms.util.Version;
+import net.pms.util.FilePermissions.FileFlag;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.sun.jna.Platform;
 
 /**
  * The base class for all transcoding engines.
@@ -67,37 +82,60 @@ public abstract class Player {
 	/** The cached "disabled" text */
 	protected final String disabledText = String.format(Messages.getString("Engine.Disabled"), name());
 
+	/** The final {@link ExternalProgramInfo} instance set in the constructor */
+	@Nonnull
+	protected final ExternalProgramInfo programInfo;
+
 	public abstract int purpose();
 	public abstract JComponent config();
-	public abstract String id();
+	public abstract PlayerId id();
 	public abstract String name();
 	public abstract int type();
 	/**
-	 * Must be used to control all access to {@link #available}
+	 * Must be used to control all access to {@link #specificErrors}
 	 */
-	protected final ReentrantReadWriteLock availableLock = new ReentrantReadWriteLock();
+	protected final ReentrantReadWriteLock specificErrorsLock = new ReentrantReadWriteLock();
 
 	/**
-	 * Used to store if this {@link Player} can be used, e.g if the binary is
-	 * accessible. All access must be guarded with {@link #availableLock}.
+	 * The <i>current</i> {@link ProgramExecutableType} is the one that is
+	 * actually being used at the time. It isn't necessarily the same as the
+	 * <i>configured</i> {@link ProgramExecutableType} that can be read with
+	 * {@link PmsConfiguration#getExecutableType(PlayerId)}. The
+	 * <i>configured</i> {@link ProgramExecutableType} is controlled by the
+	 * user. The {@code currentExecutableType} is initialized in
+	 * {@link PlayerFactory#registerPlayer(Player)} and starts out being equal
+	 * to the user configured setting (or the default is nothing is configured),
+	 * but might be changed if the {@link Player} tests determine that the
+	 * <i>configured</i> {@link ProgramExecutableType} is unavailable while one
+	 * of the other {@link ProgramExecutableType}s are available.
+	 * <p>
+	 * DMS will seek to find a working executable for any {@link Player}; the
+	 * result of which is kept in {@code currentExecutableType}.
 	 */
-	@GuardedBy("availableLock")
-	protected boolean available = false;
+	protected volatile ProgramExecutableType currentExecutableType;
 
 	/**
-	 * Used to store a localized error text if the {@link Player} is
-	 * unavailable. All access must be guarded with {@link #availableLock}.
+	 * This is used to store executable test failures that only applies to this
+	 * {@link Player}, i.e {@link ExecutableErrorType#SPECIFIC}. A general test
+	 * failure {@link ExecutableErrorType#GENERAL} is for example if the
+	 * executable isn't found, is corrupt or is incompatible with the system.
+	 * {@link ExecutableErrorType#SPECIFIC} test failures are those that would
+	 * still allow the executable to be used for other purposes, but which makes
+	 * it unsuitable for a particular use. That could be things like failing
+	 * version criteria or lacking support for specified codecs or formats.
+	 * <p>
+	 * The logic is that {@link ExecutableErrorType#GENERAL} failures are stored
+	 * with the corresponding {@link ExternalProgramInfo} itself (as it applies
+	 * to all usage of that executable), while
+	 * {@link ExecutableErrorType#SPECIFIC} failures are stored in this
+	 * {@link Player} local {@link Map}.
+	 * <p>
+	 * The stored failures are per {@link ProgramExecutableType}, and the error
+	 * string is a localized error message. All access must be guarded with
+	 * {@link #specificErrorsLock}.
 	 */
-	@GuardedBy("availableLock")
-	protected String errorText;
-
-	/**
-	 * Used to store the executable version if the {@link Player} is available
-	 * and the information could be parsed. All access must be guarded with
-	 * {@link #availableLock}.
-	 */
-	@GuardedBy("availableLock")
-	protected String versionText;
+	@GuardedBy("specificErrorsLock")
+	protected final HashMap<ProgramExecutableType, String> specificErrors = new HashMap<>();
 
 	/**
 	 * Must be used to control all access to {@link #enabled}
@@ -111,13 +149,130 @@ public abstract class Player {
 	@GuardedBy("enabledLock")
 	protected boolean enabled = false;
 
+
+	/**
+	 * Abstract constructor that sets the final {@code programInfo} variable.
+	 */
+	public Player() {
+		programInfo = programInfo();
+		if (programInfo == null) {
+			throw new IllegalStateException(
+				"Can't instantiate " + this.getClass().getSimpleName() + "because executables() returns null"
+			);
+		}
+	}
+
+	/**
+	 * Gets the <i>current</i> {@link ProgramExecutableType} for this
+	 * {@link Player}. For an explanation of the concept, see
+	 * {@link #currentExecutableType}.
+	 *
+	 * @return The current {@link ProgramExecutableType}
+	 */
+	public ProgramExecutableType getCurrentExecutableType() {
+		return currentExecutableType;
+	}
+
+	/**
+	 * Sets the current {@link ProgramExecutableType} for this {@link Player}
+	 * and optionally also sets the same value in the configuration. For an
+	 * explanation of the concept, see {@link #currentExecutableType}.
+	 *
+	 * @param executableType the new {@link ProgramExecutableType}.
+	 * @param setConfiguration whether to set the configuration value.
+	 */
+	public void setCurrentExecutableType(ProgramExecutableType executableType, boolean setConfiguration) {
+		currentExecutableType = executableType;
+		if (setConfiguration) {
+			_configuration.setExecutableType(id(), executableType);
+		}
+	}
+
+	/**
+	 * Determines and sets the current {@link ProgramExecutableType} for this
+	 * {@link Player} and optionally also sets the same value in the
+	 * configuration. The determination starts out with the configured
+	 * {@link ProgramExecutableType}.
+	 * <p>
+	 * For an explanation of the concept, see {@link #currentExecutableType}.
+	 *
+	 * @param setConfiguration whether to set the configuration value.
+	 */
+	public void determineCurrentExecutableType(boolean setConfiguration) {
+		determineCurrentExecutableType(configuration.getExecutableType(id()), setConfiguration);
+	}
+
+	/**
+	 * Determines and sets the current {@link ProgramExecutableType} for this
+	 * {@link Player} and optionally also sets the same value in the
+	 * configuration. The determination starts out with the specified
+	 * {@link ProgramExecutableType}.
+	 * <p>
+	 * For an explanation of the concept, see {@link #currentExecutableType}.
+	 *
+	 * @param setConfiguration whether to set the configuration value.
+	 */
+	public void determineCurrentExecutableType(
+		@Nullable ProgramExecutableType configuredExecutableType,
+		boolean setConfiguration
+	) {
+		// Find the best executable type to use, first try the configured type
+		ProgramExecutableType newExecutableType = configuredExecutableType;
+		if (!isAvailable(newExecutableType)) {
+			// Set the platform default if that's available
+			if (isAvailable(programInfo.getDefault())) {
+				newExecutableType = programInfo.getDefault();
+			} else {
+				// Set the first one that is available, if any
+				for (ProgramExecutableType executableType : programInfo.getExecutablesTypes()) {
+					if (isAvailable(executableType)) {
+						newExecutableType = executableType;
+						break;
+					}
+				}
+			}
+			// Leave it to the configured type if none other is available
+		}
+		currentExecutableType = newExecutableType;
+		if (setConfiguration) {
+			_configuration.setExecutableType(id(), newExecutableType);
+		}
+	}
+
 	// FIXME this is an implementation detail (and not a very good one).
 	// it's entirely up to engines how they construct their command lines.
 	// need to get rid of this
 	public abstract String[] args();
 
 	public abstract String mimeType();
-	public abstract String getExecutable();
+
+	/**
+	 * Used to retrieve the {@link ExternalProgramInfo} for the {@link Player}
+	 * during construction.
+	 *
+	 * @return The platform and configuration dependent {@link ExecutableInfo}
+	 *         for this {@link Player}.
+	 */
+	protected abstract ExternalProgramInfo programInfo();
+
+	/**
+	 * @return The {@link ExternalProgramInfo} instance.
+	 */
+	public ExternalProgramInfo getProgramInfo() {
+		return programInfo;
+	}
+
+	/**
+	 * @return The path to the currently configured
+	 *         {@link ProgramExecutableType} for this {@link Player} or
+	 *         {@code null} if undefined.
+	 */
+	@Nullable
+	public String getExecutable() {
+		Path executable = getProgramInfo().getPath(currentExecutableType);
+		return executable == null ? null : executable.toString();
+	}
+
 	protected static final PmsConfiguration _configuration = PMS.getConfiguration();
 	protected PmsConfiguration configuration = _configuration;
 
@@ -125,13 +280,9 @@ public abstract class Player {
 		return false;
 	}
 
-	public boolean excludeFormat(Format extension) {
-		return false;
-	}
+	public abstract boolean excludeFormat(Format extension);
 
-	public boolean isPlayerCompatible(RendererConfiguration renderer) {
-		return true;
-	}
+	public abstract boolean isPlayerCompatible(RendererConfiguration renderer);
 
 	public boolean isInternalSubtitlesSupported() {
 		return true;
@@ -146,84 +297,205 @@ public abstract class Player {
 	}
 
 	/**
-	 * Used to determine if this {@link Player} can be used, e.g if the binary
-	 * is accessible.
+	 * Checks whether this {@link Player} can be used, e.g if the binary is
+	 * accessible for the current {@link ProgramExecutableType}.
 	 *
-	 * @return {@code true} if this is available, {@code false} otherwise.
+	 * @return {@code true} if this {@link Player} is available, {@code false}
+	 *         otherwise.
 	 */
 	public boolean isAvailable() {
-		availableLock.readLock().lock();
+		return isAvailable(currentExecutableType);
+	}
+
+	/**
+	 * Checks whether this {@link Player} can be used, e.g if the binary is
+	 * accessible for the specified {@link ProgramExecutableType}.
+	 *
+	 * @param executableType the {@link ProgramExecutableType} to get the status
+	 *            text for.
+	 * @return {@code true} if this {@link Player} is available, {@code false}
+	 *         otherwise.
+	 */
+	public boolean isAvailable(@Nullable ProgramExecutableType executableType) {
+		if (executableType == null) {
+			return false;
+		}
+		ExecutableInfo executableInfo = programInfo.getExecutableInfo(executableType);
+		if (executableInfo == null) {
+			return false;
+		}
+		Boolean result = programInfo.getExecutableInfo(executableType).getAvailable();
+		if (result == null || !result.booleanValue()) {
+			return false;
+		}
+		specificErrorsLock.readLock().lock();
 		try {
-			return available;
+			String specificError = specificErrors.get(executableType);
+			return specificError == null;
 		} finally {
-			availableLock.readLock().unlock();
+			specificErrorsLock.readLock().unlock();
 		}
 	}
 
 	/**
-	 * Returns the current engine status (enabled, available) as a localized text.
+	 * Returns the current engine status (enabled, available) as a localized
+	 * text for the given {@link ProgramExecutableType}.
 	 *
-	 * @return The status text.
+	 * @param executableType the {@link ProgramExecutableType} to get the status
+	 *            text for.
+	 * @return The localized status text.
 	 */
-	public String getStatusText() {
-		availableLock.readLock().lock();
-		try {
-			if (isActive()) {
-				if (isNotBlank(versionText)) {
-					return String.format(enabledVersionText, name(), versionText);
+	public String getStatusText(ProgramExecutableType executableType) {
+		if (executableType == null) {
+			return null;
+		}
+		ExecutableInfo executableInfo = programInfo.getExecutableInfo(executableType);
+		if (executableInfo == null) {
+			return String.format(Messages.getString("Engine.UnknownStatus"), name());
+		}
+		if (executableInfo.getAvailable() == null || executableInfo.getAvailable().booleanValue()) {
+			// Generally available or unknown, check for Player specific failures
+			specificErrorsLock.readLock().lock();
+			try {
+				if (specificErrors.get(executableType) != null) {
+					return specificErrors.get(executableType);
+				}
+			} finally {
+				specificErrorsLock.readLock().unlock();
+			}
+			if (executableInfo.getAvailable() == null) {
+				return String.format(Messages.getString("Engine.UnknownStatus"), name());
+			}
+		}
+		if (executableInfo.getAvailable().booleanValue()) {
+			if (isEnabled()) {
+				if (executableInfo.getVersion() != null) {
+					return String.format(enabledVersionText, name(), executableInfo.getVersion());
 				}
 				return enabledText;
-			} else if (isAvailable()) {
-				return disabledText;
-			} else {
-				return errorText;
 			}
-		} finally {
-			availableLock.readLock().unlock();
+			return disabledText;
 		}
+		return executableInfo.getErrorText() == null ? Messages.getString("General.3") : executableInfo.getErrorText();
 	}
 
 	/**
-	 * Sets the engine available status and a related text. Note that
-	 * {@code statusText} has a "dual function".
+	 * Returns the current engine status (enabled, available) as a localized
+	 * text for the current {@link ProgramExecutableType}.
 	 *
-	 * @param available whether or not the player is available.
-	 * @param statusText if {@code available} is {@code true}, the executable
-	 *            version or {@code null} the version if unknown. If
-	 *            {@code available} is {@code false}, a localized description of
-	 *            the current error.
+	 * @return The localized status text.
 	 */
-	public void setAvailable(boolean available, String statusText) {
-		availableLock.writeLock().lock();
-		try {
-			this.available = available;
-			if (available) {
-				versionText = statusText;
-			} else {
-				errorText = statusText;
-			}
-		} finally {
-			availableLock.writeLock().unlock();
-		}
+	public String getStatusText() {
+		return getStatusText(currentExecutableType);
 	}
 
 	/**
 	 * Marks the engine as available for use.
 	 *
-	 * @param versionText the parsed version string for the executable, or
+	 * @param executableType the {@link ProgramExecutableType} for which to set
+	 *            availability.
+	 * @param version the {@link Version} string for the executable, or
 	 *            {@code null} if the version is unknown.
 	 */
-	public void setAvailable(String versionText) {
-		setAvailable(true, versionText);
+	public void setAvailable(@Nonnull ProgramExecutableType executableType, @Nullable Version version) {
+		setAvailable(true, executableType, version, null, null);
 	}
 
 	/**
 	 * Marks the engine as unavailable.
 	 *
+	 * @param executableType the {@link ProgramExecutableType} for which to set
+	 *            availability.
+	 * @param errorType the {@link ExecutableErrorType}.
 	 * @param errorText the localized error description.
 	 */
-	public void setUnavailable(String errorText) {
-		setAvailable(false, errorText);
+	public void setUnavailable(
+		@Nonnull ProgramExecutableType executableType,
+		@Nonnull ExecutableErrorType errorType,
+		@Nullable String errorText
+	) {
+		setAvailable(false, executableType, null, errorType, errorText);
+	}
+
+	/**
+	 * Marks the engine as unavailable.
+	 *
+	 * @param executableType the {@link ProgramExecutableType} for which to set
+	 *            availability.
+	 * @param version the {@link Version} of the executable if known or
+	 *            {@code null} if unknown.
+	 * @param errorType the {@link ExecutableErrorType}.
+	 * @param errorText the localized error description.
+	 */
+	public void setUnavailable(
+		@Nonnull ProgramExecutableType executableType,
+		@Nullable Version version,
+		@Nonnull ExecutableErrorType errorType,
+		@Nonnull String errorText
+	) {
+		setAvailable(false, executableType, version, errorType, errorText);
+	}
+
+	/**
+	 * Sets the engine available status and a related error text.
+	 *
+	 * @param available whether or not the {@link Player} is available.
+	 * @param executableType the {@link ProgramExecutableType} for which to set
+	 *            availability.
+	 * @param version the {@link Version} of the executable if known or
+	 *            {@code null} if unknown.
+	 * @param errorType the {@link ExecutableErrorType} if {@code available} is
+	 *            {@code false}. Can be {@code null} if {@code available} is
+	 *            {@code true}.
+	 * @param errorText a localized description of the current error if
+	 *            {@code available} is {@code false}, or {@code null} if the
+	 *            executable is available.
+	 */
+	public void setAvailable(
+		boolean available,
+		@Nonnull ProgramExecutableType executableType,
+		@Nullable Version version,
+		@Nullable ExecutableErrorType errorType,
+		@Nullable String errorText
+	) {
+		if (executableType == null) {
+			throw new IllegalArgumentException("executableType cannot be null or unknown");
+		}
+		if (!available && (errorType == null || errorText == null)) {
+			throw new IllegalArgumentException("errorType and errorText can only be null if available is true");
+		}
+		if (errorType == ExecutableErrorType.SPECIFIC) {
+			/*
+			 * Although most probably the case, we can't assume that a Player
+			 * specific error means that the executable is generally available.
+			 * Thus, only set the local specific error and not the global
+			 * availability for this executable. If it's used by another player
+			 * it will be tested again.
+			 */
+			specificErrorsLock.writeLock().lock();
+			try {
+				specificErrors.put(executableType, errorText);
+			} finally {
+				specificErrorsLock.writeLock().unlock();
+			}
+		} else {
+			// Set the global general status
+			ExecutableInfo executableInfo = programInfo.getExecutableInfo(executableType);
+			if (executableInfo == null) {
+				throw new IllegalStateException(
+					"Cannot set availability for " + executableType + " " + name() + " because it is undefined"
+				);
+			}
+			ExecutableInfoBuilder builder = executableInfo.modify();
+			builder.available(Boolean.valueOf(available));
+			if (version != null) {
+				builder.version(version);
+			}
+			if (errorType != null || errorText != null) {
+				builder.errorType(errorType).errorText(errorText);
+			}
+			programInfo.setExecutableInfo(executableType, builder.build());
+		}
 	}
 
 	/**
@@ -245,39 +517,62 @@ public abstract class Player {
 	 *
 	 * @param enabled {@code true} if this {@link Player} is enabled,
 	 *            {@code false} otherwise.
+	 * @param setConfiguration whether or not the enabled status should also be
+	 *            stored in the current {@link PmsConfiguration}.
 	 */
-	public void setEnabled(boolean enabled) {
+	public void setEnabled(boolean enabled, boolean setConfiguration) {
 		enabledLock.writeLock().lock();
 		try {
 			this.enabled = enabled;
+			if (setConfiguration) {
+				_configuration.setEngineEnabled(id(), enabled);
+			}
 		} finally {
 			enabledLock.writeLock().unlock();
 		}
-		_configuration.setEngineEnabled(id(), enabled);
 	}
 
 	/**
 	 * Toggles the enabled status for this {@link Player}.
+	 *
+	 * @param setConfiguration whether or not the enabled status should also be
+	 *            stored in the current {@link PmsConfiguration}.
 	 */
-	public void toggleEnabled() {
+	public void toggleEnabled(boolean setConfiguration) {
 		enabledLock.writeLock().lock();
 		try {
 			enabled = !enabled;
+			if (setConfiguration) {
+				_configuration.setEngineEnabled(id(), enabled);
+			}
 		} finally {
 			enabledLock.writeLock().unlock();
 		}
-		_configuration.setEngineEnabled(id(), enabled);
 	}
 
 	/**
 	 * Convenience method to check if this {@link Player} is both available and
-	 * enabled.
+	 * enabled for the specified {@link ProgramExecutableType}.
+	 *
+	 * @param executableType the {@link ProgramExecutableType} for which to
+	 *            check availability.
+	 * @return {@code true} if this {@link Player} is both available and
+	 *         enabled, {@code false} otherwise.
+	 *
+	 */
+	public boolean isActive(ProgramExecutableType executableType) {
+		return isAvailable(executableType) && isEnabled();
+	}
+
+	/**
+	 * Convenience method to check if this {@link Player} is both available and
+	 * enabled for the current {@link ProgramExecutableType}.
 	 *
 	 * @return {@code true} if this {@link Player} is both available and
 	 *         enabled, {@code false} otherwise.
 	 */
 	public boolean isActive() {
-		return isAvailable() && isEnabled();
+		return isAvailable(currentExecutableType) && isEnabled();
 	}
 
 	/**
@@ -293,14 +588,6 @@ public abstract class Player {
 		return false;
 	}
 
-	/**
-	 * @deprecated Use {@link #launchTranscode(net.pms.dlna.DLNAResource, net.pms.dlna.DLNAMediaInfo, net.pms.io.OutputParams)} instead.
-	 */
-	@Deprecated
-	public final ProcessWrapper launchTranscode(String filename, DLNAResource dlna, DLNAMediaInfo media, OutputParams params) throws IOException {
-		return launchTranscode(dlna, media, params);
-	}
-
 	public abstract ProcessWrapper launchTranscode(
 		DLNAResource dlna,
 		DLNAMediaInfo media,
@@ -310,14 +597,6 @@ public abstract class Player {
 	@Override
 	public String toString() {
 		return name();
-	}
-
-	/**
-	 * @deprecated Use {@link #setAudioAndSubs(String fileName, DLNAMediaInfo media, OutputParams params)} instead.
-	 */
-	@Deprecated
-	public void setAudioAndSubs(String fileName, DLNAMediaInfo media, OutputParams params, PmsConfiguration configuration) {
-		setAudioAndSubs(fileName, media, params);
 	}
 
 	/**
@@ -643,37 +922,191 @@ public abstract class Player {
 	public abstract boolean isCompatible(DLNAResource resource);
 
 	/**
+	 * Defines whether {@link #testExecutable} might set a
+	 * {@link ExecutableErrorType#SPECIFIC} error. Implementations that return
+	 * {@code true} will be tested even if the same executable has already been
+	 * tested by another {@link Player} without errors. {@link Player}s that
+	 * might have {@link ExecutableErrorType#SPECIFIC} errors set outside
+	 * {@link #testExecutable} only should return {@code false}. If
+	 * {@link #testPlayer} is overridden this might be irrelevant.
+	 *
+	 * @return {@code true} if this {@link Player}'s tests include specific
+	 *         tests that might not apply to other {@link Player}s that use the
+	 *         same executable, {@code false} otherwise.
+	 */
+	protected abstract boolean isSpecificTest();
+
+	/**
+	 * Does basic file tests of the specified executable, checking that it
+	 * exists and has the required permissions.
+	 *
+	 * @param executableInfo the {@link ExecutableInfo} whose executable to
+	 *            test.
+	 * @return The resulting {@link ExecutableInfo} instance.
+	 */
+	@Nonnull
+	protected ExecutableInfo testExecutableFile(@Nonnull ExecutableInfo executableInfo) {
+		try {
+			FilePermissions permissions = new FilePermissions(executableInfo.getPath());
+			Set<FileFlag> flags = permissions.getFlags(FileFlag.FILE, FileFlag.EXECUTE, FileFlag.READ);
+			if (!flags.contains(FileFlag.FILE) || !flags.contains(FileFlag.READ) || !flags.contains(FileFlag.EXECUTE)) {
+				LOGGER.warn(
+					"Insufficient permission to execute \"{}\" for transcoding engine {}",
+					executableInfo.getPath(),
+					this
+				);
+				executableInfo = executableInfo.modify()
+					.available(Boolean.FALSE)
+					.errorType(ExecutableErrorType.GENERAL)
+					.errorText(
+						String.format(Messages.getString("Engine.MissingExecutePermission"), executableInfo.getPath(), this)
+					).build();
+			}
+		} catch (FileNotFoundException e) {
+			LOGGER.warn(
+				"Executable \"{}\" of transcoding engine {} not found: {}",
+				executableInfo.getPath(),
+				this,
+				e.getMessage()
+			);
+			executableInfo = executableInfo.modify()
+				.available(Boolean.FALSE)
+				.errorType(ExecutableErrorType.GENERAL)
+				.errorText(
+					String.format(Messages.getString("Engine.ExecutableNotFound"), executableInfo.getPath(), this)
+				).build();
+		}
+		return executableInfo;
+	}
+
+	/**
+	 * Tests a specific executable and returns the results. If the executable
+	 * has already has been tested, the previous results are used.
+	 * <p>
+	 * <b>This method must be implemented unless {@link #testPlayer} is
+	 * overridden in such a way that this method is never called or no test can
+	 * be performed on this executable</b> If the method isn't implemented,
+	 * simply make it return {@code null}, which is interpreted by
+	 * {@link #testPlayer} as if no test was performed.
+	 *
+	 * @param executableInfo the {@link ExecutableInfo} whose executable to
+	 *            test.
+	 * @return The resulting {@link ExecutableInfo} instance.
+	 */
+	@Nullable
+	protected abstract ExecutableInfo testExecutable(@Nonnull ExecutableInfo executableInfo);
+
+	/**
+	 * Tests the executable(s) for this {@link Player} and stores the results.
+	 * If the executable has already been tested by another {@link Player} or
+	 * {@link ProgramExecutableType}, the previous results are used.
+	 *
+	 * @param executableType the {@link ProgramExecutableType} to test. Invalid
+	 *            {@link ProgramExecutableType}s for this {@link Player} will
+	 *            throw an {@link Exception}.
+	 * @return {@code true} if a test was or previously has been performed,
+	 *         {@code false} otherwise.
+	 */
+	public boolean testPlayer(@Nonnull ProgramExecutableType executableType) {
+		if (executableType == null) {
+			throw new IllegalArgumentException("executableType cannot be null");
+		}
+		if (programInfo == null || programInfo.getPath(executableType) == null) {
+			return false;
+		}
+		if (avisynth()) {
+			if (!Platform.isWindows()) {
+				LOGGER.debug(
+					"Skipping transcoding engine {} ({}) as it's not compatible with this platform",
+					this,
+					executableType
+				);
+				setUnavailable(
+					executableType,
+					ExecutableErrorType.SPECIFIC,
+					String.format(Messages.getString("Engine.ExecutablePlatformIncompatible"), this)
+				);
+				return true;
+			}
+
+			if (!BasicSystemUtils.INSTANCE.isAvis()) {
+				LOGGER.debug(
+					"Transcoding engine {} ({}) is unavailable since AviSynth couldn't be found",
+					this,
+					executableType
+				);
+				setUnavailable(
+					executableType,
+					ExecutableErrorType.SPECIFIC,
+					String.format(Messages.getString("Engine.AviSynthNotFound"), this)
+				);
+				return true;
+			}
+		}
+
+		ExecutableInfo executableInfo = programInfo.getExecutableInfo(executableType);
+		if (
+			executableInfo != null &&
+			executableInfo.getAvailable() != null &&
+			(
+				!executableInfo.getAvailable().booleanValue() ||
+				!isSpecificTest()
+			)
+		) {
+			// Executable has already been tested
+			return true;
+		}
+		specificErrorsLock.writeLock().lock();
+		try {
+			if (specificErrors.get(executableType) != null) {
+				// Executable Player specific failures has already been tested
+				return true;
+			}
+
+			ExecutableInfo result = testExecutable(executableInfo);
+			if (result == null) {
+				// Executable test not implemented
+				return false;
+			}
+			if (result.getAvailable() == null) {
+				LOGGER.error("Player test for {} failed to return availability, this is a bug", name());
+			} else if (!result.equals(executableInfo)) {
+				// The test resulted in a change
+				setAvailable(
+					result.getAvailable(),
+					executableType,
+					result.getVersion(),
+					result.getErrorType(),
+					result.getErrorText()
+				);
+			}
+			return true;
+		} finally {
+			specificErrorsLock.writeLock().unlock();
+		}
+	}
+
+	/**
 	 * Checks if {@code object} is a {@link Player} and has the same
 	 * {@link #id()} as this.
 	 *
-	 * @param other
-	 * The other player.
-	 * @return True if names and ids match, false otherwise.
+	 * @return {@code true} if {@code object} is a {@link Player} and the IDs
+	 *         match, {@code false} otherwise.
 	 */
 	@Override
-	public boolean equals(Object other) {
-		if (this == other) {
+	public boolean equals(Object object) {
+		if (this == object) {
 			return true;
 		}
-		if (other == null) {
+		if (object == null || !(object instanceof Player)) {
 			return false;
 		}
-		if (!(other instanceof Player)) {
-			return false;
-		}
-		Player otherPlayer = (Player) other;
-		if (this.name() == null) {
-			if (otherPlayer.name() != null) {
+		Player other = (Player) object;
+		if (id() == null) {
+			if (other.id() != null) {
 				return false;
 			}
-		} else if (!this.name().equals(otherPlayer.name())) {
-			return false;
-		}
-		if (this.id() == null) {
-			if (otherPlayer.id() != null) {
-				return false;
-			}
-		} else if (!this.id().equals(otherPlayer.id())) {
+		} else if (!id().equals(other.id())) {
 			return false;
 		}
 		return true;
@@ -683,8 +1116,7 @@ public abstract class Player {
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
-		result = prime * result + (name() == null ? 0 : name().hashCode());
-		result = prime * result + (id() == null ? 0 : id().hashCode());
+		result = prime * result + ((id() == null) ? 0 : id().hashCode());
 		return result;
 	}
 }

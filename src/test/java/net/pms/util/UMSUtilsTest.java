@@ -12,12 +12,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class UMSUtilsTest {
+
 	/**
 	 * Set up testing conditions before running the tests.
+	 *
 	 * @throws ConfigurationException
+	 * @throws InterruptedException
 	 */
+	@SuppressWarnings("static-method")
 	@Before
-	public final void setUp() throws ConfigurationException {
+	public final void setUp() throws ConfigurationException, InterruptedException {
 		// Silence all log messages from the DMS code that is being tested
 		LoggerContext context = (LoggerContext) LoggerFactory.getILoggerFactory();
 		context.getLogger(Logger.ROOT_LOGGER_NAME).setLevel(Level.OFF);
