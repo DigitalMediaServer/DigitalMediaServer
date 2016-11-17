@@ -15,7 +15,9 @@ import org.slf4j.LoggerFactory;
 import com.drew.lang.ByteArrayReader;
 import net.coobird.thumbnailator.Thumbnails;
 import net.pms.PMS;
+import net.pms.configuration.ExternalProgramInfo;
 import net.pms.configuration.PmsConfiguration;
+import net.pms.configuration.ProgramExecutableType;
 import net.pms.dlna.DLNAMediaInfo;
 import net.pms.dlna.DLNAResource;
 import net.pms.formats.Format;
@@ -45,6 +47,16 @@ public class DCRaw extends ImagePlayer {
 	@Override
 	public JComponent config() {
 		return null;
+	}
+
+	@Override
+	public ExternalProgramInfo executables() {
+		return configuration.getDCRawPaths();
+	}
+
+	@Override
+	public ProgramExecutableType getExecutableType() {
+		return configuration.getDCRawExecutableType();
 	}
 
 	@Override
@@ -234,9 +246,9 @@ public class DCRaw extends ImagePlayer {
 							imageAspect = (double) imageInfo.getWidth() / imageInfo.getHeight();
 						}
 						if (ImagesUtil.isExifAxesSwapNeeded(thumbnailOrientation)) {
-							thumbnailAspect = (double) jpegResolution.getHeight() / jpegResolution.getWidth();
+							thumbnailAspect = jpegResolution.getHeight() / jpegResolution.getWidth();
 						} else {
-							thumbnailAspect = (double) jpegResolution.getWidth() / jpegResolution.getHeight();
+							thumbnailAspect = jpegResolution.getWidth() / jpegResolution.getHeight();
 						}
 
 						if (Math.abs(imageAspect - thumbnailAspect) > 0.001d) {

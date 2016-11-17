@@ -21,7 +21,9 @@ package net.pms.encoders;
 import java.io.IOException;
 import javax.swing.JComponent;
 import net.pms.configuration.DeviceConfiguration;
+import net.pms.configuration.ExternalProgramInfo;
 import net.pms.configuration.PmsConfiguration;
+import net.pms.configuration.ProgramExecutableType;
 import net.pms.dlna.DLNAMediaInfo;
 import net.pms.dlna.DLNAResource;
 import net.pms.formats.Format;
@@ -148,8 +150,18 @@ public class MEncoderWebVideo extends Player {
 	}
 
 	@Override
+	public ExternalProgramInfo executables() {
+		return configuration.getMEncoderPaths();
+	}
+
+	@Override
+	public ProgramExecutableType getExecutableType() {
+		return configuration.getMEncoderExecutableType();
+	}
+
+	@Override
 	public String executable() {
-		return configuration.getMencoderPath();
+		return configuration.getMEncoderPath();
 	}
 
 	@Override

@@ -18,16 +18,19 @@
  */
 package net.pms.io;
 
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import com.sun.jna.Library;
 import com.sun.jna.Native;
 import com.sun.jna.WString;
 import com.sun.jna.ptr.LongByReference;
 import java.io.File;
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.CharBuffer;
+import java.nio.charset.Charset;
 import java.util.prefs.Preferences;
-import net.pms.PMS;
+import net.pms.io.SimpleProcessWrapper.SimpleProcessWrapperResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,7 +43,7 @@ public class WinUtils extends BasicSystemUtils {
 	private static final Logger LOGGER = LoggerFactory.getLogger(WinUtils.class);
 
 	public interface Kernel32 extends Library {
-		Kernel32 INSTANCE = (Kernel32) Native.loadLibrary("kernel32", Kernel32.class);
+		Kernel32 INSTANCE = Native.loadLibrary("kernel32", Kernel32.class);
 		Kernel32 SYNC_INSTANCE = (Kernel32) Native.synchronizedLibrary(INSTANCE);
 
 		int GetShortPathNameW(WString lpszLongPath, char[] lpdzShortPath, int cchBuffer);
@@ -70,6 +73,7 @@ public class WinUtils extends BasicSystemUtils {
 
 	private static final int KEY_READ = 0x20019;
 	private boolean kerio;
+	private String psPing;
 	private String avsPluginsDir;
 	private String kLiteFiltersDir;
 
@@ -207,7 +211,7 @@ public class WinUtils extends BasicSystemUtils {
 		return Kernel32.INSTANCE.GetOEMCP();
 	}
 
-	private String charString2String(CharBuffer buf) {
+	private static String charString2String(CharBuffer buf) {
 		char[] chars = buf.array();
 		int i;
 		for (i = 0; i < chars.length; i++) {
@@ -249,8 +253,10 @@ public class WinUtils extends BasicSystemUtils {
 				}
 				if (handles.length == 2 && handles[0] != 0 && handles[1] == 0) {
 					valb = (byte[]) winRegQueryValue.invoke(systemRoot, handles[0], toCstr(""));
-					vlcp = (valb != null ? new String(valb).trim() : null);
+					//TODO: (Nad) The below is a bug, we need to know the OS charset but it isn't available because it's being overwritten to UTF-8 during startup
+					vlcp = (valb != null ? new String(valb,Charset.forName("cp1252")).trim() : null);
 					valb = (byte[]) winRegQueryValue.invoke(systemRoot, handles[0], toCstr("Version"));
+					//TODO: (Nad) The below is a bug, same as above
 					vlcv = (valb != null ? new String(valb).trim() : null);
 					closeKey.invoke(systemRoot, handles[0]);
 				}
@@ -292,6 +298,37 @@ public class WinUtils extends BasicSystemUtils {
 		} catch (NoSuchMethodException | SecurityException | IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
 			LOGGER.debug("Caught exception", e);
 		}
+		try {
+			SimpleProcessWrapperResult psPingProcess;
+			try {
+				psPingProcess = SimpleProcessWrapper.runProcess("psping64.exe", "-?");
+				if (psPingProcess.getOutput() != null && !psPingProcess.getOutput().isEmpty()) {
+					for (String line : psPingProcess.getOutput()) {
+						if (isNotBlank(line) && line.startsWith("PsPing")) {
+							psPing = "psping64.exe";
+							break;
+						}
+					}
+				}
+			} catch (IOException e) {
+				LOGGER.debug("psping64 not found: {}", e.getMessage());
+			}
+			if (psPing == null) {
+				psPingProcess = SimpleProcessWrapper.runProcess("psping.exe", "-?");
+				if (psPingProcess.getOutput() != null && !psPingProcess.getOutput().isEmpty()) {
+					for (String line : psPingProcess.getOutput()) {
+						if (isNotBlank(line) && line.startsWith("PsPing")) {
+							psPing = "psping.exe";
+							break;
+						}
+					}
+				}
+			}
+		} catch (IOException e) {
+			LOGGER.debug("psping not found: {}", e.getMessage());
+		} catch (InterruptedException e) {
+			LOGGER.info("Interrupted while checking for psping");
+		}
 	}
 
 	/* (non-Javadoc)
@@ -313,25 +350,40 @@ public class WinUtils extends BasicSystemUtils {
 
 	@Override
 	public String[] getPingCommand(String hostAddress, int count, int packetSize) {
-		String cmd = PMS.getConfiguration().pingPath();
-		if (cmd == null) {
-			return new String[]{"ping", /* count */ "-n", Integer.toString(count), /* size */ "-l", Integer.toString(packetSize), hostAddress};
-		} else {
-			return new String[]{cmd, /*warmup */ "-w", "0", "-i", "0", /* count */ "-n", Integer.toString(count), /* size */ "-l", Integer.toString(packetSize), hostAddress};
+		if (psPing != null) {
+			return new String[] {
+				psPing,
+				"-w", // warmup
+				"0",
+				"-i", // interval
+				"0",
+				"-n", // count
+				Integer.toString(count),
+				"-l", // size
+				Integer.toString(packetSize),
+				hostAddress
+			};
 		}
-
+		return new String[] {
+			"ping",
+			"-n", // count
+			Integer.toString(count),
+			"-l", // size
+			Integer.toString(packetSize),
+			hostAddress
+		};
 	}
 
 	@Override
 	public String parsePingLine(String line) {
-		if (PMS.getConfiguration().pingPath() == null) {
-			return super.parsePingLine(line);
-		}
-		int msPos = line.indexOf("ms");
+		if (psPing != null) {
+			int msPos = line.indexOf("ms");
 
-		if (msPos == -1) {
-			return null;
+			if (msPos == -1) {
+				return null;
+			}
+			return line.substring(line.lastIndexOf(':', msPos) + 1, msPos).trim();
 		}
-		return line.substring(line.lastIndexOf(':', msPos) + 1, msPos).trim();
+		return super.parsePingLine(line);
 	}
 }

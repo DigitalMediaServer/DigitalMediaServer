@@ -684,7 +684,7 @@ public class DLNAMediaInfo implements Cloneable {
 	private ProcessWrapperImpl getMplayerThumbnail(InputFile media, boolean resume, RendererConfiguration renderer) throws IOException {
 		File file = media.getFile();
 		String args[] = new String[14];
-		args[0] = configuration.getMplayerPath();
+		args[0] = configuration.getMPlayerDefaultPath();
 		args[1] = "-ss";
 		if (resume) {
 			args[2] = "" + (int) getDurationInSeconds();
@@ -763,7 +763,7 @@ public class DLNAMediaInfo implements Cloneable {
 	}
 
 	private static String getFfmpegPath() {
-		String value = configuration.getFfmpegPath();
+		String value = configuration.getFFmpegPath();
 
 		if (value == null) {
 			LOGGER.info("No FFmpeg - unable to thumbnail");
@@ -2004,7 +2004,7 @@ public class DLNAMediaInfo implements Cloneable {
 
 	public byte[][] getAnnexBFrameHeader(InputFile f) {
 		String[] cmdArray = new String[14];
-		cmdArray[0] = configuration.getFfmpegPath();
+		cmdArray[0] = configuration.getFFmpegPath();
 		cmdArray[1] = "-i";
 
 		if (f.getPush() == null && f.getFilename() != null) {

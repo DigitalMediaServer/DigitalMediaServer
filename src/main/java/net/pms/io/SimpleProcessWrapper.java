@@ -66,6 +66,10 @@ public class SimpleProcessWrapper { //TODO: (Nad) Make sure this is safe
 	 * @return The result from running the process.
 	 * @throws IOException If a problem occurs during the operation.
 	 * @throws InterruptedException If the operation is interrupted.
+	 *
+	 * TODO: (Nad) Improve this class to protect against Process pitfalls:
+	 * 	https://web.archive.org/web/20121201070147/http://kylecartmell.com/?p=9
+	 * 	http://stackoverflow.com/questions/4912282/java-tool-method-to-force-kill-a-child-process
 	 */
 	public static SimpleProcessWrapperResult runProcess(List<String> command) throws IOException, InterruptedException {
 		ProcessBuilder processBuilder = new ProcessBuilder(command);

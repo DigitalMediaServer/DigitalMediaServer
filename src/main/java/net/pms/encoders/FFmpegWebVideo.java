@@ -69,7 +69,7 @@ public class FFmpegWebVideo extends FFMpegVideo {
 	static {
 		readWebFilters(_configuration.getProfileFolder() + File.separator + "ffmpeg.webfilters");
 
-		Path executable = Paths.get(_configuration.getFfmpegPath());
+		Path executable = Paths.get(_configuration.getFFmpegPath());
 		try {
 			FilePermissions permissions = new FilePermissions(executable);
 			if (permissions.isExecutable()) {
@@ -77,7 +77,7 @@ public class FFmpegWebVideo extends FFMpegVideo {
 				try {
 					FFmpegOptions.getSupportedProtocols(protocols, executable.toString());
 					if (protocols.contains("mmsh")) {
-						// Workaround an FFmpeg bug: http://ffmpeg.org/trac/ffmpeg/ticket/998
+						// Work around an FFmpeg bug: http://ffmpeg.org/trac/ffmpeg/ticket/998
 						// Also see launchTranscode()
 						protocols.add("mms");
 					}
