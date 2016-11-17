@@ -19,18 +19,6 @@ public interface SystemUtils {
 
 	public abstract boolean isKerioFirewall();
 
-	/*
-	 * Use getVlcPath() instead
-	 */
-	@Deprecated
-	public abstract String getVlcp();
-
-	/*
-	 * Use getVlcVersion() instead
-	 */
-	@Deprecated
-	public abstract String getVlcv();
-
 	public abstract String getVlcPath();
 
 	public abstract String getVlcVersion();
@@ -73,7 +61,7 @@ public interface SystemUtils {
 
 	/**
 	 * This is't an actual but an estimated value assuming default MTU size.
-	 * 
+	 *
 	 * @param packetSize the size of the packet in bytes.
 	 * @return The estimated number of fragments.
 	 */

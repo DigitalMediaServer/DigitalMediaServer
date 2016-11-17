@@ -624,8 +624,8 @@ public final class PlayerFactory {
 			String status = null;
 			try {
 				SimpleProcessWrapperResult result = SimpleProcessWrapper.runProcess(executable.toString());
-				if (!StringUtil.hasValue(result.getOutput().get(0))) {
-					if (result.getOutput() != null && result.getOutput().size() > 1) {
+				if (result.getOutput() != null && isBlank(result.getOutput().get(0))) {
+					if (result.getOutput().size() > 1) {
 						Pattern pattern = Pattern.compile("decoder\\s\"dcraw\"\\s(\\S+)", Pattern.CASE_INSENSITIVE);
 						Matcher matcher = pattern.matcher(result.getOutput().get(1));
 						if (matcher.find()) {
@@ -637,7 +637,7 @@ public final class PlayerFactory {
 					} else {
 						player.setAvailable(null);
 					}
-				} else if (result.getOutput().size() > 0) {
+				} else if (result.getOutput() != null && result.getOutput().size() > 0) {
 					status =
 						String.format(Messages.getString("Engine.Error"), player) + " \n" +
 						result.getOutput().get(0);

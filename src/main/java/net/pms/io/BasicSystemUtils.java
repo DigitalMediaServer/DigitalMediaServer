@@ -43,8 +43,8 @@ import org.slf4j.LoggerFactory;
 public class BasicSystemUtils implements SystemUtils {
 	private final static Logger LOGGER = LoggerFactory.getLogger(BasicSystemUtils.class);
 
-	protected String vlcp;
-	protected String vlcv;
+	protected String vlcPath;
+	protected String vlcVersion;
 	protected boolean avis;
 
 	@Override
@@ -78,25 +78,13 @@ public class BasicSystemUtils implements SystemUtils {
 	}
 
 	@Override
-	@Deprecated
-	public String getVlcp() {
-		return getVlcPath();
-	}
-
-	@Override
-	@Deprecated
-	public String getVlcv() {
-		return getVlcVersion();
-	}
-
-	@Override
 	public String getVlcPath() {
-		return vlcp;
+		return vlcPath;
 	}
 
 	@Override
 	public String getVlcVersion() {
-		return vlcv;
+		return vlcVersion;
 	}
 
 	/*
