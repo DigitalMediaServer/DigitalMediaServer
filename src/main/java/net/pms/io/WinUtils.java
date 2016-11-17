@@ -32,6 +32,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import javax.annotation.Nullable;
 import net.pms.util.FileUtil;
+import net.pms.util.Version;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -224,7 +225,8 @@ public class WinUtils extends BasicSystemUtils {
 		return new String(chars, 0, i);
 	}
 
-	public WinUtils() {
+	/** Only to be instantiated by {@link BasicSystemUtils#createInstance()}. */
+	protected WinUtils() {
 		getVLCRegistryInfo();
 		avsPluginsFolder = getAviSynthPluginsFolder();
 		aviSynth = avsPluginsFolder != null;
@@ -242,8 +244,8 @@ public class WinUtils extends BasicSystemUtils {
 					return;
 				}
 			}
-			vlcp = Advapi32Util.registryGetStringValue(WinReg.HKEY_LOCAL_MACHINE, key, "");
-			vlcv = Advapi32Util.registryGetStringValue(WinReg.HKEY_LOCAL_MACHINE, key, "Version");
+			vlcPath = Paths.get(Advapi32Util.registryGetStringValue(WinReg.HKEY_LOCAL_MACHINE, key, ""));
+			vlcVersion = new Version(Advapi32Util.registryGetStringValue(WinReg.HKEY_LOCAL_MACHINE, key, "Version"));
 		} catch (Win32Exception e) {
 			LOGGER.debug("Could not get VLC information from Windows registry: {}", e.getMessage());
 			LOGGER.trace("", e);
