@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import net.pms.PMS;
 import net.pms.formats.Format;
 import net.pms.formats.FormatFactory;
+import net.pms.io.BasicSystemUtils;
 import net.pms.util.FileUtil;
 import net.pms.util.ProcessUtil;
 import org.apache.commons.lang3.StringUtils;
@@ -128,7 +129,7 @@ public class RealFile extends MapFile {
 			File file = getFile();
 			if (file.getName().trim().isEmpty()) {
 				if (Platform.isWindows()) {
-					name = PMS.get().getRegistry().getDiskLabel(file);
+					name = BasicSystemUtils.INSTANCE.getDiskLabel(file);
 				}
 				if (name != null && name.length() > 0) {
 					name = file.getAbsolutePath().substring(0, 1) + ":\\ [" + name + "]";

@@ -19,31 +19,26 @@
  */
 package net.pms.encoders;
 
-import static org.apache.commons.lang3.StringUtils.isBlank;
 import com.sun.jna.Platform;
-import java.io.FileNotFoundException;
 import java.io.Serializable;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import net.pms.Messages;
 import net.pms.PMS;
+import net.pms.configuration.ExternalProgramInfo;
 import net.pms.configuration.PmsConfiguration;
+import net.pms.configuration.ProgramExecutableType;
+import net.pms.configuration.ProgramExecutableType.DefaultExecutableType;
 import net.pms.dlna.DLNAResource;
 import net.pms.formats.FormatFactory;
-import net.pms.io.ListProcessWrapperResult;
-import net.pms.io.SimpleProcessWrapper;
-import net.pms.io.SystemUtils;
-import net.pms.util.FilePermissions;
-import net.pms.util.FileUtil;
-import net.pms.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,9 +49,7 @@ import org.slf4j.LoggerFactory;
  */
 public final class PlayerFactory {
 
-	/**
-	 * Logger used for all logging.
-	 */
+	/** The {@link Logger} used for all logging. */
 	private static final Logger LOGGER = LoggerFactory.getLogger(FormatFactory.class);
 
 	/**
@@ -68,12 +61,6 @@ public final class PlayerFactory {
 	 * An {@link ArrayList} of all registered {@link Player} objects.
 	 */
 	private static final ArrayList<Player> PLAYERS = new ArrayList<>();
-
-	/**
-	 * An interface to OS specific functions, like Windows registry. The
-	 * registry is set in {@link #initialize()}.
-	 */
-	private static SystemUtils utils;
 
 	private static PmsConfiguration configuration = PMS.getConfiguration();
 
@@ -114,12 +101,11 @@ public final class PlayerFactory {
 	 * @throws InterruptedException If the operation is interrupted.
 	 */
 	public static void initialize() throws InterruptedException {
-		utils = PMS.get().getRegistry();
 		registerPlayers();
 	}
 
 	/**
-	 * Registers a known set transcoding engines.
+	 * Registers known transcoding engines.
 	 *
 	 * @throws InterruptedException
 	 */
@@ -164,62 +150,25 @@ public final class PlayerFactory {
 
 			LOGGER.debug("Checking transcoding engine {}", player);
 			PLAYERS.add(player);
-			player.setEnabled(configuration.isEngineEnabled(player));
+			player.setEnabled(configuration.isEngineEnabled(player), false);
 
-			if (player.getExecutable() == null) {
-				player.setUnavailable(String.format(Messages.getString("Engine.ExecutableNotDefined"), player));
-				LOGGER.warn("Executable of transcoding engine {} is undefined", player);
-				return;
-			}
-
-			Path executable;
-			if (Platform.isWindows()) {
-				String[] validExtensions = {"exe", "com", "bat"};
-				String extension = FileUtil.getExtension(player.getExecutable());
-				if (extension == null || !Arrays.asList(validExtensions).contains(extension.toLowerCase())) {
-					executable = Paths.get(player.getExecutable() + ".exe");
-				} else {
-					executable = Paths.get(player.getExecutable());
-				}
-			} else if (player.avisynth()) {
-				LOGGER.debug("Skipping transcoding engine {} as it's not compatible with this platform", player);
-				player.setUnavailable(String.format(Messages.getString("Engine.ExecutablePlatformIncompatible"), player));
-				return;
-			} else {
-				executable = Paths.get(player.getExecutable());
-			}
-
+			ExternalProgramInfo programInfo = player.getProgramInfo();
+			ReentrantReadWriteLock programInfoLock = programInfo.getLock();
+			// Lock for consistency during tests, need write in case setAvailabe() needs to modify or a custom path is set
+			programInfoLock.writeLock().lock();
 			try {
-				FilePermissions permissions = new FilePermissions(executable);
-				if (!permissions.isExecutable()) {
-					LOGGER.warn(
-						"Insufficient permission to execute \"{}\" for transcoding engine {}",
-						executable.toAbsolutePath(),
-						player
-					);
-					player.setUnavailable(
-						String.format(Messages.getString("Engine.MissingExecutePermission"), executable.toAbsolutePath(), player)
-					);
-					return;
-				} else if (Platform.isWindows() && player.avisynth() && !utils.isAviSynthAvailable()) {
-					LOGGER.warn("Transcoding engine {} is unavailable since AviSynth couldn't be found", player);
-					player.setUnavailable(String.format(Messages.getString("Engine.AviSynthNotFound"), player));
-					return;
-				} else if (!playerTest(player, executable)) {
-					// Only set available if this isn't already done by the test to avoid overwriting the status
-					player.setAvailable(null);
+				if (configuration.isCustomProgramPathsSupported()) {
+					LOGGER.trace("Registering custom executable path for transcoding engine {}", player);
+					Path customPath = configuration.getPlayerCustomPath(player);
+					player.initCustomExecutablePath(customPath);
 				}
-			} catch (FileNotFoundException e) {
-				LOGGER.warn(
-					"Executable \"{}\" of transcoding engine {} not found: {}",
-					executable.toAbsolutePath(),
-					player,
-					e.getMessage()
-				);
-				player.setUnavailable(
-					String.format(Messages.getString("Engine.ExecutableNotFound"), executable.toAbsolutePath(), player)
-				);
-				return;
+
+				for (ProgramExecutableType executableType : programInfo.getExecutableTypes()) {
+					testPlayerExecutableType(player, executableType);
+				}
+				player.determineCurrentExecutableType();
+			} finally {
+				programInfoLock.writeLock().unlock();
 			}
 
 			if (player.isAvailable()) {
@@ -235,6 +184,30 @@ public final class PlayerFactory {
 
 		} finally {
 			PLAYERS_LOCK.writeLock().unlock();
+		}
+	}
+
+	/**
+	 * Runs tests on the executable of the specified
+	 * {@link ProgramExecutableType} for the specified {@link Player}.
+	 *
+	 * @param player the {@link Player} whose executable to test.
+	 * @param executableType the {@link ProgramExecutableType} to test.
+	 */
+	protected static void testPlayerExecutableType(
+		@Nullable Player player,
+		@Nullable ProgramExecutableType executableType
+	) {
+		if (player == null || executableType == null || !player.getProgramInfo().containsType(executableType, true)) {
+			return;
+		}
+		if (!player.testPlayer(executableType) && player.getProgramInfo().getExecutableInfo(executableType) != null) {
+			// Unavailability can only be set it the ExecutableInfo in non-null.
+			player.setUnavailable(
+				executableType,
+				ExecutableErrorType.GENERAL,
+				String.format(Messages.getString("Engine.NotTested"), player)
+			);
 		}
 	}
 
@@ -300,13 +273,26 @@ public final class PlayerFactory {
 	}
 
 	/**
-	 * Checks if a {@link Player} of the given type is registered.
+	 * Checks if a {@link Player} with of this type/id is registered.
 	 *
-	 * @param id the {@link Player} type to check for.
+	 * @param player the {@link Player} type to check for.
 	 * @return The result.
 	 */
-	public static boolean isPlayerRegistered(String id) {
-		if (isBlank(id)) {
+	public static boolean isPlayerRegistered(Player player) {
+		if (player == null) {
+			return false;
+		}
+		return isPlayerRegistered(player.id());
+	}
+
+	/**
+	 * Checks if a {@link PlayerId} is registered.
+	 *
+	 * @param id the {@link PlayerId} to check for.
+	 * @return The result.
+	 */
+	public static boolean isPlayerRegistered(PlayerId id) {
+		if (id == null) {
 			return false;
 		}
 
@@ -330,8 +316,8 @@ public final class PlayerFactory {
 	 * @param id the {@link Player} type to check for.
 	 * @return The result.
 	 */
-	public static boolean isPlayerActive(String id) {
-		if (isBlank(id)) {
+	public static boolean isPlayerActive(PlayerId id) {
+		if (id == null) {
 			return false;
 		}
 
@@ -349,14 +335,38 @@ public final class PlayerFactory {
 	}
 
 	/**
+	 * Checks if a {@link Player} of the given type is both available.
+	 *
+	 * @param id the {@link Player} type to check for.
+	 * @return The result.
+	 */
+	public static boolean isPlayerAvailable(PlayerId id) {
+		if (id == null) {
+			return false;
+		}
+
+		PLAYERS_LOCK.readLock().lock();
+		try {
+			for (Player player : PLAYERS) {
+				if (id.equals(player.id())) {
+					return player.isAvailable();
+				}
+			}
+			return false;
+		} finally {
+			PLAYERS_LOCK.readLock().unlock();
+		}
+	}
+
+	/**
 	 * Returns the {@link Player} that matches the given {@code id} if it exists
 	 * and is enabled and available. If no {@link Player} is found or it isn't
 	 * enabled and available, {@code null} is returned.
 	 *
-	 * @param id the {@link Player} type to check for.
+	 * @param id the {@link PlayerId} to look for.
 	 * @return The {@link Player} if found or {@code null}.
 	 */
-	public static Player getActivePlayer(String id) {
+	public static Player getActivePlayer(PlayerId id) {
 		return getPlayer(id, true, true);
 	}
 
@@ -365,13 +375,14 @@ public final class PlayerFactory {
 	 * and matches the given criteria. If no {@link Player} is found or the
 	 * given criteria isn't met, {@code null} is returned.
 	 *
-	 * @param id the {@link Player} type to check for.
+	 * @param id the {@link PlayerId} to look for.
 	 * @param onlyEnabled whether or not to filter on enabled {@link Player}s.
 	 * @param onlyAvailable whether or not to filter on available {@link Player}s.
 	 * @return The {@link Player} if found or {@code null}.
 	 */
-	public static Player getPlayer(String id, boolean onlyEnabled, boolean onlyAvailable) {
-		if (isBlank(id)) {
+	@Nullable
+	public static Player getPlayer(@Nullable PlayerId id, boolean onlyEnabled, boolean onlyAvailable) {
+		if (id == null) {
 			return null;
 		}
 		PLAYERS_LOCK.readLock().lock();
@@ -445,6 +456,31 @@ public final class PlayerFactory {
 	}
 
 	/**
+	 * Gets the currently active executable for a registered {@link Player} or
+	 * {@code null} if the no such {@link Player} is registered.
+	 *
+	 * @param id the {@link PlayerId} to use for lookup.
+	 * @return the executable {@link String} or {@code null}.
+	 */
+	public static String getPlayerExecutable(final PlayerId id) {
+		if (id == null) {
+			return null;
+		}
+
+		PLAYERS_LOCK.readLock().lock();
+		try {
+			for (Player player : PLAYERS) {
+				if (id.equals(player.id())) {
+					return player.getExecutable();
+				}
+			}
+		} finally {
+			PLAYERS_LOCK.readLock().unlock();
+		}
+		return null;
+	}
+
+	/**
 	 * Returns all {@link Player}s that match the given resource and are
 	 * enabled. Each of the available {@link Player}s are passed the provided
 	 * information and each {@link Player} that reports that it is compatible
@@ -476,227 +512,85 @@ public final class PlayerFactory {
 	}
 
 	/**
-	 * Protected by {@link #playersLock}.
-	 */
-	private static final List<PlayerTestRecord> TEST_RECORDS = new ArrayList<>();
-
-	/**
-	 * Must only be called when a lock is held on {@link #playersLock}.
+	 * {@link ExternalProgramInfo} instances can be shared among several
+	 * {@link Player} instances, typically when they use the same executable.
+	 * <p>
+	 * When a {@link ProgramExecutableType#CUSTOM} {@link Path} is changed, it
+	 * affects all {@link Player} instance that shares that
+	 * {@link ExternalProgramInfo} instance. As a result, tests must be rerun
+	 * and the current/effective {@link ProgramExecutableType} must be
+	 * reevaluated for all affected {@link Player} instances.
+	 * <p>
+	 * This method uses the specified {@link Player} instance that
+	 * triggered/initiated the change as a starting point and finds all affected
+	 * {@link Player} instances. It then sets the new default
+	 * {@link ProgramExecutableType}, rerun the appropriate tests and
+	 * reevaluates the current/effective {@link ProgramExecutableType} for all
+	 * affected {@link Player} instances.
 	 *
-	 * @param player the {@link Player} whose executable to test.
-	 * @return {@code true} if a test was performed, {@code false} otherwise.
-	 * @throws InterruptedException If the operation is interrupted.
+	 * @param triggeringPlayer the {@link Player} that is the source of the
+	 *            change.
+	 * @param changedType the {@link ProgramExecutableType} that was changed
+	 *            triggering this reevaluation. This will decide which tests
+	 *            will be rerun. {@code null} will cause all tests to be rerun.
+	 * @param defaultType the {@link DefaultExecutableType} that determines what
+	 *            value to set for the {@link ExternalProgramInfo}'s default
+	 *            {@link ProgramExecutableType}.
 	 */
-	private static boolean playerTest(Player player, Path executable) throws InterruptedException {
-		if (executable == null) {
-			return false;
+	public static void reEvaluateExecutable(
+		@Nonnull Player triggeringPlayer,
+		@Nullable ProgramExecutableType changedType,
+		@Nullable DefaultExecutableType defaultType
+	) {
+		if (triggeringPlayer == null) {
+			throw new IllegalArgumentException("triggeringPlayer cannot be null");
 		}
-
-		for (PlayerTestRecord testRecord : TEST_RECORDS) {
-			if (executable.equals(testRecord.executable)) {
-				player.setAvailable(testRecord.pass, testRecord.status);
-				return true;
+		ExternalProgramInfo programInfo = triggeringPlayer.getProgramInfo();
+		ArrayList<Player> affectedPlayers = new ArrayList<>();
+		PLAYERS_LOCK.readLock().lock();
+		try {
+			for (Player player : PLAYERS) {
+				if (player.getProgramInfo() == programInfo) {
+					affectedPlayers.add(player);
+				}
 			}
+		} finally {
+			PLAYERS_LOCK.readLock().unlock();
 		}
-
-		// Return true if a test is performed and availability is set
-		if (player instanceof FFMpegVideo) {
-			final String arg = "-version";
-			String status = null;
-			ListProcessWrapperResult result = SimpleProcessWrapper.runProcessListOutput(
-				1000,
-				500,
-				executable.toString(),
-				arg
-			);
-			if (result.getError() != null) {
-				LOGGER.warn("\"{}\" failed with error: {}", executable.toString(), result.getError().getMessage());
-				LOGGER.trace("", result.getError());
-				status = String.format(Messages.getString("Engine.Error"), player) + " \n" + result.getError().getMessage();
-				player.setUnavailable(status);
-				return true;
-			}
-			if (result.getExitCode() == 0) {
-				if (result.getOutput() != null && result.getOutput().size() > 0) {
-					Pattern pattern = Pattern.compile("^ffmpeg version\\s+(.*?)\\s+Copyright", Pattern.CASE_INSENSITIVE);
-					Matcher matcher = pattern.matcher(result.getOutput().get(0));
-					if (matcher.find()) {
-						status = matcher.group(1);
-						player.setAvailable(status);
-					} else {
-						player.setAvailable(null);
-					}
-				} else {
-					player.setAvailable(null);
+		ReentrantReadWriteLock programInfoLock = programInfo.getLock();
+		// Lock for consistency during reevaluation
+		programInfoLock.writeLock().lock();
+		try {
+			if (defaultType != null) {
+				switch (defaultType) {
+					case CUSTOM:
+						programInfo.setDefault(ProgramExecutableType.CUSTOM);
+						break;
+					case ORIGINAL:
+						programInfo.setOriginalDefault();
+						break;
+					case NONE:
+					default:
+						break;
 				}
+			}
+
+			Set<ProgramExecutableType> retestTypes;
+			if (changedType == null) {
+				retestTypes = EnumSet.allOf(ProgramExecutableType.class);
 			} else {
-				if (result.getOutput().size() > 2) {
-					status =
-						String.format(Messages.getString("Engine.Error"), player) + " \n" +
-						result.getOutput().get(result.getOutput().size() - 2) + " " +
-						result.getOutput().get(result.getOutput().size() - 1);
-					player.setUnavailable(status);
-				} else if (result.getOutput().size() > 1) {
-					status =
-						String.format(Messages.getString("Engine.Error"), player) + " \n" +
-						result.getOutput().get(result.getOutput().size() - 1);
-					player.setUnavailable(status);
-				} else {
-					status = String.format(Messages.getString("Engine.Error"), player) + Messages.getString("General.3");
-					player.setUnavailable(status);
-				}
+				retestTypes = Collections.singleton(changedType);
 			}
-			TEST_RECORDS.add(new PlayerTestRecord(executable, player.isAvailable(), status));
-			return true;
-		} else if (player instanceof MEncoderVideo || player instanceof MEncoderWebVideo) {
-			final String arg = "-info:help";
-			String status = null;
-			ListProcessWrapperResult result = SimpleProcessWrapper.runProcessListOutput(
-				1000,
-				500,
-				executable.toString(),
-				arg
-			);
-			if (result.getError() != null) {
-				LOGGER.warn("\"{}\" failed with error: {}", executable.toString(), result.getError().getMessage());
-				LOGGER.trace("", result.getError());
-				status = String.format(Messages.getString("Engine.Error"), player) + " \n" + result.getError().getMessage();
-				player.setUnavailable(status);
-				return true;
-			}
-			if (result.getExitCode() == 0) {
-				if (result.getOutput() != null && result.getOutput().size() > 0) {
-					Pattern pattern = Pattern.compile("^MEncoder\\s+(.*?)\\s+\\(C\\)", Pattern.CASE_INSENSITIVE);
-					Matcher matcher = pattern.matcher(result.getOutput().get(0));
-					if (matcher.find()) {
-						status = matcher.group(1);
-						player.setAvailable(status);
-					} else {
-						player.setAvailable(null);
-					}
-				} else {
-					player.setAvailable(null);
-				}
-			} else {
-				if (result.getOutput() != null &&
-					result.getOutput().size() > 3 &&
-					StringUtil.hasValue(result.getOutput().get(result.getOutput().size() - 1)) &&
-					!StringUtil.hasValue(result.getOutput().get(result.getOutput().size() - 2)) &&
-					StringUtil.hasValue(result.getOutput().get(result.getOutput().size() - 3))
-				) {
-					status =
-						String.format(Messages.getString("Engine.Error"), player) + " \n" +
-						result.getOutput().get(result.getOutput().size() - 3);
-					player.setUnavailable(status);
-				} else {
-					status = String.format(Messages.getString("Engine.Error"), player) + Messages.getString("General.3");
-					player.setUnavailable(status);
-				}
-			}
-			TEST_RECORDS.add(new PlayerTestRecord(executable, player.isAvailable(), status));
-			return true;
-		} else if (player instanceof TsMuxeRVideo) {
-			final String arg = "-v";
-			String status = null;
-			ListProcessWrapperResult result = SimpleProcessWrapper.runProcessListOutput(
-				1000,
-				500,
-				executable.toString(),
-				arg
-			);
-			if (result.getError() != null) {
-				LOGGER.warn("\"{}\" failed with error: {}", executable.toString(), result.getError().getMessage());
-				LOGGER.trace("", result.getError());
-				status = String.format(Messages.getString("Engine.Error"), player) + " \n" + result.getError().getMessage();
-				player.setUnavailable(status);
-				return true;
-			}
-			if (result.getExitCode() == 0) {
-				if (result.getOutput() != null && result.getOutput().size() > 0) {
-					Pattern pattern = Pattern.compile("tsMuxeR\\.\\s+Version\\s(\\S+)\\s+", Pattern.CASE_INSENSITIVE);
-					Matcher matcher = pattern.matcher(result.getOutput().get(0));
-					if (matcher.find()) {
-						status = matcher.group(1);
-						player.setAvailable(status);
-					} else {
-						player.setAvailable(null);
-					}
-				} else {
-					player.setAvailable(null);
-				}
-			} else {
-				status = String.format(Messages.getString("Engine.ExitCode"), player, result.getExitCode());
-				if (Platform.isLinux() && Platform.is64Bit()) {
-					status += ". \n" + Messages.getString("Engine.tsMuxerErrorLinux");
-				}
-				player.setUnavailable(status);
-			}
-			TEST_RECORDS.add(new PlayerTestRecord(executable, player.isAvailable(), status));
-			return true;
-		} else if (player instanceof DCRaw) {
-			String status = null;
-			ListProcessWrapperResult result = SimpleProcessWrapper.runProcessListOutput(
-				1000,
-				500,
-				executable.toString()
-			);
-			if (result.getError() != null) {
-				LOGGER.warn("\"{}\" failed with error: {}", executable.toString(), result.getError().getMessage());
-				LOGGER.trace("", result.getError());
-				status = String.format(Messages.getString("Engine.Error"), player) + " \n" + result.getError().getMessage();
-				player.setUnavailable(status);
-				return true;
-			}
-			if (!StringUtil.hasValue(result.getOutput().get(0))) {
-				if (result.getOutput() != null && result.getOutput().size() > 1) {
-					Pattern pattern = Pattern.compile("decoder\\s\"dcraw\"\\s(\\S+)", Pattern.CASE_INSENSITIVE);
-					Matcher matcher = pattern.matcher(result.getOutput().get(1));
-					if (matcher.find()) {
-						status = matcher.group(1);
-						player.setAvailable(status);
-					} else {
-						player.setAvailable(null);
-					}
-				} else {
-					player.setAvailable(null);
-				}
-			} else if (result.getOutput().size() > 0) {
-				status =
-					String.format(Messages.getString("Engine.Error"), player) + " \n" +
-					result.getOutput().get(0);
-				player.setUnavailable(status);
-			} else {
-				status = String.format(Messages.getString("Engine.Error"), player) + Messages.getString("General.3");
-				player.setUnavailable(status);
-			}
-			TEST_RECORDS.add(new PlayerTestRecord(executable, player.isAvailable(), status));
-			return true;
-		}
-		// No test has been made for VLC, found no way to get feedback on stdout: https://forum.videolan.org/viewtopic.php?t=73665
 
-		return false;
-	}
-
-	/**
-	 * @deprecated Use {@link #getPlayers(DLNAResource)} instead.
-	 *
-	 * @param resource the resource to match
-	 * @return The list of players if a match could be found, null otherwise.
-	 */
-	@Deprecated
-	public static ArrayList<Player> getEnabledPlayers(final DLNAResource resource) {
-		return getPlayers(resource);
-	}
-
-	private static class PlayerTestRecord {
-		public final Path executable;
-		public final boolean pass;
-		public final String status;
-
-		public PlayerTestRecord(Path executable, boolean pass, String status) {
-			this.executable = executable;
-			this.pass = pass;
-			this.status = status;
+			for (Player player : affectedPlayers) {
+				for (ProgramExecutableType executableType : retestTypes) {
+					player.clearSpecificErrors(executableType);
+					testPlayerExecutableType(player, executableType);
+				}
+				player.determineCurrentExecutableType();
+			}
+		} finally {
+			programInfoLock.writeLock().unlock();
 		}
 	}
 }
