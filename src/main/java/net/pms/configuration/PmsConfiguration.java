@@ -72,7 +72,6 @@ import net.pms.util.StringUtil;
 import net.pms.util.SubtitleColor;
 import net.pms.util.UMSUtils;
 import net.pms.util.WindowsRegistry;
-import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.commons.configuration.event.ConfigurationListener;
@@ -154,6 +153,7 @@ public class PmsConfiguration extends RendererConfiguration {
 	protected static final String KEY_CODE_THUMBS = "code_show_thumbs_no_code";
 	protected static final String KEY_CODE_TMO = "code_valid_timeout";
 	protected static final String KEY_CODE_USE = "code_enable";
+	protected static final String KEY_DCRAW_EXECUTABLE_TYPE = "dcraw_executable_type";
 	protected static final String KEY_DISABLE_FAKESIZE = "disable_fakesize";
 	public    static final String KEY_DISABLE_SUBTITLES = "disable_subtitles";
 	protected static final String KEY_DISABLE_TRANSCODE_FOR_EXTENSIONS = "disable_transcode_for_extensions";
@@ -171,6 +171,7 @@ public class PmsConfiguration extends RendererConfiguration {
 	protected static final String KEY_FFMPEG_AVISYNTH_INTERFRAME = "ffmpeg_avisynth_interframe";
 	protected static final String KEY_FFMPEG_AVISYNTH_INTERFRAME_GPU = "ffmpeg_avisynth_interframegpu";
 	protected static final String KEY_FFMPEG_AVISYNTH_MULTITHREADING = "ffmpeg_avisynth_multithreading";
+	protected static final String KEY_FFMPEG_EXECUTABLE_TYPE = "ffmpeg_executable_type";
 	protected static final String KEY_FFMPEG_FONTCONFIG = "ffmpeg_fontconfig";
 	protected static final String KEY_FFMPEG_MENCODER_PROBLEMATIC_SUBTITLES = "ffmpeg_mencoder_problematic_subtitles";
 	protected static final String KEY_FFMPEG_MULTITHREADING = "ffmpeg_multithreading";
@@ -229,6 +230,7 @@ public class PmsConfiguration extends RendererConfiguration {
 	protected static final String KEY_MENCODER_AC3_FIXED = "mencoder_ac3_fixed";
 	protected static final String KEY_MENCODER_CODEC_SPECIFIC_SCRIPT = "mencoder_codec_specific_script";
 	protected static final String KEY_MENCODER_CUSTOM_OPTIONS = "mencoder_custom_options";
+	protected static final String KEY_MENCODER_EXECUTABLE_TYPE = "mencoder_executable_type";
 	protected static final String KEY_MENCODER_FONT_CONFIG = "mencoder_fontconfig";
 	protected static final String KEY_MENCODER_FORCE_FPS = "mencoder_forcefps";
 	protected static final String KEY_MENCODER_INTELLIGENT_SYNC = "mencoder_intelligent_sync";
@@ -263,7 +265,6 @@ public class PmsConfiguration extends RendererConfiguration {
 	protected static final String KEY_NUMBER_OF_CPU_CORES = "number_of_cpu_cores";
 	protected static final String KEY_OPEN_ARCHIVES = "enable_archive_browsing";
 	protected static final String KEY_OVERSCAN = "mencoder_overscan";
-	protected static final String KEY_PING_PATH = "ping_path";
 	protected static final String KEY_PLAYLIST_AUTO_ADD_ALL= "playlist_auto_add_all";
 	protected static final String KEY_PLAYLIST_AUTO_CONT = "playlist_auto_continue";
 	protected static final String KEY_PLAYLIST_AUTO_PLAY= "playlist_auto_play";
@@ -321,6 +322,8 @@ public class PmsConfiguration extends RendererConfiguration {
 	protected static final String KEY_TRANSCODE_BLOCKS_MULTIPLE_CONNECTIONS = "transcode_block_multiple_connections";
 	protected static final String KEY_TRANSCODE_FOLDER_NAME = "transcode_folder_name";
 	protected static final String KEY_TRANSCODE_KEEP_FIRST_CONNECTION = "transcode_keep_first_connection";
+	protected static final String KEY_TSMUXER_EXECUTABLE_TYPE = "tsmuxer_executable_type";
+	protected static final String KEY_TSMUXER_NEW_EXECUTABLE_TYPE = "tsmuxer-new_executable_type";
 	protected static final String KEY_TSMUXER_FORCEFPS = "tsmuxer_forcefps";
 	protected static final String KEY_UPNP_ENABLED = "upnp_enable";
 	protected static final String KEY_UPNP_PORT = "upnp_port";
@@ -333,6 +336,7 @@ public class PmsConfiguration extends RendererConfiguration {
 	protected static final String KEY_VIRTUAL_FOLDERS = "virtual_folders";
 	protected static final String KEY_VIRTUAL_FOLDERS_FILE = "virtual_folders_file";
 	protected static final String KEY_VLC_AUDIO_SYNC_ENABLED = "vlc_audio_sync_enabled";
+	protected static final String KEY_VLC_EXECUTABLE_TYPE = "vlc_executable_type";
 	protected static final String KEY_VLC_SAMPLE_RATE = "vlc_sample_rate";
 	protected static final String KEY_VLC_SAMPLE_RATE_OVERRIDE = "vlc_sample_rate_override";
 	protected static final String KEY_VLC_SCALE = "vlc_scale";
@@ -392,7 +396,7 @@ public class PmsConfiguration extends RendererConfiguration {
 	protected String defaultLogFileFolder = null;
 
 	public TempFolder tempFolder;
-	public ProgramPaths programPaths;
+	protected final PlatformProgramPaths programPaths;
 	public IpFilter filter;
 
 	/**
@@ -564,8 +568,9 @@ public class PmsConfiguration extends RendererConfiguration {
 	 * from the profile path.
 	 *
 	 * @throws org.apache.commons.configuration.ConfigurationException
+	 * @throws InterruptedException
 	 */
-	public PmsConfiguration() throws ConfigurationException {
+	public PmsConfiguration() throws ConfigurationException, InterruptedException {
 		this(true);
 	}
 
@@ -575,8 +580,9 @@ public class PmsConfiguration extends RendererConfiguration {
 	 * @param loadFile Set to true to attempt to load the DMS configuration
 	 *                 file from the profile path. Set to false to skip
 	 *                 loading.
+	 * @throws InterruptedException
 	 */
-	public PmsConfiguration(boolean loadFile) {
+	public PmsConfiguration(boolean loadFile) throws ConfigurationException, InterruptedException {
 		super(0);
 
 		if (loadFile) {
@@ -605,7 +611,7 @@ public class PmsConfiguration extends RendererConfiguration {
 		((PropertiesConfiguration)configuration).setPath(PROFILE_PATH);
 
 		tempFolder = new TempFolder(getString(KEY_TEMP_FOLDER_PATH, null));
-		programPaths = createProgramPathsChain(configuration);
+		programPaths = PlatformProgramPaths.get(configuration); //TODO: (Nad) bug, start order
 		filter = new IpFilter();
 		PMS.setLocale(getLanguageLocale(true));
 		//TODO: The line below should be removed once all calls to Locale.getDefault() is replaced with PMS.getLocale()
@@ -624,20 +630,21 @@ public class PmsConfiguration extends RendererConfiguration {
 	 * The following 2 constructors are for minimal instantiation in the context of subclasses
 	 * (i.e. DeviceConfiguration) that use our getters and setters on another Configuration object.
 	 * Here our main purpose is to initialize RendererConfiguration as required.
+	 * @throws InterruptedException
 	 */
-	protected PmsConfiguration(int ignored) {
+	protected PmsConfiguration(int ignored) throws InterruptedException {
 		// Just instantiate
 		super(0);
 		tempFolder = null;
-		programPaths = null;
+		programPaths = PlatformProgramPaths.get(configuration);
 		filter = null;
 	}
 
-	protected PmsConfiguration(File f, String uuid) throws ConfigurationException {
+	protected PmsConfiguration(File f, String uuid) throws ConfigurationException, InterruptedException {
 		// Just initialize super
 		super(f, uuid);
 		tempFolder = null;
-		programPaths = null;
+		programPaths = PlatformProgramPaths.get(configuration);
 		filter = null;
 	}
 
@@ -645,20 +652,6 @@ public class PmsConfiguration extends RendererConfiguration {
 	public void reset() {
 		// This is just to prevent super.reset() from being invoked. Actual resetting would
 		// require rebooting here, since all of the application settings are implicated.
-	}
-
-	/**
-	 * Check if we have disabled something first, then check the config file,
-	 * then the Windows registry, then check for a platform-specific
-	 * default.
-	 */
-	protected static ProgramPaths createProgramPathsChain(Configuration configuration) {
-		return new ConfigurationProgramPaths(
-			configuration,
-			new WindowsRegistryProgramPaths(
-				new PlatformSpecificDefaultPathsFactory().get()
-			)
-		);
 	}
 
 	private static String verifyLogFolder(File folder, String fallbackTo) {
@@ -763,44 +756,75 @@ public class PmsConfiguration extends RendererConfiguration {
 		return tempFolder.getTempFolder();
 	}
 
-	public String getVlcPath() {
-		return programPaths.getVlcPath();
+	public ExternalProgramInfo getVLCPaths() {
+		return programPaths.getVLC();
 	}
 
-	public String getMencoderPath() {
-		return programPaths.getMencoderPath();
+	public ProgramExecutableType getVLCExecutableType() {
+		return ProgramExecutableType.toProgramExecutableType(getString(KEY_VLC_EXECUTABLE_TYPE, null), programPaths.getVLC().getDefault());
+	}
+
+	public String getVLCPath() {
+		ProgramExecutableType executableType = getVLCExecutableType();
+		if (executableType != null) {
+			return getVLCPaths().getPath(executableType);
+		}
+		return getVLCPaths().getDefaultPath();
+	}
+	public ExternalProgramInfo getMEncoderPaths() {
+		return programPaths.getMEncoder();
+	}
+
+	public ProgramExecutableType getMEncoderExecutableType() {
+		return ProgramExecutableType.toProgramExecutableType(getString(KEY_MENCODER_EXECUTABLE_TYPE, null), programPaths.getMEncoder().getDefault());
+	}
+
+	public String getMEncoderPath() {
+		ProgramExecutableType executableType = getMEncoderExecutableType();
+		if (executableType != null) {
+			return getMEncoderPaths().getPath(executableType);
+		}
+		return getMEncoderPaths().getDefaultPath();
 	}
 
 	public int getMencoderMaxThreads() {
 		return Math.min(getInt(KEY_MENCODER_MAX_THREADS, getNumberOfCpuCores()), MENCODER_MAX_THREADS);
 	}
 
-	public String getDCRawPath() {
+	public ExternalProgramInfo getDCRawPaths() {
 		return programPaths.getDCRaw();
 	}
 
-	public String getFfmpegPath() {
-		return programPaths.getFfmpegPath();
+	public ProgramExecutableType getDCRawExecutableType() {
+		return ProgramExecutableType.toProgramExecutableType(getString(KEY_DCRAW_EXECUTABLE_TYPE, null), programPaths.getDCRaw().getDefault());
 	}
 
-	public String getMplayerPath() {
-		return programPaths.getMplayerPath();
+	public String getDCRawPath() {
+		ProgramExecutableType executableType = getDCRawExecutableType();
+		if (executableType != null) {
+			return getDCRawPaths().getPath(executableType);
+		}
+		return getDCRawPaths().getDefaultPath();
 	}
 
-	public String getTsmuxerPath() {
-		return programPaths.getTsmuxerPath();
+	public ExternalProgramInfo getFFmpegPaths() {
+		return programPaths.getFFmpeg();
 	}
 
-	public String getTsmuxerNewPath() {
-		return programPaths.getTsmuxerNewPath();
+	public ProgramExecutableType getFFmpegExecutableType() {
+		return ProgramExecutableType.toProgramExecutableType(getString(KEY_FFMPEG_EXECUTABLE_TYPE, null), programPaths.getFFmpeg().getDefault());
 	}
 
-	public String getFlacPath() {
-		return programPaths.getFlacPath();
+	public String getFFmpegPath() {
+		ProgramExecutableType executableType = getFFmpegExecutableType();
+		if (executableType != null) {
+			return getFFmpegPaths().getPath(executableType);
+		}
+		return getFFmpegPaths().getDefaultPath();
 	}
 
-	public String getInterFramePath() {
-		return programPaths.getInterFramePath();
+	public ExternalProgramInfo getMPlayerPaths() {
+		return programPaths.getMPlayer();
 	}
 
 	public LogSystemInformationMode getLogSystemInformation() {
@@ -808,6 +832,58 @@ public class PmsConfiguration extends RendererConfiguration {
 		String value = getString(KEY_LOG_SYSTEM_INFO, defaultValue.toString());
 		LogSystemInformationMode result = LogSystemInformationMode.typeOf(value);
 		return result != null ? result : defaultValue;
+	}
+
+	public String getMPlayerDefaultPath() {
+		return getMPlayerPaths().getDefaultPath();
+	}
+
+	public ExternalProgramInfo gettsMuxeRPaths() {
+		return programPaths.gettsMuxeR();
+	}
+
+	public ProgramExecutableType gettsMuxeRExecutableType() {
+		return ProgramExecutableType.toProgramExecutableType(getString(KEY_TSMUXER_EXECUTABLE_TYPE, null), programPaths.gettsMuxeR().getDefault());
+	}
+
+	public String gettsMuxeRPath() {
+		ProgramExecutableType executableType = gettsMuxeRExecutableType();
+		if (executableType != null) {
+			return gettsMuxeRPaths().getPath(executableType);
+		}
+		return gettsMuxeRPaths().getDefaultPath();
+	}
+
+	public ExternalProgramInfo gettsMuxeRNewPaths() {
+		return programPaths.gettsMuxeRNew();
+	}
+
+	public ProgramExecutableType gettsMuxeRNewExecutableType() {
+		return ProgramExecutableType.toProgramExecutableType(getString(KEY_TSMUXER_NEW_EXECUTABLE_TYPE, null), programPaths.gettsMuxeRNew().getDefault());
+	}
+
+	public String gettsMuxeRNewPath() {
+		ProgramExecutableType executableType = gettsMuxeRNewExecutableType();
+		if (executableType != null) {
+			return gettsMuxeRNewPaths().getPath(executableType);
+		}
+		return gettsMuxeRNewPaths().getDefaultPath();
+	}
+
+	public ExternalProgramInfo getFLACPaths() {
+		return programPaths.getFLAC();
+	}
+
+	public String getFLACDefaultPath() {
+		return getFLACPaths().getDefaultPath();
+	}
+
+	public ExternalProgramInfo getInterFramePaths() {
+		return programPaths.getInterFrame();
+	}
+
+	public String getInterFrameDefaultPath() {
+		return getInterFramePaths().getDefaultPath();
 	}
 
 	/**
@@ -4017,10 +4093,6 @@ public class PmsConfiguration extends RendererConfiguration {
 			RendererConfiguration.calculateAllSpeeds();
 		}
 		configuration.setProperty(KEY_AUTOMATIC_MAXIMUM_BITRATE, b);
-	}
-
-	public String pingPath() {
-		return getString(KEY_PING_PATH, null);
 	}
 
 	public boolean isSpeedDbg() {
