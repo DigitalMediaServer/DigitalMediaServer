@@ -37,7 +37,9 @@ import net.pms.Messages;
 import net.pms.PMS;
 import net.pms.configuration.DeviceConfiguration;
 import net.pms.configuration.FormatConfiguration;
+import net.pms.configuration.PlatformExecutableInfo;
 import net.pms.configuration.PmsConfiguration;
+import net.pms.configuration.ProgramExecutableType;
 import net.pms.configuration.RendererConfiguration;
 import net.pms.dlna.*;
 import net.pms.formats.Format;
@@ -637,8 +639,18 @@ public class MEncoderVideo extends Player {
 	}
 
 	@Override
+	public PlatformExecutableInfo executables() {
+		return configuration.getMEncoderPaths();
+	}
+
+	@Override
+	public ProgramExecutableType getExecutableType() {
+		return configuration.getMEncoderExecutableType();
+	}
+
+	@Override
 	public String executable() {
-		return configuration.getMencoderPath();
+		return configuration.getMEncoderPath();
 	}
 
 	private static int[] getVideoBitrateConfig(String bitrate) {

@@ -35,7 +35,9 @@ import javax.swing.JCheckBox;
 import javax.swing.JComponent;
 import net.pms.Messages;
 import net.pms.configuration.DeviceConfiguration;
+import net.pms.configuration.PlatformExecutableInfo;
 import net.pms.configuration.PmsConfiguration;
+import net.pms.configuration.ProgramExecutableType;
 import net.pms.configuration.RendererConfiguration;
 import net.pms.dlna.DLNAMediaInfo;
 import net.pms.dlna.DLNAMediaSubtitle;
@@ -706,8 +708,18 @@ public class FFMpegVideo extends Player {
 	}
 
 	@Override
+	public PlatformExecutableInfo executables() {
+		return configuration.getFFmpegPaths();
+	}
+
+	@Override
+	public ProgramExecutableType getExecutableType() {
+		return configuration.getFFmpegExecutableType();
+	}
+
+	@Override
 	public String executable() {
-		return configuration.getFfmpegPath();
+		return configuration.getFFmpegPath();
 	}
 
 	@Override

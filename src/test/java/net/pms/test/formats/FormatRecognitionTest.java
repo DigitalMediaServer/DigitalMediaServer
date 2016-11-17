@@ -57,7 +57,7 @@ public class FormatRecognitionTest {
 	private final static PmsConfiguration configuration = new PmsConfiguration(false);
 
 	@BeforeClass
-	public static void setUpBeforeClass() throws ConfigurationException {
+	public static void setUpBeforeClass() throws ConfigurationException, InterruptedException {
 		// Silence all log messages from the PMS code that is being tested
 		LoggerContext context = (LoggerContext) LoggerFactory.getILoggerFactory();
 		context.reset();
@@ -264,9 +264,10 @@ public class FormatRecognitionTest {
 	 * message.
 	 * <p>
 	 * This test verifies the case above.
+	 * @throws InterruptedException
 	 */
 	@Test
-	public void testVirtualVideoActionInitializationCompatibility() {
+	public void testVirtualVideoActionInitializationCompatibility() throws InterruptedException {
 		boolean configurationLoaded = false;
 
 		try {

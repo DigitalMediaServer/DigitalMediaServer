@@ -34,7 +34,9 @@ import javax.swing.*;
 import net.pms.Messages;
 import net.pms.PMS;
 import net.pms.configuration.DeviceConfiguration;
+import net.pms.configuration.PlatformExecutableInfo;
 import net.pms.configuration.PmsConfiguration;
+import net.pms.configuration.ProgramExecutableType;
 import net.pms.configuration.RendererConfiguration;
 import net.pms.dlna.DLNAMediaInfo;
 import net.pms.dlna.DLNAResource;
@@ -128,8 +130,19 @@ public class VLCVideo extends Player {
 	}
 
 	@Override
+	public PlatformExecutableInfo executables() {
+		return configuration.getVLCPaths();
+	}
+
+	@Override
+	public ProgramExecutableType getExecutableType() {
+		return configuration.getVLCExecutableType();
+	}
+
+
+	@Override
 	public String executable() {
-		return configuration.getVlcPath();
+		return configuration.getVLCPath();
 	}
 
 	/**

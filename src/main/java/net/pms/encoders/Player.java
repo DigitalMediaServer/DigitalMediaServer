@@ -28,7 +28,9 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import javax.swing.JComponent;
 import net.pms.Messages;
 import net.pms.PMS;
+import net.pms.configuration.PlatformExecutableInfo;
 import net.pms.configuration.PmsConfiguration;
+import net.pms.configuration.ProgramExecutableType;
 import net.pms.configuration.RendererConfiguration;
 import net.pms.dlna.DLNAMediaAudio;
 import net.pms.dlna.DLNAMediaInfo;
@@ -98,6 +100,8 @@ public abstract class Player {
 	public abstract String[] args();
 
 	public abstract String mimeType();
+	public abstract PlatformExecutableInfo executables();
+	public abstract ProgramExecutableType getExecutableType();
 	public abstract String executable();
 	protected static final PmsConfiguration _configuration = PMS.getConfiguration();
 	protected PmsConfiguration configuration = _configuration;
@@ -222,20 +226,20 @@ public abstract class Player {
 		enabledLock.writeLock().lock();
 		try {
 			this.enabled = enabled;
+			_configuration.setEngineEnabled(id(), enabled);
 		} finally {
 			enabledLock.writeLock().unlock();
 		}
-		_configuration.setEngineEnabled(id(), enabled);
 	}
 
 	public void toggleEnabled() {
 		enabledLock.writeLock().lock();
 		try {
 			enabled = !enabled;
+			_configuration.setEngineEnabled(id(), enabled);
 		} finally {
 			enabledLock.writeLock().unlock();
 		}
-		_configuration.setEngineEnabled(id(), enabled);
 	}
 
 	/**
@@ -661,48 +665,34 @@ public abstract class Player {
 	public abstract boolean isCompatible(DLNAResource resource);
 
 	/**
-	 * Returns whether or not another player has the same
-	 * name and id as this one.
+	 * Returns whether or not another {@link Player} has the same id as this.
 	 *
-	 * @param other
-	 * The other player.
-	 * @return True if names and ids match, false otherwise.
+	 * @return True if ids match, false otherwise.
 	 */
 	@Override
-	public boolean equals(Object other) {
-		if (this == other) {
+	public boolean equals(Object obj) { //TODO: (Nad) Check correctness, should .name() be compared as well?
+		if (this == obj) {
 			return true;
 		}
-		if (other == null) {
+		if (obj == null || !(obj instanceof Player)) {
 			return false;
 		}
-		if (!(other instanceof Player)) {
-			return false;
-		}
-		Player otherPlayer = (Player) other;
-		if (this.name() == null) {
-			if (otherPlayer.name() != null) {
+		Player other = (Player) obj;
+		if (id() == null) {
+			if (other.id() != null) {
 				return false;
 			}
-		} else if (!this.name().equals(otherPlayer.name())) {
-			return false;
-		}
-		if (this.id() == null) {
-			if (otherPlayer.id() != null) {
-				return false;
-			}
-		} else if (!this.id().equals(otherPlayer.id())) {
+		} else if (!id().equals(other.id())) {
 			return false;
 		}
 		return true;
 	}
 
 	@Override
-	public int hashCode() {
+	public int hashCode() { //TODO: (Nad) Check correctness, should .name() be included as well?
 		final int prime = 31;
 		int result = 1;
-		result = prime * result + (name() == null ? 0 : name().hashCode());
-		result = prime * result + (id() == null ? 0 : id().hashCode());
+		result = prime * result + ((id() == null) ? 0 : id().hashCode());
 		return result;
 	}
 }

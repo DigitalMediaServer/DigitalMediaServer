@@ -45,6 +45,7 @@ import net.pms.io.SystemUtils;
 import net.pms.util.FilePermissions;
 import net.pms.util.FileUtil;
 import net.pms.util.StringUtil;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -585,8 +586,8 @@ public final class PlayerFactory {
 			String state = null;
 			try {
 				SimpleProcessWrapperResult result = SimpleProcessWrapper.runProcess(executable.toString());
-				if (!StringUtil.hasValue(result.output.get(0))) {
-					if (result.output != null && result.output.size() > 1) {
+				if (result.output != null && StringUtils.isBlank(result.output.get(0))) {
+					if (result.output.size() > 1) {
 						Pattern pattern = Pattern.compile("decoder\\s\"dcraw\"\\s(\\S+)", Pattern.CASE_INSENSITIVE);
 						Matcher matcher = pattern.matcher(result.output.get(1));
 						if (matcher.find()) {
@@ -598,7 +599,7 @@ public final class PlayerFactory {
 					} else {
 						player.setAvailable(null);
 					}
-				} else if (result.output.size() > 0){
+				} else if (result.output != null && result.output.size() > 0){
 					state =
 						String.format(Messages.getString("Engine.Error"), player) + " \n" +
 						result.output.get(0);

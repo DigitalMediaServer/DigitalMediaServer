@@ -72,7 +72,7 @@ public class FFmpegWebVideo extends FFMpegVideo {
 	static {
 		readWebFilters(_configuration.getProfileFolder() + File.separator + "ffmpeg.webfilters");
 
-		Path executable = Paths.get(_configuration.getFfmpegPath());
+		Path executable = Paths.get(_configuration.getFFmpegPath());
 		try {
 			FilePermissions permissions = new FilePermissions(executable);
 			if (permissions.isExecutable()) {

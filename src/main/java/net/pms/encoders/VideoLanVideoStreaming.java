@@ -24,7 +24,9 @@ import java.util.ArrayList;
 import java.util.List;
 import javax.swing.JComponent;
 import net.pms.configuration.DeviceConfiguration;
+import net.pms.configuration.PlatformExecutableInfo;
 import net.pms.configuration.PmsConfiguration;
+import net.pms.configuration.ProgramExecutableType;
 import net.pms.dlna.DLNAMediaInfo;
 import net.pms.dlna.DLNAResource;
 import net.pms.formats.Format;
@@ -77,8 +79,18 @@ public class VideoLanVideoStreaming extends Player {
 	}
 
 	@Override
+	public PlatformExecutableInfo executables() {
+		return configuration.getVLCPaths();
+	}
+
+	@Override
+	public ProgramExecutableType getExecutableType() {
+		return configuration.getVLCExecutableType();
+	}
+
+	@Override
 	public String executable() {
-		return configuration.getVlcPath();
+		return configuration.getVLCPath();
 	}
 
 	protected String getEncodingArgs() {
