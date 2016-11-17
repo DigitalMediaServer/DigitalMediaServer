@@ -1290,13 +1290,14 @@
 									<target unless="offline">
 										<!-- Make sure the binaries folder exists -->
 										<mkdir dir="${project.binaries}" />
+										<mkdir dir="${project.binaries}/linux" />										
 
 										<!-- Download binaries -->
-										<get src="${project.binaries-base}/linux/ffmpeg?p=${binary-revision}" dest="${project.binaries}/ffmpeg" usetimestamp="true" />
-										<get src="${project.binaries-base}/linux/ffmpeg64?p=${binary-revision}" dest="${project.binaries}/ffmpeg64" usetimestamp="true" />
-										<get src="${project.binaries-base}/linux/tsMuxeR?p=${binary-revision}" dest="${project.binaries}/tsMuxeR" usetimestamp="true" />
-										<get src="${project.binaries-base}/linux/tsMuxeR-new?p=${binary-revision}" dest="${project.binaries}/tsMuxeR-new" usetimestamp="true" />
-										<get src="${project.binaries-base}/linux/tsMuxeR_licence.txt?p=${binary-revision}" dest="${project.binaries}/tsMuxeR_license.txt" usetimestamp="true" />
+										<get src="${project.binaries-base}/linux/ffmpeg?p=${binary-revision}" dest="${project.binaries}/linux/ffmpeg" usetimestamp="true" />
+										<get src="${project.binaries-base}/linux/ffmpeg64?p=${binary-revision}" dest="${project.binaries}/linux/ffmpeg64" usetimestamp="true" />
+										<get src="${project.binaries-base}/linux/tsMuxeR?p=${binary-revision}" dest="${project.binaries}/linux/tsMuxeR" usetimestamp="true" />
+										<get src="${project.binaries-base}/linux/tsMuxeR-new?p=${binary-revision}" dest="${project.binaries}/linux/tsMuxeR-new" usetimestamp="true" />
+										<get src="${project.binaries-base}/linux/tsMuxeR_licence.txt?p=${binary-revision}" dest="${project.binaries}/linux/tsMuxeR_license.txt" usetimestamp="true" />
 									</target>
 								</configuration>
 							</execution>

@@ -337,9 +337,8 @@ public class RendererConfiguration extends UPNPHelper.Renderer {
 		List<String> result = configurationReader.getStringList(key, def);
 		if (result.size() == 1 && result.get(0).equalsIgnoreCase("None")) {
 			return new ArrayList<>();
-		} else {
-			return result;
 		}
+		return result;
 	}
 
 	public void setStringList(String key, List<String> value) {
@@ -712,6 +711,9 @@ public class RendererConfiguration extends UPNPHelper.Renderer {
 		} catch (ConfigurationException e) {
 			LOGGER.error("Configuration error while resolving renderer: {}", e.getMessage());
 			LOGGER.trace("", e);
+		} catch (InterruptedException e) {
+			LOGGER.error("Interrupted while resolving renderer \"{}\": {}", ia, e.getMessage());
+			return null;
 		}
 		if (!recognized) {
 			// Mark it as unloaded so actual recognition can happen later if UPnP sees it.
