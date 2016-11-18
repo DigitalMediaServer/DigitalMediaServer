@@ -25,7 +25,7 @@ import net.pms.util.PlayerUtil;
 
 /* XXX this is the old/obsolete VLC web audio streaming engine */
 public class VideoLanAudioStreaming extends VideoLanVideoStreaming {
-	public static final String ID = "VLCAudio";
+	public static final PlayerId ID = PlayerId.VLC_AUDIO_STREAMING;
 
 	@Deprecated
 	public VideoLanAudioStreaming(PmsConfiguration configuration) {
@@ -41,13 +41,13 @@ public class VideoLanAudioStreaming extends VideoLanVideoStreaming {
 	}
 
 	@Override
-	public String id() {
+	public PlayerId id() {
 		return ID;
 	}
 
 	@Override
 	public String name() {
-		return "VLC Web Audio (Legacy)";
+		return ID.name();
 	}
 
 	@Override

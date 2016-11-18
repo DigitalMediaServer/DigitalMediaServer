@@ -37,7 +37,6 @@ import net.pms.Messages;
 import net.pms.configuration.DeviceConfiguration;
 import net.pms.configuration.PlatformExecutableInfo;
 import net.pms.configuration.PmsConfiguration;
-import net.pms.configuration.ProgramExecutableType;
 import net.pms.configuration.RendererConfiguration;
 import net.pms.dlna.DLNAMediaInfo;
 import net.pms.dlna.DLNAMediaSubtitle;
@@ -94,7 +93,7 @@ public class FFMpegVideo extends Player {
 		this();
 	}
 
-	public static final String ID = "FFmpegVideo";
+	public static final PlayerId ID = PlayerId.FFMPEG_VIDEO;
 
 	/**
 	 * Returns a list of strings representing the rescale options for this transcode i.e. the ffmpeg -vf
@@ -626,7 +625,7 @@ public class FFMpegVideo extends Player {
 	}
 
 	@Override
-	public String id() {
+	public PlayerId id() {
 		return ID;
 	}
 
@@ -654,7 +653,7 @@ public class FFMpegVideo extends Player {
 
 	@Override
 	public String name() {
-		return "FFmpeg";
+		return ID.name();
 	}
 
 	@Override
@@ -710,16 +709,6 @@ public class FFMpegVideo extends Player {
 	@Override
 	public PlatformExecutableInfo executables() {
 		return configuration.getFFmpegPaths();
-	}
-
-	@Override
-	public ProgramExecutableType getExecutableType() {
-		return configuration.getFFmpegExecutableType();
-	}
-
-	@Override
-	public String executable() {
-		return configuration.getFFmpegPath();
 	}
 
 	@Override

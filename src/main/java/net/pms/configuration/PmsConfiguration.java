@@ -50,6 +50,7 @@ import net.pms.encoders.MEncoderVideo;
 import net.pms.encoders.MEncoderWebVideo;
 import net.pms.encoders.Player;
 import net.pms.encoders.PlayerFactory;
+import net.pms.encoders.PlayerId;
 import net.pms.encoders.TsMuxeRAudio;
 import net.pms.encoders.TsMuxeRVideo;
 import net.pms.encoders.VLCVideo;
@@ -98,11 +99,11 @@ public class PmsConfiguration extends RendererConfiguration {
 
 	private static volatile boolean enabledEnginesBuilt = false;
 	private static final ReentrantReadWriteLock enabledEnginesLock = new ReentrantReadWriteLock();
-	private static List<String> enabledEngines;
+	private static List<PlayerId> enabledEngines;
 
 	private static volatile boolean enginesPriorityBuilt = false;
 	private static final ReentrantReadWriteLock enginesPriorityLock = new ReentrantReadWriteLock();
-	private static List<String> enginesPriority;
+	private static List<PlayerId> enginesPriority;
 
 	/*
 	 * MEncoder has a hardwired maximum of 8 threads for -lavcopts and 16
@@ -760,12 +761,72 @@ public class PmsConfiguration extends RendererConfiguration {
 		return programPaths.getVLC();
 	}
 
-	public ProgramExecutableType getVLCExecutableType() {
-		return ProgramExecutableType.toProgramExecutableType(getString(KEY_VLC_EXECUTABLE_TYPE, null), programPaths.getVLC().getDefault());
+	public String getExecutableTypeKey(PlayerId id) {
+		switch (id.toInt()) {
+			case PlayerId.AVI_SYNTH_FFMPEG_INT:
+			case PlayerId.FFMPEG_AUDIO_INT:
+			case PlayerId.FFMPEG_DVRMS_REMUX_INT:
+			case PlayerId.FFMPEG_VIDEO_INT:
+			case PlayerId.FFMPEG_WEB_VIDEO_INT:
+				return KEY_FFMPEG_EXECUTABLE_TYPE;
+			case PlayerId.AVI_SYNTH_MENCODER_INT:
+			case PlayerId.MENCODER_VIDEO_INT:
+			case PlayerId.MENCODER_WEB_VIDEO_INT:
+				return KEY_MENCODER_EXECUTABLE_TYPE;
+			case PlayerId.RAW_THUMBNAILER_INT:
+				return KEY_DCRAW_EXECUTABLE_TYPE;
+			case PlayerId.TSMUXER_AUDIO_INT:
+			case PlayerId.TSMUXER_VIDEO_INT:
+				return KEY_TSMUXER_EXECUTABLE_TYPE;
+			case PlayerId.VLC_AUDIO_STREAMING_INT:
+			case PlayerId.VLC_VIDEO_INT:
+			case PlayerId.VLC_VIDEO_STREAMING_INT:
+			case PlayerId.VLC_WEB_VIDEO_INT:
+				return KEY_VLC_EXECUTABLE_TYPE;
+			default:
+				return null;
+		}
+	}
+
+	public ProgramExecutableType getExecutableType(PlayerId id) {
+		switch (id.toInt()) {
+			case PlayerId.AVI_SYNTH_FFMPEG_INT:
+			case PlayerId.FFMPEG_AUDIO_INT:
+			case PlayerId.FFMPEG_DVRMS_REMUX_INT:
+			case PlayerId.FFMPEG_VIDEO_INT:
+			case PlayerId.FFMPEG_WEB_VIDEO_INT:
+				return ProgramExecutableType.toProgramExecutableType(getString(KEY_FFMPEG_EXECUTABLE_TYPE, null), programPaths.getFFmpeg().getDefault());
+			case PlayerId.AVI_SYNTH_MENCODER_INT:
+			case PlayerId.MENCODER_VIDEO_INT:
+			case PlayerId.MENCODER_WEB_VIDEO_INT:
+				return ProgramExecutableType.toProgramExecutableType(getString(KEY_MENCODER_EXECUTABLE_TYPE, null), programPaths.getMEncoder().getDefault());
+			case PlayerId.RAW_THUMBNAILER_INT:
+				return ProgramExecutableType.toProgramExecutableType(getString(KEY_DCRAW_EXECUTABLE_TYPE, null), programPaths.getDCRaw().getDefault());
+			case PlayerId.TSMUXER_AUDIO_INT:
+			case PlayerId.TSMUXER_VIDEO_INT:
+				return ProgramExecutableType.toProgramExecutableType(getString(KEY_TSMUXER_EXECUTABLE_TYPE, null), programPaths.gettsMuxeR().getDefault());
+			case PlayerId.VLC_AUDIO_STREAMING_INT:
+			case PlayerId.VLC_VIDEO_INT:
+			case PlayerId.VLC_VIDEO_STREAMING_INT:
+			case PlayerId.VLC_WEB_VIDEO_INT:
+				return ProgramExecutableType.toProgramExecutableType(getString(KEY_VLC_EXECUTABLE_TYPE, null), programPaths.getVLC().getDefault());
+			default:
+				return ProgramExecutableType.UNKNOWN;
+		}
+	}
+
+	public void setExecutableType(PlayerId id, ProgramExecutableType executableType) {
+		if (id == null || id.equals(PlayerId.UNKNOWN)) {
+			throw new IllegalArgumentException("id cannot be null or unknown");
+		}
+		if (executableType == null || executableType.equals(ProgramExecutableType.UNKNOWN)) {
+			throw new IllegalArgumentException("executableType cannot be null or unknown");
+		}
+		configuration.setProperty(getExecutableTypeKey(id), executableType.toString());
 	}
 
 	public String getVLCPath() {
-		ProgramExecutableType executableType = getVLCExecutableType();
+		ProgramExecutableType executableType = getExecutableType(PlayerId.VLC_VIDEO);
 		if (executableType != null && executableType != ProgramExecutableType.UNKNOWN) {
 			return getVLCPaths().getPath(executableType);
 		}
@@ -775,12 +836,8 @@ public class PmsConfiguration extends RendererConfiguration {
 		return programPaths.getMEncoder();
 	}
 
-	public ProgramExecutableType getMEncoderExecutableType() {
-		return ProgramExecutableType.toProgramExecutableType(getString(KEY_MENCODER_EXECUTABLE_TYPE, null), programPaths.getMEncoder().getDefault());
-	}
-
 	public String getMEncoderPath() {
-		ProgramExecutableType executableType = getMEncoderExecutableType();
+		ProgramExecutableType executableType = getExecutableType(PlayerId.MENCODER_VIDEO);
 		if (executableType != null && executableType != ProgramExecutableType.UNKNOWN) {
 			return getMEncoderPaths().getPath(executableType);
 		}
@@ -795,12 +852,8 @@ public class PmsConfiguration extends RendererConfiguration {
 		return programPaths.getDCRaw();
 	}
 
-	public ProgramExecutableType getDCRawExecutableType() {
-		return ProgramExecutableType.toProgramExecutableType(getString(KEY_DCRAW_EXECUTABLE_TYPE, null), programPaths.getDCRaw().getDefault());
-	}
-
 	public String getDCRawPath() {
-		ProgramExecutableType executableType = getDCRawExecutableType();
+		ProgramExecutableType executableType = getExecutableType(PlayerId.RAW_THUMBNAILER);
 		if (executableType != null && executableType != ProgramExecutableType.UNKNOWN) {
 			return getDCRawPaths().getPath(executableType);
 		}
@@ -811,12 +864,8 @@ public class PmsConfiguration extends RendererConfiguration {
 		return programPaths.getFFmpeg();
 	}
 
-	public ProgramExecutableType getFFmpegExecutableType() {
-		return ProgramExecutableType.toProgramExecutableType(getString(KEY_FFMPEG_EXECUTABLE_TYPE, null), programPaths.getFFmpeg().getDefault());
-	}
-
 	public String getFFmpegPath() {
-		ProgramExecutableType executableType = getFFmpegExecutableType();
+		ProgramExecutableType executableType = getExecutableType(PlayerId.FFMPEG_VIDEO);
 		if (executableType != null && executableType != ProgramExecutableType.UNKNOWN) {
 			return getFFmpegPaths().getPath(executableType);
 		}
@@ -842,12 +891,8 @@ public class PmsConfiguration extends RendererConfiguration {
 		return programPaths.gettsMuxeR();
 	}
 
-	public ProgramExecutableType gettsMuxeRExecutableType() {
-		return ProgramExecutableType.toProgramExecutableType(getString(KEY_TSMUXER_EXECUTABLE_TYPE, null), programPaths.gettsMuxeR().getDefault());
-	}
-
 	public String gettsMuxeRPath() {
-		ProgramExecutableType executableType = gettsMuxeRExecutableType();
+		ProgramExecutableType executableType = getExecutableType(PlayerId.TSMUXER_VIDEO);
 		if (executableType != null && executableType != ProgramExecutableType.UNKNOWN) {
 			return gettsMuxeRPaths().getPath(executableType);
 		}
@@ -858,12 +903,8 @@ public class PmsConfiguration extends RendererConfiguration {
 		return programPaths.gettsMuxeRNew();
 	}
 
-	public ProgramExecutableType gettsMuxeRNewExecutableType() {
-		return ProgramExecutableType.toProgramExecutableType(getString(KEY_TSMUXER_NEW_EXECUTABLE_TYPE, null), programPaths.gettsMuxeRNew().getDefault());
-	}
-
 	public String gettsMuxeRNewPath() {
-		ProgramExecutableType executableType = gettsMuxeRNewExecutableType();
+		ProgramExecutableType executableType = getExecutableType(PlayerId.TSMUXER_VIDEO);
 		if (executableType != null && executableType != ProgramExecutableType.UNKNOWN) {
 			return gettsMuxeRNewPaths().getPath(executableType);
 		}
@@ -2388,13 +2429,13 @@ public class PmsConfiguration extends RendererConfiguration {
 		if (enabledEnginesBuilt) {
 			return;
 		}
-		String engines = configuration.getString(KEY_ENGINES).trim();
 		enabledEnginesLock.writeLock().lock();
 		try {
 			// Not a bug, using double checked locking
 			if (enabledEnginesBuilt) {
 				return;
 			}
+			String engines = configuration.getString(KEY_ENGINES).trim();
 			if (!StringUtil.hasValue(engines)) {
 				// Set default
 				// boolean includeAviSynth = Platform.isWindows() && PMS.get().getRegistry().isAvis();
@@ -2417,7 +2458,7 @@ public class PmsConfiguration extends RendererConfiguration {
 			} else if (engines.equalsIgnoreCase("None")) {
 				enabledEngines = new ArrayList<>();
 			} else {
-				enabledEngines = stringToList(engines.trim());
+				enabledEngines = stringToPlayerIDList(engines.trim());
 			}
 			enabledEnginesBuilt = true;
 		} finally {
@@ -2430,17 +2471,17 @@ public class PmsConfiguration extends RendererConfiguration {
 	 * Returns a new instance, any modifications won't be stored in the
 	 * original list. Threadsafe.
 	 */
-	public List<String> getEnabledEngines() {
+	public List<PlayerId> getEnabledEngines() {
 		buildEnabledEngines();
 		enabledEnginesLock.readLock().lock();
 		try {
-			return new ArrayList<String>(enabledEngines);
+			return new ArrayList<PlayerId>(enabledEngines);
 		} finally {
 			enabledEnginesLock.readLock().unlock();
 		}
 	}
 
-	public boolean isEngineEnabled(String id) {
+	public boolean isEngineEnabled(PlayerId id) {
 		if (id == null) {
 			throw new NullPointerException("id cannot be null");
 		}
@@ -2461,9 +2502,9 @@ public class PmsConfiguration extends RendererConfiguration {
 		return isEngineEnabled(player.id());
 	}
 
-	public void setEngineEnabled(String id, boolean enabled) {
-		if (!StringUtil.hasValue(id)) {
-			throw new IllegalArgumentException("id cannot be null or blank");
+	public void setEngineEnabled(PlayerId id, boolean enabled) {
+		if (id == null || PlayerId.UNKNOWN.equals(id)) {
+			throw new IllegalArgumentException("Unrecognized id");
 		}
 
 		enabledEnginesLock.writeLock().lock();
@@ -2492,46 +2533,28 @@ public class PmsConfiguration extends RendererConfiguration {
 	 * This is to make sure that any incorrect capitalization in the
 	 * configuration file is corrected. This should only need to be called
 	 * from {@link PlayerFactory#registerPlayer(Player)}.
+	 *
 	 * @param player the engine for which to assure correct capitalization
 	 */
 	public void capitalizeEngineId(Player player) {
 		if (player == null) {
 			throw new NullPointerException("player cannot be null");
 		}
-		final String id = player.id();
 
-		boolean changed = false;
-		enabledEnginesLock.writeLock().lock();
-		try {
-			buildEnabledEngines();
-			for (int i = 0; i < enabledEngines.size(); i++) {
-				if (enabledEngines.get(i).equalsIgnoreCase(id) && !enabledEngines.get(i).equals(id)) {
-					enabledEngines.set(i, id);
-					changed = true;
-				}
+		String engines = configuration.getString(KEY_ENGINES).trim();
+		if (StringUtils.isNotBlank(engines)) {
+			String capitalizedEngines = StringUtil.caseReplace(engines, player.id().toString());
+			if (!engines.equals(capitalizedEngines)) {
+				configuration.setProperty(KEY_ENGINES, capitalizedEngines);
 			}
-			if (changed) {
-				configuration.setProperty(KEY_ENGINES, listToString(enabledEngines));
-			}
-		} finally {
-			enabledEnginesLock.writeLock().unlock();
 		}
 
-		changed = false;
-		enginesPriorityLock.writeLock().lock();
-		try {
-			buildEnginesPriority();
-			for (int i = 0; i < enginesPriority.size(); i++) {
-				if (enginesPriority.get(i).equalsIgnoreCase(id) && !enginesPriority.get(i).equals(id)) {
-					enginesPriority.set(i, id);
-					changed = true;
-				}
+		engines = configuration.getString(KEY_ENGINES_PRIORITY).trim();
+		if (StringUtils.isNotBlank(engines)) {
+			String capitalizedEngines = StringUtil.caseReplace(engines, player.id().toString());
+			if (!engines.equals(capitalizedEngines)) {
+				configuration.setProperty(KEY_ENGINES_PRIORITY, capitalizedEngines);
 			}
-			if (changed) {
-				configuration.setProperty(KEY_ENGINES_PRIORITY, listToString(enginesPriority));
-			}
-		} finally {
-			enginesPriorityLock.writeLock().unlock();
 		}
 	}
 
@@ -2542,13 +2565,13 @@ public class PmsConfiguration extends RendererConfiguration {
 		if (enginesPriorityBuilt) {
 			return;
 		}
-		String enginesPriorityString = configuration.getString(KEY_ENGINES_PRIORITY);
 		enginesPriorityLock.writeLock().lock();
 		try {
 			// Not a bug, using double checked locking
 			if (enginesPriorityBuilt) {
 				return;
 			}
+			String enginesPriorityString = configuration.getString(KEY_ENGINES_PRIORITY);
 			if (!StringUtil.hasValue(enginesPriorityString)) {
 				// Set default
 				enginesPriority = new ArrayList<>(12);
@@ -2574,7 +2597,7 @@ public class PmsConfiguration extends RendererConfiguration {
 
 				configuration.setProperty(KEY_ENGINES_PRIORITY, listToString(enginesPriority));
 			} else {
-				enginesPriority = stringToList(enginesPriorityString.trim());
+				enginesPriority = stringToPlayerIDList(enginesPriorityString.trim());
 			}
 			enginesPriorityBuilt = true;
 		} finally {
@@ -2587,11 +2610,11 @@ public class PmsConfiguration extends RendererConfiguration {
 	 * instance, any modifications won't be stored in the original list.
 	 * Threadsafe.
 	 */
-	public List<String> getEnginesPriority() {
+	public List<PlayerId> getEnginesPriority() {
 		buildEnginesPriority();
 		enginesPriorityLock.readLock().lock();
 		try {
-			return new ArrayList<String>(enginesPriority);
+			return new ArrayList<PlayerId>(enginesPriority);
 		} finally {
 			enginesPriorityLock.readLock().unlock();
 		}
@@ -2600,7 +2623,7 @@ public class PmsConfiguration extends RendererConfiguration {
 	/**
 	 * Returns the priority index according to the rules of {@link List#indexOf(String)}
 	 */
-	public int getEnginePriority(String id) {
+	public int getEnginePriority(PlayerId id) {
 		if (id == null) {
 			throw new NullPointerException("id cannot be null");
 		}
@@ -2627,14 +2650,14 @@ public class PmsConfiguration extends RendererConfiguration {
 	/**
 	 * Moves or inserts a engine id directly above another engine id in the
 	 * priority list. If {@link aboveId} is <code>null</code> {@link id} will
-	 * be placed first in the list. If {@link aboveId} is blank or not found,
+	 * be placed first in the list. If {@link aboveId} is unknown or not found,
 	 * {@link id} will be placed last in the list.
 	 * @param id the engine id to move or insert in the priority list
 	 * @param aboveId the engine id to place {@link id} relative to
 	 */
-	public void setEnginePriorityAbove(String id, String aboveId) {
-		if (!StringUtil.hasValue(id)) {
-			throw new IllegalArgumentException("id cannot be null or blank");
+	public void setEnginePriorityAbove(PlayerId id, PlayerId aboveId) {
+		if (id == null || PlayerId.UNKNOWN.equals(id)) {
+			throw new IllegalArgumentException("Unrecognized id");
 		}
 
 		enginesPriorityLock.writeLock().lock();
@@ -2674,14 +2697,14 @@ public class PmsConfiguration extends RendererConfiguration {
 	/**
 	 * Moves or inserts a engine id directly below another engine id in the
 	 * priority list. If {@link belowId} is <code>null</code> {@link id} will
-	 * be placed last in the list. If {@link belowId} is blank or not found,
+	 * be placed last in the list. If {@link belowId} is unknown or not found,
 	 * {@link id} will also be placed last in the list.
 	 * @param id the engine id to move or insert in the priority list
 	 * @param belowId the engine id to place {@link id} relative to
 	 */
-	public void setEnginePriorityBelow(String id, String belowId) {
-		if (!StringUtil.hasValue(id)) {
-			throw new IllegalArgumentException("id cannot be null or blank");
+	public void setEnginePriorityBelow(PlayerId id, PlayerId belowId) {
+		if (id == null || PlayerId.UNKNOWN.equals(id)) {
+			throw new IllegalArgumentException("Unrecognized id");
 		}
 
 		enginesPriorityLock.writeLock().lock();
@@ -2718,13 +2741,25 @@ public class PmsConfiguration extends RendererConfiguration {
 		setEnginePriorityBelow(player.id(), belowPlayer.id());
 	}
 
-	private static String listToString(List<String> enginesAsList) {
+	private static String listToString(List<?> enginesAsList) {
 		return StringUtils.join(enginesAsList, LIST_SEPARATOR);
 	}
 
-	private static List<String> stringToList(String input) {
+	@SuppressWarnings("unused")
+	private static List<String> stringToStringList(String input) {
 		List<String> output = new ArrayList<>();
 		Collections.addAll(output, StringUtils.split(input, LIST_SEPARATOR));
+		return output;
+	}
+
+	private static List<PlayerId> stringToPlayerIDList(String input) {
+		List<PlayerId> output = new ArrayList<>();
+		for (String s : StringUtils.split(input, LIST_SEPARATOR)) {
+			PlayerId playerID = PlayerId.toPlayerID(s);
+			if (!PlayerId.UNKNOWN.equals(playerID)) {
+				output.add(playerID);
+			}
+		}
 		return output;
 	}
 

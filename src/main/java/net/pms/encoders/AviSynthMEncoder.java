@@ -60,7 +60,7 @@ public class AviSynthMEncoder extends MEncoderVideo {
 	public AviSynthMEncoder() {
 	}
 
-	public static final String ID = "AvSMEncoder";
+	public static final PlayerId ID = PlayerId.AVI_SYNTH_MENCODER;
 
 	private JTextArea textArea;
 	private JCheckBox convertfps;
@@ -201,7 +201,7 @@ public class AviSynthMEncoder extends MEncoderVideo {
 	}
 
 	@Override
-	public String id() {
+	public PlayerId id() {
 		return ID;
 	}
 
@@ -212,7 +212,7 @@ public class AviSynthMEncoder extends MEncoderVideo {
 
 	@Override
 	public String name() {
-		return "AviSynth/MEncoder";
+		return ID.name();
 	}
 
 	@Override

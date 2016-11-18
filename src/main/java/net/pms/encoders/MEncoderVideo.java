@@ -39,7 +39,6 @@ import net.pms.configuration.DeviceConfiguration;
 import net.pms.configuration.FormatConfiguration;
 import net.pms.configuration.PlatformExecutableInfo;
 import net.pms.configuration.PmsConfiguration;
-import net.pms.configuration.ProgramExecutableType;
 import net.pms.configuration.RendererConfiguration;
 import net.pms.dlna.*;
 import net.pms.formats.Format;
@@ -97,7 +96,7 @@ public class MEncoderVideo extends Player {
 	private static final String INVALID_CUSTOM_OPTIONS_LIST = Arrays.toString(INVALID_CUSTOM_OPTIONS);
 
 	public static final int MENCODER_MAX_THREADS = 8;
-	public static final String ID = "MEncoder";
+	public static final PlayerId ID = PlayerId.MENCODER_VIDEO;
 
 	// TODO (breaking change): most (probably all) of these
 	// protected fields should be private. And at least two
@@ -521,7 +520,7 @@ public class MEncoderVideo extends Player {
 	}
 
 	@Override
-	public String id() {
+	public PlayerId id() {
 		return ID;
 	}
 
@@ -641,16 +640,6 @@ public class MEncoderVideo extends Player {
 	@Override
 	public PlatformExecutableInfo executables() {
 		return configuration.getMEncoderPaths();
-	}
-
-	@Override
-	public ProgramExecutableType getExecutableType() {
-		return configuration.getMEncoderExecutableType();
-	}
-
-	@Override
-	public String executable() {
-		return configuration.getMEncoderPath();
 	}
 
 	private static int[] getVideoBitrateConfig(String bitrate) {
@@ -2503,7 +2492,7 @@ public class MEncoderVideo extends Player {
 
 	@Override
 	public String name() {
-		return "MEncoder";
+		return ID.name();
 	}
 
 	@Override

@@ -159,7 +159,7 @@ public class FFmpegWebVideo extends FFMpegVideo {
 		return false;
 	}
 
-	public static final String ID = "FFmpegWebVideo";
+	public static final PlayerId ID = PlayerId.FFMPEG_WEB_VIDEO;
 
 	@Override
 	public JComponent config() {
@@ -167,7 +167,7 @@ public class FFmpegWebVideo extends FFMpegVideo {
 	}
 
 	@Override
-	public String id() {
+	public PlayerId id() {
 		return ID;
 	}
 
@@ -236,7 +236,7 @@ public class FFmpegWebVideo extends FFMpegVideo {
 			customOptions.addAll(parseOptions(hdr));
 		}
 		// - attached options
-		String attached = (String) dlna.getAttachment(ID);
+		String attached = (String) dlna.getAttachment(ID.toString());
 		if (attached != null) {
 			customOptions.addAll(parseOptions(attached));
 		}
@@ -417,7 +417,7 @@ public class FFmpegWebVideo extends FFMpegVideo {
 
 	@Override
 	public String name() {
-		return "FFmpeg Web Video";
+		return ID.name();
 	}
 
 	// TODO remove this when it's removed from Player

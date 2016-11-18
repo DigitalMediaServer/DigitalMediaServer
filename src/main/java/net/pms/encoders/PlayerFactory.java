@@ -19,7 +19,6 @@
  */
 package net.pms.encoders;
 
-import static org.apache.commons.lang3.StringUtils.isBlank;
 import com.sun.jna.Platform;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -162,7 +161,10 @@ public final class PlayerFactory {
 
 			LOGGER.info("Checking transcoding engine: {}", player);
 			PLAYERS.add(player);
-			player.setEnabled(configuration.isEngineEnabled(player));
+			player.setEnabled(configuration.isEngineEnabled(player), false);
+
+			// TODO: (Nad) Temporary implementation
+			player.setCurrentExecutableType(configuration.getExecutableType(player.id()), false);
 
 			if (player.executable() == null) {
 				player.setUnavailable(String.format(Messages.getString("Engine.ExecutableNotDefined"), player));
@@ -291,8 +293,8 @@ public final class PlayerFactory {
 	 * @param id the {@link Player} type to check for.
 	 * @return The result.
 	 */
-	public static boolean isPlayerActive(String id) {
-		if (isBlank(id)) {
+	public static boolean isPlayerActive(PlayerId id) {
+		if (id == null) {
 			return false;
 		}
 
@@ -314,10 +316,10 @@ public final class PlayerFactory {
 	 * and is enabled and available. If no {@link Player} is found or it isn't
 	 * enabled and available, {@code null} is returned.
 	 *
-	 * @param id the {@link Player} type to check for.
+	 * @param id the {@link PlayerId} to look for.
 	 * @return The {@link Player} if found or {@code null}.
 	 */
-	public static Player getActivePlayer(String id) {
+	public static Player getActivePlayer(PlayerId id) {
 		return getPlayer(id, true, true);
 	}
 
@@ -326,14 +328,14 @@ public final class PlayerFactory {
 	 * and matches the given criteria. If no {@link Player} is found or the
 	 * given criteria isn't met, {@code null} is returned.
 	 *
-	 * @param id the {@link Player} type to check for.
+	 * @param id the {@link PlayerId} to look for.
 	 * @param onlyEnabled whether or not to filter on enabled {@link Player}s.
 	 * @param onlyAvailable whether or not to filter on available
 	 *        {@link Player}s.
 	 * @return The {@link Player} if found or {@code null}.
 	 */
-	public static Player getPlayer(String id, boolean onlyEnabled, boolean onlyAvailable) {
-		if (isBlank(id)) {
+	public static Player getPlayer(PlayerId id, boolean onlyEnabled, boolean onlyAvailable) {
+		if (id == null) {
 			return null;
 		}
 		PLAYERS_LOCK.readLock().lock();
