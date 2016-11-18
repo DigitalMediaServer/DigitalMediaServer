@@ -17,7 +17,6 @@ import net.coobird.thumbnailator.Thumbnails;
 import net.pms.PMS;
 import net.pms.configuration.ExternalProgramInfo;
 import net.pms.configuration.PmsConfiguration;
-import net.pms.configuration.ProgramExecutableType;
 import net.pms.dlna.DLNAMediaInfo;
 import net.pms.dlna.DLNAResource;
 import net.pms.formats.Format;
@@ -32,8 +31,9 @@ import net.pms.io.ProcessWrapper;
 import net.pms.io.ProcessWrapperImpl;
 
 public class DCRaw extends ImagePlayer {
-	public final static String ID = "DCRaw";
 	private static final Logger LOGGER = LoggerFactory.getLogger(DCRaw.class);
+	public final static PlayerId ID = StandardPlayerId.DCRAW;
+	public static final String NAME = "DCRaw";
 
 	protected String[] getDefaultArgs() {
 		return new String[]{ "-e", "-c" };
@@ -55,17 +55,7 @@ public class DCRaw extends ImagePlayer {
 	}
 
 	@Override
-	public ProgramExecutableType getExecutableType() {
-		return configuration.getDCRawExecutableType();
-	}
-
-	@Override
-	public String executable() {
-		return configuration.getDCRawPath();
-	}
-
-	@Override
-	public String id() {
+	public PlayerId id() {
 		return ID;
 	}
 
@@ -96,7 +86,7 @@ public class DCRaw extends ImagePlayer {
 
 	@Override
 	public String name() {
-		return "DCRaw";
+		return NAME;
 	}
 
 	@Override

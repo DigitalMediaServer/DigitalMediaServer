@@ -26,7 +26,6 @@ import javax.swing.JComponent;
 import net.pms.configuration.DeviceConfiguration;
 import net.pms.configuration.ExternalProgramInfo;
 import net.pms.configuration.PmsConfiguration;
-import net.pms.configuration.ProgramExecutableType;
 import net.pms.dlna.DLNAMediaInfo;
 import net.pms.dlna.DLNAResource;
 import net.pms.formats.Format;
@@ -38,7 +37,8 @@ import net.pms.util.PlayerUtil;
 
 /* XXX this is the old/obsolete VLC web video streaming engine */
 public class VideoLanVideoStreaming extends Player {
-	public static final String ID = "VLCVideo";
+	public static final PlayerId ID = StandardPlayerId.VLC_VIDEO_STREAMING;
+	public static final String NAME = "VLC Web Video (Legacy)";
 
 	@Deprecated
 	public VideoLanVideoStreaming(PmsConfiguration configuration) {
@@ -54,7 +54,7 @@ public class VideoLanVideoStreaming extends Player {
 	}
 
 	@Override
-	public String id() {
+	public PlayerId id() {
 		return ID;
 	}
 
@@ -65,7 +65,7 @@ public class VideoLanVideoStreaming extends Player {
 
 	@Override
 	public String name() {
-		return "VLC Web Video (Legacy)";
+		return NAME;
 	}
 
 	@Override
@@ -81,16 +81,6 @@ public class VideoLanVideoStreaming extends Player {
 	@Override
 	public ExternalProgramInfo executables() {
 		return configuration.getVLCPaths();
-	}
-
-	@Override
-	public ProgramExecutableType getExecutableType() {
-		return configuration.getVLCExecutableType();
-	}
-
-	@Override
-	public String executable() {
-		return configuration.getVLCPath();
 	}
 
 	protected String getEncodingArgs() {

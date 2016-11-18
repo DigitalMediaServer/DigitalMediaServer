@@ -35,7 +35,6 @@ import net.pms.Messages;
 import net.pms.configuration.DeviceConfiguration;
 import net.pms.configuration.ExternalProgramInfo;
 import net.pms.configuration.PmsConfiguration;
-import net.pms.configuration.ProgramExecutableType;
 import net.pms.configuration.RendererConfiguration;
 import net.pms.dlna.DLNAMediaInfo;
 import net.pms.dlna.DLNAResource;
@@ -48,7 +47,8 @@ import org.apache.commons.lang3.StringUtils;
 
 public class FFmpegDVRMSRemux extends Player {
 	private JTextField altffpath;
-	public static final String ID = "FFmpegDVRMSRemux";
+	public static final PlayerId ID = StandardPlayerId.FFMPEG_DVRMS_REMUX;
+	public static final String NAME = "FFmpeg DVR-MS Remux";
 
 	@Override
 	public int purpose() {
@@ -56,7 +56,7 @@ public class FFmpegDVRMSRemux extends Player {
 	}
 
 	@Override
-	public String id() {
+	public PlayerId id() {
 		return ID;
 	}
 
@@ -72,7 +72,7 @@ public class FFmpegDVRMSRemux extends Player {
 
 	@Override
 	public String name() {
-		return "FFmpeg DVR-MS Remux";
+		return NAME;
 	}
 
 	@Override
@@ -109,15 +109,6 @@ public class FFmpegDVRMSRemux extends Player {
 	@Override
 	public ExternalProgramInfo executables() {
 		return configuration.getFFmpegPaths();
-	}
-
-	@Override
-	public ProgramExecutableType getExecutableType() {
-		return configuration.getFFmpegExecutableType();
-	}
-	@Override
-	public String executable() {
-		return configuration.getFFmpegPath();
 	}
 
 	@Override

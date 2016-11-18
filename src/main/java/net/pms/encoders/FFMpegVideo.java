@@ -37,7 +37,6 @@ import net.pms.Messages;
 import net.pms.configuration.DeviceConfiguration;
 import net.pms.configuration.ExternalProgramInfo;
 import net.pms.configuration.PmsConfiguration;
-import net.pms.configuration.ProgramExecutableType;
 import net.pms.configuration.RendererConfiguration;
 import net.pms.dlna.DLNAMediaInfo;
 import net.pms.dlna.DLNAMediaSubtitle;
@@ -84,6 +83,8 @@ import org.slf4j.LoggerFactory;
  */
 public class FFMpegVideo extends Player {
 	private static final Logger LOGGER = LoggerFactory.getLogger(FFMpegVideo.class);
+	public static final PlayerId ID = StandardPlayerId.FFMPEG_VIDEO;
+	public static final String NAME = "FFmpeg Video";
 	private static final String DEFAULT_QSCALE = "3";
 
 	public FFMpegVideo() {
@@ -93,8 +94,6 @@ public class FFMpegVideo extends Player {
 	public FFMpegVideo(PmsConfiguration configuration) {
 		this();
 	}
-
-	public static final String ID = "FFmpegVideo";
 
 	/**
 	 * Returns a list of strings representing the rescale options for this transcode i.e. the ffmpeg -vf
@@ -626,7 +625,7 @@ public class FFMpegVideo extends Player {
 	}
 
 	@Override
-	public String id() {
+	public PlayerId id() {
 		return ID;
 	}
 
@@ -654,7 +653,7 @@ public class FFMpegVideo extends Player {
 
 	@Override
 	public String name() {
-		return "FFmpeg";
+		return NAME;
 	}
 
 	@Override
@@ -710,16 +709,6 @@ public class FFMpegVideo extends Player {
 	@Override
 	public ExternalProgramInfo executables() {
 		return configuration.getFFmpegPaths();
-	}
-
-	@Override
-	public ProgramExecutableType getExecutableType() {
-		return configuration.getFFmpegExecutableType();
-	}
-
-	@Override
-	public String executable() {
-		return configuration.getFFmpegPath();
 	}
 
 	@Override

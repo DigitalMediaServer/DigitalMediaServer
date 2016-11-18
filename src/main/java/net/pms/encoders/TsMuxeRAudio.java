@@ -29,7 +29,8 @@ import net.pms.io.ProcessWrapper;
 import net.pms.util.PlayerUtil;
 
 public class TsMuxeRAudio extends TsMuxeRVideo {
-	public static final String ID = "TSMuxerAudio";
+	public static final PlayerId ID = StandardPlayerId.TSMUXER_AUDIO;
+	public static final String NAME = "tsMuxeR Audio";
 
 	@Deprecated
 	public TsMuxeRAudio(PmsConfiguration configuration) {
@@ -45,7 +46,7 @@ public class TsMuxeRAudio extends TsMuxeRVideo {
 	}
 
 	@Override
-	public String id() {
+	public PlayerId id() {
 		return ID;
 	}
 
@@ -67,7 +68,7 @@ public class TsMuxeRAudio extends TsMuxeRVideo {
 
 	@Override
 	public String name() {
-		return "Audio High Fidelity";
+		return NAME;
 	}
 
 	@Override

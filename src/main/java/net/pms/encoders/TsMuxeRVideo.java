@@ -37,7 +37,6 @@ import net.pms.PMS;
 import net.pms.configuration.DeviceConfiguration;
 import net.pms.configuration.ExternalProgramInfo;
 import net.pms.configuration.PmsConfiguration;
-import net.pms.configuration.ProgramExecutableType;
 import net.pms.configuration.RendererConfiguration;
 import net.pms.dlna.*;
 import net.pms.formats.Format;
@@ -51,10 +50,11 @@ import org.slf4j.LoggerFactory;
 
 public class TsMuxeRVideo extends Player {
 	private static final Logger LOGGER = LoggerFactory.getLogger(TsMuxeRVideo.class);
+	public static final PlayerId ID = StandardPlayerId.TSMUXER_VIDEO;
+	public static final String NAME = "tsMuxeR Video";
+
 	private static final String COL_SPEC = "left:pref, 0:grow";
 	private static final String ROW_SPEC = "p, 3dlu, p, 3dlu, p, 3dlu, p, 3dlu, p, 3dlu, 0:grow";
-
-	public static final String ID = "TSMuxer";
 
 	@Deprecated
 	public TsMuxeRVideo(PmsConfiguration configuration) {
@@ -89,7 +89,7 @@ public class TsMuxeRVideo extends Player {
 	}
 
 	@Override
-	public String id() {
+	public PlayerId id() {
 		return ID;
 	}
 
@@ -106,16 +106,6 @@ public class TsMuxeRVideo extends Player {
 	@Override
 	public ExternalProgramInfo executables() {
 		return configuration.gettsMuxeRPaths();
-	}
-
-	@Override
-	public ProgramExecutableType getExecutableType() {
-		return configuration.gettsMuxeRExecutableType();
-	}
-
-	@Override
-	public String executable() {
-		return configuration.gettsMuxeRPath();
 	}
 
 	@Override
@@ -707,7 +697,7 @@ public class TsMuxeRVideo extends Player {
 
 	@Override
 	public String name() {
-		return "tsMuxeR";
+		return NAME;
 	}
 
 	@Override

@@ -71,13 +71,18 @@ public abstract class Player {
 
 	public abstract int purpose();
 	public abstract JComponent config();
-	public abstract String id();
+	public abstract PlayerId id();
 	public abstract String name();
 	public abstract int type();
 	/**
 	 * Must be used to control all access to {@link #available}
 	 */
 	protected final ReentrantReadWriteLock availableLock = new ReentrantReadWriteLock();
+
+	/**
+	 * Initialized in {@link PlayerFactory#registerPlayer(Player)}.
+	 */
+	protected volatile ProgramExecutableType currentExecutableType;
 
 	/**
 	 * Used to store if this {@link Player} can be used, e.g if the binary is
@@ -113,6 +118,35 @@ public abstract class Player {
 	@GuardedBy("enabledLock")
 	protected boolean enabled = false;
 
+	/**
+	 * Gets the current {@link ProgramExecutableType} for this {@link Player}.
+	 * This isn't necessarily the same as the configuration setting for this
+	 * {@link PlayerId} which can be gotten using
+	 * {@link PmsConfiguration#getExecutableType(PlayerId)}. The difference
+	 * is that {@link PlayerFactory#registerPlayer(Player)} will choose the
+	 * {@link ProgramExecutableType} based on configuration, default and test
+	 * results without changing the configuration. //TODO: (Nad) make clear
+	 *
+	 * @return The current {@link ProgramExecutableType}
+	 */
+	public ProgramExecutableType getCurrentExecutableType() {
+		return currentExecutableType;
+	}
+
+	/**
+	 * Sets the current {@link ProgramExecutableType} for this {@link Player}
+	 * and optionally also sets the same value in the configuration.
+	 *
+	 * @param executableType the new {@link ProgramExecutableType}.
+	 * @param setConfiguration whether to set the configuration value.
+	 */
+	public void setCurrentExecutableType(ProgramExecutableType executableType, boolean setConfiguration) {
+		currentExecutableType = executableType;
+		if (setConfiguration) {
+			_configuration.setExecutableType(id(), executableType);
+		}
+	}
+
 	// FIXME this is an implementation detail (and not a very good one).
 	// it's entirely up to engines how they construct their command lines.
 	// need to get rid of this
@@ -120,8 +154,11 @@ public abstract class Player {
 
 	public abstract String mimeType();
 	public abstract ExternalProgramInfo executables();
-	public abstract ProgramExecutableType getExecutableType();
-	public abstract String executable();
+
+	public String executable() {
+		return executables().getPath(currentExecutableType);
+	}
+
 	protected static final PmsConfiguration _configuration = PMS.getConfiguration();
 	protected PmsConfiguration configuration = _configuration;
 
@@ -250,11 +287,13 @@ public abstract class Player {
 	 * @param enabled {@code true} if this {@link Player} is enabled,
 	 *            {@code false} otherwise.
 	 */
-	public void setEnabled(boolean enabled) {
+	public void setEnabled(boolean enabled, boolean setConfiguration) {
 		enabledLock.writeLock().lock();
 		try {
 			this.enabled = enabled;
-			_configuration.setEngineEnabled(id(), enabled);
+			if (setConfiguration) {
+				_configuration.setEngineEnabled(id(), enabled);
+			}
 		} finally {
 			enabledLock.writeLock().unlock();
 		}
@@ -263,11 +302,13 @@ public abstract class Player {
 	/**
 	 * Toggles the enabled status for this {@link Player}.
 	 */
-	public void toggleEnabled() {
+	public void toggleEnabled(boolean setConfiguration) {
 		enabledLock.writeLock().lock();
 		try {
 			enabled = !enabled;
-			_configuration.setEngineEnabled(id(), enabled);
+			if (setConfiguration) {
+				_configuration.setEngineEnabled(id(), enabled);
+			}
 		} finally {
 			enabledLock.writeLock().unlock();
 		}

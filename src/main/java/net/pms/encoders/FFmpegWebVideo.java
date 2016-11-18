@@ -50,6 +50,8 @@ import org.slf4j.LoggerFactory;
 
 public class FFmpegWebVideo extends FFMpegVideo {
 	private static final Logger LOGGER = LoggerFactory.getLogger(FFmpegWebVideo.class);
+	public static final PlayerId ID = StandardPlayerId.FFMPEG_WEB_VIDEO;
+	public static final String NAME = "FFmpeg Web Video";
 
 	/**
 	 * Must be used to protect all access to {@link #excludes}, {@link #autoOptions} and {@link #replacements}
@@ -156,15 +158,13 @@ public class FFmpegWebVideo extends FFMpegVideo {
 		return false;
 	}
 
-	public static final String ID = "FFmpegWebVideo";
-
 	@Override
 	public JComponent config() {
 		return null;
 	}
 
 	@Override
-	public String id() {
+	public PlayerId id() {
 		return ID;
 	}
 
@@ -233,7 +233,7 @@ public class FFmpegWebVideo extends FFMpegVideo {
 			customOptions.addAll(parseOptions(hdr));
 		}
 		// - attached options
-		String attached = (String) dlna.getAttachment(ID);
+		String attached = (String) dlna.getAttachment(ID.toString());
 		if (attached != null) {
 			customOptions.addAll(parseOptions(attached));
 		}
@@ -384,7 +384,7 @@ public class FFmpegWebVideo extends FFMpegVideo {
 
 	@Override
 	public String name() {
-		return "FFmpeg Web Video";
+		return NAME;
 	}
 
 	// TODO remove this when it's removed from Player

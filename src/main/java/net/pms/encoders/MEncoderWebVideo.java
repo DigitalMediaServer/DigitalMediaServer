@@ -23,7 +23,6 @@ import javax.swing.JComponent;
 import net.pms.configuration.DeviceConfiguration;
 import net.pms.configuration.ExternalProgramInfo;
 import net.pms.configuration.PmsConfiguration;
-import net.pms.configuration.ProgramExecutableType;
 import net.pms.dlna.DLNAMediaInfo;
 import net.pms.dlna.DLNAResource;
 import net.pms.formats.Format;
@@ -34,7 +33,8 @@ import net.pms.io.ProcessWrapperImpl;
 import net.pms.util.PlayerUtil;
 
 public class MEncoderWebVideo extends Player {
-	public static final String ID = "MEncoderWebVideo";
+	public static final PlayerId ID = StandardPlayerId.MENCODER_WEB_VIDEO;
+	public static final String NAME = "MEncoder Web Video";
 
 	@Override
 	public JComponent config() {
@@ -42,7 +42,7 @@ public class MEncoderWebVideo extends Player {
 	}
 
 	@Override
-	public String id() {
+	public PlayerId id() {
 		return ID;
 	}
 
@@ -141,7 +141,7 @@ public class MEncoderWebVideo extends Player {
 
 	@Override
 	public String name() {
-		return "MEncoder Web";
+		return NAME;
 	}
 
 	@Override
@@ -152,16 +152,6 @@ public class MEncoderWebVideo extends Player {
 	@Override
 	public ExternalProgramInfo executables() {
 		return configuration.getMEncoderPaths();
-	}
-
-	@Override
-	public ProgramExecutableType getExecutableType() {
-		return configuration.getMEncoderExecutableType();
-	}
-
-	@Override
-	public String executable() {
-		return configuration.getMEncoderPath();
 	}
 
 	@Override

@@ -46,7 +46,8 @@ import org.slf4j.LoggerFactory;
 
 public class FFmpegAudio extends FFMpegVideo {
 	private static final Logger LOGGER = LoggerFactory.getLogger(FFmpegAudio.class);
-	public static final String ID = "FFmpegAudio";
+	public static final PlayerId ID = StandardPlayerId.FFMPEG_AUDIO;
+	public static final String NAME = "FFmpeg Audio";
 
 	// should be private
 	@Deprecated
@@ -95,7 +96,7 @@ public class FFmpegAudio extends FFMpegVideo {
 	}
 
 	@Override
-	public String id() {
+	public PlayerId id() {
 		return ID;
 	}
 
@@ -111,7 +112,7 @@ public class FFmpegAudio extends FFMpegVideo {
 
 	@Override
 	public String name() {
-		return "FFmpeg Audio";
+		return NAME;
 	}
 
 	@Override

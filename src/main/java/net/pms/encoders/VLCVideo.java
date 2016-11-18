@@ -36,7 +36,6 @@ import net.pms.PMS;
 import net.pms.configuration.DeviceConfiguration;
 import net.pms.configuration.ExternalProgramInfo;
 import net.pms.configuration.PmsConfiguration;
-import net.pms.configuration.ProgramExecutableType;
 import net.pms.configuration.RendererConfiguration;
 import net.pms.dlna.DLNAMediaInfo;
 import net.pms.dlna.DLNAResource;
@@ -63,9 +62,11 @@ import org.slf4j.LoggerFactory;
  */
 public class VLCVideo extends Player {
 	private static final Logger LOGGER = LoggerFactory.getLogger(VLCVideo.class);
+	public static final PlayerId ID = StandardPlayerId.VLC_VIDEO;
+	public static final String NAME = "VLC Video";
+
 	private static final String COL_SPEC = "left:pref, 3dlu, p, 3dlu, 0:grow";
 	private static final String ROW_SPEC = "p, 3dlu, p, 3dlu, p";
-	public static final String ID = "VLCTranscoder";
 	protected JTextField scale;
 	protected JCheckBox experimentalCodecs;
 	protected JCheckBox audioSyncEnabled;
@@ -89,7 +90,7 @@ public class VLCVideo extends Player {
 	}
 
 	@Override
-	public String id() {
+	public PlayerId id() {
 		return ID;
 	}
 
@@ -115,7 +116,7 @@ public class VLCVideo extends Player {
 
 	@Override
 	public String name() {
-		return "VLC";
+		return NAME;
 	}
 
 	@Override
@@ -132,17 +133,6 @@ public class VLCVideo extends Player {
 	@Override
 	public ExternalProgramInfo executables() {
 		return configuration.getVLCPaths();
-	}
-
-	@Override
-	public ProgramExecutableType getExecutableType() {
-		return configuration.getVLCExecutableType();
-	}
-
-
-	@Override
-	public String executable() {
-		return configuration.getVLCPath();
 	}
 
 	/**
