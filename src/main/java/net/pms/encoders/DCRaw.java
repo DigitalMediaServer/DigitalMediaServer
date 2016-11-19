@@ -47,6 +47,10 @@ public class DCRaw extends ImagePlayer {
 	public final static PlayerId ID = StandardPlayerId.DCRAW;
 	public static final String NAME = "DCRaw";
 
+	// Not to be instantiated by anything but PlayerFactory
+	DCRaw() {
+	}
+
 	protected String[] getDefaultArgs() {
 		return new String[] { "-e", "-c" };
 	}
@@ -184,7 +188,7 @@ public class DCRaw extends ImagePlayer {
 
 		// First try to get the embedded thumbnail
 		String[] cmdArray = new String[6];
-		cmdArray[0] = configuration.getDCRawPath();
+		cmdArray[0] = PlayerFactory.getPlayerExecutable(ID);
 		cmdArray[1] = "-e";
 		cmdArray[2] = "-c";
 		cmdArray[3] = "-M";
@@ -322,7 +326,7 @@ public class DCRaw extends ImagePlayer {
 		params.log = true;
 
 		String[] cmdArray = new String[4];
-		cmdArray[0] = configuration.getDCRawPath();
+		cmdArray[0] = PlayerFactory.getPlayerExecutable(ID);
 		cmdArray[1] = "-i";
 		cmdArray[2] = "-v";
 		cmdArray[3] = file.getAbsolutePath();

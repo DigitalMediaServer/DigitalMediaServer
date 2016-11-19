@@ -838,23 +838,8 @@ public class PmsConfiguration extends RendererConfiguration {
 		configuration.setProperty(getExecutableTypeKey(id), executableType.toString());
 	}
 
-	public String getVLCPath() {
-		ProgramExecutableType executableType = getExecutableType(StandardPlayerId.VLC_VIDEO);
-		if (executableType != null) {
-			return getVLCPaths().getPath(executableType).toString();
-		}
-		return getVLCPaths().getDefaultPath().toString();
-	}
 	public ExternalProgramInfo getMEncoderPaths() {
 		return programPaths.getMEncoder();
-	}
-
-	public String getMEncoderPath() {
-		ProgramExecutableType executableType = getExecutableType(StandardPlayerId.MENCODER_VIDEO);
-		if (executableType != null) {
-			return getMEncoderPaths().getPath(executableType).toString();
-		}
-		return getMEncoderPaths().getDefaultPath().toString();
 	}
 
 	public int getMencoderMaxThreads() {
@@ -865,24 +850,8 @@ public class PmsConfiguration extends RendererConfiguration {
 		return programPaths.getDCRaw();
 	}
 
-	public String getDCRawPath() {
-		ProgramExecutableType executableType = getExecutableType(StandardPlayerId.DCRAW);
-		if (executableType != null) {
-			return getDCRawPaths().getPath(executableType).toString();
-		}
-		return getDCRawPaths().getDefaultPath().toString();
-	}
-
 	public ExternalProgramInfo getFFmpegPaths() {
 		return programPaths.getFFmpeg();
-	}
-
-	public String getFFmpegPath() {
-		ProgramExecutableType executableType = getExecutableType(StandardPlayerId.FFMPEG_VIDEO);
-		if (executableType != null) {
-			return getFFmpegPaths().getPath(executableType).toString();
-		}
-		return getFFmpegPaths().getDefaultPath().toString();
 	}
 
 	public ExternalProgramInfo getMPlayerPaths() {
@@ -897,19 +866,12 @@ public class PmsConfiguration extends RendererConfiguration {
 	}
 
 	public String getMPlayerDefaultPath() {
-		return getMPlayerPaths().getDefaultPath().toString();
+		Path executable = getMPlayerPaths().getDefaultPath();
+		return executable == null ? null : executable.toString();
 	}
 
 	public ExternalProgramInfo gettsMuxeRPaths() {
 		return programPaths.gettsMuxeR();
-	}
-
-	public String gettsMuxeRPath() {
-		ProgramExecutableType executableType = getExecutableType(StandardPlayerId.TSMUXER_VIDEO);
-		if (executableType != null) {
-			return gettsMuxeRPaths().getPath(executableType).toString();
-		}
-		return gettsMuxeRPaths().getDefaultPath().toString();
 	}
 
 	public ExternalProgramInfo gettsMuxeRNewPaths() {
@@ -918,10 +880,13 @@ public class PmsConfiguration extends RendererConfiguration {
 
 	public String gettsMuxeRNewPath() {
 		ProgramExecutableType executableType = getExecutableType(StandardPlayerId.TSMUXER_VIDEO);
+		Path executable;
 		if (executableType != null) {
-			return gettsMuxeRNewPaths().getPath(executableType).toString();
+			executable = gettsMuxeRNewPaths().getPath(executableType);
+			return executable == null ? null : executable.toString();
 		}
-		return gettsMuxeRNewPaths().getDefaultPath().toString();
+		executable = gettsMuxeRNewPaths().getDefaultPath();
+		return executable == null ? null : executable.toString();
 	}
 
 	public ExternalProgramInfo getFLACPaths() {
@@ -929,7 +894,8 @@ public class PmsConfiguration extends RendererConfiguration {
 	}
 
 	public String getFLACDefaultPath() {
-		return getFLACPaths().getDefaultPath().toString();
+		Path executable = getFLACPaths().getDefaultPath();
+		return executable == null ? null : executable.toString();
 	}
 
 	public ExternalProgramInfo getInterFramePaths() {
@@ -937,7 +903,8 @@ public class PmsConfiguration extends RendererConfiguration {
 	}
 
 	public String getInterFrameDefaultPath() {
-		return getInterFramePaths().getDefaultPath().toString();
+		Path executable = getInterFramePaths().getDefaultPath();
+		return executable == null ? null : executable.toString();
 	}
 
 	public Path getCtrlSenderPath() {

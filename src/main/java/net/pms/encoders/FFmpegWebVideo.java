@@ -52,6 +52,10 @@ public class FFmpegWebVideo extends FFMpegVideo {
 	public static final PlayerId ID = StandardPlayerId.FFMPEG_WEB_VIDEO;
 	public static final String NAME = "FFmpeg Web Video";
 
+	// Not to be instantiated by anything but PlayerFactory
+	FFmpegWebVideo() {
+	}
+
 	/**
 	 * Must be used to protect all access to {@link #excludes}, {@link #autoOptions} and {@link #replacements}
 	 */
