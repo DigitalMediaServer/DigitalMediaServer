@@ -673,9 +673,15 @@ public class PMS {
 			 * different caches, which is why here we ask FFmpeg (64-bit
 			 * if possible) to create a cache.
 			 * This should result in all of the necessary caches being built.
+			 * TODO: (Nad) Rewrite fontconfig generation
 			 */
 			if (!Platform.isWindows() || Platform.is64Bit()) {
-				ProcessWrapperImpl ffmpeg = new ProcessWrapperImpl(new String[]{configuration.getFFmpegPath(), "-y", "-f", "lavfi", "-i", "nullsrc=s=720x480:d=1:r=1", "-vf", "ass=DummyInput.ass", "-target", "ntsc-dvd", "-"}, outputParams);
+				ProcessWrapperImpl ffmpeg = new ProcessWrapperImpl(
+					new String[]{
+						configuration.getFFmpegPaths().getDefaultPath().toString(),
+						"-y", "-f", "lavfi", "-i", "nullsrc=s=720x480:d=1:r=1", "-vf", "ass=DummyInput.ass", "-target", "ntsc-dvd", "-"},
+					outputParams
+				);
 				ffmpeg.runInNewThread();
 			}
 		}
@@ -700,7 +706,7 @@ public class PMS {
 
 		// Check if VLC is found
 		String vlcVersion = registry.getVlcVersion();
-		String vlcPath = registry.getVlcPath();
+		String vlcPath = registry.getVlcPath().toString();
 
 		if (vlcVersion != null && vlcPath != null) {
 			LOGGER.info("Found VLC version " + vlcVersion + " at: " + vlcPath);

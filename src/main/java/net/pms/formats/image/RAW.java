@@ -12,6 +12,7 @@ import net.pms.dlna.DLNAMediaInfo;
 import net.pms.dlna.DLNAThumbnail;
 import net.pms.dlna.InputFile;
 import net.pms.encoders.PlayerFactory;
+import net.pms.encoders.PlayerId;
 import net.pms.encoders.DCRaw;
 import net.pms.image.ImageFormat;
 import net.pms.image.ImageInfo;
@@ -167,7 +168,7 @@ public class RAW extends ImageBase {
 				media.setImageInfo(imageInfo);
 
 				if (media.getWidth() > 0 && media.getHeight() > 0 && configuration.getImageThumbnailsEnabled()) {
-					byte[] image = new DCRaw().getThumbnail(null, file.getFile().getAbsolutePath(), imageInfo);
+					byte[] image = dcraw.getThumbnail(null, file.getFile().getAbsolutePath(), imageInfo);
 					media.setThumb(DLNAThumbnail.toThumbnail(image, 320, 320, ScaleType.MAX, ImageFormat.JPEG, false));
 				}
 			} else {

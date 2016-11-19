@@ -50,6 +50,9 @@ public class FFmpegDVRMSRemux extends Player {
 	public static final PlayerId ID = StandardPlayerId.FFMPEG_DVRMS_REMUX;
 	public static final String NAME = "FFmpeg DVR-MS Remux";
 
+	// Not to be instantiated by anything but PlayerFactory
+	FFmpegDVRMSRemux() {}
+
 	@Override
 	public int purpose() {
 		return MISC_PLAYER;
@@ -203,15 +206,17 @@ public class FFmpegDVRMSRemux extends Player {
 		return mediaRenderer.isTranscodeToMPEGPSMPEG2AC3();
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public boolean isCompatible(DLNAResource resource) {
 		if (PlayerUtil.isVideo(resource, Format.Identifier.DVRMS)) {
 			return true;
 		}
 
+		return false;
+	}
+
+	@Override
+	public boolean excludeFormat(Format extension) {
 		return false;
 	}
 }

@@ -29,6 +29,7 @@ import com.sun.jna.ptr.LongByReference;
 import java.io.File;
 import java.io.IOException;
 import java.nio.CharBuffer;
+import java.nio.file.Paths;
 import net.pms.io.SimpleProcessWrapper.SimpleProcessWrapperResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -235,7 +236,7 @@ public class WinUtils extends BasicSystemUtils {
 					return;
 				}
 			}
-			vlcPath = Advapi32Util.registryGetStringValue(WinReg.HKEY_LOCAL_MACHINE, key, "");
+			vlcPath = Paths.get(Advapi32Util.registryGetStringValue(WinReg.HKEY_LOCAL_MACHINE, key, ""));
 			vlcVersion = Advapi32Util.registryGetStringValue(WinReg.HKEY_LOCAL_MACHINE, key, "Version");
 		} catch (Win32Exception e) {
 			LOGGER.debug("Could not get VLC information from Windows registry: {}", e.getMessage());

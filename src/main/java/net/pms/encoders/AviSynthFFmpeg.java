@@ -61,6 +61,9 @@ public class AviSynthFFmpeg extends FFMpegVideo {
 	public static final PlayerId ID = StandardPlayerId.AVI_SYNTH_FFMPEG;
 	public static final String NAME = "AviSynth/FFmpeg";
 
+	// Not to be instantiated by anything but PlayerFactory
+	AviSynthFFmpeg() {}
+
 	@Override
 	public PlayerId id() {
 		return ID;

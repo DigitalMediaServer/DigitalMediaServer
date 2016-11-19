@@ -36,7 +36,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import net.pms.Messages;
 import net.pms.PMS;
+import net.pms.configuration.ExternalProgramInfo;
 import net.pms.configuration.PmsConfiguration;
+import net.pms.configuration.ProgramExecutableType;
 import net.pms.dlna.DLNAResource;
 import net.pms.formats.FormatFactory;
 import net.pms.io.SimpleProcessWrapper;
@@ -55,10 +57,10 @@ import org.slf4j.LoggerFactory;
  */
 public final class PlayerFactory {
 
-	/**
-	 * Logger used for all logging.
-	 */
+	/** The {@link Logger} used for all logging. */
 	private static final Logger LOGGER = LoggerFactory.getLogger(FormatFactory.class);
+
+	private static final String[] WINDOWS_EXECUTABLE_EXTENSIONS = {"exe", "com", "bat"};
 
 	/**
 	 * Must be used to lock all access to {@link #PLAYERS}.
@@ -120,7 +122,7 @@ public final class PlayerFactory {
 	}
 
 	/**
-	 * Registers a known set transcoding engines.
+	 * Registers known transcoding engines.
 	 *
 	 * @throws InterruptedException
 	 */
@@ -143,6 +145,8 @@ public final class PlayerFactory {
 		registerPlayer(new VideoLanAudioStreaming());
 		registerPlayer(new VideoLanVideoStreaming());
 		registerPlayer(new DCRaw());
+
+		FFmpegWebVideo.initializeProtocols();
 	}
 
 	/**
@@ -168,63 +172,114 @@ public final class PlayerFactory {
 			PLAYERS.add(player);
 			player.setEnabled(configuration.isEngineEnabled(player), false);
 
-			// TODO: (Nad) Temporary implementation
-			player.setCurrentExecutableType(configuration.getExecutableType(player.id()), false);
-
-			if (player.executable() == null) {
-				player.setUnavailable(String.format(Messages.getString("Engine.ExecutableNotDefined"), player));
-				LOGGER.warn("Executable of transcoding engine {} is undefined", player);
-				return;
-			}
-
-			Path executable;
-			if (Platform.isWindows()) {
-				String[] validExtensions = {"exe", "com", "bat"};
-				String extension = FileUtil.getExtension(player.executable());
-				if (extension == null || !Arrays.asList(validExtensions).contains(extension.toLowerCase())) {
-					executable = Paths.get(player.executable() + ".exe");
-				} else {
-					executable = Paths.get(player.executable());
-				}
-			} else if (player.avisynth()) {
-				LOGGER.debug("Skipping transcoding engine {} as it's not compatible with this platform", player);
-				player.setUnavailable(String.format(Messages.getString("Engine.ExecutablePlatformIncompatible"), player));
-				return;
-			} else {
-				executable = Paths.get(player.executable());
-			}
-
+			ExternalProgramInfo executableInfo = player.executables();
+			ReentrantReadWriteLock executableInfoLock = executableInfo.getLock();
+			// Lock it for consistency during tests
+			executableInfoLock.readLock().lock();
 			try {
-				FilePermissions permissions = new FilePermissions(executable);
-				if (!permissions.isExecutable()) {
-					LOGGER.warn(
-						"Insufficient permission to execute \"{}\" for transcoding engine {}",
-						executable.toAbsolutePath(),
-						player
-					);
-					player.setUnavailable(
-						String.format(Messages.getString("Engine.MissingExecutePermission"), executable.toAbsolutePath(), player)
-					);
-					return;
-				} else if (Platform.isWindows() && player.avisynth() && !utils.isAvis()) {
-					LOGGER.warn("Transcoding engine {} is unavailable since AviSynth couldn't be found", player);
-					player.setUnavailable(String.format(Messages.getString("Engine.AviSynthNotFound"), player));
-					return;
-				} else if (!playerTest(player, executable)) {
-					// Only set available if this isn't already done by the test to avoid overwriting the status
-					player.setAvailable(null);
+				for (ProgramExecutableType executableType : executableInfo.executablesTypes()) {
+
+					Path executable = executableInfo.getPath(executableType);
+					if (executable == null) {
+						player.setUnavailable(
+							executableType,
+							String.format(Messages.getString("Engine.ExecutableNotDefined"), executableType, player)
+						);
+						LOGGER.warn("{} executable for transcoding engine {} is undefined", executableType, player);
+						continue;
+					}
+
+					if (Platform.isWindows()) {
+						Path fileName = executable.getFileName();
+						if (fileName != null) {
+							String extension = FileUtil.getExtension(fileName);
+							if (extension == null || !Arrays.asList(WINDOWS_EXECUTABLE_EXTENSIONS).contains(extension.toLowerCase())) {
+								executable = Paths.get(executable.toString() + ".exe");
+							}
+						}
+					} else if (player.avisynth()) {
+						LOGGER.debug(
+							"Skipping transcoding engine {} ({}) as it's not compatible with this platform",
+							player,
+							executableType
+						);
+						player.setUnavailable(
+							executableType,
+							String.format(Messages.getString("Engine.ExecutablePlatformIncompatible"), player)
+						);
+						continue;
+					}
+
+					/*
+					 * Don't make executables that only is a file name absolute
+					 * or check for file permissions as they probably depend on
+					 * the local path.
+					 */
+					if (executable != null && !executable.equals(executable.getFileName())) {
+						executable = executable.toAbsolutePath();
+
+						try {
+							FilePermissions permissions = new FilePermissions(executable);
+							if (!permissions.isExecutable()) {
+								LOGGER.warn(
+									"Insufficient permission to execute \"{}\" for transcoding engine {} ({})",
+									executable,
+									player,
+									executableType
+								);
+								player.setUnavailable(
+									executableType,
+									String.format(Messages.getString("Engine.MissingExecutePermission"), executable, player)
+								);
+								continue;
+							}
+						} catch (FileNotFoundException e) {
+							LOGGER.warn(
+								"{} executable \"{}\" of transcoding engine {} not found: {}",
+								executableType,
+								executable,
+								player,
+								e.getMessage()
+							);
+							player.setUnavailable(
+								executableType,
+								String.format(Messages.getString("Engine.ExecutableNotFound"), executable, player)
+							);
+							continue;
+						}
+					}
+					if (Platform.isWindows() && player.avisynth() && !utils.isAvis()) {
+						LOGGER.debug("Transcoding engine {} ({}) is unavailable since AviSynth couldn't be found", player, executableType);
+						player.setUnavailable(executableType, String.format(Messages.getString("Engine.AviSynthNotFound"), player));
+						continue;
+					}
+					if (!playerTest(player, executableType, executable)) {
+						// Only set available if this isn't already done by the test to avoid overwriting the status
+						player.setAvailable(executableType, null);
+					}
 				}
-			} catch (FileNotFoundException e) {
-				LOGGER.warn(
-					"Executable \"{}\" of transcoding engine {} not found: {}",
-					executable.toAbsolutePath(),
-					player,
-					e.getMessage()
-				);
-				player.setUnavailable(
-					String.format(Messages.getString("Engine.ExecutableNotFound"), executable.toAbsolutePath(), player)
-				);
-				return;
+
+				// Find the best executable type to use, first read the one from configuration
+				ProgramExecutableType currentExecutableType = configuration.getExecutableType(player.id());
+				if (!player.isAvailable(currentExecutableType)) {
+					// Set the platform default if that is available
+					if (player.isAvailable(executableInfo.getDefault())) {
+						currentExecutableType = executableInfo.getDefault();
+					} else {
+						// Set the first one that is available, if any
+						for (ProgramExecutableType executableType : executableInfo.executablesTypes()) {
+							if (player.isAvailable(executableType)) {
+								currentExecutableType = executableType;
+								break;
+							}
+						}
+					}
+					// Leave it to the configured type if none other is available
+				}
+				player.setCurrentExecutableType(currentExecutableType, false);
+
+			} finally {
+				executableInfoLock.readLock().unlock();
 			}
 
 			if (player.isAvailable()) {
@@ -367,6 +422,30 @@ public final class PlayerFactory {
 	}
 
 	/**
+	 * Checks if a {@link Player} of the given type is both available.
+	 *
+	 * @param id the {@link Player} type to check for.
+	 * @return The result.
+	 */
+	public static boolean isPlayerAvailable(PlayerId id) {
+		if (id == null) {
+			return false;
+		}
+
+		PLAYERS_LOCK.readLock().lock();
+		try {
+			for (Player player : PLAYERS) {
+				if (id.equals(player.id())) {
+					return player.isAvailable();
+				}
+			}
+			return false;
+		} finally {
+			PLAYERS_LOCK.readLock().unlock();
+		}
+	}
+
+	/**
 	 * Returns the {@link Player} that matches the given {@code id} if it exists
 	 * and is enabled and available. If no {@link Player} is found or it isn't
 	 * enabled and available, {@code null} is returned.
@@ -463,6 +542,31 @@ public final class PlayerFactory {
 	}
 
 	/**
+	 * Gets a {@link Player}s currently active executable the registered
+	 * players or {@code null} if the no such {@link Player} is registered.
+	 *
+	 * @param id the {@link PlayerId} to use for lookup.
+	 * @return the executable {@link String} or {@code null}.
+	 */
+	public static String getPlayerExecutable(final PlayerId id) {
+		if (id == null) {
+			return null;
+		}
+
+		PLAYERS_LOCK.readLock().lock();
+		try {
+			for (Player player : PLAYERS) {
+				if (id.equals(player.id())) {
+					return player.executable();
+				}
+			}
+		} finally {
+			PLAYERS_LOCK.readLock().unlock();
+		}
+		return null;
+	}
+
+	/**
 	 * Returns all {@link Player}s that match the given resource and are
 	 * enabled. Each of the available {@link Player}s are passed the provided
 	 * information and each {@link Player} that reports that it is compatible
@@ -505,14 +609,14 @@ public final class PlayerFactory {
 	 * @return {@code true} if a test was performed, {@code false} otherwise.
 	 * @throws InterruptedException If the operation is interrupted.
 	 */
-	private static boolean playerTest(Player player, Path executable) throws InterruptedException {
+	private static boolean playerTest(Player player, ProgramExecutableType executableType, Path executable) throws InterruptedException {
 		if (executable == null) {
 			return false;
 		}
 
 		for (PlayerTestRecord testRecord : TEST_RECORDS) {
 			if (executable.equals(testRecord.executable)) {
-				player.setAvailable(testRecord.pass, testRecord.status);
+				player.setAvailable(testRecord.pass, executableType, testRecord.status);
 				return true;
 			}
 		}
@@ -529,12 +633,12 @@ public final class PlayerFactory {
 						Matcher matcher = pattern.matcher(result.getOutput().get(0));
 						if (matcher.find()) {
 							status = matcher.group(1);
-							player.setAvailable(status);
+							player.setAvailable(executableType, status);
 						} else {
-							player.setAvailable(null);
+							player.setAvailable(executableType, null);
 						}
 					} else {
-						player.setAvailable(null);
+						player.setAvailable(executableType, null);
 					}
 				} else {
 					if (result.getOutput().size() > 2) {
@@ -542,24 +646,23 @@ public final class PlayerFactory {
 							String.format(Messages.getString("Engine.Error"), player) + " \n" +
 							result.getOutput().get(result.getOutput().size() - 2) + " " +
 							result.getOutput().get(result.getOutput().size() - 1);
-						player.setUnavailable(status);
+						player.setUnavailable(executableType, status);
 					} else if (result.getOutput().size() > 1) {
 						status =
 							String.format(Messages.getString("Engine.Error"), player) + " \n" +
 							result.getOutput().get(result.getOutput().size() - 1);
-						player.setUnavailable(status);
+						player.setUnavailable(executableType, status);
 					} else {
 						status = String.format(Messages.getString("Engine.Error"), player) + Messages.getString("General.3");
-						player.setUnavailable(status);
+						player.setUnavailable(executableType, status);
 					}
 				}
 			} catch (IOException e) {
-				LOGGER.warn("\"{} {}\" failed with error: {}", executable.toString(), arg, e.getMessage());
-				LOGGER.trace("", e);
+				LOGGER.debug("\"{} {}\" ({}) failed with error: {}", executable, arg, executableType, e.getMessage());
 				status = String.format(Messages.getString("Engine.Error"), player) + " \n" + e.getMessage();
-				player.setUnavailable(status);
+				player.setUnavailable(executableType, status);
 			}
-			TEST_RECORDS.add(new PlayerTestRecord(executable, player.isAvailable(), status));
+			TEST_RECORDS.add(new PlayerTestRecord(executable, player.isAvailable(executableType) , status));
 			return true;
 		} else if (player instanceof MEncoderVideo || player instanceof MEncoderWebVideo) {
 			final String arg = "-info:help";
@@ -572,12 +675,12 @@ public final class PlayerFactory {
 						Matcher matcher = pattern.matcher(result.getOutput().get(0));
 						if (matcher.find()) {
 							status = matcher.group(1);
-							player.setAvailable(status);
+							player.setAvailable(executableType, status);
 						} else {
-							player.setAvailable(null);
+							player.setAvailable(executableType, null);
 						}
 					} else {
-						player.setAvailable(null);
+						player.setAvailable(executableType, null);
 					}
 				} else {
 					if (result.getOutput() != null &&
@@ -589,19 +692,18 @@ public final class PlayerFactory {
 						status =
 							String.format(Messages.getString("Engine.Error"), player) + " \n" +
 							result.getOutput().get(result.getOutput().size() - 3);
-						player.setUnavailable(status);
+						player.setUnavailable(executableType, status);
 					} else {
 						status = String.format(Messages.getString("Engine.Error"), player) + Messages.getString("General.3");
-						player.setUnavailable(status);
+						player.setUnavailable(executableType, status);
 					}
 				}
 			} catch (IOException e) {
-				LOGGER.warn("\"{} {}\" failed with error: {}", executable.toString(), arg, e.getMessage());
-				LOGGER.trace("", e);
+				LOGGER.debug("\"{} {}\" ({}) failed with error: {}", executable, arg, executableType, e.getMessage());
 				status = String.format(Messages.getString("Engine.Error"), player) + " \n" + e.getMessage();
-				player.setUnavailable(status);
+				player.setUnavailable(executableType, status);
 			}
-			TEST_RECORDS.add(new PlayerTestRecord(executable, player.isAvailable(), status));
+			TEST_RECORDS.add(new PlayerTestRecord(executable, player.isAvailable(executableType), status));
 			return true;
 		} else if (player instanceof TsMuxeRVideo) {
 			final String arg = "-v";
@@ -614,27 +716,26 @@ public final class PlayerFactory {
 						Matcher matcher = pattern.matcher(result.getOutput().get(0));
 						if (matcher.find()) {
 							status = matcher.group(1);
-							player.setAvailable(status);
+							player.setAvailable(executableType, status);
 						} else {
-							player.setAvailable(null);
+							player.setAvailable(executableType, null);
 						}
 					} else {
-						player.setAvailable(null);
+						player.setAvailable(executableType, null);
 					}
 				} else {
 					status = String.format(Messages.getString("Engine.ExitCode"), player, result.getExitCode());
 					if (Platform.isLinux() && Platform.is64Bit()) {
 						status += ". \n" + Messages.getString("Engine.tsMuxerErrorLinux");
 					}
-					player.setUnavailable(status);
+					player.setUnavailable(executableType, status);
 				}
 			} catch (IOException e) {
-				LOGGER.warn("\"{} {}\" failed with error: {}", executable.toString(), arg, e.getMessage());
-				LOGGER.trace("", e);
+				LOGGER.debug("\"{} {}\" ({}) failed with error: {}", executable, arg, executableType, e.getMessage());
 				status = String.format(Messages.getString("Engine.Error"), player) + " \n" + e.getMessage();
-				player.setUnavailable(status);
+				player.setUnavailable(executableType, status);
 			}
-			TEST_RECORDS.add(new PlayerTestRecord(executable, player.isAvailable(), status));
+			TEST_RECORDS.add(new PlayerTestRecord(executable, player.isAvailable(executableType), status));
 			return true;
 		} else if (player instanceof DCRaw) {
 			String status = null;
@@ -646,29 +747,28 @@ public final class PlayerFactory {
 						Matcher matcher = pattern.matcher(result.getOutput().get(1));
 						if (matcher.find()) {
 							status = matcher.group(1);
-							player.setAvailable(status);
+							player.setAvailable(executableType, status);
 						} else {
-							player.setAvailable(null);
+							player.setAvailable(executableType, null);
 						}
 					} else {
-						player.setAvailable(null);
+						player.setAvailable(executableType, null);
 					}
 				} else if (result.getOutput() != null && result.getOutput().size() > 0) {
 					status =
 						String.format(Messages.getString("Engine.Error"), player) + " \n" +
 						result.getOutput().get(0);
-					player.setUnavailable(status);
+					player.setUnavailable(executableType, status);
 				} else {
 					status = String.format(Messages.getString("Engine.Error"), player) + Messages.getString("General.3");
-					player.setUnavailable(status);
+					player.setUnavailable(executableType, status);
 				}
 			} catch (IOException e) {
-				LOGGER.warn("\"{}\" failed with error: {}", executable.toString(), e.getMessage());
-				LOGGER.trace("", e);
+				LOGGER.debug("\"{}\" ({}) failed with error: {}", executable, executableType, e.getMessage());
 				status = String.format(Messages.getString("Engine.Error"), player) + " \n" + e.getMessage();
-				player.setUnavailable(status);
+				player.setUnavailable(executableType, status);
 			}
-			TEST_RECORDS.add(new PlayerTestRecord(executable, player.isAvailable(), status));
+			TEST_RECORDS.add(new PlayerTestRecord(executable, player.isAvailable(executableType), status));
 			return true;
 		}
 		// No test has been made for VLC, found no way to get feedback on stdout: https://forum.videolan.org/viewtopic.php?t=73665

@@ -57,7 +57,7 @@ public class WindowsProgramPaths extends PlatformProgramPaths {
 		Path ffmpeg = null;
 
 		if (Platform.is64Bit()) {
-			ffmpeg = Paths.get(PLATFORM_BINARIES_PATH, "ffmpeg64.exe");
+			ffmpeg = PLATFORM_BINARIES_PATH.resolve("ffmpeg64.exe");
 			try {
 				if (!new FilePermissions(ffmpeg).isExecutable()) {
 					LOGGER.trace("Insufficient permission to executable \"{}\"", ffmpeg.toAbsolutePath());
@@ -72,71 +72,71 @@ public class WindowsProgramPaths extends PlatformProgramPaths {
 		}
 
 		if (ffmpeg == null) {
-			ffmpeg = Paths.get(PLATFORM_BINARIES_PATH, "ffmpeg.exe");
+			ffmpeg = PLATFORM_BINARIES_PATH.resolve("ffmpeg.exe");
 			try {
 				if (!new FilePermissions(ffmpeg).isExecutable()) {
 					LOGGER.trace("Insufficient permission to executable \"{}\"", ffmpeg.toAbsolutePath());
 					if (Platform.is64Bit()) {
-						ffmpeg = Paths.get(PLATFORM_BINARIES_PATH, "ffmpeg64.exe");
+						ffmpeg = PLATFORM_BINARIES_PATH.resolve("ffmpeg64.exe");
 					}
 				}
 			} catch (FileNotFoundException e) {
 				LOGGER.trace("Executable \"{}\" not found: {}", ffmpeg.toAbsolutePath(), e.getMessage());
 				if (Platform.is64Bit()) {
-					ffmpeg = Paths.get(PLATFORM_BINARIES_PATH, "ffmpeg64.exe");
+					ffmpeg = PLATFORM_BINARIES_PATH.resolve("ffmpeg64.exe");
 				}
 			}
 		}
 
 		ffmpegInfo = new ExternalProgramInfo("FFmpeg", ProgramExecutableType.BUNDLED);
-		ffmpegInfo.putPath(ProgramExecutableType.BUNDLED, ffmpeg.toString());
+		ffmpegInfo.putPath(ProgramExecutableType.BUNDLED, ffmpeg);
 		if (Platform.is64Bit()) {
-			ffmpegInfo.putPath(ProgramExecutableType.INSTALLED, "ffmpeg64.exe");
+			ffmpegInfo.putPath(ProgramExecutableType.INSTALLED, Paths.get("ffmpeg64.exe"));
 		} else {
-			ffmpegInfo.putPath(ProgramExecutableType.INSTALLED, "ffmpeg.exe");
+			ffmpegInfo.putPath(ProgramExecutableType.INSTALLED, Paths.get("ffmpeg.exe"));
 		}
 
 		// MPlayer
 		mPlayerInfo = new ExternalProgramInfo("MPlayer", ProgramExecutableType.BUNDLED);
-		mPlayerInfo.putPath(ProgramExecutableType.BUNDLED, PLATFORM_BINARIES_PATH + "mplayer.exe");
-		mPlayerInfo.putPath(ProgramExecutableType.INSTALLED, "mplayer.exe");
+		mPlayerInfo.putPath(ProgramExecutableType.BUNDLED, PLATFORM_BINARIES_PATH.resolve("mplayer.exe"));
+		mPlayerInfo.putPath(ProgramExecutableType.INSTALLED, Paths.get("mplayer.exe"));
 
 		// VLC
 		vlcInfo = new ExternalProgramInfo("VLC", ProgramExecutableType.INSTALLED);
 		SystemUtils registry = PMS.get().getRegistry();
-		String vlcPath = registry.getVlcPath();
+		Path vlcPath = registry.getVlcPath();
 		if (vlcPath != null && registry.getVlcVersion() != null) {
 			vlcInfo.putPath(ProgramExecutableType.INSTALLED, vlcPath);
 		} else {
-			vlcInfo.putPath(ProgramExecutableType.INSTALLED, "vlc.exe");
+			vlcInfo.putPath(ProgramExecutableType.INSTALLED, Paths.get("vlc.exe"));
 		}
 
 		// MEncoder
 		mEncoderInfo = new ExternalProgramInfo("MEncoder", ProgramExecutableType.BUNDLED);
-		mEncoderInfo.putPath(ProgramExecutableType.BUNDLED, PLATFORM_BINARIES_PATH + "mencoder.exe");
-		mEncoderInfo.putPath(ProgramExecutableType.INSTALLED, "mencoder.exe");
+		mEncoderInfo.putPath(ProgramExecutableType.BUNDLED, PLATFORM_BINARIES_PATH.resolve("mencoder.exe"));
+		mEncoderInfo.putPath(ProgramExecutableType.INSTALLED, Paths.get("mencoder.exe"));
 
 		// tsMuxeR
 		tsMuxeRInfo = new ExternalProgramInfo("tsMuxeR", ProgramExecutableType.BUNDLED);
-		tsMuxeRInfo.putPath(ProgramExecutableType.BUNDLED, PLATFORM_BINARIES_PATH + "tsMuxeR.exe");
-		tsMuxeRInfo.putPath(ProgramExecutableType.INSTALLED, "tsMuxeR.exe");
+		tsMuxeRInfo.putPath(ProgramExecutableType.BUNDLED, PLATFORM_BINARIES_PATH.resolve("tsMuxeR.exe"));
+		tsMuxeRInfo.putPath(ProgramExecutableType.INSTALLED, Paths.get("tsMuxeR.exe"));
 
 		// tsMuxeRNew
 		tsMuxeRNewInfo = new ExternalProgramInfo("tsMuxeRNew", ProgramExecutableType.BUNDLED);
-		tsMuxeRNewInfo.putPath(ProgramExecutableType.BUNDLED, PLATFORM_BINARIES_PATH + "tsMuxeR-new.exe");
+		tsMuxeRNewInfo.putPath(ProgramExecutableType.BUNDLED, PLATFORM_BINARIES_PATH.resolve("tsMuxeR-new.exe"));
 
 		// FLAC
 		flacInfo = new ExternalProgramInfo("FLAC", ProgramExecutableType.BUNDLED);
-		flacInfo.putPath(ProgramExecutableType.BUNDLED, PLATFORM_BINARIES_PATH + "flac.exe");
+		flacInfo.putPath(ProgramExecutableType.BUNDLED, PLATFORM_BINARIES_PATH.resolve("flac.exe"));
 
 		// DCRaw
 		dcRawInfo = new ExternalProgramInfo("DCRaw", ProgramExecutableType.BUNDLED);
-		dcRawInfo.putPath(ProgramExecutableType.BUNDLED, PLATFORM_BINARIES_PATH + "dcrawMS.exe");
-		dcRawInfo.putPath(ProgramExecutableType.INSTALLED, "dcrawMS.exe");
+		dcRawInfo.putPath(ProgramExecutableType.BUNDLED, PLATFORM_BINARIES_PATH.resolve("dcrawMS.exe"));
+		dcRawInfo.putPath(ProgramExecutableType.INSTALLED, Paths.get("dcrawMS.exe"));
 
 		// InterFrame
 		interFrameInfo = new ExternalProgramInfo("InterFrame", ProgramExecutableType.BUNDLED);
-		interFrameInfo.putPath(ProgramExecutableType.BUNDLED, "interframe/");
+		interFrameInfo.putPath(ProgramExecutableType.BUNDLED, Paths.get("interframe/"));
 	}
 
 	@Override

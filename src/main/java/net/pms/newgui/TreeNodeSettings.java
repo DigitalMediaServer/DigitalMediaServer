@@ -108,7 +108,7 @@ public class TreeNodeSettings extends DefaultMutableTreeNode {
 			builder.add(warningLabel, cc.xy(4, 2, CellConstraints.LEFT, CellConstraints.CENTER));
 			warningLabel.setFont(warningLabel.getFont().deriveFont(Font.BOLD));
 
-			if (StringUtil.hasValue(player.getStatusText())) {
+			if (StringUtil.hasValue(player.getStatusText())) { //TODO: (Nad) Replace hasValue()
 				JTextArea stateText = new JTextArea(player.getStatusText());
 				stateText.setPreferredSize(new Dimension());
 				stateText.setEditable(false);

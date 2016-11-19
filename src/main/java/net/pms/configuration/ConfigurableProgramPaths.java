@@ -19,6 +19,7 @@
  */
 package net.pms.configuration;
 
+import java.nio.file.Paths;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -104,7 +105,7 @@ public class ConfigurableProgramPaths extends PlatformProgramPaths {
 			ReentrantReadWriteLock lock = programInfo.getLock();
 			lock.writeLock().lock();
 			try {
-				programInfo.putPath(ProgramExecutableType.CUSTOM, customPath);
+				programInfo.putPath(ProgramExecutableType.CUSTOM, Paths.get(customPath));
 				programInfo.setDefault(ProgramExecutableType.CUSTOM);
 			} finally {
 				lock.writeLock().unlock();

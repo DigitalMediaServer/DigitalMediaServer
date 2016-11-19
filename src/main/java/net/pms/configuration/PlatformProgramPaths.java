@@ -19,11 +19,13 @@
  */
 package net.pms.configuration;
 
-import java.io.File;
+import java.io.FileNotFoundException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang3.StringUtils;
 import com.sun.jna.Platform;
-import net.pms.util.FileUtil;
+import net.pms.util.FilePermissions;
 import net.pms.util.PropertiesUtil;
 
 /**
@@ -79,20 +81,43 @@ public abstract class PlatformProgramPaths {
 	public abstract ExternalProgramInfo getInterFrame();
 
 
-	/** The Maven {@code project.binaries.dir}. */
-	protected static final String BINARIES_PATH = getBinariesPath();
+	/** The {@link Path} to {@code project.binaries.dir}. */
+	protected static final Path BINARIES_PATH = getBinariesPath();
 
-	/** The path to the bundled binaries for the current platform. */
-	protected static final String PLATFORM_BINARIES_PATH;
+	/** The {@link Path} to the bundled binaries for the current platform. */
+	protected static final Path PLATFORM_BINARIES_PATH;
 
 	static {
+		String subPath;
 		if (Platform.isWindows()) {
-			PLATFORM_BINARIES_PATH = BINARIES_PATH + "win32" + File.separator;
+			subPath = "win32";
 		} else if (Platform.isMac()) {
-			PLATFORM_BINARIES_PATH = BINARIES_PATH + "osx" + File.separator;
+			subPath = "osx";
 		} else {
-			PLATFORM_BINARIES_PATH = BINARIES_PATH + "linux" + File.separator;
+			subPath = "linux";
 		}
+		Path binaryFolder = BINARIES_PATH.resolve(subPath);
+		boolean ok = true;
+		try {
+			FilePermissions permission = new FilePermissions(binaryFolder);
+			if (!permission.isBrowsable()) {
+				ok = false;
+			}
+		} catch (FileNotFoundException e) {
+			ok = false;
+		}
+		if (!ok) {
+			Path developmentBinaryFolder = Paths.get("target/bin", subPath);
+			try {
+				FilePermissions permission = new FilePermissions(developmentBinaryFolder);
+				if (permission.isBrowsable()) {
+					binaryFolder = developmentBinaryFolder;
+				}
+			} catch (FileNotFoundException e) {
+				// Nothing to do, keep the original binary folder
+			}
+		}
+		PLATFORM_BINARIES_PATH = binaryFolder.toAbsolutePath();
 	}
 
 	/**
@@ -114,18 +139,17 @@ public abstract class PlatformProgramPaths {
 	}
 
 	/**
-	 * Returns the path where binaries can be found. This path differs between
-	 * the build phase and the test phase. The path will end with a slash unless
-	 * it is empty.
+	 * Returns the (relative) {@link Path} where binaries can be found. This
+	 * {@link Path} differs between the build phase and the test phase.
 	 *
 	 * @return The path to the binaries folder.
 	 */
-	protected static String getBinariesPath() {
+	protected static Path getBinariesPath() {
 		String path = PropertiesUtil.getProjectProperties().get("project.binaries.dir");
 
 		if (StringUtils.isNotBlank(path)) {
-			return FileUtil.appendPathSeparator(path);
+			return Paths.get(path);
 		}
-		return "";
+		return Paths.get("");
 	}
 }

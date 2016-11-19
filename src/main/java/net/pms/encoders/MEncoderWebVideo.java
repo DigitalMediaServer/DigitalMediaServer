@@ -23,6 +23,7 @@ import javax.swing.JComponent;
 import net.pms.configuration.DeviceConfiguration;
 import net.pms.configuration.ExternalProgramInfo;
 import net.pms.configuration.PmsConfiguration;
+import net.pms.configuration.RendererConfiguration;
 import net.pms.dlna.DLNAMediaInfo;
 import net.pms.dlna.DLNAResource;
 import net.pms.formats.Format;
@@ -79,13 +80,8 @@ public class MEncoderWebVideo extends Player {
 			};
 	}
 
-	@Deprecated
-	public MEncoderWebVideo(PmsConfiguration configuration) {
-		this();
-	}
-
-	public MEncoderWebVideo() {
-	}
+	// Not to be instantiated by anything but PlayerFactory
+	MEncoderWebVideo() {}
 
 	@Override
 	public ProcessWrapper launchTranscode(
@@ -159,11 +155,18 @@ public class MEncoderWebVideo extends Player {
 		return Format.VIDEO;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public boolean isCompatible(DLNAResource resource) {
 		return PlayerUtil.isWebVideo(resource);
+	}
+
+	@Override
+	public boolean excludeFormat(Format extension) {
+		return false;
+	}
+
+	@Override
+	public boolean isPlayerCompatible(RendererConfiguration renderer) {
+		return true;
 	}
 }

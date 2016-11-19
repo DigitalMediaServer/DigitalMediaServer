@@ -16,7 +16,7 @@ import com.drew.lang.ByteArrayReader;
 import net.coobird.thumbnailator.Thumbnails;
 import net.pms.PMS;
 import net.pms.configuration.ExternalProgramInfo;
-import net.pms.configuration.PmsConfiguration;
+import net.pms.configuration.RendererConfiguration;
 import net.pms.dlna.DLNAMediaInfo;
 import net.pms.dlna.DLNAResource;
 import net.pms.formats.Format;
@@ -34,6 +34,10 @@ public class DCRaw extends ImagePlayer {
 	private static final Logger LOGGER = LoggerFactory.getLogger(DCRaw.class);
 	public final static PlayerId ID = StandardPlayerId.DCRAW;
 	public static final String NAME = "DCRaw";
+
+	// Not to be instantiated by anything but PlayerFactory
+	DCRaw() { //TODO: (Nad) Package protected won't work
+	}
 
 	protected String[] getDefaultArgs() {
 		return new String[]{ "-e", "-c" };
@@ -112,9 +116,6 @@ public class DCRaw extends ImagePlayer {
 			params = new OutputParams(PMS.getConfiguration());
 		}
 
-		// Use device-specific DMS conf
-		PmsConfiguration configuration = PMS.getConfiguration(params);
-
 		params.log = false;
 		// Setting the buffer to the size of the source file or 5 MB. The
 		// output won't be the same size as the input, but it will hopefully
@@ -127,7 +128,7 @@ public class DCRaw extends ImagePlayer {
 
 		// First try to get the embedded thumbnail
 		String cmdArray[] = new String[5];
-		cmdArray[0] = configuration.getDCRawPath();
+		cmdArray[0] = PlayerFactory.getPlayerExecutable(ID);
 		cmdArray[1] = "-c";
 		cmdArray[2] = "-M";
 		cmdArray[3] = "-w";
@@ -167,8 +168,6 @@ public class DCRaw extends ImagePlayer {
 			params = new OutputParams(PMS.getConfiguration());
 		}
 
-		// Use device-specific DMS conf
-		PmsConfiguration configuration = PMS.getConfiguration(params);
 		params.log = false;
 
 		// This is a wild guess at a decent buffer size for an embedded thumbnail.
@@ -177,7 +176,7 @@ public class DCRaw extends ImagePlayer {
 
 		// First try to get the embedded thumbnail
 		String cmdArray[] = new String[6];
-		cmdArray[0] = configuration.getDCRawPath();
+		cmdArray[0] = PlayerFactory.getPlayerExecutable(ID);
 		cmdArray[1] = "-e";
 		cmdArray[2] = "-c";
 		cmdArray[3] = "-M";
@@ -315,7 +314,7 @@ public class DCRaw extends ImagePlayer {
 		params.log = true;
 
 		String cmdArray[] = new String[4];
-		cmdArray[0] = configuration.getDCRawPath();
+		cmdArray[0] = PlayerFactory.getPlayerExecutable(ID); //TODO: (Nad) Verify ID
 		cmdArray[1] = "-i";
 		cmdArray[2] = "-v";
 		cmdArray[3] = file.getAbsolutePath();
@@ -344,11 +343,18 @@ public class DCRaw extends ImagePlayer {
 		}
     }
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public boolean isCompatible(DLNAResource resource) {
 		return resource != null && resource.getFormat() != null && resource.getFormat().getIdentifier() == Format.Identifier.RAW;
+	}
+
+	@Override
+	public boolean excludeFormat(Format extension) {
+		return false;
+	}
+
+	@Override
+	public boolean isPlayerCompatible(RendererConfiguration renderer) {
+		return true;
 	}
 }

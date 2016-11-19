@@ -57,7 +57,7 @@ public class LinuxProgramPaths extends PlatformProgramPaths {
 		// FFmpeg
 		Path ffmpeg = null;
 		if (Platform.is64Bit()) {
-			ffmpeg = Paths.get(PLATFORM_BINARIES_PATH, "ffmpeg64");
+			ffmpeg = PLATFORM_BINARIES_PATH.resolve("ffmpeg64");
 			try {
 				if (!new FilePermissions(ffmpeg).isExecutable()) {
 					LOGGER.trace("Insufficient permission to executable \"{}\"", ffmpeg.toAbsolutePath());
@@ -71,24 +71,24 @@ public class LinuxProgramPaths extends PlatformProgramPaths {
 			}
 		}
 		if (ffmpeg == null) {
-			ffmpeg = Paths.get(PLATFORM_BINARIES_PATH, "ffmpeg");
+			ffmpeg = PLATFORM_BINARIES_PATH.resolve("ffmpeg");
 			try {
 				if (!new FilePermissions(ffmpeg).isExecutable()) {
 					LOGGER.trace("Insufficient permission to executable \"{}\"", ffmpeg.toAbsolutePath());
 					if (Platform.is64Bit()) {
-						ffmpeg = Paths.get(PLATFORM_BINARIES_PATH, "ffmpeg64");
+						ffmpeg = PLATFORM_BINARIES_PATH.resolve("ffmpeg64");
 					}
 				}
 			} catch (FileNotFoundException e) {
 				LOGGER.trace("Executable \"{}\" not found: {}", ffmpeg.toAbsolutePath(), e.getMessage());
 				if (Platform.is64Bit()) {
-					ffmpeg = Paths.get(PLATFORM_BINARIES_PATH, "ffmpeg64");
+					ffmpeg = PLATFORM_BINARIES_PATH.resolve("ffmpeg64");
 				}
 			}
 		}
 
 		ffmpegInfo = new ExternalProgramInfo("FFmpeg", ProgramExecutableType.BUNDLED);
-		ffmpegInfo.putPath(ProgramExecutableType.BUNDLED, ffmpeg.toString());
+		ffmpegInfo.putPath(ProgramExecutableType.BUNDLED, ffmpeg);
 
 		SimpleProcessWrapperResult result64 = null;
 		if (Platform.is64Bit()) {
@@ -108,40 +108,40 @@ public class LinuxProgramPaths extends PlatformProgramPaths {
 			}
 		}
 		if (Platform.is64Bit() && (result64 != null || result == null)) {
-			ffmpegInfo.putPath(ProgramExecutableType.INSTALLED, "ffmpeg64");
+			ffmpegInfo.putPath(ProgramExecutableType.INSTALLED, Paths.get("ffmpeg64"));
 		} else {
-			ffmpegInfo.putPath(ProgramExecutableType.INSTALLED, "ffmpeg");
+			ffmpegInfo.putPath(ProgramExecutableType.INSTALLED, Paths.get("ffmpeg"));
 		}
 
 		// MPlayer
 		mPlayerInfo = new ExternalProgramInfo("MPlayer", ProgramExecutableType.INSTALLED);
-		mPlayerInfo.putPath(ProgramExecutableType.INSTALLED, "mplayer");
+		mPlayerInfo.putPath(ProgramExecutableType.INSTALLED, Paths.get("mplayer"));
 
 		// VLC
 		vlcInfo = new ExternalProgramInfo("VLC", ProgramExecutableType.INSTALLED);
-		vlcInfo.putPath(ProgramExecutableType.INSTALLED, "vlc");
+		vlcInfo.putPath(ProgramExecutableType.INSTALLED, Paths.get("vlc"));
 
 		// MEncoder
 		mEncoderInfo = new ExternalProgramInfo("MEncoder", ProgramExecutableType.INSTALLED);
-		mEncoderInfo.putPath(ProgramExecutableType.INSTALLED, "mencoder");
+		mEncoderInfo.putPath(ProgramExecutableType.INSTALLED, Paths.get("mencoder"));
 
 		// tsMuxeR
 		tsMuxeRInfo = new ExternalProgramInfo("tsMuxeR", ProgramExecutableType.BUNDLED);
-		tsMuxeRInfo.putPath(ProgramExecutableType.BUNDLED, PLATFORM_BINARIES_PATH + "tsMuxeR");
-		tsMuxeRInfo.putPath(ProgramExecutableType.INSTALLED, "tsMuxeR");
+		tsMuxeRInfo.putPath(ProgramExecutableType.BUNDLED, PLATFORM_BINARIES_PATH.resolve("tsMuxeR"));
+		tsMuxeRInfo.putPath(ProgramExecutableType.INSTALLED, Paths.get("tsMuxeR"));
 
 		// tsMuxeRNew
 		tsMuxeRNewInfo = new ExternalProgramInfo("tsMuxeRNew", ProgramExecutableType.BUNDLED);
-		tsMuxeRNewInfo.putPath(ProgramExecutableType.BUNDLED, PLATFORM_BINARIES_PATH + "tsMuxeR-new");
-		tsMuxeRNewInfo.putPath(ProgramExecutableType.INSTALLED, "tsMuxeR-new");
+		tsMuxeRNewInfo.putPath(ProgramExecutableType.BUNDLED, PLATFORM_BINARIES_PATH.resolve("tsMuxeR-new"));
+		tsMuxeRNewInfo.putPath(ProgramExecutableType.INSTALLED, Paths.get("tsMuxeR-new"));
 
 		// FLAC
 		flacInfo = new ExternalProgramInfo("FLAC", ProgramExecutableType.INSTALLED);
-		flacInfo.putPath(ProgramExecutableType.INSTALLED, "flac");
+		flacInfo.putPath(ProgramExecutableType.INSTALLED, Paths.get("flac"));
 
 		// DCRaw
 		dcRawInfo = new ExternalProgramInfo("DCRaw", ProgramExecutableType.INSTALLED);
-		dcRawInfo.putPath(ProgramExecutableType.INSTALLED, "dcraw");
+		dcRawInfo.putPath(ProgramExecutableType.INSTALLED, Paths.get("dcraw"));
 	}
 
 	@Override

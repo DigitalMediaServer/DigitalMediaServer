@@ -22,6 +22,7 @@ import java.util.Set;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import javax.annotation.Nullable;
 import net.pms.PMS;
 import net.pms.configuration.PmsConfiguration;
 import net.pms.dlna.DLNAMediaInfo;
@@ -228,21 +229,38 @@ public class FileUtil {
 		return getExtension(substringBefore(u, "?"));
 	}
 
-	public static String getExtension(File f) {
-		if (f == null || f.getName() == null) {
+	@Nullable
+	public static String getExtension(@Nullable File file) {
+		if (file == null || isBlank(file.getName())) {
 			return null;
 		}
-		return getExtension(f.getName());
+		return getExtension(file.getName());
 	}
 
-	public static String getExtension(String f) {
-		int point = f.lastIndexOf('.');
+	@Nullable
+	public static String getExtension(@Nullable Path path) {
+		if (path == null) {
+			return null;
+		}
+		Path fileName = path.getFileName();
+		if (fileName == null || isBlank(fileName.toString())) {
+			return null;
+		}
+		return getExtension(fileName.toString());
+	}
+
+	@Nullable
+	public static String getExtension(@Nullable String fileName) {
+		if (isBlank(fileName)) {
+			return null;
+		}
+		int point = fileName.lastIndexOf('.');
 
 		if (point == -1) {
 			return null;
 		}
 
-		return f.substring(point + 1);
+		return fileName.substring(point + 1);
 	}
 
 	public static String getFileNameWithoutExtension(String f) {

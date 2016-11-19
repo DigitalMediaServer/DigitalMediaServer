@@ -53,6 +53,9 @@ public class FFmpegWebVideo extends FFMpegVideo {
 	public static final PlayerId ID = StandardPlayerId.FFMPEG_WEB_VIDEO;
 	public static final String NAME = "FFmpeg Web Video";
 
+	// Not to be instantiated by anything but PlayerFactory
+	FFmpegWebVideo() {}
+
 	/**
 	 * Must be used to protect all access to {@link #excludes}, {@link #autoOptions} and {@link #replacements}
 	 */
@@ -70,30 +73,6 @@ public class FFmpegWebVideo extends FFMpegVideo {
 
 	static {
 		readWebFilters(_configuration.getProfileFolder() + File.separator + "ffmpeg.webfilters");
-
-		Path executable = Paths.get(_configuration.getFFmpegPath());
-		try {
-			FilePermissions permissions = new FilePermissions(executable);
-			if (permissions.isExecutable()) {
-				protocolsLock.writeLock().lock();
-				try {
-					FFmpegOptions.getSupportedProtocols(protocols, executable.toString());
-					if (protocols.contains("mmsh")) {
-						// Work around an FFmpeg bug: http://ffmpeg.org/trac/ffmpeg/ticket/998
-						// Also see launchTranscode()
-						protocols.add("mms");
-					}
-					LOGGER.debug("FFmpeg supported protocols: {}", protocols);
-				} finally {
-					protocolsLock.writeLock().unlock();
-				}
-			} else {
-				LOGGER.warn("Can't check FFmpeg supported protocols, insufficient permission run FFmpeg ({})", executable.toAbsolutePath().toString());
-			}
-		} catch (FileNotFoundException e) {
-			LOGGER.warn("Can't check FFmpeg supported protocols, FFmpeg binary \"{}\" not found: {}", executable.toAbsolutePath().toString(), e.getMessage());
-			LOGGER.trace("", e);
-		}
 	}
 
 	/**
@@ -156,6 +135,39 @@ public class FFmpegWebVideo extends FFMpegVideo {
 			LOGGER.trace("", e);
 		}
 		return false;
+	}
+
+	/**
+	 * Protocol initialization can only be done once the {@link Player}s are
+	 * registered and their executable paths set.
+	 *
+	 * TODO: (Nad) This should be done a different way at a different time.
+	 */
+	public static void initializeProtocols() {
+		Path executable = Paths.get(PlayerFactory.getPlayerExecutable(StandardPlayerId.FFMPEG_WEB_VIDEO));
+		try {
+			FilePermissions permissions = new FilePermissions(executable);
+			if (permissions.isExecutable()) {
+				protocolsLock.writeLock().lock();
+				try {
+					protocols.clear();
+					FFmpegOptions.getSupportedProtocols(protocols, executable.toString());
+					if (protocols.contains("mmsh")) {
+						// Workaround a FFmpeg bug: http://ffmpeg.org/trac/ffmpeg/ticket/998
+						// Also see launchTranscode()
+						protocols.add("mms");
+					}
+					LOGGER.debug("FFmpeg supported protocols: {}", protocols);
+				} finally {
+					protocolsLock.writeLock().unlock();
+				}
+			} else {
+				LOGGER.warn("Can't check FFmpeg supported protocols, insufficient permission run FFmpeg ({})", executable.toAbsolutePath().toString());
+			}
+		} catch (FileNotFoundException e) {
+			LOGGER.warn("Can't check FFmpeg supported protocols, FFmpeg binary \"{}\" not found: {}", executable.toAbsolutePath().toString(), e.getMessage());
+			LOGGER.trace("", e);
+		}
 	}
 
 	@Override

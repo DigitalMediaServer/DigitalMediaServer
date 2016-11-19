@@ -26,6 +26,7 @@ import javax.swing.JComponent;
 import net.pms.configuration.DeviceConfiguration;
 import net.pms.configuration.ExternalProgramInfo;
 import net.pms.configuration.PmsConfiguration;
+import net.pms.configuration.RendererConfiguration;
 import net.pms.dlna.DLNAMediaInfo;
 import net.pms.dlna.DLNAResource;
 import net.pms.formats.Format;
@@ -40,13 +41,8 @@ public class VideoLanVideoStreaming extends Player {
 	public static final PlayerId ID = StandardPlayerId.VLC_VIDEO_STREAMING;
 	public static final String NAME = "VLC Web Video (Legacy)";
 
-	@Deprecated
-	public VideoLanVideoStreaming(PmsConfiguration configuration) {
-		this();
-	}
-
-	public VideoLanVideoStreaming() {
-	}
+	// Not to be instantiated by anything but PlayerFactory
+	VideoLanVideoStreaming() {}
 
 	@Override
 	public int purpose() {
@@ -200,5 +196,15 @@ public class VideoLanVideoStreaming extends Player {
 	@Override
 	public boolean isCompatible(DLNAResource resource) {
 		return PlayerUtil.isWebVideo(resource);
+	}
+
+	@Override
+	public boolean excludeFormat(Format extension) {
+		return false;
+	}
+
+	@Override
+	public boolean isPlayerCompatible(RendererConfiguration renderer) {
+		return true;
 	}
 }

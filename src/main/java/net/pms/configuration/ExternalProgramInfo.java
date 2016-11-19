@@ -19,7 +19,7 @@
  */
 package net.pms.configuration;
 
-import static org.apache.commons.lang3.StringUtils.isNotBlank;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -53,7 +53,7 @@ public class ExternalProgramInfo {
 	 * {@link ProgramExecutableType}s for this executable.
 	 */
 	@GuardedBy("lock")
-	protected final Map<ProgramExecutableType, String> executableMap;
+	protected final Map<ProgramExecutableType, Path> executableMap;
 
 	/** The human readable name of this external program. */
 	protected final String programName;
@@ -89,7 +89,7 @@ public class ExternalProgramInfo {
 	public ExternalProgramInfo(
 		String programName,
 		ProgramExecutableType defaultType,
-		Map<ProgramExecutableType, String> executableMap
+		Map<ProgramExecutableType, Path> executableMap
 	) {
 		this.programName = programName;
 		this.defaultType = defaultType;
@@ -113,7 +113,7 @@ public class ExternalProgramInfo {
 	}
 
 	/**
-	 * @return The default {@link ProgramExecutableType} for this instance.
+	 * @return The default {@link ProgramExecutableType}.
 	 */
 	public ProgramExecutableType getDefault() {
 		lock.readLock().lock();
@@ -125,7 +125,7 @@ public class ExternalProgramInfo {
 	}
 
 	/**
-	 * Sets the default {@link ProgramExecutableType} for this instance.
+	 * Sets the default {@link ProgramExecutableType}.
 	 *
 	 * @param defaultType The default value.
 	 */
@@ -139,11 +139,10 @@ public class ExternalProgramInfo {
 	}
 
 	/**
-	 * @return The path for the default {@link ProgramExecutableType} for this
-	 *         instance.
+	 * @return The {@link Path} for the default {@link ProgramExecutableType}.
 	 */
 	@Nullable
-	public String getDefaultPath() {
+	public Path getDefaultPath() {
 		lock.readLock().lock();
 		try {
 			return executableMap.get(defaultType);
@@ -153,13 +152,13 @@ public class ExternalProgramInfo {
 	}
 
 	/**
-	 * Gets the path for a given {@link ProgramExecutableType} for this instance.
+	 * Gets the path for a given {@link ProgramExecutableType}.
 	 *
 	 * @param executableType the {@link ProgramExecutableType} to get.
-	 * @return The executable path.
+	 * @return The executable {@link Path}.
 	 */
 	@Nullable
-	public String getPath(ProgramExecutableType executableType) {
+	public Path getPath(ProgramExecutableType executableType) {
 		lock.readLock().lock();
 		try {
 			return executableMap.get(executableType);
@@ -169,14 +168,13 @@ public class ExternalProgramInfo {
 	}
 
 	/**
-	 * Sets the path for a given {@link ProgramExecutableType} for this
-	 * instance.
+	 * Sets the {@link Path} for a specified {@link ProgramExecutableType}.
 	 *
 	 * @param executableType the {@link ProgramExecutableType} whose path to
 	 *            set.
-	 * @param path the executable path to set.
+	 * @param path the executable {@link Path} to set.
 	 */
-	public void putPath(ProgramExecutableType executableType, String path) {
+	public void putPath(ProgramExecutableType executableType, Path path) {
 		lock.writeLock().lock();
 		try {
 			executableMap.put(executableType, path);
@@ -186,8 +184,7 @@ public class ExternalProgramInfo {
 	}
 
 	/**
-	 * Removes the given {@link ProgramExecutableType} executable path for this
-	 * instance.
+	 * Removes the given {@link ProgramExecutableType} executable {@link Path}.
 	 *
 	 * @param executableType the {@link ProgramExecutableType} to remove.
 	 */
@@ -201,7 +198,7 @@ public class ExternalProgramInfo {
 	}
 
 	/**
-	 * @return The number of executable paths registered for this instance.
+	 * @return The number of executable paths registered.
 	 */
 	public int size() {
 		lock.readLock().lock();
@@ -213,8 +210,8 @@ public class ExternalProgramInfo {
 	}
 
 	/**
-	 * @return {@code true} if no executable paths are registered for this
-	 *         instance, {@code false} otherwise.
+	 * @return {@code true} if no executable paths are registered, {@code false}
+	 *         otherwise.
 	 */
 	public boolean isEmpty() {
 		lock.readLock().lock();
@@ -227,7 +224,7 @@ public class ExternalProgramInfo {
 
 	/**
 	 * Checks whether an executable path for the given
-	 * {@link ProgramExecutableType} is registered for this instance.
+	 * {@link ProgramExecutableType} is registered.
 	 *
 	 * @param executableType the {@link ProgramExecutableType} to check.
 	 * @return {@code true} if a path is registered for {@code executableType},
@@ -236,17 +233,18 @@ public class ExternalProgramInfo {
 	public boolean containsType(ProgramExecutableType executableType) {
 		lock.readLock().lock();
 		try {
-			return executableMap.containsKey(executableType) && isNotBlank(executableMap.get(executableType));
+			return executableMap.containsKey(executableType) && executableMap.get(executableType) != null;
 		} finally {
 			lock.readLock().unlock();
 		}
 	}
 
 	/**
-	 * Checks whether the given path is registered for this instance.
+	 * Checks whether the given path is registered.
 	 *
 	 * @param path the path to look for.
-	 * @return {@code true} if {@code path} is registered, {@code false} otherwise.
+	 * @return {@code true} if {@code path} is registered, {@code false}
+	 *         otherwise.
 	 */
 	public boolean containsPath(String path) {
 		lock.readLock().lock();
@@ -258,7 +256,7 @@ public class ExternalProgramInfo {
 	}
 
 	/**
-	 * Removes all registered executable paths for this instance.
+	 * Removes all registered executable paths.
 	 */
 	public void clear() {
 		lock.writeLock().lock();
@@ -270,8 +268,7 @@ public class ExternalProgramInfo {
 	}
 
 	/**
-	 * @return A {@link Set} of all registered {@link ProgramExecutableType}s
-	 *         for this instance.
+	 * @return A {@link Set} of all registered {@link ProgramExecutableType}s .
 	 */
 	public Set<ProgramExecutableType> executablesTypes() {
 		lock.readLock().lock();
@@ -286,7 +283,7 @@ public class ExternalProgramInfo {
 	 * @return A {@link Collection} of all the registered paths for this
 	 *         instance.
 	 */
-	public Collection<String> paths() {
+	public Collection<Path> paths() {
 		lock.readLock().lock();
 		try {
 			return new ArrayList<>(executableMap.values());
@@ -303,7 +300,7 @@ public class ExternalProgramInfo {
 			sb.append(programName);
 			boolean first = true;
 			sb.append(": [");
-			for (Entry<ProgramExecutableType, String> entry : executableMap.entrySet()) {
+			for (Entry<ProgramExecutableType, Path> entry : executableMap.entrySet()) {
 				if (first) {
 					first = false;
 				} else {

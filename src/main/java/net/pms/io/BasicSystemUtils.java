@@ -28,6 +28,7 @@ import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.file.Path;
 import net.pms.Messages;
 import net.pms.PMS;
 import net.pms.newgui.LooksFrame;
@@ -43,7 +44,7 @@ import org.slf4j.LoggerFactory;
 public class BasicSystemUtils implements SystemUtils {
 	private final static Logger LOGGER = LoggerFactory.getLogger(BasicSystemUtils.class);
 
-	protected String vlcPath;
+	protected Path vlcPath;
 	protected String vlcVersion;
 	protected boolean avis;
 
@@ -78,7 +79,7 @@ public class BasicSystemUtils implements SystemUtils {
 	}
 
 	@Override
-	public String getVlcPath() {
+	public Path getVlcPath() {
 		return vlcPath;
 	}
 

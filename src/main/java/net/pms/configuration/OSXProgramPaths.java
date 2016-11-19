@@ -19,6 +19,9 @@
  */
 package net.pms.configuration;
 
+import java.nio.file.Paths;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+
 
 /**
  * This class keeps track of paths to external programs on macOS.
@@ -40,44 +43,45 @@ public class OSXProgramPaths extends PlatformProgramPaths {
 	 *
 	 * @throws InterruptedException If the operation is interrupted.
 	 */
+	@SuppressFBWarnings("DMI_HARDCODED_ABSOLUTE_FILENAME")
 	protected OSXProgramPaths() {
 		// FFmpeg
 		ffmpegInfo = new ExternalProgramInfo("FFmpeg", ProgramExecutableType.BUNDLED);
-		ffmpegInfo.putPath(ProgramExecutableType.BUNDLED, PLATFORM_BINARIES_PATH + "ffmpeg");
-		ffmpegInfo.putPath(ProgramExecutableType.INSTALLED, "ffmpeg");
+		ffmpegInfo.putPath(ProgramExecutableType.BUNDLED, PLATFORM_BINARIES_PATH.resolve("ffmpeg"));
+		ffmpegInfo.putPath(ProgramExecutableType.INSTALLED, Paths.get("ffmpeg"));
 
 		// MPlayer
 		mPlayerInfo = new ExternalProgramInfo("MPlayer", ProgramExecutableType.BUNDLED);
-		mPlayerInfo.putPath(ProgramExecutableType.BUNDLED, PLATFORM_BINARIES_PATH + "mplayer");
-		mPlayerInfo.putPath(ProgramExecutableType.INSTALLED, "mplayer");
+		mPlayerInfo.putPath(ProgramExecutableType.BUNDLED, PLATFORM_BINARIES_PATH.resolve("mplayer"));
+		mPlayerInfo.putPath(ProgramExecutableType.INSTALLED, Paths.get("mplayer"));
 
 		// VLC
 		vlcInfo = new ExternalProgramInfo("VLC", ProgramExecutableType.INSTALLED);
-		vlcInfo.putPath(ProgramExecutableType.INSTALLED, "/Applications/VLC.app/Contents/MacOS/VLC");
+		vlcInfo.putPath(ProgramExecutableType.INSTALLED, Paths.get("/Applications/VLC.app/Contents/MacOS/VLC"));
 
 		// MEncoder
 		mEncoderInfo = new ExternalProgramInfo("MEncoder", ProgramExecutableType.BUNDLED);
-		mEncoderInfo.putPath(ProgramExecutableType.BUNDLED, PLATFORM_BINARIES_PATH + "mencoder");
-		mEncoderInfo.putPath(ProgramExecutableType.INSTALLED, "mencoder");
+		mEncoderInfo.putPath(ProgramExecutableType.BUNDLED, PLATFORM_BINARIES_PATH.resolve("mencoder"));
+		mEncoderInfo.putPath(ProgramExecutableType.INSTALLED, Paths.get("mencoder"));
 
 		// tsMuxeR
 		tsMuxeRInfo = new ExternalProgramInfo("tsMuxeR", ProgramExecutableType.BUNDLED);
-		tsMuxeRInfo.putPath(ProgramExecutableType.BUNDLED, PLATFORM_BINARIES_PATH + "tsMuxeR");
-		tsMuxeRInfo.putPath(ProgramExecutableType.INSTALLED, "tsMuxeR");
+		tsMuxeRInfo.putPath(ProgramExecutableType.BUNDLED, PLATFORM_BINARIES_PATH.resolve("tsMuxeR"));
+		tsMuxeRInfo.putPath(ProgramExecutableType.INSTALLED, Paths.get("tsMuxeR"));
 
 		// tsMuxeRNew
 		tsMuxeRNewInfo = new ExternalProgramInfo("tsMuxeRNew", ProgramExecutableType.BUNDLED);
-		tsMuxeRNewInfo.putPath(ProgramExecutableType.BUNDLED, PLATFORM_BINARIES_PATH + "tsMuxeR-new");
+		tsMuxeRNewInfo.putPath(ProgramExecutableType.BUNDLED, PLATFORM_BINARIES_PATH.resolve("tsMuxeR-new"));
 
 		// FLAC
 		flacInfo = new ExternalProgramInfo("FLAC", ProgramExecutableType.BUNDLED);
-		flacInfo.putPath(ProgramExecutableType.BUNDLED, PLATFORM_BINARIES_PATH + "flac");
-		flacInfo.putPath(ProgramExecutableType.INSTALLED, "flac");
+		flacInfo.putPath(ProgramExecutableType.BUNDLED, PLATFORM_BINARIES_PATH.resolve("flac"));
+		flacInfo.putPath(ProgramExecutableType.INSTALLED, Paths.get("flac"));
 
 		// DCRaw
 		dcRawInfo = new ExternalProgramInfo("DCRaw", ProgramExecutableType.BUNDLED);
-		dcRawInfo.putPath(ProgramExecutableType.BUNDLED, PLATFORM_BINARIES_PATH + "dcraw");
-		dcRawInfo.putPath(ProgramExecutableType.INSTALLED, "dcraw");
+		dcRawInfo.putPath(ProgramExecutableType.BUNDLED, PLATFORM_BINARIES_PATH.resolve("dcraw"));
+		dcRawInfo.putPath(ProgramExecutableType.INSTALLED, Paths.get("dcraw"));
 	}
 
 	@Override

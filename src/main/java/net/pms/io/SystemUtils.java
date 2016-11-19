@@ -3,6 +3,7 @@ package net.pms.io;
 import java.io.File;
 import java.net.NetworkInterface;
 import java.net.SocketException;
+import java.nio.file.Path;
 import net.pms.newgui.LooksFrame;
 
 public interface SystemUtils {
@@ -19,7 +20,7 @@ public interface SystemUtils {
 
 	public abstract boolean isKerioFirewall();
 
-	public abstract String getVlcPath();
+	public abstract Path getVlcPath();
 
 	public abstract String getVlcVersion();
 
