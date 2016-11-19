@@ -121,7 +121,6 @@ public class TranscodingTab {
 	private JImageButton arrowUpButton;
 	private JImageButton toggleButton;
 	private static enum ToggleButtonState {
-		Unknown ("button-toggle-on_disabled.png"),
 		On ("button-toggle-on.png"),
 		Off ("button-toggle-off.png");
 
@@ -179,7 +178,7 @@ public class TranscodingTab {
 		{
 			arrowDownButton.setEnabled(false);
 			arrowUpButton.setEnabled(false);
-			toggleButton.setIconName(ToggleButtonState.Unknown.getIconName());
+			toggleButton.setIconName(ToggleButtonState.On.getIconName());
 			toggleButton.setEnabled(false);
 		} else {
 			TreeNodeSettings node = (TreeNodeSettings) path.getLastPathComponent();
@@ -332,6 +331,43 @@ public class TranscodingTab {
 
 		tree.setRequestFocusEnabled(false);
 		tree.setCellRenderer(new TreeRenderer());
+		tree.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mousePressed(MouseEvent e) {
+				if (e.getButton() == MouseEvent.BUTTON1 && e.getClickCount() >= 2) {
+					int selRow = tree.getRowForLocation(e.getX(), e.getY());
+					if(selRow != -1) {
+						int doubleCount = e.getClickCount() / 2;
+						if (doubleCount % 2 != 0) {
+							// Ignore even number of double clicks
+							Object node = tree.getPathForLocation(e.getX(), e.getY()).getLastPathComponent();
+							if (node instanceof TreeNodeSettings && ((TreeNodeSettings)node).getPlayer() != null) {
+								((TreeNodeSettings)node).getPlayer().toggleEnabled(true);
+								tree.updateUI();
+								setButtonsState();
+							}
+						}
+					}
+				}
+			}
+		});
+		tree.addKeyListener(new KeyAdapter() {
+			@Override
+			public void keyTyped(KeyEvent e) {
+				if (' ' == e.getKeyChar()) {
+					TreePath path = tree.getSelectionModel().getSelectionPath();
+					TreeNodeSettings node = null;
+					if (path.getLastPathComponent() instanceof TreeNodeSettings) {
+						node = (TreeNodeSettings) path.getLastPathComponent();
+					}
+					if (node != null && node.getPlayer() != null) {
+						node.getPlayer().toggleEnabled(true);
+						tree.updateUI();
+						setButtonsState();
+					}
+				}
+			}
+		});
 		JScrollPane pane = new JScrollPane(tree, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
 
 		builder.add(pane, FormLayoutUtil.flip(cc.xyw(2, 1, 4), colSpec, orientation));
