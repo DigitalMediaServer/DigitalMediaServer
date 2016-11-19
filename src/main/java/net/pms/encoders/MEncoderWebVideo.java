@@ -34,6 +34,10 @@ public class MEncoderWebVideo extends MEncoderVideo {
 	public static final PlayerId ID = StandardPlayerId.MENCODER_WEB_VIDEO;
 	public static final String NAME = "MEncoder Web Video";
 
+	// Not to be instantiated by anything but PlayerFactory
+	MEncoderWebVideo() {
+	}
+
 	@Override
 	public JComponent config() {
 		return null;
@@ -76,14 +80,6 @@ public class MEncoderWebVideo extends MEncoderVideo {
 				"-vf", "harddup",
 				"-ofps", "25"
 			};
-	}
-
-	@Deprecated
-	public MEncoderWebVideo(PmsConfiguration configuration) {
-		this();
-	}
-
-	public MEncoderWebVideo() {
 	}
 
 	@Override

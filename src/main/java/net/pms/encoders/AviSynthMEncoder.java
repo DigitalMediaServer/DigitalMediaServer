@@ -54,12 +54,8 @@ public class AviSynthMEncoder extends MEncoderVideo {
 	public static final PlayerId ID = StandardPlayerId.AVI_SYNTH_MENCODER;
 	public static final String NAME = "AviSynth/MEncoder";
 
-	@Deprecated
-	public AviSynthMEncoder(PmsConfiguration configuration) {
-		this();
-	}
-
-	public AviSynthMEncoder() {
+	// Not to be instantiated by anything but PlayerFactory
+	AviSynthMEncoder() {
 	}
 
 	private JTextArea textArea;
@@ -361,9 +357,6 @@ public class AviSynthMEncoder extends MEncoderVideo {
 		return file;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public boolean isCompatible(DLNAResource resource) {
 		Format format = resource.getFormat();

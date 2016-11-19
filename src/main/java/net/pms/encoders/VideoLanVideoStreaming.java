@@ -56,7 +56,8 @@ public class VideoLanVideoStreaming extends Player {
 	public static final PlayerId ID = StandardPlayerId.VLC_VIDEO_STREAMING;
 	public static final String NAME = "VLC Web Video (Legacy)";
 
-	public VideoLanVideoStreaming() {
+	// Not to be instantiated by anything but PlayerFactory
+	VideoLanVideoStreaming() {
 	}
 
 	@Override
