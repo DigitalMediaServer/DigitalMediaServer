@@ -52,13 +52,8 @@ public class FFmpegAudio extends FFMpegVideo {
 	@Deprecated
 	JCheckBox noresample;
 
-	@Deprecated
-	public FFmpegAudio(PmsConfiguration configuration) {
-		this();
-	}
-
-	public FFmpegAudio() {
-	}
+	// Not to be instantiated by anything but PlayerFactory
+	FFmpegAudio() {}
 
 	@Override
 	public JComponent config() {

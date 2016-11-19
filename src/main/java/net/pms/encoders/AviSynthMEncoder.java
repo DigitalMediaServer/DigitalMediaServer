@@ -52,13 +52,8 @@ import org.slf4j.LoggerFactory;
 public class AviSynthMEncoder extends MEncoderVideo {
 	private static final Logger LOGGER = LoggerFactory.getLogger(AviSynthMEncoder.class);
 
-	@Deprecated
-	public AviSynthMEncoder(PmsConfiguration configuration) {
-		this();
-	}
-
-	public AviSynthMEncoder() {
-	}
+	// Not to be instantiated by anything but PlayerFactory
+	AviSynthMEncoder() {}
 
 	public static final PlayerId ID = PlayerId.AVI_SYNTH_MENCODER;
 

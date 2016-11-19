@@ -682,9 +682,15 @@ public class PMS {
 			 * different caches, which is why here we ask FFmpeg (64-bit
 			 * if possible) to create a cache.
 			 * This should result in all of the necessary caches being built.
+			 * TODO: Rewrite fontconfig generation
 			 */
 			if (!Platform.isWindows() || Platform.is64Bit()) {
-				ProcessWrapperImpl ffmpeg = new ProcessWrapperImpl(new String[]{configuration.getFFmpegPath(), "-y", "-f", "lavfi", "-i", "nullsrc=s=720x480:d=1:r=1", "-vf", "ass=DummyInput.ass", "-target", "ntsc-dvd", "-"}, outputParams);
+				ProcessWrapperImpl ffmpeg = new ProcessWrapperImpl(
+					new String[]{
+						configuration.getFFmpegPaths().getDefaultPath(),
+						"-y", "-f", "lavfi", "-i", "nullsrc=s=720x480:d=1:r=1", "-vf", "ass=DummyInput.ass", "-target", "ntsc-dvd", "-"},
+					outputParams
+				);
 				ffmpeg.runInNewThread();
 			}
 		}

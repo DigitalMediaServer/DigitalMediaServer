@@ -39,13 +39,8 @@ import net.pms.util.PlayerUtil;
 public class VideoLanVideoStreaming extends Player {
 	public static final PlayerId ID = PlayerId.VLC_VIDEO_STREAMING;
 
-	@Deprecated
-	public VideoLanVideoStreaming(PmsConfiguration configuration) {
-		this();
-	}
-
-	public VideoLanVideoStreaming() {
-	}
+	// Not to be instantiated by anything but PlayerFactory
+	VideoLanVideoStreaming() {}
 
 	@Override
 	public int purpose() {

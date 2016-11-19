@@ -12,6 +12,7 @@ import net.pms.dlna.DLNAMediaInfo;
 import net.pms.dlna.DLNAThumbnail;
 import net.pms.dlna.InputFile;
 import net.pms.encoders.PlayerFactory;
+import net.pms.encoders.PlayerId;
 import net.pms.encoders.DCRaw;
 import net.pms.image.ImageFormat;
 import net.pms.image.ImageInfo;

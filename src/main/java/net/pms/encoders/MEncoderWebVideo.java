@@ -78,13 +78,8 @@ public class MEncoderWebVideo extends Player {
 			};
 	}
 
-	@Deprecated
-	public MEncoderWebVideo(PmsConfiguration configuration) {
-		this();
-	}
-
-	public MEncoderWebVideo() {
-	}
+	// Not to be instantiated by anything but PlayerFactory
+	MEncoderWebVideo() {}
 
 	@Override
 	public ProcessWrapper launchTranscode(

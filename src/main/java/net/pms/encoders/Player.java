@@ -22,7 +22,9 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.StringTokenizer;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import javax.swing.JComponent;
@@ -45,7 +47,6 @@ import net.pms.io.ProcessWrapper;
 import net.pms.util.FileUtil;
 import net.pms.util.Iso639;
 import net.pms.util.OpenSubtitle;
-import net.pms.util.StringUtil;
 import net.pms.util.UMSUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -81,14 +82,17 @@ public abstract class Player {
 
 	/**
 	 * Used to determine if the player can be used, e.g if the binary is
-	 * accessible. All access must be guarded with {@link #availableLock}.
+	 * accessible for the given {@link ProgramExecutableType}. All access must
+	 * be guarded with {@link #availableLock}.
 	 */
-	private boolean available = false;
+	private Map<ProgramExecutableType, Boolean> available = new HashMap<>();
 
 	/**
-	 * All access must be guarded with {@link #availableLock}.
+	 * Used to store the available state (localized) text for the given
+	 * {@link ProgramExecutableType}. All access must be guarded with
+	 * {@link #availableLock}.
 	 */
-	private String stateText = null;
+	private Map<ProgramExecutableType, String> stateText = new HashMap<>();
 
 	/**
 	 * Must be used to control all access to {@link #enabled}
@@ -179,35 +183,56 @@ public abstract class Player {
 
 	/**
 	 * Used to determine if the player can be used, e.g if the binary is
-	 * accessible. Threadsafe.
+	 * accessible for the given {@link ProgramExecutableType}. Threadsafe.
+	 *
+	 * @param executableType the {@link ProgramExecutableType} to get the state
+	 *                       text for.
 	 */
-	public boolean isAvailable() {
+	public boolean isAvailable(ProgramExecutableType executableType) {
+		if (executableType == null) {
+			return false;
+		}
 		availableLock.readLock().lock();
 		try {
-			return available == true;
+			Boolean result = available.get(executableType);
+			return result == null ? false : result.booleanValue();
 		} finally {
 			availableLock.readLock().unlock();
 		}
 	}
 
 	/**
-	 * Returns the current engine state (enabled, available) as a localized text. Threadsafe.
-	 *
-	 * @return The status
+	 * Used to determine if the player can be used, e.g if the binary is
+	 * accessible for the current {@link ProgramExecutableType}. Threadsafe.
 	 */
-	public String getStateText() {
+	public boolean isAvailable() {
+		return isAvailable(currentExecutableType);
+	}
+
+	/**
+	 * Returns the current engine state (enabled, available) as a localized
+	 * text for the given {@link ProgramExecutableType}. Threadsafe.
+	 *
+	 * @param executableType the {@link ProgramExecutableType} to get the state
+	 *                       text for.
+	 * @return The localized state text.
+	 */
+	public String getStateText(ProgramExecutableType executableType) {
+		if (executableType == null) {
+			return null;
+		}
 		availableLock.readLock().lock();
 		try {
-			if (isActive()) {
-				if (StringUtil.hasValue(stateText)) {
-					return String.format(enabledVersionText, name(), stateText);
+			if (isActive(executableType)) {
+				if (StringUtils.isNotBlank(stateText.get(executableType))) {
+					return String.format(enabledVersionText, name(), stateText.get(executableType));
 				} else {
 					return enabledText;
 				}
 			} else if (isAvailable()) {
 				return disabledText;
 			} else {
-				return stateText;
+				return stateText.get(executableType);
 			}
 		} finally {
 			availableLock.readLock().unlock();
@@ -215,37 +240,57 @@ public abstract class Player {
 	}
 
 	/**
+	 * Returns the current engine state (enabled, available) as a localized
+	 * text for the current {@link ProgramExecutableType}. Threadsafe.
+	 *
+	 * @return The localized state text.
+	 */
+	public String getStateText() {
+		return getStateText(currentExecutableType);
+	}
+
+	/**
 	 * Sets the engine available status with a localized explanation
 	 *
-	 * @param available whether or not the player is available
-	 * @param stateText the localized description of the current availability state
+	 * @param available whether or not the {@link Player} is available
+	 * @param executableType the {@link ProgramExecutableType} for which to set
+	 *                       availability.
+	 * @param stateText the localized description of the unavailable state or
+	 *                  the executable version number if available.
 	 */
-	public void setAvailable(boolean available, String stateText) {
+	public void setAvailable(boolean available, ProgramExecutableType executableType, String stateText) {
+		if (executableType == null || executableType.equals(ProgramExecutableType.UNKNOWN)) {
+			throw new IllegalArgumentException("executableType cannot be null or unknown");
+		}
 		availableLock.writeLock().lock();
 		try {
-			this.available = available;
-			this.stateText = stateText;
+			this.available.put(executableType, Boolean.valueOf(available));
+			this.stateText.put(executableType, stateText);
 		} finally {
 			availableLock.writeLock().unlock();
 		}
 	}
 
 	/**
-	 * Marks the engine as available for use with a localized explanation
+	 * Marks the engine as available for use.
 	 *
-	 * @param stateText the localized description of the current availability state
+	 * @param executableType the {@link ProgramExecutableType} for which to set
+	 *                       availability.
+	 * @param stateText the executable version number.
 	 */
-	public void setAvailable(String stateText) {
-		setAvailable(true, stateText);
+	public void setAvailable(ProgramExecutableType executableType, String stateText) {
+		setAvailable(true, executableType, stateText);
 	}
 
 	/**
 	 * Marks the engine as unavailable for use with a localized explanation
 	 *
-	 * @param stateText the localized description of the current availability state
+	 * @param executableType the {@link ProgramExecutableType} for which to set
+	 *                       availability.
+	 * @param stateText the localized description of the unavailable state
 	 */
-	public void setUnavailable(String stateText) {
-		setAvailable(false, stateText);
+	public void setUnavailable(ProgramExecutableType executableType, String stateText) {
+		setAvailable(false, executableType, stateText);
 	}
 
 	/**
@@ -286,9 +331,21 @@ public abstract class Player {
 
 	/**
 	 * Convenience method to check that a player is both available and enabled
+	 * for the given {@link ProgramExecutableType}.
+	 *
+	 * @param executableType the {@link ProgramExecutableType} for which to
+	 *                       check availability.
+	 */
+	public boolean isActive(ProgramExecutableType executableType) {
+		return isAvailable(executableType) && isEnabled();
+	}
+
+	/**
+	 * Convenience method to check that a player is both available and enabled
+	 * for the current {@link ProgramExecutableType}.
 	 */
 	public boolean isActive() {
-		return isAvailable() && isEnabled();
+		return isAvailable(currentExecutableType) && isEnabled();
 	}
 
 	/**

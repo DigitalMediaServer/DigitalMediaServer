@@ -60,6 +60,9 @@ public class AviSynthFFmpeg extends FFMpegVideo {
 	private static final Logger LOGGER = LoggerFactory.getLogger(AviSynthFFmpeg.class);
 	public static final PlayerId ID = PlayerId.AVI_SYNTH_FFMPEG;
 
+	// Not to be instantiated by anything but PlayerFactory
+	AviSynthFFmpeg() {}
+
 	@Override
 	public PlayerId id() {
 		return ID;

@@ -85,12 +85,8 @@ public class FFMpegVideo extends Player {
 	private static final Logger LOGGER = LoggerFactory.getLogger(FFMpegVideo.class);
 	private static final String DEFAULT_QSCALE = "3";
 
-	public FFMpegVideo() {
-	}
-
-	@Deprecated
-	public FFMpegVideo(PmsConfiguration configuration) {
-		this();
+	// Not to be instantiated by anything but PlayerFactory
+	FFMpegVideo() {
 	}
 
 	public static final PlayerId ID = PlayerId.FFMPEG_VIDEO;
@@ -921,7 +917,7 @@ public class FFMpegVideo extends Player {
 				LOGGER.trace(prependTraceReason + "the resolution is incompatible with the renderer.");
 			}
 			if (deferToTsmuxer) {
-				TsMuxeRVideo tv = new TsMuxeRVideo();
+				TsMuxeRVideo tv = (TsMuxeRVideo) PlayerFactory.getPlayer(PlayerId.TSMUXER_VIDEO);
 				params.forceFps = media.getValidFps(false);
 
 				if (media.getCodecV() != null) {
@@ -1086,7 +1082,7 @@ public class FFMpegVideo extends Player {
 		} else {
 			pipe = new PipeProcess(System.currentTimeMillis() + "tsmuxerout.ts");
 
-			TsMuxeRVideo ts = new TsMuxeRVideo();
+			TsMuxeRVideo ts = (TsMuxeRVideo) PlayerFactory.getPlayer(PlayerId.TSMUXER_VIDEO);
 			File f = new File(configuration.getTempFolder(), "pms-tsmuxer.meta");
 			String cmd[] = new String[]{ ts.executable(), f.getAbsolutePath(), pipe.getInputPipe() };
 			pw = new ProcessWrapperImpl(cmd, params);

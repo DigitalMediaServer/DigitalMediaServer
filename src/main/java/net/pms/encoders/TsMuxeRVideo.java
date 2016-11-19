@@ -55,13 +55,8 @@ public class TsMuxeRVideo extends Player {
 
 	public static final PlayerId ID = PlayerId.TSMUXER_VIDEO;
 
-	@Deprecated
-	public TsMuxeRVideo(PmsConfiguration configuration) {
-		this();
-	}
-
-	public TsMuxeRVideo() {
-	}
+	// Not to be instantiated by anything but PlayerFactory
+	TsMuxeRVideo() {}
 
 	@Override
 	public boolean excludeFormat(Format format) {
@@ -153,7 +148,7 @@ public class TsMuxeRVideo extends Player {
 			}
 
 			ffmpegCommands = new String[] {
-				configuration.getFFmpegPath(),
+				PlayerFactory.getPlayerExecutable(PlayerId.FFMPEG_VIDEO),
 				timeEndValue1, timeEndValue2,
 				"-loop", "1",
 				"-i", "DummyInput.jpg",
@@ -209,7 +204,7 @@ public class TsMuxeRVideo extends Player {
 				}
 
 				String[] flacCmd = new String[] {
-					configuration.getFFmpegPath(),
+					PlayerFactory.getPlayerExecutable(PlayerId.FFMPEG_VIDEO),
 					"-i", filename,
 					"-ar", rate,
 					"-f", "wav",
@@ -230,7 +225,7 @@ public class TsMuxeRVideo extends Player {
 			ffVideoPipe = new PipeIPCProcess(System.currentTimeMillis() + "ffmpegvideo", System.currentTimeMillis() + "videoout", false, true);
 
 			ffmpegCommands = new String[] {
-				configuration.getFFmpegPath(),
+				PlayerFactory.getPlayerExecutable(PlayerId.FFMPEG_VIDEO),
 				"-ss", params.timeseek > 0 ? "" + params.timeseek : "0",
 				"-i", filename,
 				"-c", "copy",
@@ -328,7 +323,7 @@ public class TsMuxeRVideo extends Player {
 						sm.setBitsPerSample(16);
 
 						ffmpegCommands = new String[] {
-							configuration.getFFmpegPath(),
+							PlayerFactory.getPlayerExecutable(PlayerId.FFMPEG_VIDEO),
 							"-ss", params.timeseek > 0 ? "" + params.timeseek : "0",
 							"-i", filename,
 							"-ac", "" + sm.getNbChannels(),
@@ -345,7 +340,7 @@ public class TsMuxeRVideo extends Player {
 					} else if (!ac3Remux && params.mediaRenderer.isTranscodeToAAC()) {
 						// AAC audio
 						ffmpegCommands = new String[] {
-							configuration.getFFmpegPath(),
+							PlayerFactory.getPlayerExecutable(PlayerId.FFMPEG_VIDEO),
 							"-ss", params.timeseek > 0 ? "" + params.timeseek : "0",
 							"-i", filename,
 							"-ac", "" + channels,
@@ -359,7 +354,7 @@ public class TsMuxeRVideo extends Player {
 					} else {
 						// AC-3 audio
 						ffmpegCommands = new String[] {
-							configuration.getFFmpegPath(),
+							PlayerFactory.getPlayerExecutable(PlayerId.FFMPEG_VIDEO),
 							"-ss", params.timeseek > 0 ? "" + params.timeseek : "0",
 							"-i", filename,
 							"-ac", "" + channels,
@@ -431,7 +426,7 @@ public class TsMuxeRVideo extends Player {
 							}
 
 							ffmpegCommands = new String[] {
-								configuration.getFFmpegPath(),
+								PlayerFactory.getPlayerExecutable(PlayerId.FFMPEG_VIDEO),
 								"-ss", params.timeseek > 0 ? "" + params.timeseek : "0",
 								"-i", filename,
 								"-ac", "" + sm.getNbChannels(),
@@ -444,7 +439,7 @@ public class TsMuxeRVideo extends Player {
 						} else if (!ac3Remux && params.mediaRenderer.isTranscodeToAAC()) {
 							// AAC audio
 							ffmpegCommands = new String[] {
-								configuration.getFFmpegPath(),
+								PlayerFactory.getPlayerExecutable(PlayerId.FFMPEG_VIDEO),
 								"-ss", params.timeseek > 0 ? "" + params.timeseek : "0",
 								"-i", filename,
 								"-ac", "" + channels,
@@ -460,7 +455,7 @@ public class TsMuxeRVideo extends Player {
 						} else {
 							// AC-3 remux or encoding
 							ffmpegCommands = new String[] {
-								configuration.getFFmpegPath(),
+								PlayerFactory.getPlayerExecutable(PlayerId.FFMPEG_VIDEO),
 								"-ss", params.timeseek > 0 ? "" + params.timeseek : "0",
 								"-i", filename,
 								"-ac", "" + channels,

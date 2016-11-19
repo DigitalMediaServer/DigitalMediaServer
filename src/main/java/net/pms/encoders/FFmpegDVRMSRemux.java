@@ -49,6 +49,9 @@ public class FFmpegDVRMSRemux extends Player {
 	private JTextField altffpath;
 	public static final PlayerId ID = PlayerId.FFMPEG_DVRMS_REMUX;
 
+	// Not to be instantiated by anything but PlayerFactory
+	FFmpegDVRMSRemux() {}
+
 	@Override
 	public int purpose() {
 		return MISC_PLAYER;

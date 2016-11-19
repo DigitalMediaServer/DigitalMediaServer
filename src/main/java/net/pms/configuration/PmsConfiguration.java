@@ -825,23 +825,8 @@ public class PmsConfiguration extends RendererConfiguration {
 		configuration.setProperty(getExecutableTypeKey(id), executableType.toString());
 	}
 
-	public String getVLCPath() {
-		ProgramExecutableType executableType = getExecutableType(PlayerId.VLC_VIDEO);
-		if (executableType != null && executableType != ProgramExecutableType.UNKNOWN) {
-			return getVLCPaths().getPath(executableType);
-		}
-		return getVLCPaths().getDefaultPath();
-	}
 	public PlatformExecutableInfo getMEncoderPaths() {
 		return programPaths.getMEncoder();
-	}
-
-	public String getMEncoderPath() {
-		ProgramExecutableType executableType = getExecutableType(PlayerId.MENCODER_VIDEO);
-		if (executableType != null && executableType != ProgramExecutableType.UNKNOWN) {
-			return getMEncoderPaths().getPath(executableType);
-		}
-		return getMEncoderPaths().getDefaultPath();
 	}
 
 	public int getMencoderMaxThreads() {
@@ -852,24 +837,8 @@ public class PmsConfiguration extends RendererConfiguration {
 		return programPaths.getDCRaw();
 	}
 
-	public String getDCRawPath() {
-		ProgramExecutableType executableType = getExecutableType(PlayerId.RAW_THUMBNAILER);
-		if (executableType != null && executableType != ProgramExecutableType.UNKNOWN) {
-			return getDCRawPaths().getPath(executableType);
-		}
-		return getDCRawPaths().getDefaultPath();
-	}
-
 	public PlatformExecutableInfo getFFmpegPaths() {
 		return programPaths.getFFmpeg();
-	}
-
-	public String getFFmpegPath() {
-		ProgramExecutableType executableType = getExecutableType(PlayerId.FFMPEG_VIDEO);
-		if (executableType != null && executableType != ProgramExecutableType.UNKNOWN) {
-			return getFFmpegPaths().getPath(executableType);
-		}
-		return getFFmpegPaths().getDefaultPath();
 	}
 
 	public PlatformExecutableInfo getMPlayerPaths() {
@@ -889,14 +858,6 @@ public class PmsConfiguration extends RendererConfiguration {
 
 	public PlatformExecutableInfo gettsMuxeRPaths() {
 		return programPaths.gettsMuxeR();
-	}
-
-	public String gettsMuxeRPath() {
-		ProgramExecutableType executableType = getExecutableType(PlayerId.TSMUXER_VIDEO);
-		if (executableType != null && executableType != ProgramExecutableType.UNKNOWN) {
-			return gettsMuxeRPaths().getPath(executableType);
-		}
-		return gettsMuxeRPaths().getDefaultPath();
 	}
 
 	public PlatformExecutableInfo gettsMuxeRNewPaths() {
