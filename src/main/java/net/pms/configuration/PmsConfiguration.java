@@ -46,17 +46,10 @@ import net.pms.Messages;
 import net.pms.PMS;
 import net.pms.dlna.CodeEnter;
 import net.pms.dlna.RootFolder;
-import net.pms.encoders.AviSynthFFmpeg;
-import net.pms.encoders.AviSynthMEncoder;
-import net.pms.encoders.DCRaw;
-import net.pms.encoders.FFMpegVideo;
-import net.pms.encoders.MEncoderVideo;
 import net.pms.encoders.Player;
 import net.pms.encoders.PlayerFactory;
 import net.pms.encoders.PlayerId;
 import net.pms.encoders.StandardPlayerId;
-import net.pms.encoders.TsMuxeRVideo;
-import net.pms.encoders.VLCVideo;
 import net.pms.formats.Format;
 import net.pms.newgui.NavigationShareTab.SharedFoldersTableModel;
 import net.pms.service.PreventSleepMode;
@@ -918,68 +911,12 @@ public class PmsConfiguration extends RendererConfiguration {
 		return programPaths.getVLC();
 	}
 
-	@Nullable
-	public ProgramExecutableType getExecutableType(PlayerId id) {
-		if (id == null) {
-			return null;
-		}
-		if (
-			id == StandardPlayerId.AVI_SYNTH_FFMPEG ||
-			id == StandardPlayerId.FFMPEG_AUDIO ||
-			id == StandardPlayerId.FFMPEG_VIDEO ||
-			id == StandardPlayerId.FFMPEG_WEB_VIDEO
-		) {
-			return ProgramExecutableType.toProgramExecutableType(getString(FFMpegVideo.KEY_FFMPEG_EXECUTABLE_TYPE, null), programPaths.getFFmpeg().getDefault());
-		}
-		if (
-			id == StandardPlayerId.AVI_SYNTH_MENCODER ||
-			id == StandardPlayerId.MENCODER_VIDEO ||
-			id == StandardPlayerId.MENCODER_WEB_VIDEO
-		) {
-			return ProgramExecutableType.toProgramExecutableType(getString(MEncoderVideo.KEY_MENCODER_EXECUTABLE_TYPE, null), programPaths.getMEncoder().getDefault());
-		}
-		if (id == StandardPlayerId.DCRAW) {
-			return ProgramExecutableType.toProgramExecutableType(getString(DCRaw.KEY_DCRAW_EXECUTABLE_TYPE, null), programPaths.getDCRaw().getDefault());
-		}
-		if (
-			id == StandardPlayerId.TSMUXER_AUDIO ||
-			id == StandardPlayerId.TSMUXER_VIDEO
-		) {
-			return ProgramExecutableType.toProgramExecutableType(getString(TsMuxeRVideo.KEY_TSMUXER_EXECUTABLE_TYPE, null), programPaths.getTsMuxeR().getDefault());
-		}
-		if (
-			id == StandardPlayerId.VLC_AUDIO_STREAMING ||
-			id == StandardPlayerId.VLC_VIDEO ||
-			id == StandardPlayerId.VLC_VIDEO_STREAMING ||
-			id == StandardPlayerId.VLC_WEB_VIDEO
-		) {
-			return ProgramExecutableType.toProgramExecutableType(getString(VLCVideo.KEY_VLC_EXECUTABLE_TYPE, null), programPaths.getVLC().getDefault());
-		}
-		return null; // XXX: If plugins are reimplemented, a custom lookup is needed here.
-	}
-
-	public String getVLCPath() {
-		ProgramExecutableType executableType = getExecutableType(StandardPlayerId.VLC_VIDEO);
-		if (executableType != null) {
-			return getVLCPaths().getPath(executableType).toString();
-		}
-		return getVLCPaths().getDefaultPath().toString();
-	}
-
 	/**
 	 * @return The {@link ExternalProgramInfo} for MEncoder.
 	 */
 	@Nullable
 	public ExternalProgramInfo getMEncoderPaths() {
 		return programPaths.getMEncoder();
-	}
-
-	public String getMEncoderPath() {
-		ProgramExecutableType executableType = getExecutableType(StandardPlayerId.MENCODER_VIDEO);
-		if (executableType != null) {
-			return getMEncoderPaths().getPath(executableType).toString();
-		}
-		return getMEncoderPaths().getDefaultPath().toString();
 	}
 
 	/**
@@ -990,28 +927,12 @@ public class PmsConfiguration extends RendererConfiguration {
 		return programPaths.getDCRaw();
 	}
 
-	public String getDCRawPath() {
-		ProgramExecutableType executableType = getExecutableType(StandardPlayerId.DCRAW);
-		if (executableType != null) {
-			return getDCRawPaths().getPath(executableType).toString();
-		}
-		return getDCRawPaths().getDefaultPath().toString();
-	}
-
 	/**
 	 * @return The {@link ExternalProgramInfo} for FFmpeg.
 	 */
 	@Nullable
 	public ExternalProgramInfo getFFmpegPaths() {
 		return programPaths.getFFmpeg();
-	}
-
-	public String getFFmpegPath() {
-		ProgramExecutableType executableType = getExecutableType(StandardPlayerId.FFMPEG_VIDEO);
-		if (executableType != null) {
-			return getFFmpegPaths().getPath(executableType).toString();
-		}
-		return getFFmpegPaths().getDefaultPath().toString();
 	}
 
 	/**
@@ -1042,10 +963,6 @@ public class PmsConfiguration extends RendererConfiguration {
 		return executable == null ? null : executable.toString();
 	}
 
-	public String getMPlayerDefaultPath() {
-		return getMPlayerPaths().getDefaultPath().toString();
-	}
-
 	/**
 	 * Sets a new {@link ProgramExecutableType#CUSTOM} {@link Path} for MPlayer
 	 * both in {@link PmsConfiguration} and the {@link ExternalProgramInfo}.
@@ -1065,14 +982,6 @@ public class PmsConfiguration extends RendererConfiguration {
 	@Nullable
 	public ExternalProgramInfo getTsMuxeRPaths() {
 		return programPaths.getTsMuxeR();
-	}
-
-	public String getTsMuxeRPath() {
-		ProgramExecutableType executableType = getExecutableType(StandardPlayerId.TSMUXER_VIDEO);
-		if (executableType != null) {
-			return getTsMuxeRPaths().getPath(executableType).toString();
-		}
-		return getTsMuxeRPaths().getDefaultPath().toString();
 	}
 
 	/**
@@ -1125,10 +1034,6 @@ public class PmsConfiguration extends RendererConfiguration {
 		return programPaths.getFLAC();
 	}
 
-	public String getFLACDefaultPath() {
-		return getFLACPaths().getDefaultPath().toString();
-	}
-
 	/**
 	 * @return The configured path to the FLAC executable. If none is
 	 *         configured, the default is used.
@@ -1168,10 +1073,6 @@ public class PmsConfiguration extends RendererConfiguration {
 	@Nullable
 	public ExternalProgramInfo getInterFramePaths() {
 		return programPaths.getInterFrame();
-	}
-
-	public String getInterFrameDefaultPath() {
-		return getInterFramePaths().getDefaultPath().toString();
 	}
 
 	/**
