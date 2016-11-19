@@ -95,8 +95,7 @@ public class AviDemuxerInputStream extends InputStream {
 			@Override
 			public void run() {
 				try {
-					// TODO(tcox): Is this used anymore?
-					TsMuxeRVideo ts = new TsMuxeRVideo();
+					TsMuxeRVideo ts = (TsMuxeRVideo) PlayerFactory.getPlayer(StandardPlayerId.TSMUXER_VIDEO, false, false);
 					File f = new File(configuration.getTempFolder(), "dms-tsmuxer.meta");
 					try (PrintWriter pw = new PrintWriter(f)) {
 						pw.println("MUXOPT --no-pcr-on-video-pid --no-asyncio --new-audio-pes --vbr --vbv-len=500");
