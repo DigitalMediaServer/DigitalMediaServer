@@ -349,6 +349,21 @@ public class TranscodingTab {
 
 		tree.setRequestFocusEnabled(false);
 		tree.setCellRenderer(new TreeRenderer());
+		tree.addMouseListener(new MouseAdapter() {
+		    public void mousePressed(MouseEvent e) {
+		        int selRow = tree.getRowForLocation(e.getX(), e.getY());
+		        if(selRow != -1) {
+		            if(e.getClickCount() == 2) {
+				        Object node = tree.getPathForLocation(e.getX(), e.getY()).getLastPathComponent();
+		            	if (node instanceof TreeNodeSettings && ((TreeNodeSettings)node).getPlayer() != null) {
+		            		((TreeNodeSettings)node).getPlayer().toggleEnabled(true);
+		            		tree.updateUI();
+		            		setButtonsState();
+		            	}
+		            }
+		        }
+		    }
+		});
 		JScrollPane pane = new JScrollPane(tree, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
 
 		builder.add(pane, FormLayoutUtil.flip(cc.xyw(2, 1, 4), colSpec, orientation));
