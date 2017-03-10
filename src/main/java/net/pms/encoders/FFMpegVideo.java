@@ -61,6 +61,7 @@ import net.pms.network.HTTPResource;
 import net.pms.newgui.GuiUtil;
 import net.pms.platform.windows.NTStatus;
 import net.pms.util.CodecUtil;
+import net.pms.util.H264Level;
 import net.pms.util.ProcessUtil;
 import net.pms.util.StringUtil;
 import net.pms.util.SubtitleUtils;
@@ -496,7 +497,7 @@ public class FFMpegVideo extends Player {
 			 */
 			if (!isXboxOneWebVideo && params.mediaRenderer.isTranscodeToH264()) {
 				if (
-					params.mediaRenderer.isH264Level41Limited() &&
+					params.mediaRenderer.getH264LevelLimit() == H264Level.L4_1 &&
 					defaultMaxBitrates[0] > 31250
 				) {
 					defaultMaxBitrates[0] = 31250;
@@ -941,7 +942,11 @@ public class FFMpegVideo extends Player {
 				deferToTsmuxer = false;
 				LOGGER.trace(prependTraceReason + "we are using AviSynth.");
 			}
-			if (deferToTsmuxer == true && params.mediaRenderer.isH264Level41Limited() && !media.isVideoWithinH264LevelLimits(newInput, params.mediaRenderer)) {
+			if (
+				deferToTsmuxer == true &&
+				params.mediaRenderer.getH264LevelLimit() == H264Level.L4_1 &&
+				!media.isVideoWithinH264Level41Limits(newInput, params.mediaRenderer)
+			) {
 				deferToTsmuxer = false;
 				LOGGER.trace(prependTraceReason + "the video stream is not within H.264 level limits for this renderer.");
 			}
