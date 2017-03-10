@@ -66,7 +66,7 @@ public class LibMediaInfoParserTest {
 
 	@Test
 	public void testGetAvcProfile() throws Exception {
-		assertThat(LibMediaInfoParser.getAvcProfile("Main@L2.0")).isEqualTo("main");
+		assertThat(LibMediaInfoParser.getAvcProfile("Main@L2.0")).isEqualTo("main"); //TODO: (Nad) Figure out
 		assertThat(LibMediaInfoParser.getAvcProfile("High@L3.0")).isEqualTo("high");
 		assertThat(LibMediaInfoParser.getAvcProfile("high@l4.0")).isEqualTo("high");
 		assertThat(LibMediaInfoParser.getAvcProfile("hIgH@L4.1")).isEqualTo("high");

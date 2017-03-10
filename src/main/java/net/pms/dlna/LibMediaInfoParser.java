@@ -130,7 +130,8 @@ public class LibMediaInfoParser {
 					} else {
 						getFormat(StreamType.Video, media, currentAudioTrack, MI.Get(StreamType.Video, i, "Format"), file);
 						getFormat(StreamType.Video, media, currentAudioTrack, MI.Get(StreamType.Video, i, "Format_Version"), file);
-						getFormat(StreamType.Video, media, currentAudioTrack, MI.Get(StreamType.Video, i, "Format_Profile"), file);
+						value = MI.Get(StreamType.Video, i, "Format_Profile");
+						getFormat(StreamType.Video, media, currentAudioTrack, value, file);
 						getFormat(StreamType.Video, media, currentAudioTrack, MI.Get(StreamType.Video, i, "CodecID"), file);
 						media.setWidth(getPixelValue(MI.Get(StreamType.Video, i, "Width")));
 						media.setHeight(getPixelValue(MI.Get(StreamType.Video, i, "Height")));
@@ -150,6 +151,12 @@ public class LibMediaInfoParser {
 						media.setFrameRateModeRaw(MI.Get(StreamType.Video, i, "FrameRate_Mode"));
 						media.setReferenceFrameCount(getReferenceFrameCount(MI.Get(StreamType.Video, i, "Format_Settings_RefFrames")));
 						media.setVideoTrackTitleFromMetadata(MI.Get(StreamType.Video, i, "Title"));
+
+						if (isNotBlank(value) && media.getCodecV() != null) {
+							// Value can look like "Advanced@L1", "Complex@L2", "MP@LL" or "Simple@L3" with VC-1 or MPEG-4 Visual.
+							media.setVideoFormatProfile(value);
+						}
+
 						value = MI.Get(StreamType.Video, i, "Format_Settings_QPel");
 						if (isNotBlank(value)) {
 							media.putExtra(FormatConfiguration.MI_QPEL, value);
@@ -868,13 +875,6 @@ public class LibMediaInfoParser {
 			format = FormatConfiguration.BMP;
 		} else if (value.equals("tiff")) {
 			format = FormatConfiguration.TIFF;
-		} else if (
-			streamType == StreamType.Video &&
-			FormatConfiguration.H264.equals(media.getCodecV()) &&
-			containsIgnoreCase(value, "@l")
-		) {
-			media.setAvcLevel(getAvcLevel(value));
-			media.setH264Profile(getAvcProfile(value));
 		}
 
 		if (format != null) {
@@ -933,32 +933,6 @@ public class LibMediaInfoParser {
 			LOGGER.trace("", e);
 			return -1;
 		}
-	}
-
-	/**
-	 * @param value {@code Format_Profile} value to parse.
-	 * @return AVC level or {@code null} if could not parse.
-	 */
-	public static String getAvcLevel(String value) {
-		// Example values:
-		// High@L3.0
-		// High@L4.0
-		// High@L4.1
-		final String avcLevel = substringAfterLast(lowerCase(value), "@l");
-		if (isNotBlank(avcLevel)) {
-			return avcLevel;
-		}
-		LOGGER.warn("Could not parse AvcLevel value {}." , value);
-		return null;
-	}
-
-	public static String getAvcProfile(String value) {
-		String profile = substringBefore(lowerCase(value), "@l");
-		if (isNotBlank(profile)) {
-			return profile;
-		}
-		LOGGER.warn("Could not parse AvcProfile value {}." , value);
-		return null;
 	}
 
 	public static int getSpecificID(String value) {
