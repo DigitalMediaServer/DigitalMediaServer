@@ -2270,7 +2270,7 @@ public class DLNAMediaInfo implements Cloneable {
 	 * @return The framerate mode.
 	 * @since 1.55.0
 	 */
-	public String getFrameRateMode() {
+	public String getFrameRateMode() { //TODO: (Nad) RateMode
 		return frameRateMode;
 	}
 

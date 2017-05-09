@@ -46,7 +46,11 @@ public class DLNAMediaAudio extends DLNAMediaLang implements Cloneable {
 
 	private AudioProperties audioProperties = new AudioProperties();
 
-	private int bitsPerSample = -1;
+	/**
+	 * @deprecated Use standard getter and setter to access this variable.
+	 */
+	@Deprecated
+	public int bitsperSample;
 
 	private int bitRate = -1;
 
