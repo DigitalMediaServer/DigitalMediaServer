@@ -234,7 +234,7 @@ public class DLNAMediaAudio extends DLNAMediaLang implements Cloneable {
 	}
 
 	/**
-	 * @return True if the audio codec is DTS HD.
+	 * @return True if the audio codec is DTS-HD.
 	 */
 	public boolean isDTSHD() {
 		return FormatConfiguration.DTSHD.equalsIgnoreCase(getCodecA());
@@ -496,7 +496,7 @@ public class DLNAMediaAudio extends DLNAMediaLang implements Cloneable {
 		} else if (isDTS()) {
 			return "DTS";
 		} else if (isDTSHD()) {
-			return "DTS HD";
+			return "DTS-HD";
 		} else if (isEAC3()) {
 			return "Enhanced AC-3";
 		} else if (isERBSAC()) {
