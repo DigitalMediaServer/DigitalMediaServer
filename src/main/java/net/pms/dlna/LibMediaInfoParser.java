@@ -977,9 +977,9 @@ public class LibMediaInfoParser {
 	}
 
 	public static String getSampleFrequency(String value) {
-		/**
-		 * Some tracks show several values, e.g. "48000 / 48000 / 24000" for HE-AAC
-		 * We store only the first value
+		/*
+		 * Some tracks show several values, e.g. "48000 / 48000 / 24000" for
+		 * HE-AAC. We store the first value only.
 		 */
 		if (value.indexOf('/') > -1) {
 			value = value.substring(0, value.indexOf('/'));
@@ -1025,12 +1025,11 @@ public class LibMediaInfoParser {
 	}
 
 	/**
-	 * @deprecated use trim()
+	 * @deprecated use trim().
 	 */
 	@Deprecated
 	public static String getFlavor(String value) {
-		value = value.trim();
-		return value;
+		return value.trim();
 	}
 
 	/**
