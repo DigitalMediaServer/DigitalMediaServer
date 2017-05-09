@@ -172,7 +172,7 @@ public class DLNAMediaInfo implements Cloneable {
 	private ScanOrder scanOrder;
 
 	/**
-	 * The frame rate mode as read from the parser
+	 * The frame rate mode as read from the parser.
 	 */
 	private String frameRateModeRaw;
 	private String frameRateOriginal;
@@ -249,6 +249,11 @@ public class DLNAMediaInfo implements Cloneable {
 
 	private final Object h264_annexBLock = new Object();
 	private byte[] h264_annexB;
+
+	/**
+	 * Not stored in database.
+	 */
+	private String truncated; //TODO: (Nad) Keep?
 
 	/**
 	 * Not stored in database.
@@ -427,7 +432,7 @@ public class DLNAMediaInfo implements Cloneable {
 	 * TODO: Now that FFmpeg is muxing without tsMuxeR, we should make a separate
 	 *       function for that, or even better, re-think this whole approach.
 	 *
-	 * @param mediaRenderer The renderer we might mux to
+	 * @param mediaRenderer The renderer we might mux to.
 	 *
 	 * @return
 	 */
@@ -478,10 +483,10 @@ public class DLNAMediaInfo implements Cloneable {
 	 * It is unlikely it will return false-positives but it will return
 	 * false-negatives.
 	 *
-	 * @param filename the filename
-	 * @param params the file properties
+	 * @param filename the filename.
+	 * @param params the file properties.
 	 *
-	 * @return whether a file is a WEB-DL release
+	 * @return Whether a file is a WEB-DL release.
 	 */
 	public boolean isWebDl(String filename, OutputParams params) {
 		// Check the filename
@@ -1093,10 +1098,10 @@ public class DLNAMediaInfo implements Cloneable {
 	}
 
 	/**
-	 * Parses media info from FFmpeg's stderr output
+	 * Parses media info from FFmpeg's stderr output.
 	 *
-	 * @param lines The stderr output
-	 * @param input The FFmpeg input (-i) argument used
+	 * @param lines The stderr output.
+	 * @param input The FFmpeg input (-i) argument used.
 	 */
 	public void parseFFmpegInfo(List<String> lines, String input) {
 		if (lines != null) {
@@ -1394,7 +1399,7 @@ public class DLNAMediaInfo implements Cloneable {
 	}
 
 	/**
-	 * Disable LPCM transcoding for MP4 container with non-H264 video as workaround for MEncoder's A/V sync bug
+	 * Disable LPCM transcoding for MP4 container with non-H264 video as workaround for MEncoder's A/V sync bug.
 	 */
 	public boolean isValidForLPCMTranscoding() {
 		if (container != null) {
@@ -1657,7 +1662,7 @@ public class DLNAMediaInfo implements Cloneable {
 	}
 
 	/**
-	 * Checks whether the video has too many reference frames per pixels for the renderer
+	 * Checks whether the video has too many reference frames per pixels for the renderer.
 	 *
 	 * TODO move to PlayerUtil
 	 */
@@ -1769,8 +1774,21 @@ public class DLNAMediaInfo implements Cloneable {
 		}
 	}
 
+	public boolean isMuxable(String filename, String codecA) {
+		return codecA != null && (codecA.startsWith("dts") || codecA.startsWith("a_dts") || codecA.equals("dca"));
+	} //TODO: (Nad) USeful?
+
 	public boolean isLossless(String codecA) {
-		return codecA != null && (codecA.contains("pcm") || codecA.startsWith("dts") || codecA.equals("dca") || codecA.contains("flac")) && !codecA.contains("pcm_u8") && !codecA.contains("pcm_s8");
+		return
+			codecA != null && (
+				codecA.startsWith("pcm") ||
+				codecA.startsWith("dts") ||
+				codecA.startsWith("a_dts") ||
+				codecA.equals("dca") ||
+				codecA.contains("flac")
+			) &&
+			!codecA.contains("pcm_u8") &&
+			!codecA.contains("pcm_s8");
 	}
 
 	@Override
@@ -1780,6 +1798,9 @@ public class DLNAMediaInfo implements Cloneable {
 			result.append("Container: ").append(getContainer().toUpperCase(Locale.ROOT)).append(", ");
 		}
 		result.append("Size: ").append(getSize());
+		if (isNotBlank(getTruncated())) { //TODO: (Nad) Useful?
+			result.append(", Truncated: ").append(getTruncated());
+		}
 		if (isVideo()) {
 			result.append(", Video Bitrate: ").append(getBitrate());
 			result.append(", Video Tracks: ").append(getVideoTrackCount());
@@ -1813,8 +1834,7 @@ public class DLNAMediaInfo implements Cloneable {
 				result.append(", Original Frame Rate: ").append(getFrameRateOriginal());
 			}
 			if (isNotBlank(getFrameRateMode())) {
-				result.append(", Frame Rate Mode: ");
-				result.append(getFrameRateMode());
+				result.append(", Frame Rate Mode: ").append(getFrameRateMode());
 				if (isNotBlank(getFrameRateModeRaw())) {
 					result.append(" (").append(getFrameRateModeRaw()).append(")");
 				}
@@ -1822,6 +1842,9 @@ public class DLNAMediaInfo implements Cloneable {
 			if (isNotBlank(getFrameRateModeRaw())) {
 				result.append(", Frame Rate Mode Raw: ");
 				result.append(getFrameRateModeRaw());
+			}
+			if (getFrameRateModeRaw() != null && !getFrameRateModeRaw().equals(getFrameRateMode())) {
+				result.append(", Raw Frame Rate Mode: ").append(getFrameRateModeRaw());
 			}
 			if (isNotBlank(getMuxingMode())) {
 				result.append(", Muxing Mode: ").append(getMuxingMode());
@@ -1854,7 +1877,7 @@ public class DLNAMediaInfo implements Cloneable {
 			}
 
 		} else if (getAudioTrackCount() > 0) {
-			result.append(", Bitrate: ").append(getBitrate());
+			result.append(", Overall Bitrate: ").append(getBitrate());
 			result.append(", Duration: ").append(getDurationString());
 			appendAudioTracks(result);
 		}
@@ -2122,7 +2145,7 @@ public class DLNAMediaInfo implements Cloneable {
 	}
 
 	/**
-	 * @return the bitrate
+	 * @return the bitrate.
 	 * @since 1.50.0
 	 */
 	public int getBitrate() {
@@ -2130,7 +2153,7 @@ public class DLNAMediaInfo implements Cloneable {
 	}
 
 	/**
-	 * @param bitrate the bitrate to set
+	 * @param bitrate the bitrate to set.
 	 * @since 1.50.0
 	 */
 	public void setBitrate(int bitrate) {
@@ -2138,7 +2161,7 @@ public class DLNAMediaInfo implements Cloneable {
 	}
 
 	/**
-	 * @return the width
+	 * @return the width.
 	 * @since 1.50.0
 	 */
 	public int getWidth() {
@@ -2146,7 +2169,7 @@ public class DLNAMediaInfo implements Cloneable {
 	}
 
 	/**
-	 * @param width the width to set
+	 * @param width the width to set.
 	 * @since 1.50.0
 	 */
 	public void setWidth(int width) {
@@ -2154,7 +2177,7 @@ public class DLNAMediaInfo implements Cloneable {
 	}
 
 	/**
-	 * @return the height
+	 * @return the height.
 	 * @since 1.50.0
 	 */
 	public int getHeight() {
@@ -2162,7 +2185,7 @@ public class DLNAMediaInfo implements Cloneable {
 	}
 
 	/**
-	 * @param height the height to set
+	 * @param height the height to set.
 	 * @since 1.50.0
 	 */
 	public void setHeight(int height) {
@@ -2170,7 +2193,7 @@ public class DLNAMediaInfo implements Cloneable {
 	}
 
 	/**
-	 * @return the size
+	 * @return the size.
 	 * @since 1.50.0
 	 */
 	public long getSize() {
@@ -2178,7 +2201,7 @@ public class DLNAMediaInfo implements Cloneable {
 	}
 
 	/**
-	 * @param size the size to set
+	 * @param size the size to set.
 	 * @since 1.50.0
 	 */
 	public void setSize(long size) {
@@ -2186,7 +2209,23 @@ public class DLNAMediaInfo implements Cloneable {
 	}
 
 	/**
-	 * @return the codecV
+	 * @return the truncated status.
+	 * @since 6.6.1
+	 */
+	public String getTruncated() { //TODO: (Nad) Useful?
+		return truncated;
+	}
+
+	/**
+	 * @param truncated the truncated status to set.
+	 * @since 6.6.1
+	 */
+	public void setTruncated(String truncated) {
+		this.truncated = truncated;
+	}
+
+	/**
+	 * @return the codecV.
 	 * @since 1.50.0
 	 */
 	public String getCodecV() {
@@ -2194,7 +2233,7 @@ public class DLNAMediaInfo implements Cloneable {
 	}
 
 	/**
-	 * @param codecV the codecV to set
+	 * @param codecV the codecV to set.
 	 * @since 1.50.0
 	 */
 	public void setCodecV(String codecV) {
@@ -2202,7 +2241,7 @@ public class DLNAMediaInfo implements Cloneable {
 	}
 
 	/**
-	 * @return the frameRate
+	 * @return the frameRate.
 	 * @since 1.50.0
 	 */
 	public String getFrameRate() {
@@ -2210,7 +2249,7 @@ public class DLNAMediaInfo implements Cloneable {
 	}
 
 	/**
-	 * @param frameRate the frameRate to set
+	 * @param frameRate the frameRate to set.
 	 * @since 1.50.0
 	 */
 	public void setFrameRate(String frameRate) {
@@ -2218,21 +2257,21 @@ public class DLNAMediaInfo implements Cloneable {
 	}
 
 	/**
-	 * @return the frameRateOriginal
+	 * @return the frameRateOriginal.
 	 */
 	public String getFrameRateOriginal() {
 		return frameRateOriginal;
 	}
 
 	/**
-	 * @param frameRateOriginal the frameRateOriginal to set
+	 * @param frameRateOriginal the frameRateOriginal to set.
 	 */
 	public void setFrameRateOriginal(String frameRateOriginal) {
 		this.frameRateOriginal = frameRateOriginal;
 	}
 
 	/**
-	 * @return the frameRateMode
+	 * @return the frameRateMode.
 	 * @since 1.55.0
 	 */
 	public String getFrameRateMode() {
@@ -2240,7 +2279,7 @@ public class DLNAMediaInfo implements Cloneable {
 	}
 
 	/**
-	 * @param frameRateMode the frameRateMode to set
+	 * @param frameRateMode the frameRateMode to set.
 	 * @since 1.55.0
 	 */
 	public void setFrameRateMode(String frameRateMode) {
@@ -2248,14 +2287,14 @@ public class DLNAMediaInfo implements Cloneable {
 	}
 
 	/**
-	 * @return The unaltered frame rate mode
+	 * @return The unaltered frame rate mode.
 	 */
 	public String getFrameRateModeRaw() {
 		return frameRateModeRaw;
 	}
 
 	/**
-	 * @param frameRateModeRaw the unaltered frame rate mode to set
+	 * @param frameRateModeRaw the unaltered frame rate mode to set.
 	 */
 	public void setFrameRateModeRaw(String frameRateModeRaw) {
 		this.frameRateModeRaw = frameRateModeRaw;
@@ -2420,7 +2459,7 @@ public class DLNAMediaInfo implements Cloneable {
 	 * ratio that the renderer should display the video at, and is usually the
 	 * same as the video track aspect ratio.
 	 *
-	 * @return the aspect ratio reported by the file/container
+	 * @return the aspect ratio reported by the file/container.
 	 */
 	public Rational getAspectRatioContainer() {
 		return aspectRatioContainer;
@@ -2511,7 +2550,7 @@ public class DLNAMediaInfo implements Cloneable {
 	}
 
 	/**
-	 * @return the thumb
+	 * @return the thumb.
 	 * @since 1.50.0
 	 */
 	public DLNAThumbnail getThumb() {
@@ -2519,7 +2558,7 @@ public class DLNAMediaInfo implements Cloneable {
 	}
 
 	/**
-	 * @param thumb the thumb to set
+	 * @param thumb the thumb to set.
 	 * @since 1.50.0
 	 * @deprecated Use {@link #setThumb(DLNAThumbnail)} instead.
 	 */
@@ -2556,7 +2595,7 @@ public class DLNAMediaInfo implements Cloneable {
 	}
 
 	/**
-	 * @return the mimeType
+	 * @return the mimeType.
 	 * @since 1.50.0
 	 */
 	public String getMimeType() {
@@ -2564,7 +2603,7 @@ public class DLNAMediaInfo implements Cloneable {
 	}
 
 	/**
-	 * @param mimeType the mimeType to set
+	 * @param mimeType the mimeType to set.
 	 * @since 1.50.0
 	 */
 	public void setMimeType(String mimeType) {
@@ -2691,7 +2730,7 @@ public class DLNAMediaInfo implements Cloneable {
 	}
 
 	/**
-	 * @return the audioTracks
+	 * @return the audioTracks.
 	 * @since 1.60.0
 	 */
 	// TODO (breaking change): rename to getAudioTracks
@@ -2700,8 +2739,9 @@ public class DLNAMediaInfo implements Cloneable {
 	}
 
 	/**
-	 * @return the audioTracks
-	 * @deprecated use getAudioTracksList() instead
+	 * @return the audioTracks.
+	 *
+	 * @deprecated use getAudioTracksList() instead.
 	 */
 	@Deprecated
 	public ArrayList<DLNAMediaAudio> getAudioCodes() {
@@ -2712,7 +2752,7 @@ public class DLNAMediaInfo implements Cloneable {
 	}
 
 	/**
-	 * @param audioTracks the audioTracks to set
+	 * @param audioTracks the audioTracks to set.
 	 * @since 1.60.0
 	 */
 	// TODO (breaking change): rename to setAudioTracks
@@ -2721,8 +2761,8 @@ public class DLNAMediaInfo implements Cloneable {
 	}
 
 	/**
-	 * @param audioTracks the audioTracks to set
-	 * @deprecated use setAudioTracksList(ArrayList<DLNAMediaAudio> audioTracks) instead
+	 * @param audioTracks the audioTracks to set.
+	 * @deprecated use setAudioTracksList(ArrayList<DLNAMediaAudio> audioTracks) instead.
 	 */
 	@Deprecated
 	public void setAudioCodes(List<DLNAMediaAudio> audioTracks) {
@@ -2730,7 +2770,7 @@ public class DLNAMediaInfo implements Cloneable {
 	}
 
 	/**
-	 * @return the subtitleTracks
+	 * @return the subtitleTracks.
 	 * @since 1.60.0
 	 */
 	// TODO (breaking change): rename to getSubtitleTracks
@@ -2739,8 +2779,8 @@ public class DLNAMediaInfo implements Cloneable {
 	}
 
 	/**
-	 * @return the subtitleTracks
-	 * @deprecated use getSubtitleTracksList() instead
+	 * @return the subtitleTracks.
+	 * @deprecated use getSubtitleTracksList() instead.
 	 */
 	@Deprecated
 	public ArrayList<DLNAMediaSubtitle> getSubtitlesCodes() {
@@ -2751,7 +2791,7 @@ public class DLNAMediaInfo implements Cloneable {
 	}
 
 	/**
-	 * @param subtitleTracks the subtitleTracks to set
+	 * @param subtitleTracks the subtitleTracks to set.
 	 * @since 1.60.0
 	 */
 	// TODO (breaking change): rename to setSubtitleTracks
@@ -2760,8 +2800,8 @@ public class DLNAMediaInfo implements Cloneable {
 	}
 
 	/**
-	 * @param subtitleTracks the subtitleTracks to set
-	 * @deprecated use setSubtitleTracksList(ArrayList<DLNAMediaSubtitle> subtitleTracks) instead
+	 * @param subtitleTracks the subtitleTracks to set.
+	 * @deprecated use setSubtitleTracksList(ArrayList<DLNAMediaSubtitle> subtitleTracks) instead.
 	 */
 	@Deprecated
 	public void setSubtitlesCodes(List<DLNAMediaSubtitle> subtitleTracks) {
@@ -2777,7 +2817,7 @@ public class DLNAMediaInfo implements Cloneable {
 	}
 
 	/**
-	 * @return the muxingMode
+	 * @return the muxingMode.
 	 * @since 1.50.0
 	 */
 	public String getMuxingMode() {
@@ -2785,7 +2825,7 @@ public class DLNAMediaInfo implements Cloneable {
 	}
 
 	/**
-	 * @param muxingMode the muxingMode to set
+	 * @param muxingMode the muxingMode to set.
 	 * @since 1.50.0
 	 */
 	public void setMuxingMode(String muxingMode) {
@@ -2793,7 +2833,7 @@ public class DLNAMediaInfo implements Cloneable {
 	}
 
 	/**
-	 * @return the muxingModeAudio
+	 * @return the muxingModeAudio.
 	 * @since 1.50.0
 	 */
 	public String getMuxingModeAudio() {
@@ -2801,7 +2841,7 @@ public class DLNAMediaInfo implements Cloneable {
 	}
 
 	/**
-	 * @param muxingModeAudio the muxingModeAudio to set
+	 * @param muxingModeAudio the muxingModeAudio to set.
 	 * @since 1.50.0
 	 */
 	public void setMuxingModeAudio(String muxingModeAudio) {
@@ -2809,7 +2849,7 @@ public class DLNAMediaInfo implements Cloneable {
 	}
 
 	/**
-	 * @return the container
+	 * @return the container.
 	 * @since 1.50.0
 	 */
 	public String getContainer() {
@@ -2817,7 +2857,7 @@ public class DLNAMediaInfo implements Cloneable {
 	}
 
 	/**
-	 * @param container the container to set
+	 * @param container the container to set.
 	 * @since 1.50.0
 	 */
 	public void setContainer(String container) {
@@ -2825,7 +2865,7 @@ public class DLNAMediaInfo implements Cloneable {
 	}
 
 	/**
-	 * @return the h264_annexB
+	 * @return the h264_annexB.
 	 * @since 1.50.0
 	 */
 	public byte[] getH264AnnexB() {
@@ -2840,7 +2880,7 @@ public class DLNAMediaInfo implements Cloneable {
 	}
 
 	/**
-	 * @param h264AnnexB the h264_annexB to set
+	 * @param h264AnnexB the h264_annexB to set.
 	 * @since 1.50.0
 	 */
 	public void setH264AnnexB(byte[] h264AnnexB) {
@@ -2855,7 +2895,7 @@ public class DLNAMediaInfo implements Cloneable {
 	}
 
 	/**
-	 * @return the mediaparsed
+	 * @return the mediaparsed.
 	 * @since 1.50.0
 	 */
 	public boolean isMediaparsed() {
@@ -2863,7 +2903,7 @@ public class DLNAMediaInfo implements Cloneable {
 	}
 
 	/**
-	 * @param mediaparsed the mediaparsed to set
+	 * @param mediaparsed the mediaparsed to set.
 	 * @since 1.50.0
 	 */
 	public void setMediaparsed(boolean mediaparsed) {
@@ -2883,7 +2923,7 @@ public class DLNAMediaInfo implements Cloneable {
 	}
 
 	/**
-	 * @param thumbready the thumbready to set
+	 * @param thumbready the thumbready to set.
 	 * @since 1.50.0
 	 */
 	public void setThumbready(boolean thumbready) {
@@ -2891,7 +2931,7 @@ public class DLNAMediaInfo implements Cloneable {
 	}
 
 	/**
-	 * @return the dvdtrack
+	 * @return the dvdtrack.
 	 * @since 1.50.0
 	 */
 	public int getDvdtrack() {
@@ -2899,7 +2939,7 @@ public class DLNAMediaInfo implements Cloneable {
 	}
 
 	/**
-	 * @param dvdtrack the dvdtrack to set
+	 * @param dvdtrack the dvdtrack to set.
 	 * @since 1.50.0
 	 */
 	public void setDvdtrack(int dvdtrack) {
@@ -2907,7 +2947,7 @@ public class DLNAMediaInfo implements Cloneable {
 	}
 
 	/**
-	 * @return the secondaryFormatValid
+	 * @return the secondaryFormatValid.
 	 * @since 1.50.0
 	 */
 	public boolean isSecondaryFormatValid() {
@@ -2915,7 +2955,7 @@ public class DLNAMediaInfo implements Cloneable {
 	}
 
 	/**
-	 * @param secondaryFormatValid the secondaryFormatValid to set
+	 * @param secondaryFormatValid the secondaryFormatValid to set.
 	 * @since 1.50.0
 	 */
 	public void setSecondaryFormatValid(boolean secondaryFormatValid) {
@@ -2923,7 +2963,7 @@ public class DLNAMediaInfo implements Cloneable {
 	}
 
 	/**
-	 * @return the parsing
+	 * @return the parsing.
 	 * @since 1.50.0
 	 */
 	public boolean isParsing() {
@@ -2933,7 +2973,7 @@ public class DLNAMediaInfo implements Cloneable {
 	}
 
 	/**
-	 * @param parsing the parsing to set
+	 * @param parsing the parsing to set.
 	 * @since 1.50.0
 	 */
 	public void setParsing(boolean parsing) {
@@ -2943,7 +2983,7 @@ public class DLNAMediaInfo implements Cloneable {
 	}
 
 	/**
-	 * @return the encrypted
+	 * @return the encrypted.
 	 * @since 1.50.0
 	 */
 	public boolean isEncrypted() {
@@ -2951,7 +2991,7 @@ public class DLNAMediaInfo implements Cloneable {
 	}
 
 	/**
-	 * @param encrypted the encrypted to set
+	 * @param encrypted the encrypted to set.
 	 * @since 1.50.0
 	 */
 	public void setEncrypted(boolean encrypted) {
@@ -2974,7 +3014,7 @@ public class DLNAMediaInfo implements Cloneable {
 	 * unreliable; it will be unlikely to find a false-positive but there
 	 * will be false-negatives, similar to language flags.
 	 *
-	 * @return whether the video track is 3D
+	 * @return whether the video track is 3D.
 	 */
 	public boolean is3d() {
 		return isNotBlank(stereoscopy);
@@ -2985,7 +3025,7 @@ public class DLNAMediaInfo implements Cloneable {
 	 * in this case when transcoding.
 	 * Example: 3840x1080 should be resized to 1920x1080, not 1920x540.
 	 *
-	 * @return whether the video track is full SBS or OU 3D
+	 * @return whether the video track is full SBS or OU 3D.
 	 */
 	public boolean is3dFullSbsOrOu() {
 		if (!is3d()) {
@@ -3013,7 +3053,7 @@ public class DLNAMediaInfo implements Cloneable {
 	 * unreliable; it will be unlikely to find a false-positive but there
 	 * will be false-negatives, similar to language flags.
 	 *
-	 * @return the type of stereoscopy (3D) of the video track
+	 * @return the type of stereoscopy (3D) of the video track.
 	 */
 	public String getStereoscopy() {
 		return stereoscopy;
@@ -3026,14 +3066,14 @@ public class DLNAMediaInfo implements Cloneable {
 	 * unreliable; it will be unlikely to find a false-positive but there
 	 * will be false-negatives, similar to language flags.
 	 *
-	 * @param stereoscopy the type of stereoscopy (3D) of the video track
+	 * @param stereoscopy the type of stereoscopy (3D) of the video track.
 	 */
 	public void setStereoscopy(String stereoscopy) {
 		this.stereoscopy = stereoscopy;
 	}
 
 	/**
-	 * Used by FFmpeg for 3D video format naming
+	 * Used by FFmpeg for 3D video format naming.
 	 */
 	public enum Mode3D {
 		ML,
