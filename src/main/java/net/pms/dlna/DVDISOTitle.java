@@ -446,8 +446,8 @@ public class DVDISOTitle extends DLNAResource {
 				);
 			}
 			/*
-			 * MPlayer doesn't give information about bit rate, sampling rate
-			 * and bit depth, so we'll have to "guess" the sample rate. Bit rate
+			 * MPlayer doesn't give information about bitrate, sampling rate
+			 * and bit depth, so we'll have to "guess" the sample rate. Bitrate
 			 * and bit depth are impossible to guess.
 			 */
 			switch (audio.getCodecA()) {
