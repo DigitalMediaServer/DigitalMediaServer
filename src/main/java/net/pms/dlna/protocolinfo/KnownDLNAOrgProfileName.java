@@ -662,7 +662,7 @@ public enum KnownDLNAOrgProfileName implements DLNAOrgProfileName {
 	/** Unofficial, unspecified WAV */
 	WAV,
 
-	/** WMA content (bit rates less than 193 kbit/s). */
+	/** WMA content (bitrates less than 193 kbit/s). */
 	WMABASE,
 
 	/** WMA content. */
@@ -678,7 +678,7 @@ public enum KnownDLNAOrgProfileName implements DLNAOrgProfileName {
 	WMAPRO,
 
 	/**
-	 * WMDRM-ND Link Protection System, WMA content (bit rates less than 193
+	 * WMDRM-ND Link Protection System, WMA content (bitrates less than 193
 	 * kbit/s).
 	 */
 	WMDRM_WMABASE,
