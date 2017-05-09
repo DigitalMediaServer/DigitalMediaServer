@@ -26,9 +26,9 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Class for storing and parsing from libmediainfo output audio track's properties
- * (bitrate, channels number, etc) and meta information (title, album, etc)
+ * (bitrate, channels number, etc) and meta information (title, album, etc).
  *
- * This class is not thread-safe
+ * This class is not thread-safe.
  *
  * @since 1.60.0
  */
@@ -65,7 +65,8 @@ public class AudioProperties {
 
 	/**
 	 * Set number of channels for this audio track.
-	 * @param numberOfChannels number of channels to set
+	 *
+	 * @param numberOfChannels number of channels to set.
 	 */
 	public void setNumberOfChannels(int numberOfChannels) {
 		if (numberOfChannels < 1) {
@@ -75,8 +76,9 @@ public class AudioProperties {
 	}
 
 	/**
-	 * Set number of channels for this audio track with libmediainfo value
-	 * @param mediaInfoValue libmediainfo "Channel(s)" value to parse
+	 * Set number of channels for this audio track with libmediainfo value.
+	 *
+	 * @param mediaInfoValue libmediainfo "Channel(s)" value to parse.
 	 */
 	public void setNumberOfChannels(String mediaInfoValue) {
 		this.numberOfChannels = getChannelsNumberFromLibMediaInfo(mediaInfoValue);
@@ -84,7 +86,8 @@ public class AudioProperties {
 
 	/**
 	 * Get delay for this audio track.
-	 * @return audio delay in ms. May be negative.
+
+	 * @return The audio delay in ms. May be negative.
 	 */
 	public int getAudioDelay() {
 		return audioDelay;
@@ -92,15 +95,17 @@ public class AudioProperties {
 
 	/**
 	 * Set delay for this audio track.
-	 * @param audioDelay audio delay in ms to set. May be negative.
+	 *
+	 * @param audioDelay audio delay in milliseconds to set. May be negative.
 	 */
 	public void setAudioDelay(int audioDelay) {
 		this.audioDelay = audioDelay;
 	}
 
 	/**
-	 * Set delay for this audio track with libmediainfo value
-	 * @param mediaInfoValue libmediainfo "Video_Delay" value to parse
+	 * Set delay for this audio track with libmediainfo value.
+	 *
+	 * @param mediaInfoValue libmediainfo "Video_Delay" value to parse.
 	 */
 	public void setAudioDelay(String mediaInfoValue) {
 		this.audioDelay = getAudioDelayFromLibMediaInfo(mediaInfoValue);
@@ -108,7 +113,8 @@ public class AudioProperties {
 
 	/**
 	 * Get sample frequency for this audio track.
-	 * @return sample frequency in Hz
+
+	 * @return The sample frequency in Hz.
 	 */
 	public int getSampleFrequency() {
 		return sampleFrequency;
@@ -116,7 +122,8 @@ public class AudioProperties {
 
 	/**
 	 * Set sample frequency for this audio track.
-	 * @param sampleFrequency sample frequency in Hz
+	 *
+	 * @param sampleFrequency sample frequency in Hz.
 	 */
 	public void setSampleFrequency(int sampleFrequency) {
 		if (sampleFrequency < 1) {
@@ -126,8 +133,9 @@ public class AudioProperties {
 	}
 
 	/**
-	 * Set sample frequency for this audio track with libmediainfo value
-	 * @param mediaInfoValue libmediainfo "Sampling rate" value to parse
+	 * Set sample frequency for this audio track with libmediainfo value.
+	 *
+	 * @param mediaInfoValue libmediainfo "Sampling rate" value to parse.
 	 */
 	public void setSampleFrequency(String mediaInfoValue) {
 		this.sampleFrequency = getSampleFrequencyFromLibMediaInfo(mediaInfoValue);
@@ -159,11 +167,10 @@ public class AudioProperties {
 		}
 
 		if (result <= 0) {
-			LOGGER.warn("Can't parse value {}. Returning default number 2.", mediaInfoValue);
+			LOGGER.warn("Can't parse number of channels {}. Returning default value 2.", mediaInfoValue);
 			return 2;
-		} else {
-			return result;
 		}
+		return result;
 	}
 
 	public static int getAudioDelayFromLibMediaInfo(String mediaInfoValue) {
@@ -173,7 +180,7 @@ public class AudioProperties {
 		}
 
 		// examples of libmediainfo output (mediainfo --Full --Language=raw file):
-		// Video_Delay : 0
+		// Video_Delay : -408
 
 		int result = 0;
 		Matcher intMatcher = intPattern.matcher(mediaInfoValue);
@@ -213,11 +220,10 @@ public class AudioProperties {
 		}
 
 		if (result < 1) {
-			LOGGER.warn("Can't parse value {}. Returning default number 48000 Hz.", mediaInfoValue);
+			LOGGER.warn("Can't parse sample frequency {}. Returning default value 48000 Hz.", mediaInfoValue);
 			return 48000;
-		} else {
-			return result;
 		}
+		return result;
 	}
 
 	@Override
@@ -230,7 +236,7 @@ public class AudioProperties {
 		}
 		result.append(", Sample Frequency: ").append(getSampleFrequency()).append(" Hz");
 		if (getAudioDelay() != 0) {
-			result.append(", Delay: ").append(getAudioDelay());
+			result.append(", Delay: ").append(getAudioDelay()).append(" ms");
 		}
 
 		return result.toString();

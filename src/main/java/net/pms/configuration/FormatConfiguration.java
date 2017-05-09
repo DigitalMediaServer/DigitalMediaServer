@@ -418,7 +418,7 @@ public class FormatConfiguration {
 			}
 
 			if (bitrate > 0 && iMaxBitrate > 0 && bitrate > iMaxBitrate) {
-				LOGGER.trace("Bit rate \"{}\" failed to match support line {}", bitrate, supportLine);
+				LOGGER.trace("Bitrate \"{}\" failed to match support line {}", bitrate, supportLine);
 				return false;
 			}
 

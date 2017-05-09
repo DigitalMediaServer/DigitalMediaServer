@@ -53,7 +53,7 @@ public class DLNAMediaAudio extends DLNAMediaLang implements Cloneable {
 	public String sampleFrequency;
 
 	/**
-	 * @deprecated Use standard getter and setter to access this variable.
+	 * @deprecated Use standard getter and setter instead.
 	 */
 	@Deprecated
 	public int nrAudioChannels;
@@ -644,18 +644,18 @@ public class DLNAMediaAudio extends DLNAMediaLang implements Cloneable {
 	}
 
 	/**
-	 * Returns audio bitrate.
+	 * Returns the bitrate for this audio track.
 	 *
-	 * @return Audio bitrate.
+	 * @return The bitrate.
 	 */
 	public int getBitRate() {
 		return bitRate;
 	}
 
 	/**
-	 * Sets audio bitrate.
+	 * Sets the audio bitrate.
 	 *
-	 * @param bitRate Audio bitrate to set.
+	 * @param bitRate the audio bitrate to set.
 	 */
 	public void setBitRate(int bitRate) {
 		this.bitRate = bitRate;
@@ -854,7 +854,7 @@ public class DLNAMediaAudio extends DLNAMediaLang implements Cloneable {
 	}
 
 	/**
-	 * Returns the delay for the audio.
+	 * Returns the delay for the audio in milliseconds.
 	 *
 	 * @return The delay.
 	 * @since 1.50
