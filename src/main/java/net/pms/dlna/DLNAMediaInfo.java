@@ -1770,7 +1770,17 @@ public class DLNAMediaInfo implements Cloneable {
 	}
 
 	public boolean isLossless(String codecA) {
-		return codecA != null && (codecA.contains("pcm") || codecA.startsWith("dts") || codecA.equals("dca") || codecA.contains("flac")) && !codecA.contains("pcm_u8") && !codecA.contains("pcm_s8");
+		return
+			codecA != null && (
+				codecA.startsWith("pcm") ||
+				codecA.startsWith("dts") ||
+				codecA.startsWith("a_dts") ||
+				codecA.equals("dca") ||
+				codecA.contains("flac") ||
+				"19d".equals(codecA)
+			) &&
+			!codecA.contains("pcm_u8") &&
+			!codecA.contains("pcm_s8");
 	}
 
 	@Override

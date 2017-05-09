@@ -13,6 +13,7 @@ import net.pms.configuration.FormatConfiguration;
 import net.pms.configuration.RendererConfiguration;
 import net.pms.dlna.MediaInfo.StreamType;
 import net.pms.formats.Format;
+import net.pms.formats.v2.AudioProperties;
 import net.pms.formats.v2.SubtitleType;
 import net.pms.image.ImageFormat;
 import net.pms.image.ImagesUtil;
@@ -200,7 +201,8 @@ public class LibMediaInfoParser {
 					}
 					currentAudioTrack.setLang(getLang(MI.Get(StreamType.Audio, i, "Language/String")));
 					currentAudioTrack.setAudioTrackTitleFromMetadata((MI.Get(StreamType.Audio, i, "Title")).trim());
-					currentAudioTrack.getAudioProperties().setNumberOfChannels(MI.Get(StreamType.Audio, i, "Channel(s) Original"));
+					currentAudioTrack.getAudioProperties().setNumberOfChannels(MI.Get(StreamType.Audio, i, "Channel(s)_Original"));
+					currentAudioTrack.setDelay(AudioProperties.getAudioDelayFromLibMediaInfo(MI.Get(StreamType.Audio, i, "Video_Delay")));
 					currentAudioTrack.setSampleFrequency(getSampleFrequency(MI.Get(StreamType.Audio, i, "SamplingRate")));
 					currentAudioTrack.setBitRate(getBitrate(MI.Get(StreamType.Audio, i, "BitRate")));
 					currentAudioTrack.setSongname(MI.Get(StreamType.General, 0, "Track"));
@@ -543,7 +545,7 @@ public class LibMediaInfoParser {
 			format = FormatConfiguration.CAF;
 		} else if (value.contains("aiff")) {
 			format = FormatConfiguration.AIFF;
-		} else if (value.startsWith("atmos") || value.equals("131")) {
+		} else if (value.contains("atmos") || value.equals("131")) {
 			format = FormatConfiguration.ATMOS;
 		} else if (value.contains("ogg")) {
 			format = FormatConfiguration.OGG;
@@ -662,10 +664,20 @@ public class LibMediaInfoParser {
 			// only for audio files:
 			format = FormatConfiguration.MP2;
 			media.setContainer(FormatConfiguration.MP2);
-		} else if (value.equals ("ma") || value.equals("ma / core") || value.equals("134")) {
-			if (audio.getCodecA() != null && audio.getCodecA().equals(FormatConfiguration.DTS)) {
-				format = FormatConfiguration.DTSHD;
-			}
+		} else if (value.equals("dts")) {
+				format = FormatConfiguration.DTS;
+		} else if (
+				value.equals("ma") ||
+				value.equals("ma / core") ||
+				value.equals("ma / es matrix / core") ||
+				value.equals("ma / es discrete / core") ||
+				value.equals("x / ma / core") ||
+				value.equals("hra / core") ||
+				value.equals("hra / es matrix / core") ||
+				value.equals("hra / es discrete / core") ||
+				value.equals("134")
+			) {
+			format = FormatConfiguration.DTSHD;
 		} else if (value.equals("vorbis") || value.equals("a_vorbis")) {
 			format = FormatConfiguration.VORBIS;
 		} else if (value.equals("adts")) {
@@ -741,7 +753,7 @@ public class LibMediaInfoParser {
 			}
 		} else if (value.startsWith("adpcm")) {
 			format = FormatConfiguration.ADPCM;
-		} else if (value.equals("pcm") || (value.equals("1") && (audio.getCodecA() == null || !audio.getCodecA().equals(FormatConfiguration.DTS)))) {
+		} else if (value.equals("pcm")) {
 			format = FormatConfiguration.LPCM;
 		} else if (value.equals("alac")) {
 			format = FormatConfiguration.ALAC;
