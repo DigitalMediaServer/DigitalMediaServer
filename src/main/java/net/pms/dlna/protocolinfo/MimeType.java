@@ -143,6 +143,12 @@ public interface MimeType extends Serializable {
 	public String toStringWithoutParameters();
 
 	/**
+	 * @return Whether or not the {@code type} (first) part of this
+	 *         {@link MimeType} is {@code "image"}.
+	 */
+	public boolean isImage();
+
+	/**
 	 * Compares the {@link MimeType} by value. This is needed instead of
 	 * {@link #equals(Object)} to allow {@code enum}s to implement
 	 * {@link MimeType} with consistent behavior.
@@ -787,6 +793,11 @@ public interface MimeType extends Serializable {
 				return false;
 			}
 			return true;
+		}
+
+		@Override
+		public boolean isImage() {
+			return isNotBlank(type) && type.toLowerCase(Locale.ROOT).equals("image");
 		}
 	}
 }

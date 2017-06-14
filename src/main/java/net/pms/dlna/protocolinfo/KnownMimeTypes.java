@@ -1,6 +1,7 @@
 package net.pms.dlna.protocolinfo;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import java.util.Collections;
 import java.util.Locale;
 import java.util.Map;
@@ -346,5 +347,10 @@ public enum KnownMimeTypes implements MimeType {
 	@Override
 	public String toStringWithoutParameters() {
 		return stringValue;
+	}
+
+	@Override
+	public boolean isImage() {
+		return isNotBlank(type) && type.toLowerCase(Locale.ROOT).equals("image");
 	}
 }
