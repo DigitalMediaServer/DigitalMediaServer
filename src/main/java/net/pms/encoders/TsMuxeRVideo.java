@@ -289,11 +289,11 @@ public class TsMuxeRVideo extends Player {
 
 			int numAudioTracks = 1;
 
-			if (media.getAudioTracksList() != null && media.getAudioTracksList().size() > 1 && configuration.isMuxAllAudioTracks()) {
-				numAudioTracks = media.getAudioTracksList().size();
+			if (media.getAudioTracks() != null && media.getAudioTracks().size() > 1 && configuration.isMuxAllAudioTracks()) {
+				numAudioTracks = media.getAudioTracks().size();
 			}
 
-			boolean singleMediaAudio = media.getAudioTracksList().size() <= 1;
+			boolean singleMediaAudio = media.getAudioTracks().size() <= 1;
 
 			if (params.aid != null) {
 				boolean ac3Remux;
@@ -401,8 +401,8 @@ public class TsMuxeRVideo extends Player {
 				} else {
 					ffAudioPipe = new PipeIPCProcess[numAudioTracks];
 					ffAudio = new ProcessWrapperImpl[numAudioTracks];
-					for (int i = 0; i < media.getAudioTracksList().size(); i++) {
-						DLNAMediaAudio audio = media.getAudioTracksList().get(i);
+					for (int i = 0; i < media.getAudioTracks().size(); i++) {
+						DLNAMediaAudio audio = media.getAudioTracks().get(i);
 						ffAudioPipe[i] = new PipeIPCProcess(System.currentTimeMillis() + "ffmpeg" + i, System.currentTimeMillis() + "audioout" + i, false, true);
 
 						encodedAudioPassthrough = configuration.isEncodedAudioPassthrough() && params.aid.isNonPCMEncodedAudio() && params.mediaRenderer.isWrapEncodedAudioIntoPCM();
@@ -458,7 +458,7 @@ public class TsMuxeRVideo extends Player {
 								"-i", filename,
 								"-ac", "" + sm.getNbChannels(),
 								"-f", "ac3",
-								singleMediaAudio ? "-y" : "-map", singleMediaAudio ? "-y" : ("0:a:" + (media.getAudioTracksList().indexOf(audio))),
+								singleMediaAudio ? "-y" : "-map", singleMediaAudio ? "-y" : ("0:a:" + (media.getAudioTracks().indexOf(audio))),
 								"-c:a", sm.isDtsEmbed() || sm.isEncodedAudioPassthrough() ? "copy" : "pcm",
 								"-y",
 								ffAudioPipe[i].getInputPipe()
@@ -471,7 +471,7 @@ public class TsMuxeRVideo extends Player {
 								"-i", filename,
 								"-ac", "" + channels,
 								"-f", "adts",
-								singleMediaAudio ? "-y" : "-map", singleMediaAudio ? "-y" : ("0:a:" + (media.getAudioTracksList().indexOf(audio))),
+								singleMediaAudio ? "-y" : "-map", singleMediaAudio ? "-y" : ("0:a:" + (media.getAudioTracks().indexOf(audio))),
 								"-c:a", "aac",
 								"-strict", "experimental",
 								"-ab", Math.min(configuration.getAudioBitrate(), 320) + "k",
@@ -487,7 +487,7 @@ public class TsMuxeRVideo extends Player {
 								"-i", filename,
 								"-ac", "" + channels,
 								"-f", "ac3",
-								singleMediaAudio ? "-y" : "-map", singleMediaAudio ? "-y" : ("0:a:" + (media.getAudioTracksList().indexOf(audio))),
+								singleMediaAudio ? "-y" : "-map", singleMediaAudio ? "-y" : ("0:a:" + (media.getAudioTracks().indexOf(audio))),
 								"-c:a", (ac3Remux) ? "copy" : "ac3",
 								"-ab", String.valueOf(CodecUtil.getAC3Bitrate(configuration, audio)) + "k",
 								"-y",
@@ -583,8 +583,8 @@ public class TsMuxeRVideo extends Player {
 				}
 				pw.println(type + ", \"" + ffAudioPipe[0].getOutputPipe() + "\", " + timeshift + "track=2");
 			} else if (ffAudioPipe != null) {
-				for (int i = 0; i < media.getAudioTracksList().size(); i++) {
-					DLNAMediaAudio lang = media.getAudioTracksList().get(i);
+				for (int i = 0; i < media.getAudioTracks().size(); i++) {
+					DLNAMediaAudio lang = media.getAudioTracks().get(i);
 					String timeshift = "";
 					boolean ac3Remux;
 					boolean dtsRemux;
@@ -785,7 +785,7 @@ public class TsMuxeRVideo extends Player {
 
 		try {
 			String audioTrackName = resource.getMediaAudio().toString();
-			String defaultAudioTrackName = resource.getMedia().getAudioTracksList().get(0).toString();
+			String defaultAudioTrackName = resource.getMedia().getAudioTracks().get(0).toString();
 
 			if (!audioTrackName.equals(defaultAudioTrackName)) {
 				// DMS only supports playback of the default audio track for tsMuxeR

@@ -594,7 +594,7 @@ public class FormatConfiguration {
 				media.getContainer(),
 				media.getCodecV(),
 				audio.getCodecA(),
-				audio.getAudioProperties().getNumberOfChannels(),
+				audio.getNumberOfChannels(),
 				audio.getSampleRate(),
 				audio.getBitRate(),
 				frameRate,
@@ -606,12 +606,12 @@ public class FormatConfiguration {
 
 		String finalMimeType = null;
 
-		for (DLNAMediaAudio audio : media.getAudioTracksList()) {
+		for (DLNAMediaAudio audio : media.getAudioTracks()) {
 			String mimeType = match(
 				media.getContainer(),
 				media.getCodecV(),
 				audio.getCodecA(),
-				audio.getAudioProperties().getNumberOfChannels(),
+				audio.getNumberOfChannels(),
 				audio.getSampleRate(),
 				media.getBitrate(),
 				frameRate,

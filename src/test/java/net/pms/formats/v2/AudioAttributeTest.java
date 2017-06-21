@@ -25,12 +25,10 @@ import org.junit.Test;
 public class AudioAttributeTest {
 	@Test
 	public void testGetAudioAttributeByLibMediaInfoKeyValuePair_matchingKeyValuePairs() throws Exception {
-		assertThat(getAudioAttributeByLibMediaInfoKeyValuePair("BitRate                          : " + AudioProperties.BITRATE_DEFAULT)).isEqualTo(BITRATE);
 		assertThat(getAudioAttributeByLibMediaInfoKeyValuePair("Channel(s)                       : 6")).isEqualTo(CHANNELS_NUMBER);
 		assertThat(getAudioAttributeByLibMediaInfoKeyValuePair(" Channel(s):6")).isEqualTo(CHANNELS_NUMBER);
 		assertThat(getAudioAttributeByLibMediaInfoKeyValuePair("Video_Delay                      : 0")).isEqualTo(DELAY);
 		assertThat(getAudioAttributeByLibMediaInfoKeyValuePair("SamplingRate                     : 48000")).isEqualTo(SAMPLE_FREQUENCY);
-		assertThat(getAudioAttributeByLibMediaInfoKeyValuePair("BitDepth                         : 16")).isEqualTo(BITS_PERSAMPLE);
 	}
 
 	@Test(expected = IllegalArgumentException.class)

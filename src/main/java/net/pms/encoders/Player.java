@@ -791,7 +791,7 @@ public abstract class Player {
 			while (st.hasMoreTokens()) {
 				String lang = st.nextToken().trim();
 				LOGGER.trace("Looking for an audio track with lang: " + lang);
-				for (DLNAMediaAudio audio : media.getAudioTracksList()) {
+				for (DLNAMediaAudio audio : media.getAudioTracks()) {
 					if (audio.matchCode(lang)) {
 						params.aid = audio;
 						LOGGER.trace("Matched audio track: " + audio);
@@ -809,7 +809,7 @@ public abstract class Player {
 				params.aid = dtsTrack;
 				LOGGER.trace("Found priority audio track with DTS: " + dtsTrack);
 			} else {
-				params.aid = media.getAudioTracksList().get(0);
+				params.aid = media.getAudioTracks().get(0);
 				LOGGER.trace("Chose a default audio track: " + params.aid);
 			}
 		}
@@ -887,7 +887,7 @@ public abstract class Player {
 						 * instead of just taking the first one we load
 						 */
 						if (configuration.isForceExternalSubtitles()) {
-							for (DLNAMediaSubtitle subPresent : media.getSubtitleTracksList()) {
+							for (DLNAMediaSubtitle subPresent : media.getSubtitleTracks()) {
 								if (subPresent.getExternalFile() != null) {
 									matchedSub = subPresent;
 									matchedExternalSubtitles = true;
@@ -901,7 +901,7 @@ public abstract class Player {
 							matchedSub.setLang("off");
 						}
 					} else {
-						for (DLNAMediaSubtitle subPresent : media.getSubtitleTracksList()) {
+						for (DLNAMediaSubtitle subPresent : media.getSubtitleTracks()) {
 							if (subPresent.matchCode(sub) || sub.equals("*")) {
 								if (subPresent.getExternalFile() != null) {
 									if (configuration.isAutoloadExternalSubtitles()) {
@@ -940,7 +940,7 @@ public abstract class Player {
 		 * already a match and the user settings specify it.
 		 */
 		if (matchedSub == null && configuration.isForceExternalSubtitles()) {
-			for (DLNAMediaSubtitle subPresent : media.getSubtitleTracksList()) {
+			for (DLNAMediaSubtitle subPresent : media.getSubtitleTracks()) {
 				if (subPresent.getExternalFile() != null) {
 					matchedSub = subPresent;
 					LOGGER.trace("Matched external subtitles track that did not match language preferences: " + matchedSub);
@@ -975,7 +975,7 @@ public abstract class Player {
 			if (configuration.isAutoloadExternalSubtitles()) {
 				boolean forcedSubsFound = false;
 				// Priority to external subtitles
-				for (DLNAMediaSubtitle sub : media.getSubtitleTracksList()) {
+				for (DLNAMediaSubtitle sub : media.getSubtitleTracks()) {
 					if (matchedSub != null && matchedSub.getLang() != null && matchedSub.getLang().equals("off")) {
 						st = new StringTokenizer(configuration.getForcedSubtitleTags(), ",");
 
@@ -1028,7 +1028,7 @@ public abstract class Player {
 					String lang = st.nextToken();
 					lang = lang.trim();
 					LOGGER.trace("Looking for a subtitle track with lang: " + lang);
-					for (DLNAMediaSubtitle sub : media.getSubtitleTracksList()) {
+					for (DLNAMediaSubtitle sub : media.getSubtitleTracks()) {
 						if (
 							sub.matchCode(lang) &&
 							!(

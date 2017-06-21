@@ -474,7 +474,7 @@ public class DLNAMediaDatabase implements Runnable {
 							audio.getAudioProperties().setAudioDelay(elements.getInt("DELAY"));
 							audio.setMuxingModeAudio(elements.getString("MUXINGMODE"));
 							audio.setBitRate(elements.getInt("BITRATE"));
-							media.getAudioTracksList().add(audio);
+							media.getAudioTracks().add(audio);
 						}
 					}
 					subs.setInt(1, id);
@@ -485,7 +485,7 @@ public class DLNAMediaDatabase implements Runnable {
 							sub.setLang(elements.getString("LANG"));
 							sub.setSubtitlesTrackTitleFromMetadata(elements.getString("TITLE"));
 							sub.setType(SubtitleType.valueOfStableIndex(elements.getInt("TYPE")));
-							media.getSubtitleTracksList().add(sub);
+							media.getSubtitleTracks().add(sub);
 						}
 					}
 
@@ -535,7 +535,7 @@ public class DLNAMediaDatabase implements Runnable {
 				")"
 			);
 		) {
-			for (DLNAMediaSubtitle subtitleTrack : media.getSubtitleTracksList()) {
+			for (DLNAMediaSubtitle subtitleTrack : media.getSubtitleTracks()) {
 				updateStatment.setInt(1, fileId);
 				updateStatment.setInt(2, subtitleTrack.getId());
 				try (ResultSet rs = updateStatment.executeQuery()) {
@@ -587,7 +587,7 @@ public class DLNAMediaDatabase implements Runnable {
 				")"
 			);
 		) {
-			for (DLNAMediaAudio audioTrack : media.getAudioTracksList()) {
+			for (DLNAMediaAudio audioTrack : media.getAudioTracks()) {
 				updateStatment.setInt(1, fileId);
 				updateStatment.setInt(2, audioTrack.getId());
 				try (ResultSet rs = updateStatment.executeQuery()) {
