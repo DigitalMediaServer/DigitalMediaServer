@@ -1774,6 +1774,14 @@ public class DLNAMediaInfo implements Cloneable {
 		}
 	}
 
+	public boolean isMuxable(String codecA) { //TODO: (Nad) Remove
+		return codecA != null && (
+			codecA.startsWith("dts") ||
+			codecA.startsWith("a_dts") ||
+			codecA.equals("dca")
+		);
+	}
+
 	public boolean isLossless(String codecA) {
 		return
 			codecA != null && (
@@ -1867,7 +1875,7 @@ public class DLNAMediaInfo implements Cloneable {
 			}
 
 		} else if (getAudioTrackCount() > 0) {
-			result.append(", Bitrate: ").append(getBitRate());
+			result.append(", Bitrate: ").append(StringUtil.formatBytes(getBitRate(), false));
 			if (bitRateMode != null) {
 				result.append(", Bitrate Mode: ").append(bitRateMode);
 			}
@@ -2124,14 +2132,14 @@ public class DLNAMediaInfo implements Cloneable {
 	@Override
 	protected DLNAMediaInfo clone() throws CloneNotSupportedException {
 		DLNAMediaInfo mediaCloned = (DLNAMediaInfo) super.clone();
-		mediaCloned.setAudioTracksList(new ArrayList<DLNAMediaAudio>());
+		mediaCloned.setAudioTracks(new ArrayList<DLNAMediaAudio>());
 		for (DLNAMediaAudio audio : audioTracks) {
-			mediaCloned.getAudioTracksList().add((DLNAMediaAudio) audio.clone());
+			mediaCloned.getAudioTracks().add((DLNAMediaAudio) audio.clone());
 		}
 
-		mediaCloned.setSubtitleTracksList(new ArrayList<DLNAMediaSubtitle>());
+		mediaCloned.setSubtitleTracks(new ArrayList<DLNAMediaSubtitle>());
 		for (DLNAMediaSubtitle sub : subtitleTracks) {
-			mediaCloned.getSubtitleTracksList().add((DLNAMediaSubtitle) sub.clone());
+			mediaCloned.getSubtitleTracks().add((DLNAMediaSubtitle) sub.clone());
 		}
 
 		return mediaCloned;
@@ -2152,7 +2160,7 @@ public class DLNAMediaInfo implements Cloneable {
 	 * @since 1.50.0
 	 */
 	public void setBitRate(int bitRate) {
-		this.bitRate = bitRate;
+		this.bitRate = bitRate; //TODO: (Nad) Check
 	}
 
 	/**
@@ -2726,15 +2734,6 @@ public class DLNAMediaInfo implements Cloneable {
 	}
 
 	/**
-	 * @return The {@link List} of audio tracks.
-	 * @since 1.60.0
-	 */
-	// TODO (breaking change): rename to getAudioTracks
-	public List<DLNAMediaAudio> getAudioTracksList() {
-		return audioTracks;
-	}
-
-	/**
 	 * @return The {@link ArrayList} of audio tracks.
 	 *
 	 * @deprecated use getAudioTracksList() instead.
@@ -2748,12 +2747,20 @@ public class DLNAMediaInfo implements Cloneable {
 	}
 
 	/**
-	 * @param audioTracks the {@link List} of audio tracks to set
+	 * @return The {@link List} of audio tracks.
 	 * @since 1.60.0
+	 * @deprecated Use {@link #getAudioTracks()} instead.
 	 */
-	// TODO (breaking change): rename to setAudioTracks
-	public void setAudioTracksList(List<DLNAMediaAudio> audioTracks) {
-		this.audioTracks = audioTracks;
+	@Deprecated
+	public List<DLNAMediaAudio> getAudioTracksList() { //TODO: (Nad) Figure out
+		return getAudioTracks();
+	}
+
+	/**
+	 * @return The {@link List} of audio tracks.
+	 */
+	public List<DLNAMediaAudio> getAudioTracks() {
+		return audioTracks;
 	}
 
 	/**
@@ -2762,17 +2769,25 @@ public class DLNAMediaInfo implements Cloneable {
 	 * @deprecated use setAudioTracksList(ArrayList<DLNAMediaAudio> audioTracks) instead.
 	 */
 	@Deprecated
-	public void setAudioCodes(List<DLNAMediaAudio> audioTracks) {
-		setAudioTracksList(audioTracks);
+	public void setAudioCodes(List<DLNAMediaAudio> audioTracks) { //TODO: (Nad) Remove
+		setAudioTracks(audioTracks);
 	}
 
 	/**
-	 * @return The {@link List} of subtitles tracks.
+	 * @param audioTracks the {@link List} of audio tracks to set
 	 * @since 1.60.0
+	 * @deprecated Use {@link #setAudioTracks(List)} instead.
 	 */
-	// TODO (breaking change): rename to getSubtitleTracks
-	public List<DLNAMediaSubtitle> getSubtitleTracksList() {
-		return subtitleTracks;
+	@Deprecated
+	public void setAudioTracksList(List<DLNAMediaAudio> audioTracks) {
+		setAudioTracks(audioTracks);
+	}
+
+	/**
+	 * @param audioTracks the {@link List} of audio tracks to set
+	 */
+	public void setAudioTracks(List<DLNAMediaAudio> audioTracks) {
+		this.audioTracks = audioTracks;
 	}
 
 	/**
@@ -2788,21 +2803,46 @@ public class DLNAMediaInfo implements Cloneable {
 	}
 
 	/**
-	 * @param subtitleTracks the {@link List} of subtitles tracks to set.
+	 * @return The {@link List} of subtitles tracks.
 	 * @since 1.60.0
+	 * @deprecated Use {@link #getSubtitleTracks()} instead.
 	 */
-	// TODO (breaking change): rename to setSubtitleTracks
-	public void setSubtitleTracksList(List<DLNAMediaSubtitle> subtitleTracks) {
-		this.subtitleTracks = subtitleTracks;
+	@Deprecated
+	public List<DLNAMediaSubtitle> getSubtitleTracksList() {
+		return getSubtitleTracks();
+	}
+
+	/**
+	 * @return The {@link List} of subtitles tracks.
+	 */
+	public List<DLNAMediaSubtitle> getSubtitleTracks() {
+		return subtitleTracks;
 	}
 
 	/**
 	 * @param subtitleTracks the {@link List} of subtitles tracks to set.
-	 * @deprecated use setSubtitleTracksList(List<DLNAMediaSubtitle> subtitleTracks) instead.
+	 * @deprecated Use {@link #setSubtitleTracks(List)} instead.
 	 */
 	@Deprecated
 	public void setSubtitlesCodes(List<DLNAMediaSubtitle> subtitleTracks) {
-		setSubtitleTracksList(subtitleTracks);
+		setSubtitleTracks(subtitleTracks);
+	}
+
+	/**
+	 * @param subtitleTracks the subtitle tracks to set.
+	 * @since 1.60.0
+	 * @deprecated Use {@link #setSubtitleTracks(List)} instead.
+	 */
+	@Deprecated
+	public void setSubtitleTracksList(List<DLNAMediaSubtitle> subtitleTracks) {
+		setSubtitleTracks(subtitleTracks);
+	}
+
+	/**
+	 * @param subtitleTracks the subtitle tracks to set.
+	 */
+	public void setSubtitleTracks(List<DLNAMediaSubtitle> subtitleTracks) {
+		this.subtitleTracks = subtitleTracks;
 	}
 
 	/**

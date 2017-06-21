@@ -4,10 +4,12 @@ import java.io.EOFException;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Locale;
 import java.util.StringTokenizer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import net.pms.configuration.FormatConfiguration;
 import net.pms.configuration.RendererConfiguration;
@@ -127,7 +129,7 @@ public class LibMediaInfoParser {
 						currentSubTrack.setType(SubtitleType.valueOfLibMediaInfoCodec(MI.Get(StreamType.Video, i, "Format")));
 						// Second attempt to detect subtitle track format (CodecID usually is more accurate)
 						currentSubTrack.setType(SubtitleType.valueOfLibMediaInfoCodec(MI.Get(StreamType.Video, i, "CodecID")));
-						currentSubTrack.setId(media.getSubtitleTracksList().size());
+						currentSubTrack.setId(media.getSubtitleTracks().size());
 						addSub(currentSubTrack, media);
 						if (parseLogger != null) {
 							parseLogger.logSubtitleTrackColumns(i, true);
@@ -244,7 +246,7 @@ public class LibMediaInfoParser {
 						if (value.contains("(0x") && !FormatConfiguration.OGG.equals(media.getContainer())) {
 							currentAudioTrack.setId(getSpecificID(value));
 						} else {
-							currentAudioTrack.setId(media.getAudioTracksList().size());
+							currentAudioTrack.setId(media.getAudioTracks().size());
 						}
 					}
 
@@ -318,7 +320,7 @@ public class LibMediaInfoParser {
 						if (value.contains("(0x") && !FormatConfiguration.OGG.equals(media.getContainer())) {
 							currentSubTrack.setId(getSpecificID(value));
 						} else {
-							currentSubTrack.setId(media.getSubtitleTracksList().size());
+							currentSubTrack.setId(media.getSubtitleTracks().size());
 						}
 					}
 
@@ -347,7 +349,7 @@ public class LibMediaInfoParser {
 				) {
 					media.setContainer(FormatConfiguration.ASF);
 				} else {
-					for (DLNAMediaAudio audioTrack : media.getAudioTracksList()) {
+					for (DLNAMediaAudio audioTrack : media.getAudioTracks()) {
 						if (
 							audioTrack.getCodecA() != null &&
 							!audioTrack.getCodecA().equals(FormatConfiguration.WMA) &&
@@ -450,7 +452,7 @@ public class LibMediaInfoParser {
 			currentAudioTrack.setCodecA(DLNAMediaLang.UND);
 		}
 
-		media.getAudioTracksList().add(currentAudioTrack);
+		media.getAudioTracks().add(currentAudioTrack);
 	}
 
 	public static void addSub(DLNAMediaSubtitle currentSubTrack, DLNAMediaInfo media) {
@@ -462,7 +464,7 @@ public class LibMediaInfoParser {
 			currentSubTrack.setLang(DLNAMediaLang.UND);
 		}
 
-		media.getSubtitleTracksList().add(currentSubTrack);
+		media.getSubtitleTracks().add(currentSubTrack);
 	}
 
 	/**
@@ -950,29 +952,36 @@ public class LibMediaInfoParser {
 		return id;
 	}
 
-	protected static int parseNumberOfChannels(String value) {
+	@Nonnull
+	public static int[] parseNumberOfChannels(String value) {
 		if (isBlank(value)) {
-			return -1;
+			return new int[0];
 		}
 
-		// Examples of libmediainfo  (mediainfo --Full --Language=raw file):
+		// examples of libmediainfo  (mediainfo --Full --Language=raw file):
 		// Channel(s) : 2
 		// Channel(s) : 6
 		// Channel(s) : 2 channels / 1 channel / 1 channel
-		// The first value is used
 
+		ArrayList<Integer> channels = new ArrayList<>();
 		Matcher intMatcher = intPattern.matcher(value);
-		if (intMatcher.find()) {
+		while (intMatcher.find()) {
 			String matchResult = intMatcher.group();
 			try {
-				return Integer.parseInt(matchResult);
+				channels.add(0, Integer.valueOf(matchResult));
 			} catch (NumberFormatException ex) {
-				LOGGER.warn("NumberFormatException while parsing substring \"{}\" from value \"{}\"", matchResult, value);
+				LOGGER.warn("NumberFormatException while parsing substring {} from value {}", matchResult, value);
 			}
 		}
 
-		LOGGER.warn("Can't parse the number of channels from \"{}\", returning -1", value);
-		return -1;
+		if (channels.isEmpty() || channels.get(0).intValue() == 0) {
+			LOGGER.warn("Can't parse the number of channels from \"{}\"", value);
+		}
+		int[] result = new int[channels.size()];
+		for (int i = 0; i < channels.size(); i++) {
+			result[i] = channels.get(i).intValue();
+		}
+		return result;
 	}
 
 	protected static int parseBitsperSample(String value) {

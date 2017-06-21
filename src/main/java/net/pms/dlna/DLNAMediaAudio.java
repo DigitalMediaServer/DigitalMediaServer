@@ -24,6 +24,7 @@ import javax.annotation.Nullable;
 import net.pms.configuration.FormatConfiguration;
 import net.pms.dlna.DLNAMediaInfo.RateMode;
 import net.pms.formats.v2.AudioProperties;
+import net.pms.util.UMSUtils;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 /**
@@ -46,19 +47,21 @@ public class DLNAMediaAudio extends DLNAMediaLang implements Cloneable {
 
 	private AudioProperties audioProperties = new AudioProperties();
 
-	/**
-	 * @deprecated Use standard getter and setter to access this variable.
-	 */
-	@Deprecated
-	public int bitsperSample;
+	private int bitsPerSample; //TODO: (Nad) Initialize?
 
 	private int bitRate = -1;
 
 	private RateMode bitRateMode;
 
-	private int sampleFrequency = -1;
+	public int[] sampleFrequenciesArray;
 
-	private int numberOfChannels = -1;
+	/**
+	 * @deprecated Use standard getter and setter instead.
+	 */
+	@Deprecated
+	public int nrAudioChannels;
+
+	private int[] numberOfChannelsArray;
 
 	/**
 	 * @deprecated Use standard getter and setter to access this variable.
@@ -660,7 +663,8 @@ public class DLNAMediaAudio extends DLNAMediaLang implements Cloneable {
 	/**
 	 * Returns the bitrate for this audio track.
 	 *
-	 * @return The bitrate.
+	 * @return The bit rate, or {@link #BITRATE_DEFAULT} if {@code bitRate} is
+	 *         invalid.
 	 */
 	public int getBitRate() {
 		return bitRate > 0 ? bitRate : BITRATE_DEFAULT;
@@ -768,9 +772,53 @@ public class DLNAMediaAudio extends DLNAMediaLang implements Cloneable {
 	 *
 	 * @return The number of channels
 	 * @since 1.50
+	 * @deprecated Use {@link #getNumberOfChannels()} instead.
 	 */
+	@Deprecated
+	public int getNrAudioChannels() {
+		return getNumberOfChannels();
+	}
+
+	/**
+	 * Returns an array with the number of audio channels, with the "base" layer
+	 * at index 0.
+	 *
+	 * @return The array of audio channels or an array containing
+	 *         {@link #NUMBEROFCHANNELS_DEFAULT} if unknown.
+	 */
+	public int[] getNumberOfChannelsArray() {
+		if (
+			numberOfChannelsArray != null &&
+			numberOfChannelsArray.length > 0 &&
+			UMSUtils.getIntArrayMaxValue(numberOfChannelsArray, 0) > 0
+		) {
+			return numberOfChannelsArray;
+		}
+		return new int[] {getNumberOfChannels()};
+	}
+
+	/**
+	 * Returns the highest number of audio channels if there are multiple
+	 * values, otherwise the single value.
+	 *
+	 * @return The number of channels or {@link #NUMBEROFCHANNELS_DEFAULT} if
+	 *         unknown.
+	 */
+	@SuppressWarnings("deprecation")
 	public int getNumberOfChannels() {
-		return numberOfChannels > 0 ? numberOfChannels : NUMBEROFCHANNELS_DEFAULT;
+		if (numberOfChannelsArray != null && numberOfChannelsArray.length > 0) {
+			int highest = UMSUtils.getIntArrayMaxValue(numberOfChannelsArray, 0);
+			if (highest > 0) {
+				return highest;
+			}
+		}
+		if (nrAudioChannels > 0) {
+			return nrAudioChannels;
+		}
+		if (audioProperties != null && audioProperties.getNumberOfChannels() > 0) {
+			return audioProperties.getNumberOfChannels();
+		}
+		return NUMBEROFCHANNELS_DEFAULT;
 	}
 
 	/**
@@ -791,13 +839,36 @@ public class DLNAMediaAudio extends DLNAMediaLang implements Cloneable {
 	}
 
 	/**
-	 * Sets the number of channels for the audio.
+	 * Sets the number of audio channels.
 	 *
-	 * @param numberOfChannels The number of channels to set.
+	 * @param numberOfChannels the number of channels to set, use 0 if unknown.
 	 */
+	@SuppressWarnings("deprecation")
 	public void setNumberOfChannels(int numberOfChannels) {
-		this.numberOfChannels = numberOfChannels;
+		this.numberOfChannelsArray = new int[] {numberOfChannels};
+		this.nrAudioChannels = numberOfChannels;
 		audioProperties.setNumberOfChannels(numberOfChannels);
+	}
+
+	/**
+	 * Sets an array of audio channels.
+	 *
+	 * @param numberOfChannelsArray the array with the number of channels to
+	 *            set, use {@code null} or an empty array if unknown.
+	 */
+	@SuppressWarnings("deprecation")
+	public void setNumberOfChannels(int[] numberOfChannelsArray) {
+		if (numberOfChannelsArray == null) {
+			this.numberOfChannelsArray = new int[0];
+		} else {
+			if (this.numberOfChannelsArray == null || this.numberOfChannelsArray.length != numberOfChannelsArray.length) {
+				this.numberOfChannelsArray = new int[numberOfChannelsArray.length];
+			}
+			System.arraycopy(numberOfChannelsArray, 0, this.numberOfChannelsArray, 0, numberOfChannelsArray.length);
+		}
+		// Find the highest number to store in the deprecated fields
+		this.nrAudioChannels = UMSUtils.getIntArrayMaxValue(this.numberOfChannelsArray, 0);
+		audioProperties.setNumberOfChannels(this.nrAudioChannels);
 	}
 
 	/**

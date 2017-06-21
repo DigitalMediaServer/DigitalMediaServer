@@ -23,6 +23,7 @@ import java.util.regex.Pattern;
 import static org.apache.commons.lang3.StringUtils.isEmpty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import net.pms.dlna.DLNAMediaAudio;
 
 /**
  * Class for storing and parsing from libmediainfo output audio track's properties
@@ -57,17 +58,23 @@ public class AudioProperties {
 
 	/**
 	 * Get number of channels for this audio track.
-	 * @return number of channels (default is 2)
+	 *
+	 * @return The number of channels, or {@link #NUMBEROFCHANNELS_DEFAULT} if
+	 *         {@code numberOfChannels} is invalid.
+	 * @deprecated Use {@link DLNAMediaAudio#getNumberOfChannels()} instead.
 	 */
+	@Deprecated
 	public int getNumberOfChannels() {
-		return numberOfChannels;
+		return numberOfChannels > 0 ? numberOfChannels : DLNAMediaAudio.NUMBEROFCHANNELS_DEFAULT;
 	}
 
 	/**
 	 * Set number of channels for this audio track.
 	 *
 	 * @param numberOfChannels number of channels to set.
+	 * @deprecated Use {@link DLNAMediaAudio#setNumberOfChannels(int)} instead.
 	 */
+	@Deprecated
 	public void setNumberOfChannels(int numberOfChannels) {
 		this.numberOfChannels = numberOfChannels;
 	}
@@ -77,7 +84,7 @@ public class AudioProperties {
 	 *
 	 * @param mediaInfoValue libmediainfo "Channel(s)" value to parse.
 	 */
-	public void setNumberOfChannels(String mediaInfoValue) {
+	public void setNumberOfChannels(String mediaInfoValue) { //TODO: (Nad) Remove
 		this.numberOfChannels = getChannelsNumberFromLibMediaInfo(mediaInfoValue);
 	}
 
