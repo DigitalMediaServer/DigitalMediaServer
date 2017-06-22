@@ -2531,8 +2531,8 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 							addAttribute(sb, "nrAudioChannels", firstAudioTrack.getAudioProperties().getNumberOfChannels());
 						}
 
-						if (firstAudioTrack.getSampleFrequency() != null) {
-							addAttribute(sb, "sampleFrequency", firstAudioTrack.getSampleFrequency());
+						if (firstAudioTrack.isSampleRateKnown()) {
+							addAttribute(sb, "sampleFrequency", firstAudioTrack.getSampleRate());
 						}
 					}
 					if (media.getVideoBitDepth() > 0) {
@@ -2563,11 +2563,11 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 						int transcodeNumberOfChannels = -1;
 						if (firstAudioTrack != null) {
 							if (player == null) {
-								if (firstAudioTrack.getSampleFrequency() != null) {
-									addAttribute(sb, "sampleFrequency", firstAudioTrack.getSampleFrequency());
+								if (firstAudioTrack.isSampleRateKnown()) {
+									addAttribute(sb, "sampleFrequency", firstAudioTrack.getSampleRate());
 								}
-								if (firstAudioTrack.getAudioProperties().getNumberOfChannels() > 0) {
-									addAttribute(sb, "nrAudioChannels", firstAudioTrack.getAudioProperties().getNumberOfChannels());
+								if (firstAudioTrack.isNumberOfChannelsKnown()) {
+									addAttribute(sb, "nrAudioChannels", firstAudioTrack.getNumberOfChannels());
 								}
 							} else {
 								if (configurationSpecificToRenderer.isAudioResample()) {
@@ -2575,7 +2575,7 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 									transcodeNumberOfChannels = 2;
 								} else {
 									transcodeFrequency = firstAudioTrack.getSampleRate();
-									transcodeNumberOfChannels = firstAudioTrack.getAudioProperties().getNumberOfChannels();
+									transcodeNumberOfChannels = firstAudioTrack.getNumberOfChannels();
 								}
 								if (transcodeFrequency > 0) {
 									addAttribute(sb, "sampleFrequency", transcodeFrequency);
