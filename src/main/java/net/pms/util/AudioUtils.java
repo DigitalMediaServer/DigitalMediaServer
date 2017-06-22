@@ -178,7 +178,7 @@ public final class AudioUtils {
 			if (version == 3) {
 				audio.setCodecA(FormatConfiguration.REALAUDIO_14_4);
 				audio.setNumberOfChannels(1);
-				audio.setSampleFrequency(8000);
+				audio.setSampleRate(8000);
 				short headerSize = buffer.getShort();
 
 				buffer = ByteBuffer.allocate(headerSize);
@@ -282,7 +282,7 @@ public final class AudioUtils {
 				media.setBitRate((int) (bytesPerMinute * 8 / 60));
 				audio.setBitsPerSample(sampleSize);
 				audio.setNumberOfChannels(nrChannels);
-				audio.setSampleFrequency(sampleRate);
+				audio.setSampleRate(sampleRate);
 			} else {
 				LOGGER.error("Could not parse RealAudio format - unknown format version {}", version);
 				return false;

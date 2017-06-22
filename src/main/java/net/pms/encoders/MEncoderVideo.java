@@ -264,7 +264,7 @@ public class MEncoderVideo extends Player {
 					audio.setNumberOfChannels(2);
 					fakemedia.setWidth(1280);
 					fakemedia.setHeight(720);
-					audio.setSampleFrequency(48000);
+					audio.setSampleRate(48000);
 					fakemedia.setFrameRate("23.976");
 					fakemedia.getAudioTracks().add(audio);
 					String result[] = getSpecificCodecOptions(newCodecparam, fakemedia, new OutputParams(configuration), "dummy.mpg", "dummy.srt", false, true);

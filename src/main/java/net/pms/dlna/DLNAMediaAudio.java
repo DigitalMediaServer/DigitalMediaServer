@@ -18,14 +18,18 @@
  */
 package net.pms.dlna;
 
+import java.util.Arrays;
 import java.util.Locale;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import net.pms.configuration.FormatConfiguration;
 import net.pms.dlna.DLNAMediaInfo.RateMode;
 import net.pms.formats.v2.AudioProperties;
+import net.pms.util.BitRateMode;
 import net.pms.util.UMSUtils;
+import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
+import org.apache.commons.lang.ArrayUtils;
 
 /**
  * This class keeps track of the audio properties of media.
@@ -36,24 +40,41 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
  * When everything has been changed to private, the deprecated note can be
  * removed.
  */
+@SuppressWarnings("deprecation")
 public class DLNAMediaAudio extends DLNAMediaLang implements Cloneable {
 
+	/** The default bit rate used if the actual value is unknown */
 	public static final int BITRATE_DEFAULT = 8000;
+
+	/** The default number of audio channels used if the actual value is unknown */
 	public static final int NUMBEROFCHANNELS_DEFAULT = 2;
+
+	/** The default bits per sample used if the actual value is unknown */
 	public static final int BITSPERSAMPLE_DEFAULT = 16;
+
+	/** The default audio delay used if the actual value is unknown */
 	public static final int AUDIODELAY_DEFAULT = 0;
-	public static final int SAMPLEFREQUENCY_DEFAULT = 48000;
 	public static final RateMode BITRATEMODE_DEFAULT = RateMode.CONSTANT;
 
-	private AudioProperties audioProperties = new AudioProperties();
+	/** The default sample rate used if the actual value is unknown */
+	public static final int SAMPLERATE_DEFAULT = 48000;
 
-	private int bitsPerSample; //TODO: (Nad) Initialize?
+	/** The default bit rate mode used if the actual value is unknown */
+	public static final BitRateMode BITRATEMODE_DEFAULT = BitRateMode.CBR;
+
+	/**
+	 * @deprecated Use standard getter and setter to access this variable.
+	 */
+	@Deprecated
+	public int bitsperSample;
+	private int[] bitsPerSampleArray;
+
+	private int bitRate;
+	private BitRateMode[] BitRateModes;
 
 	private int bitRate = -1;
 
-	private RateMode bitRateMode;
-
-	public int[] sampleFrequenciesArray;
+	private int[] sampleRatesArray;
 
 	/**
 	 * @deprecated Use standard getter and setter instead.
@@ -549,7 +570,7 @@ public class DLNAMediaAudio extends DLNAMediaLang implements Cloneable {
 	 * @return The properties string.
 	 */
 	@Override
-	public String toString() {
+	public String toString() { //TODO: (Nad) Refactor
 		StringBuilder result = new StringBuilder();
 		if (isNotBlank(getLang()) && !getLang().equals("und")) {
 			result.append("Id: ").append(getId());
@@ -571,8 +592,12 @@ public class DLNAMediaAudio extends DLNAMediaLang implements Cloneable {
 		if (!isBitRateUnknown()) {
 			result.append(", Bitrate: ").append(getBitRate());
 		}
-		if (!isBitRateModeUnknown()) {
-			result.append(", Bitrate Mode: ").append(getBitRateMode());
+		if (isBitRateModeKnown()) {
+			if (BitRateModes.length > 1) {
+				result.append(", Bitrate Modes: ").append(Arrays.toString(BitRateModes));
+			} else {
+				result.append(", Bitrate Mode: ").append(BitRateModes[0]);
+			}
 		}
 		if (!isBitsPerSampleUnknown()) {
 			result.append(", Bits per Sample: ").append(getBitsPerSample());
@@ -618,8 +643,25 @@ public class DLNAMediaAudio extends DLNAMediaLang implements Cloneable {
 	}
 
 	@Override
-	protected Object clone() throws CloneNotSupportedException {
-		return super.clone();
+	protected DLNAMediaAudio clone() throws CloneNotSupportedException {
+		DLNAMediaAudio clone = (DLNAMediaAudio) super.clone();
+		if (audioProperties != null) {
+			clone.audioProperties = audioProperties.clone();
+		}
+		clone.bitsPerSampleArray = ArrayUtils.clone(bitsPerSampleArray);
+		clone.numberOfChannelsArray = ArrayUtils.clone(numberOfChannelsArray);
+		clone.sampleRatesArray = ArrayUtils.clone(sampleRatesArray);
+		//TODO: (Nad) Add new arrays
+		return clone;
+	}
+
+	/**
+	 * @return Whether bits per sample is an actual value or just a default.
+	 */
+	public boolean isBitsPerSampleKnown() {
+		return
+			bitsPerSampleArray != null && UMSUtils.getIntArrayMaxValue(bitsPerSampleArray, 0) > 0 ||
+			bitsperSample > 0;
 	}
 
 	/**
@@ -627,9 +669,11 @@ public class DLNAMediaAudio extends DLNAMediaLang implements Cloneable {
 	 *
 	 * @return The number of bits per sample.
 	 * @since 1.50
+	 * @deprecated Use {@link #getBitsPerSample()} instead.
 	 */
-	public int getBitsPerSample() {
-		return bitsPerSample > 0 ? bitsPerSample : BITSPERSAMPLE_DEFAULT;
+	@Deprecated
+	public int getBitsperSample() {
+		return getBitsPerSample();
 	}
 
 	/**
@@ -651,17 +695,90 @@ public class DLNAMediaAudio extends DLNAMediaLang implements Cloneable {
 	}
 
 	/**
+	 * Returns an array of bits per sample, with the "base" layer at index 0.
+	 *
+	 * @return The array of bits per sample or an array containing only
+	 *         {@link #BITSPERSAMPLE_DEFAULT} if unknown.
+	 */
+	public int[] getBitsPerSampleArray() {
+		if (
+			bitsPerSampleArray != null &&
+				bitsPerSampleArray.length > 0 &&
+			UMSUtils.getIntArrayMaxValue(bitsPerSampleArray, 0) > 0
+		) {
+			int[] result = new int[bitsPerSampleArray.length];
+			System.arraycopy(bitsPerSampleArray, 0, result, 0, bitsPerSampleArray.length);
+			return result;
+		}
+		return new int[] {getBitsPerSample()};
+	}
+
+	/**
+	 * Returns the highest bits per sample if there are multiple values,
+	 * otherwise the single value.
+	 *
+	 * @return The bits per sample or {@link #BITSPERSAMPLE_DEFAULT} if unknown.
+	 * @since 6.7.2
+	 */
+	public int getBitsPerSample() {
+		if (bitsPerSampleArray != null && bitsPerSampleArray.length > 0) {
+			int highest = UMSUtils.getIntArrayMaxValue(bitsPerSampleArray, 0);
+			if (highest > 0) {
+				return highest;
+			}
+		}
+		if (bitsperSample > 0) {
+			return bitsperSample;
+		}
+		return BITSPERSAMPLE_DEFAULT;
+	}
+
+	/**
 	 * Sets the number of bits per sample for the audio.
 	 *
 	 * @param bitsPerSample The number of bits per sample to set.
 	 * @since 1.50
+	 * @deprecated Use {@link #setBitsPerSample(int)} instead.
 	 */
-	public void setBitsPerSample(int bitsPerSample) {
-		this.bitsPerSample = bitsPerSample;
+	@Deprecated
+	public void setBitsperSample(int bitsperSample) {
+		setBitsPerSample(bitsperSample);
 	}
 
 	/**
-	 * Returns the bitrate for this audio track.
+	 * Sets the bits per sample.
+	 *
+	 * @param bitsPerSample the bits per sample to set, use 0 if unknown.
+	 * @since 6.7.2
+	 */
+	public void setBitsPerSample(int bitsPerSample) {
+		setBitsPerSample(new int[] {bitsPerSample});
+	}
+
+	/**
+	 * Sets an array of bits per sample.
+	 *
+	 * @param bitsPerSampleArray the array of bits per sample to set, use
+	 *            {@code null} or an empty array if unknown.
+	 * @since 6.7.2
+	 */
+	public void setBitsPerSample(int[] bitsPerSampleArray) {
+		if (bitsPerSampleArray == null) {
+			if (this.bitsPerSampleArray == null || this.bitsPerSampleArray.length > 0) {
+				this.bitsPerSampleArray = new int[0];
+			}
+		} else {
+			if (this.bitsPerSampleArray == null || this.bitsPerSampleArray.length != bitsPerSampleArray.length) {
+				this.bitsPerSampleArray = new int[bitsPerSampleArray.length];
+			}
+			System.arraycopy(bitsPerSampleArray, 0, this.bitsPerSampleArray, 0, bitsPerSampleArray.length);
+		}
+		// Find the highest number to store in the deprecated field
+		bitsperSample = UMSUtils.getIntArrayMaxValue(this.bitsPerSampleArray, 0);
+	}
+
+	/**
+	 * Returns the bit rate for this audio track.
 	 *
 	 * @return The bit rate, or {@link #BITRATE_DEFAULT} if {@code bitRate} is
 	 *         invalid.
@@ -697,11 +814,25 @@ public class DLNAMediaAudio extends DLNAMediaLang implements Cloneable {
 	}
 
 	/**
-	 * @return the bitrate mode.
+	 * @return Whether bit rate mode is an actual value or just a default.
 	 */
-	@Nonnull
-	public RateMode getBitRateMode() {
-		return bitRateMode == null ? BITRATEMODE_DEFAULT : bitRateMode;
+	public boolean isBitRateModeKnown() {
+		return BitRateModes != null && BitRateModes.length > 0;
+	}
+
+	/**
+	 * Gets the array of bit rate modes, with the "base" layer at index 0.
+	 *
+	 * @return The array of bit rate modes or an array containing only
+	 *         {@link #BITRATEMODE_DEFAULT} if unknown.
+	 */
+	public BitRateMode[] getBitRateModes() {
+		if (BitRateModes != null && BitRateModes.length > 0) {
+			BitRateMode[] result = new BitRateMode[BitRateModes.length];
+			System.arraycopy(BitRateModes, 0, result, 0, BitRateModes.length);
+			return result;
+		}
+		return new BitRateMode[] {getBitRateMode()};
 	}
 
 	/**
@@ -722,11 +853,65 @@ public class DLNAMediaAudio extends DLNAMediaLang implements Cloneable {
 
 	/**
 	 * Sets the bitrate mode.
+	 * If known, returns {@link BitRateMode#VBR} if one of the bit rate mode
+	 * values are {@link BitRateMode#VBR}, otherwise {@link BitRateMode#CBR}. If
+	 * unknown, {@value #BITRATEMODE_DEFAULT} is returned.
 	 *
-	 * @param bitRateMode the bitrate mode to set.
+	 * @return The bit rate mode with preference to {@link BitRateMode#VBR} or
+	 *         {@link #BITRATEMODE_DEFAULT} if unknown.
 	 */
-	public void setBitRateMode(@Nullable RateMode bitRateMode) {
-		this.bitRateMode = bitRateMode;
+	public BitRateMode getBitRateMode() {
+		if (BitRateModes != null && BitRateModes.length > 0) {
+			boolean isVariable = false;
+			for (BitRateMode bitRateMode : BitRateModes) {
+				if (bitRateMode == BitRateMode.VBR) {
+					isVariable = true;
+					break;
+				}
+			}
+			return isVariable ? BitRateMode.VBR : BitRateMode.CBR;
+		}
+		return BITRATEMODE_DEFAULT;
+	}
+
+	/**
+	 * Sets the bit rate mode.
+	 *
+	 * @param bitRateMode the bit rate mode to set, use {@code null} if unknown.
+	 */
+	public void setBitRateMode(BitRateMode bitRateMode) {
+		if (bitRateMode == null && this.BitRateModes != null && this.BitRateModes.length > 0) {
+			BitRateModes = new BitRateMode[0];
+		} else if (bitRateMode != null) {
+			setBitRateModes(new BitRateMode[] {bitRateMode});
+		}
+	}
+
+	/**
+	 * Sets an array of bit rate modes.
+	 *
+	 * @param bitRateModes the array of bit rate modes to set, use
+	 *            {@code null} or an empty array if unknown.
+	 * @since 6.7.2
+	 */
+	public void setBitRateModes(BitRateMode[] bitRateModes) {
+		if (bitRateModes == null && this.BitRateModes != null && this.BitRateModes.length > 0) {
+			BitRateModes = new BitRateMode[0];
+		} else if (bitRateModes != null) {
+			if (this.BitRateModes == null || this.BitRateModes.length != bitRateModes.length) {
+				this.BitRateModes = new BitRateMode[bitRateModes.length];
+			}
+			System.arraycopy(bitRateModes, 0, this.BitRateModes, 0, bitRateModes.length);
+		}
+	}
+
+	/**
+	 * @return Whether sample rate is an actual value or just a default.
+	 */
+	public boolean isSampleRateKnown() {
+		return
+			sampleRatesArray != null && UMSUtils.getIntArrayMaxValue(sampleRatesArray, 0) > 0 ||
+			audioProperties != null && audioProperties.getSampleFrequency(false) > 0;
 	}
 
 	/**
@@ -734,9 +919,11 @@ public class DLNAMediaAudio extends DLNAMediaLang implements Cloneable {
 	 *
 	 * @return The sample frequency.
 	 * @since 1.50
+	 * @deprecated Use {@link #getSampleRatesArray()} or
+	 *             {@link #getSampleRate()} instead.
 	 */
 	public int getSampleFrequency() {
-		return sampleFrequency > 0 ? sampleFrequency : SAMPLEFREQUENCY_DEFAULT;
+		return getSampleRate();
 	}
 
 	/**
@@ -745,7 +932,7 @@ public class DLNAMediaAudio extends DLNAMediaLang implements Cloneable {
 	 * @return The raw sample frequency.
 	 */
 	public int getSampleFrequencyRaw() {
-		return sampleFrequency;
+		return Integer.toString(getSampleRate());
 	}
 
 	/**
@@ -758,17 +945,116 @@ public class DLNAMediaAudio extends DLNAMediaLang implements Cloneable {
 
 	/**
 	 * Sets the sample frequency for the audio.
+	 * Returns an array of sample rates, with the "base" layer at index 0.
 	 *
-	 * @param sampleFrequency The sample frequency to set.
-	 * @since 1.50
+	 * @return The array of sample rates or an array containing only
+	 *         {@link #SAMPLERATE_DEFAULT} if unknown.
 	 */
-	public void setSampleFrequency(int sampleFrequency) {
-			this.sampleFrequency = sampleFrequency;
-			audioProperties.setSampleFrequency(sampleFrequency);
+	public int[] getSampleRatesArray() {
+		if (
+			sampleRatesArray != null &&
+				sampleRatesArray.length > 0 &&
+			UMSUtils.getIntArrayMaxValue(sampleRatesArray, 0) > 0
+		) {
+			int[] result = new int[sampleRatesArray.length];
+			System.arraycopy(sampleRatesArray, 0, result, 0, sampleRatesArray.length);
+			return result;
+		}
+		return new int[] {getSampleRate()};
 	}
 
 	/**
-	 * Returns the number of audio channels.
+	 * Returns the highest sample rate if there are multiple values, otherwise
+	 * the single value.
+	 *
+	 * @return The sample rate or {@link #SAMPLERATE_DEFAULT} if unknown.
+	 * @since 6.7.2
+	 */
+	public int getSampleRate() {
+		if (sampleRatesArray != null && sampleRatesArray.length > 0) {
+			int highest = UMSUtils.getIntArrayMaxValue(sampleRatesArray, 0);
+			if (highest > 0) {
+				return highest;
+			}
+		}
+		if (!isBlank(sampleFrequency)) {
+			try {
+				return Integer.parseInt(sampleFrequency);
+			} catch (NumberFormatException e) {
+				// Just catch and move on
+			}
+		}
+		if (audioProperties != null && audioProperties.getSampleFrequency() > 0) {
+			return audioProperties.getSampleFrequency();
+		}
+		return SAMPLERATE_DEFAULT;
+	}
+
+	/**
+	 * Sets the sample frequency for this audio.
+	 *
+	 * @param sampleFrequency The sample frequency to set.
+	 * @since 1.50
+	 * @deprecated Use {@link #setSampleRates(int[])} or
+	 *             {@link #setSampleRate(int)} instead.
+	 */
+	@Deprecated
+	public void setSampleFrequency(String sampleFrequency) {
+		if (isNotBlank(sampleFrequency)) {
+			try {
+				setSampleRate(Integer.parseInt(sampleFrequency));
+			} catch (NumberFormatException e) {
+				LOGGER.warn("Audio sample frequency \"{}\" cannot be parsed, using (probably wrong) default", sampleFrequency);
+			}
+		}
+	}
+
+	/**
+	 * Sets the sample rate.
+	 *
+	 * @param sampleRate the sample rate to set, use 0 if unknown.
+	 * @since 6.7.2
+	 */
+	public void setSampleRate(int sampleRate) {
+		setSampleRates(new int[] {sampleRate});
+	}
+
+	/**
+	 * Sets an array of sample rates.
+	 *
+	 * @param sampleRatesArray the array of sample rates to set, use
+	 *            {@code null} or an empty array if unknown.
+	 * @since 6.7.2
+	 */
+	public void setSampleRates(int[] sampleRatesArray) {
+		if (sampleRatesArray == null) {
+			if (this.sampleRatesArray == null || this.sampleRatesArray.length > 0) {
+				this.sampleRatesArray = new int[0];
+			}
+		} else {
+			if (this.sampleRatesArray == null || this.sampleRatesArray.length != sampleRatesArray.length) {
+				this.sampleRatesArray = new int[sampleRatesArray.length];
+			}
+			System.arraycopy(sampleRatesArray, 0, this.sampleRatesArray, 0, sampleRatesArray.length);
+		}
+		// Find the highest number to store in the deprecated fields
+		int highest = UMSUtils.getIntArrayMaxValue(this.sampleRatesArray, 0);
+		this.sampleFrequency = Integer.toString(highest);
+		audioProperties.setSampleFrequency(highest);
+	}
+
+	/**
+	 * @return Whether the number of channels is an actual value or just a default.
+	 */
+	public boolean isNumberOfChannelsKnown() {
+		return
+			numberOfChannelsArray != null && UMSUtils.getIntArrayMaxValue(numberOfChannelsArray, 0) > 0 ||
+			nrAudioChannels > 0 ||
+			audioProperties != null && audioProperties.getNumberOfChannels(false) > 0;
+	}
+
+	/**
+	 * Returns the number of channels for the audio.
 	 *
 	 * @return The number of channels
 	 * @since 1.50
@@ -783,7 +1069,7 @@ public class DLNAMediaAudio extends DLNAMediaLang implements Cloneable {
 	 * Returns an array with the number of audio channels, with the "base" layer
 	 * at index 0.
 	 *
-	 * @return The array of audio channels or an array containing
+	 * @return The array of audio channels or an array containing only
 	 *         {@link #NUMBEROFCHANNELS_DEFAULT} if unknown.
 	 */
 	public int[] getNumberOfChannelsArray() {
@@ -792,7 +1078,9 @@ public class DLNAMediaAudio extends DLNAMediaLang implements Cloneable {
 			numberOfChannelsArray.length > 0 &&
 			UMSUtils.getIntArrayMaxValue(numberOfChannelsArray, 0) > 0
 		) {
-			return numberOfChannelsArray;
+			int[] result = new int[numberOfChannelsArray.length];
+			System.arraycopy(numberOfChannelsArray, 0, result, 0, numberOfChannelsArray.length);
+			return result;
 		}
 		return new int[] {getNumberOfChannels()};
 	}
@@ -804,7 +1092,6 @@ public class DLNAMediaAudio extends DLNAMediaLang implements Cloneable {
 	 * @return The number of channels or {@link #NUMBEROFCHANNELS_DEFAULT} if
 	 *         unknown.
 	 */
-	@SuppressWarnings("deprecation")
 	public int getNumberOfChannels() {
 		if (numberOfChannelsArray != null && numberOfChannelsArray.length > 0) {
 			int highest = UMSUtils.getIntArrayMaxValue(numberOfChannelsArray, 0);
@@ -829,6 +1116,10 @@ public class DLNAMediaAudio extends DLNAMediaLang implements Cloneable {
 	public int getNumberOfChannelsRaw() {
 		return numberOfChannels;
 	}
+	@Deprecated
+	public void setNrAudioChannels(int numberOfChannels) {
+		setNumberOfChannels(numberOfChannels);
+	}
 
 	/**
 	 * @return {@code true} if the number of channels is unknown and a default
@@ -843,23 +1134,21 @@ public class DLNAMediaAudio extends DLNAMediaLang implements Cloneable {
 	 *
 	 * @param numberOfChannels the number of channels to set, use 0 if unknown.
 	 */
-	@SuppressWarnings("deprecation")
 	public void setNumberOfChannels(int numberOfChannels) {
-		this.numberOfChannelsArray = new int[] {numberOfChannels};
-		this.nrAudioChannels = numberOfChannels;
-		audioProperties.setNumberOfChannels(numberOfChannels);
+		setNumberOfChannels(new int[] {numberOfChannels});
 	}
 
 	/**
 	 * Sets an array of audio channels.
 	 *
-	 * @param numberOfChannelsArray the array with the number of channels to
-	 *            set, use {@code null} or an empty array if unknown.
+	 * @param numberOfChannelsArray the array of the number of channels to set,
+	 *            use {@code null} or an empty array if unknown.
 	 */
-	@SuppressWarnings("deprecation")
 	public void setNumberOfChannels(int[] numberOfChannelsArray) {
 		if (numberOfChannelsArray == null) {
-			this.numberOfChannelsArray = new int[0];
+			if (this.numberOfChannelsArray == null || this.numberOfChannelsArray.length > 0) {
+				this.numberOfChannelsArray = new int[0];
+			}
 		} else {
 			if (this.numberOfChannelsArray == null || this.numberOfChannelsArray.length != numberOfChannelsArray.length) {
 				this.numberOfChannelsArray = new int[numberOfChannelsArray.length];
@@ -1093,10 +1382,19 @@ public class DLNAMediaAudio extends DLNAMediaLang implements Cloneable {
 		this.muxingModeAudio = muxingModeAudio;
 	}
 
+	/**
+	 * @deprecated Use the methods of this class to get the values instead.
+	 */
+	@Deprecated
 	public AudioProperties getAudioProperties() {
 		return audioProperties;
 	}
 
+	/**
+	 * @param audioProperties the {@link AudioProperties} instance.
+	 * @deprecated Use the methods of this class to get and set values instead.
+	 */
+	@Deprecated
 	public void setAudioProperties(AudioProperties audioProperties) {
 		if (audioProperties == null) {
 			throw new IllegalArgumentException("Can't set null AudioProperties.");

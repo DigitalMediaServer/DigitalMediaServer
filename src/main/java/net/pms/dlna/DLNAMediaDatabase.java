@@ -32,6 +32,7 @@ import net.pms.dlna.DLNAMediaInfo.RateMode;
 import net.pms.formats.Format;
 import net.pms.formats.v2.SubtitleType;
 import net.pms.image.ImageInfo;
+import net.pms.util.BitRateMode;
 import net.pms.util.Rational;
 import org.apache.commons.io.FileUtils;
 import static org.apache.commons.lang3.StringUtils.*;
@@ -282,11 +283,11 @@ public class DLNAMediaDatabase implements Runnable {
 				sb.append(", ID                INT              NOT NULL");
 				sb.append(", LANG              VARCHAR2(").append(SIZE_LANG).append(')');
 				sb.append(", TITLE             VARCHAR2(").append(SIZE_TITLE).append(')');
-				sb.append(", NRAUDIOCHANNELS   NUMERIC");
-				sb.append(", SAMPLEFREQ        INT");
+				sb.append(", NUMBEROFCHANNELS   OTHER");
+				sb.append(", SAMPLERATE        OTHER");
 				sb.append(", CODECA            VARCHAR2(").append(SIZE_CODECA).append(')');
 				sb.append(", BITSPERSAMPLE     INT");
-				sb.append(", ALBUM             VARCHAR2(").append(SIZE_ALBUM).append(')');
+				sb.append(", ALBUM             VARCHAR2(").append(SIZE_ALBUM).append(')');//TODO: (Nad) Add new fields
 				sb.append(", ARTIST            VARCHAR2(").append(SIZE_ARTIST).append(')');
 				sb.append(", SONGNAME          VARCHAR2(").append(SIZE_SONGNAME).append(')');
 				sb.append(", GENRE             VARCHAR2(").append(SIZE_GENRE).append(')');
@@ -294,7 +295,8 @@ public class DLNAMediaDatabase implements Runnable {
 				sb.append(", TRACK             INT");
 				sb.append(", DELAY             INT");
 				sb.append(", MUXINGMODE        VARCHAR2(").append(SIZE_MUXINGMODE).append(')');
-				sb.append(", BITRATE           INT");
+				sb.append(", BITRATE           OTHER");
+				sb.append(", BITRATEMODE       OTHER");
 				sb.append(", BITRATEMODE       OTHER");
 				sb.append(", constraint PKAUDIO primary key (FILEID, ID))");
 				if (trace) {
@@ -464,10 +466,10 @@ public class DLNAMediaDatabase implements Runnable {
 							audio.setId(elements.getInt("ID"));
 							audio.setLang(elements.getString("LANG"));
 							audio.setAudioTrackTitleFromMetadata(elements.getString("TITLE"));
-							audio.setNumberOfChannels(elements.getInt("NRAUDIOCHANNELS"));
-							audio.setSampleFrequency(elements.getInt("SAMPLEFREQ"));
+							audio.setNumberOfChannels((int[]) elements.getObject("NUMBEROFCHANNELS"));
+							audio.setSampleRates((int[]) elements.getObject("SAMPLERATE"));
 							audio.setCodecA(elements.getString("CODECA"));
-							audio.setBitsPerSample(elements.getInt("BITSPERSAMPLE"));
+							audio.setBitsPerSample((int[]) elements.getObject("BITSPERSAMPLE"));
 							audio.setAlbum(elements.getString("ALBUM"));
 							audio.setArtist(elements.getString("ARTIST"));
 							audio.setSongname(elements.getString("SONGNAME"));
@@ -476,7 +478,8 @@ public class DLNAMediaDatabase implements Runnable {
 							audio.setTrack(elements.getInt("TRACK"));
 							audio.setDelay(elements.getInt("DELAY"));
 							audio.setMuxingModeAudio(elements.getString("MUXINGMODE"));
-							audio.setBitRate(elements.getInt("BITRATE"));
+							audio.setBitRate(elements.getInt("BITRATE")); //TODO: (Nad) Bitrate array
+							audio.setBitRateModes((BitRateMode[]) elements.getObject("BITRATEMODE"));
 							audio.setBitRateMode((RateMode) rs.getObject("BITRATEMODE"));
 							media.getAudioTracksList().add(audio);
 						}
@@ -573,7 +576,7 @@ public class DLNAMediaDatabase implements Runnable {
 		try (
 			PreparedStatement updateStatment = connection.prepareStatement(
 				"SELECT " +
-					"FILEID, ID, LANG, TITLE, NRAUDIOCHANNELS, SAMPLEFREQ, CODECA, " +
+					"FILEID, ID, LANG, TITLE, NUMBEROFCHANNELS, SAMPLERATE, CODECA, " +
 					"BITSPERSAMPLE, ALBUM, ARTIST, SONGNAME, GENRE, YEAR, TRACK, " +
 					"DELAY, MUXINGMODE, BITRATE, BITRATEMODE " +
 				"FROM AUDIOTRACKS " +
@@ -584,7 +587,7 @@ public class DLNAMediaDatabase implements Runnable {
 			);
 			PreparedStatement insertStatement = connection.prepareStatement(
 				"INSERT INTO AUDIOTRACKS (" +
-					"FILEID, ID, LANG, TITLE, NRAUDIOCHANNELS, SAMPLEFREQ, CODECA, BITSPERSAMPLE, " +
+					"FILEID, ID, LANG, TITLE, NUMBEROFCHANNELS, SAMPLERATE, CODECA, BITSPERSAMPLE, " +
 					"ALBUM, ARTIST, SONGNAME, GENRE, YEAR, TRACK, DELAY, MUXINGMODE, BITRATE, BITRATEMODE" +
 				") VALUES (" +
 					"?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?" +
@@ -598,10 +601,22 @@ public class DLNAMediaDatabase implements Runnable {
 					if (rs.next()) {
 						rs.updateString("LANG", left(audioTrack.getLang(), SIZE_LANG));
 						rs.updateString("TITLE", left(audioTrack.getAudioTrackTitleFromMetadata(), SIZE_TITLE));
-						rs.updateInt("NRAUDIOCHANNELS", audioTrack.getNumberOfChannelsRaw());
-						rs.updateInt("SAMPLEFREQ", audioTrack.getSampleFrequencyRaw());
+						if (audioTrack.getNumberOfChannelsArray() != null) {
+							rs.updateObject("NUMBEROFCHANNELS", audioTrack.getNumberOfChannelsArray());
+						} else {
+							rs.updateNull("NUMBEROFCHANNELS");
+						}
+						if (audioTrack.getSampleRatesArray() != null) {
+							rs.updateObject("SAMPLERATE", audioTrack.getSampleRatesArray());
+						} else {
+							rs.updateNull("SAMPLERATE");
+						}
 						rs.updateString("CODECA", left(audioTrack.getCodecA(), SIZE_CODECA));
-						rs.updateInt("BITSPERSAMPLE", audioTrack.getBitsPerSampleRaw());
+						if (audioTrack.getBitsPerSampleArray() != null) {
+							rs.updateObject("BITSPERSAMPLE", audioTrack.getBitsPerSampleArray());
+						} else {
+							rs.updateNull("BITSPERSAMPLE");
+						}
 						rs.updateString("ALBUM", left(trimToEmpty(audioTrack.getAlbum()), SIZE_ALBUM));
 						rs.updateString("ARTIST", left(trimToEmpty(audioTrack.getArtist()), SIZE_ARTIST));
 						rs.updateString("SONGNAME", left(trimToEmpty(audioTrack.getSongname()), SIZE_SONGNAME));
@@ -612,6 +627,11 @@ public class DLNAMediaDatabase implements Runnable {
 						rs.updateString("MUXINGMODE", left(trimToEmpty(audioTrack.getMuxingModeAudio()), SIZE_MUXINGMODE));
 						rs.updateInt("BITRATE", audioTrack.getBitRateRaw());
 						updateSerialized(rs, audioTrack.getBitRateModeRaw(), "BITRATEMODE");
+						if (audioTrack.getBitRateModes() != null) {
+							rs.updateObject("BITRATEMODE", audioTrack.getBitRateModes());
+						} else {
+							rs.updateNull("BITRATEMODE");
+						}
 						rs.updateRow();
 					} else {
 						insertStatement.clearParameters();
@@ -619,10 +639,22 @@ public class DLNAMediaDatabase implements Runnable {
 						insertStatement.setInt(2, audioTrack.getId());
 						insertStatement.setString(3, left(audioTrack.getLang(), SIZE_LANG));
 						insertStatement.setString(4, left(audioTrack.getAudioTrackTitleFromMetadata(), SIZE_TITLE));
-						insertStatement.setInt(5, audioTrack.getNumberOfChannelsRaw());
-						insertStatement.setInt(6, audioTrack.getSampleFrequencyRaw());
+						if (audioTrack.getNumberOfChannelsArray() != null) {
+							insertStatement.setObject(5, audioTrack.getNumberOfChannelsArray());
+						} else {
+							insertStatement.setNull(5, Types.OTHER);
+						}
+						if (audioTrack.getSampleRatesArray() != null) {
+							insertStatement.setObject(6, audioTrack.getSampleRatesArray());
+						} else {
+							insertStatement.setNull(6, Types.OTHER);
+						}
 						insertStatement.setString(7, left(audioTrack.getCodecA(), SIZE_CODECA));
-						insertStatement.setInt(8, audioTrack.getBitsPerSampleRaw());
+						if (audioTrack.getBitsPerSampleArray() != null) {
+							insertStatement.setObject(8, audioTrack.getBitsPerSampleArray());
+						} else {
+							insertStatement.setNull(8, Types.OTHER);
+						}
 						insertStatement.setString(9, left(trimToEmpty(audioTrack.getAlbum()), SIZE_ALBUM));
 						insertStatement.setString(10, left(trimToEmpty(audioTrack.getArtist()), SIZE_ARTIST));
 						insertStatement.setString(11, left(trimToEmpty(audioTrack.getSongname()), SIZE_SONGNAME));
@@ -633,6 +665,11 @@ public class DLNAMediaDatabase implements Runnable {
 						insertStatement.setString(16, left(trimToEmpty(audioTrack.getMuxingModeAudio()), SIZE_MUXINGMODE));
 						insertStatement.setInt(17, audioTrack.getBitRateRaw());
 						insertSerialized(insertStatement, audioTrack.getBitRateModeRaw(), 18);
+						if (audioTrack.getBitRateModes() != null) {
+							insertStatement.setObject(18, audioTrack.getBitRateModes());
+						} else {
+							insertStatement.setNull(18, Types.OTHER);
+						}
 						insertStatement.executeUpdate();
 					}
 				}

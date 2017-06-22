@@ -198,7 +198,7 @@ public class TsMuxeRVideo extends Player {
 			if (
 				filename.toLowerCase().endsWith(".flac") &&
 				media.getFirstAudioTrack().getBitsPerSample() >= 24 &&
-				media.getFirstAudioTrack().getSampleFrequency() % 48000 == 0
+				media.getFirstAudioTrack().getSampleRate() % 48000 == 0
 			) {
 				ffAudioPipe = new PipeIPCProcess[1];
 				ffAudioPipe[0] = new PipeIPCProcess(System.currentTimeMillis() + "flacaudio", System.currentTimeMillis() + "audioout", false, true);

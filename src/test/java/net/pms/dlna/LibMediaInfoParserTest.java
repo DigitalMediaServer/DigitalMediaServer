@@ -89,9 +89,9 @@ public class LibMediaInfoParserTest {
 
 	@Test
 	public void testGetSampleFrequency() throws Exception {
-		assertThat(LibMediaInfoParser.parseSamplingRate("44100")).isEqualTo(44100);
-		assertThat(LibMediaInfoParser.parseSamplingRate("24000khz")).isEqualTo(24000);
-		assertThat(LibMediaInfoParser.parseSamplingRate("48000 / 44100")).isEqualTo(48000);
+		assertThat(LibMediaInfoParser.parseSampleRate("44100")).isEqualTo(44100);
+		assertThat(LibMediaInfoParser.parseSampleRate("24000khz")).isEqualTo(24000);
+		assertThat(LibMediaInfoParser.parseSampleRate("48000 / 44100")).isEqualTo(48000);
 	}
 
 	@Test

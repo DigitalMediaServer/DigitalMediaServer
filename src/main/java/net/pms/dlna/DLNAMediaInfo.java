@@ -791,7 +791,7 @@ public class DLNAMediaInfo implements Cloneable {
 								audio.setBitsPerSample(24);
 							}
 
-							audio.setSampleFrequency(rate);
+							audio.setSampleRate(rate);
 							durationSec = Integer.valueOf(length).doubleValue();
 							bitRate = (int) ah.getBitRateAsNumber();
 
@@ -1195,9 +1195,9 @@ public class DLNAMediaInfo implements Cloneable {
 								audio.setCodecA(token.substring(token.indexOf("Audio: ") + 7));
 							} else if (token.endsWith("Hz")) {
 								try {
-									audio.setSampleFrequency(Integer.parseInt(token.substring(0, token.indexOf("Hz")).trim()));
+									audio.setSampleRate(Integer.parseInt(token.substring(0, token.indexOf("Hz")).trim()));
 								} catch (NumberFormatException e) {
-									LOGGER.warn("Can't parse the sample rate from \"{}\"", token);
+									LOGGER.warn("Could not parse sample rate \"{}\"", token.substring(0, token.indexOf("Hz")).trim());
 								}
 							} else if (token.equals("mono")) {
 								audio.setNumberOfChannels(1);
@@ -1650,7 +1650,7 @@ public class DLNAMediaInfo implements Cloneable {
 			}
 		}
 
-		if (getFirstAudioTrack() == null || !(type == Format.AUDIO && getFirstAudioTrack().getBitsPerSample() == 24 && getFirstAudioTrack().getSampleFrequency() > 48000)) {
+		if (getFirstAudioTrack() == null || !(type == Format.AUDIO && getFirstAudioTrack().getBitsPerSample() == 24 && getFirstAudioTrack().getSampleRate() > 48000)) {
 			secondaryFormatValid = false;
 		}
 
@@ -2134,7 +2134,7 @@ public class DLNAMediaInfo implements Cloneable {
 		DLNAMediaInfo mediaCloned = (DLNAMediaInfo) super.clone();
 		mediaCloned.setAudioTracks(new ArrayList<DLNAMediaAudio>());
 		for (DLNAMediaAudio audio : audioTracks) {
-			mediaCloned.getAudioTracks().add((DLNAMediaAudio) audio.clone());
+			mediaCloned.getAudioTracks().add(audio.clone());
 		}
 
 		mediaCloned.setSubtitleTracks(new ArrayList<DLNAMediaSubtitle>());

@@ -23,6 +23,7 @@ import static org.assertj.core.api.Assertions.*;
 import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.LoggerFactory;
+import net.pms.dlna.DLNAMediaAudio;
 
 public class AudioPropertiesTest {
 	private AudioProperties properties;
