@@ -31,7 +31,7 @@ import net.pms.configuration.PmsConfiguration;
 import net.pms.formats.Format;
 import net.pms.formats.v2.SubtitleType;
 import net.pms.image.ImageInfo;
-import net.pms.util.BitRateMode;
+import net.pms.util.BitRate;
 import net.pms.util.Rational;
 import org.apache.commons.io.FileUtils;
 import static org.apache.commons.lang3.StringUtils.*;
@@ -243,7 +243,7 @@ public class DLNAMediaDatabase implements Runnable {
 				sb.append(", MODIFIED                TIMESTAMP        NOT NULL");
 				sb.append(", TYPE                    INT");
 				sb.append(", DURATION                DOUBLE");
-				sb.append(", BITRATE                 INT");
+				sb.append(", BITRATE                 OTHER");
 				sb.append(", WIDTH                   INT");
 				sb.append(", HEIGHT                  INT");
 				sb.append(", SIZE                    NUMERIC");
@@ -269,6 +269,7 @@ public class DLNAMediaDatabase implements Runnable {
 				sb.append(", PIXELASPECTRATIO        OTHER");
 				sb.append(", SCANTYPE                OTHER");
 				sb.append(", SCANORDER               OTHER");
+				sb.append(", TRUNCATED               BOOLEAN");
 				sb.append(", constraint PK1 primary key (FILENAME, MODIFIED, ID))");
 				if (trace) {
 					LOGGER.trace("Creating table FILES with:\n\n{}\n", sb.toString());
@@ -281,7 +282,7 @@ public class DLNAMediaDatabase implements Runnable {
 				sb.append(", ID                INT              NOT NULL");
 				sb.append(", LANG              VARCHAR2(").append(SIZE_LANG).append(')');
 				sb.append(", TITLE             VARCHAR2(").append(SIZE_TITLE).append(')');
-				sb.append(", NUMBEROFCHANNELS   OTHER");
+				sb.append(", NUMBEROFCHANNELS  OTHER");
 				sb.append(", SAMPLERATE        OTHER");
 				sb.append(", CODECA            VARCHAR2(").append(SIZE_CODECA).append(')');
 				sb.append(", BITSPERSAMPLE     INT");
@@ -294,7 +295,6 @@ public class DLNAMediaDatabase implements Runnable {
 				sb.append(", DELAY             INT");
 				sb.append(", MUXINGMODE        VARCHAR2(").append(SIZE_MUXINGMODE).append(')');
 				sb.append(", BITRATE           OTHER");
-				sb.append(", BITRATEMODE       OTHER");
 				sb.append(", constraint PKAUDIO primary key (FILEID, ID))");
 				if (trace) {
 					LOGGER.trace("Creating table AUDIOTRACKS with:\n\n{}\n", sb.toString());
@@ -427,7 +427,7 @@ public class DLNAMediaDatabase implements Runnable {
 					DLNAMediaInfo media = new DLNAMediaInfo();
 					int id = rs.getInt("ID");
 					media.setDuration(toDouble(rs, "DURATION"));
-					media.setBitrate(rs.getInt("BITRATE"));
+					media.setBitRates((BitRate[]) rs.getObject("BITRATE"));
 					media.setWidth(rs.getInt("WIDTH"));
 					media.setHeight(rs.getInt("HEIGHT"));
 					media.setSize(rs.getLong("SIZE"));
@@ -453,6 +453,7 @@ public class DLNAMediaDatabase implements Runnable {
 					media.setPixelAspectRatio((Rational) rs.getObject("PIXELASPECTRATIO"));
 					media.setScanType((DLNAMediaInfo.ScanType) rs.getObject("SCANTYPE"));
 					media.setScanOrder((DLNAMediaInfo.ScanOrder) rs.getObject("SCANORDER"));
+					media.setTruncated(rs.getBoolean("TRUNCATED"));
 					media.setMediaparsed(true);
 
 					audios.setInt(1, id);
@@ -474,8 +475,7 @@ public class DLNAMediaDatabase implements Runnable {
 							audio.setTrack(elements.getInt("TRACK"));
 							audio.setDelay(elements.getInt("DELAY"));
 							audio.setMuxingModeAudio(elements.getString("MUXINGMODE"));
-							audio.setBitRate(elements.getInt("BITRATE")); //TODO: (Nad) Bitrate array
-							audio.setBitRateModes((BitRateMode[]) elements.getObject("BITRATEMODE"));
+							audio.setBitRates((BitRate[]) elements.getObject("BITRATE"));
 							media.getAudioTracks().add(audio);
 						}
 					}
@@ -573,7 +573,7 @@ public class DLNAMediaDatabase implements Runnable {
 				"SELECT " +
 					"FILEID, ID, LANG, TITLE, NUMBEROFCHANNELS, SAMPLERATE, CODECA, " +
 					"BITSPERSAMPLE, ALBUM, ARTIST, SONGNAME, GENRE, YEAR, TRACK, " +
-					"DELAY, MUXINGMODE, BITRATE, BITRATEMODE " +
+					"DELAY, MUXINGMODE, BITRATE " +
 				"FROM AUDIOTRACKS " +
 				"WHERE " +
 					"FILEID = ? AND ID = ?",
@@ -583,9 +583,9 @@ public class DLNAMediaDatabase implements Runnable {
 			PreparedStatement insertStatement = connection.prepareStatement(
 				"INSERT INTO AUDIOTRACKS (" +
 					"FILEID, ID, LANG, TITLE, NUMBEROFCHANNELS, SAMPLERATE, CODECA, BITSPERSAMPLE, " +
-					"ALBUM, ARTIST, SONGNAME, GENRE, YEAR, TRACK, DELAY, MUXINGMODE, BITRATE, BITRATEMODE" +
+					"ALBUM, ARTIST, SONGNAME, GENRE, YEAR, TRACK, DELAY, MUXINGMODE, BITRATE" +
 				") VALUES (" +
-					"?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?" +
+					"?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?" +
 				")"
 			);
 		) {
@@ -620,11 +620,10 @@ public class DLNAMediaDatabase implements Runnable {
 						rs.updateInt("TRACK", audioTrack.getTrack());
 						rs.updateInt("DELAY", audioTrack.getDelay());
 						rs.updateString("MUXINGMODE", left(trimToEmpty(audioTrack.getMuxingModeAudio()), SIZE_MUXINGMODE));
-						rs.updateInt("BITRATE", audioTrack.getBitRate());
-						if (audioTrack.getBitRateModes() != null) {
-							rs.updateObject("BITRATEMODE", audioTrack.getBitRateModes());
+						if (audioTrack.getBitRates(false) != null) {
+							rs.updateObject("BITRATE", audioTrack.getBitRates(false));
 						} else {
-							rs.updateNull("BITRATEMODE");
+							rs.updateNull("BITRATE");
 						}
 						rs.updateRow();
 					} else {
@@ -657,11 +656,10 @@ public class DLNAMediaDatabase implements Runnable {
 						insertStatement.setInt(14, audioTrack.getTrack());
 						insertStatement.setInt(15, audioTrack.getDelay());
 						insertStatement.setString(16, left(trimToEmpty(audioTrack.getMuxingModeAudio()), SIZE_MUXINGMODE));
-						insertStatement.setInt(17, audioTrack.getBitRate());
-						if (audioTrack.getBitRateModes() != null) {
-							insertStatement.setObject(18, audioTrack.getBitRateModes());
+						if (audioTrack.getBitRates(false) != null) {
+							insertStatement.setObject(17, audioTrack.getBitRates(false));
 						} else {
-							insertStatement.setNull(18, Types.OTHER);
+							insertStatement.setNull(17, Types.OTHER);
 						}
 						insertStatement.executeUpdate();
 					}
@@ -710,7 +708,7 @@ public class DLNAMediaDatabase implements Runnable {
 					"ID, FILENAME, MODIFIED, TYPE, DURATION, BITRATE, WIDTH, HEIGHT, SIZE, CODECV, FRAMERATE, " +
 					"ASPECTRATIODVD, ASPECTRATIOCONTAINER, ASPECTRATIOVIDEOTRACK, REFRAMES, AVCLEVEL, IMAGEINFO, " +
 					"THUMB, CONTAINER, MUXINGMODE, FRAMERATEMODE, STEREOSCOPY, MATRIXCOEFFICIENTS, TITLECONTAINER, " +
-					"TITLEVIDEOTRACK, VIDEOTRACKCOUNT, IMAGECOUNT, BITDEPTH, PIXELASPECTRATIO, SCANTYPE, SCANORDER " +
+					"TITLEVIDEOTRACK, VIDEOTRACKCOUNT, IMAGECOUNT, BITDEPTH, PIXELASPECTRATIO, SCANTYPE, SCANORDER, TRUNCATED " +
 				"FROM FILES " +
 				"WHERE " +
 					"FILENAME = ?",
@@ -730,13 +728,10 @@ public class DLNAMediaDatabase implements Runnable {
 								rs.updateNull("DURATION");
 							}
 
-							if (type != Format.IMAGE) {
-								if (media.getBitrate() == 0) {
-									LOGGER.debug("Could not parse the bitrate for: " + name);
-								}
-								rs.updateInt("BITRATE", media.getBitrate());
+							if (type == Format.IMAGE || media.getBitRates() == null) {
+								rs.updateNull("BITRATE");
 							} else {
-								rs.updateInt("BITRATE", 0);
+								rs.updateObject("BITRATE", media.getBitRates());
 							}
 							rs.updateInt("WIDTH", media.getWidth());
 							rs.updateInt("HEIGHT", media.getHeight());
@@ -763,6 +758,7 @@ public class DLNAMediaDatabase implements Runnable {
 							updateSerialized(rs, media.getPixelAspectRatio(), "PIXELASPECTRATIO");
 							updateSerialized(rs, media.getScanType(), "SCANTYPE");
 							updateSerialized(rs, media.getScanOrder(), "SCANORDER");
+							rs.updateBoolean("TRUNCATED", media.isTruncated());
 						}
 						rs.updateRow();
 					}
@@ -775,8 +771,8 @@ public class DLNAMediaDatabase implements Runnable {
 						"INSERT INTO FILES (FILENAME, MODIFIED, TYPE, DURATION, BITRATE, WIDTH, HEIGHT, SIZE, CODECV, " +
 						"FRAMERATE, ASPECTRATIODVD, ASPECTRATIOCONTAINER, ASPECTRATIOVIDEOTRACK, REFRAMES, AVCLEVEL, IMAGEINFO, " +
 						"THUMB, CONTAINER, MUXINGMODE, FRAMERATEMODE, STEREOSCOPY, MATRIXCOEFFICIENTS, TITLECONTAINER, " +
-						"TITLEVIDEOTRACK, VIDEOTRACKCOUNT, IMAGECOUNT, BITDEPTH, PIXELASPECTRATIO, SCANTYPE, SCANORDER) VALUES " +
-						"(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+						"TITLEVIDEOTRACK, VIDEOTRACKCOUNT, IMAGECOUNT, BITDEPTH, PIXELASPECTRATIO, SCANTYPE, SCANORDER, TRUNCATED) VALUES " +
+						"(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
 				) {
 					ps.setString(1, name);
 					ps.setTimestamp(2, new Timestamp(modified));
@@ -788,14 +784,11 @@ public class DLNAMediaDatabase implements Runnable {
 							ps.setNull(4, Types.DOUBLE);
 						}
 
-						int databaseBitrate = 0;
-						if (type != Format.IMAGE) {
-							databaseBitrate = media.getBitrate();
-							if (databaseBitrate == 0) {
-								LOGGER.debug("Could not parse the bitrate for: " + name);
-							}
+						if (type == Format.IMAGE || media.getBitRates() == null) {
+							ps.setNull(5, Types.OTHER);
+						} else {
+							ps.setObject(5, media.getBitRates());
 						}
-						ps.setInt(5, databaseBitrate);
 
 						ps.setInt(6, media.getWidth());
 						ps.setInt(7, media.getHeight());
@@ -822,6 +815,7 @@ public class DLNAMediaDatabase implements Runnable {
 						insertSerialized(ps, media.getPixelAspectRatio(), 28);
 						insertSerialized(ps, media.getScanType(), 29);
 						insertSerialized(ps, media.getScanOrder(), 30);
+						ps.setBoolean(31, media.isTruncated());
 					} else {
 						ps.setString(4, null);
 						ps.setInt(5, 0);
@@ -850,6 +844,7 @@ public class DLNAMediaDatabase implements Runnable {
 						ps.setNull(28, Types.OTHER);
 						ps.setNull(29, Types.OTHER);
 						ps.setNull(30, Types.OTHER);
+						ps.setBoolean(31, false);
 					}
 					ps.executeUpdate();
 					try (ResultSet rs = ps.getGeneratedKeys()) {
