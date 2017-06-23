@@ -46,6 +46,8 @@ import net.pms.image.ImagesUtil.ScaleType;
 import net.pms.io.OutputParams;
 import net.pms.io.ProcessWrapperImpl;
 import net.pms.network.HTTPResource;
+import net.pms.util.BitRate;
+import net.pms.util.BitRateMode;
 import net.pms.util.CoverSupplier;
 import net.pms.util.CoverUtil;
 import net.pms.util.FileUtil;
@@ -132,8 +134,7 @@ public class DLNAMediaInfo implements Cloneable {
 
 	private int bitRate;
 
-	@Nullable
-	private RateMode bitRateMode;
+	private BitRate[] bitRates;
 
 	/**
 	 * @deprecated Use standard getter and setter to access this variable.
@@ -793,7 +794,7 @@ public class DLNAMediaInfo implements Cloneable {
 
 							audio.setSampleRate(rate);
 							durationSec = Integer.valueOf(length).doubleValue();
-							bitRate = (int) ah.getBitRateAsNumber();
+							bitRate = (int) ah.getBitRateAsNumber(); //TODO: (Nad) Parse bitrate correctly
 
 							String channels = ah.getChannels().trim().toLowerCase(Locale.ROOT);
 							if (StringUtils.isNotBlank(channels)) {
@@ -1155,7 +1156,7 @@ public class DLNAMediaInfo implements Cloneable {
 								if (spacepos > -1) {
 									String value = bitr.substring(0, spacepos);
 									String unit = bitr.substring(spacepos + 1);
-									bitRate = Integer.parseInt(value);
+									bitRate = Integer.parseInt(value); //TODO: (Nad) Parse bitrate correctly
 									if (unit.equals("kb/s")) {
 										bitRate = 1024 * bitRate;
 									}
@@ -2017,14 +2018,49 @@ public class DLNAMediaInfo implements Cloneable {
 		return null;
 	}
 
-	public int getRealVideoBitRate() {
-		if (bitRate > 0) {
-			return (bitRate / 8);
+	/**
+	 * Gets the value to use for {@code res@bitRate} in the {@code DIDL-Lite}
+	 * document.
+	 * <p>
+	 * If a bitrate value exists, this is returned in bytes/second. If not, the
+	 * average bitrate is calculated using file size and duration if they exist.
+	 * If not, the arbitrary number {@code 10000000} is returned, which does not
+	 * comply with the DLNA standard which dictates that when the bitrate is
+	 * unknown the highest allowed bitrate for the current media format profile
+	 * should be returned. As DLNA media profiles aren't properly implemented,
+	 * this isn't possible.
+	 * <p>
+	 * <b>Note:</b> The expected value is actually {@code bytes/second} despite
+	 * the name, as defined in {@code UPnP-av-ContentDirectory B.2.1.6}:
+	 *
+	 * <pre>
+	 * <b>res@bitrate</b> Namespace: {@code DIDL-Lite}
+	 * Property Data Type: {@code xsd:unsignedInt} Multi-Valued: {@code NO}
+	 *
+	 * Description: The res@bitrate property indicates the bitrate in
+	 * <b>bytes/second</b> of the encoding of the resource.
+	 *
+	 * Note that there exists an <b>inconsistency with a res@bitrate property
+	 * name and its value being expressed in bytes/sec</b>.
+	 *
+	 * In case the resource has been encoded using variable bitrate (VBR), it
+	 * is recommended that the res@bitrate value represents the average bitrate,
+	 * calculated over the entire duration of the resource (total number of
+	 * bytes divided by the total duration of the resource).
+	 * </pre>
+	 *
+	 * @return The value to use for {@code res@bitRate} in the {@code DIDL-Lite}
+	 *         document.
+	 */
+	public int gitDIDLBitRate() {
+		BitRate bitRate = getBitRate();
+		if (bitRate.isConstant()) {
+			return bitRate.getDIDLBitRate();
 		}
 
 		int realBitRate = 10000000;
 
-		if (getDurationInSeconds() > 0) {
+		if (getDurationInSeconds() > 0 && size > 0) {
 			realBitRate = (int) (size / getDurationInSeconds());
 		}
 
@@ -2146,38 +2182,118 @@ public class DLNAMediaInfo implements Cloneable {
 	}
 
 	/**
-	 * Returns the bitrate for this media.
-	 *
-	 * @return The bitrate.
+	 * @return Whether bitrate is an actual value or just a default.
+	 */
+	public boolean isBitRateKnown() {
+		if (bitRates == null) {
+			return false;
+		}
+		for (BitRate bitRate : bitRates) {
+			if (bitRate != null && !bitRate.isUnknown()) {
+				return true;
+			}
+		}
+		return bitrate > 0;
+	}
+
+	/**
+	 * @return The constant bitrate - return {@code 0} for variable or unknown bitrate.
 	 * @since 1.50.0
+	 * @deprecated Use {@link #getBitRate()} instead.
 	 */
-	public int getBitRate() {
-		return bitRate;
+	@Deprecated
+	public int getBitrate() { //TODO: (Nad) Remove
+		BitRate bitRate = getBitRate();
+		if (bitRate != null && bitRate.isConstant()) {
+			return bitRate.getBitRateValue();
+		}
+		return 0;
 	}
 
 	/**
-	 * @param bitRate the bitrate to set.
-	 * @since 1.50.0
-	 */
-	public void setBitRate(int bitRate) {
-		this.bitRate = bitRate; //TODO: (Nad) Check
-	}
-
-	/**
-	 * @return the bitrate mode.
-	 */
-	@Nullable
-	public RateMode getBitRateMode() {
-		return bitRateMode;
-	}
-
-	/**
-	 * Sets the bitrate mode.
+	 * Gets the array of bit rates, with the "base" layer at index 0.
 	 *
-	 * @param bitRateMode the bitrate mode to set.
+	 * @return The array of bit rates or an array containing only
+	 *         {@link #BITRATE_DEFAULT} if unknown.
 	 */
-	public void setBitRateMode(@Nullable RateMode bitRateMode) {
-		this.bitRateMode = bitRateMode;
+	public BitRate[] getBitRates() {
+		if (bitRates != null && bitRates.length > 0) {
+			BitRate[] result = new BitRate[bitRates.length];
+			System.arraycopy(bitRates, 0, result, 0, bitRates.length);
+			return result;
+		}
+		// Backwards compatibility
+		if (bitrate > 0) {
+			return new BitRate[] {new BitRate(BitRateMode.CONSTANT, bitrate, null)};
+		}
+		return new BitRate[0];
+	}
+
+	/**
+	 * If known, returns the "highest" {@link BitRate}, otherwise {@code null}.
+	 * The "highest" bitrate is defined such that a variable bitrate is always
+	 * "higher" than a constant bitrate, while constant bitrates are compared by
+	 * bitrate value.
+	 *
+	 * @return The {@link BitRate} or {@code null} if unknown.
+	 * @since 6.7.2
+	 */
+	public BitRate getBitRate() {
+		if (bitRates != null && bitRates.length > 0) {
+			BitRate highest = null;
+			for (BitRate bitRate : bitRates) {
+				if (bitRate != null && !bitRate.isUnknown()) {
+					if (bitRate.isVariable(false)) {
+						return bitRate;
+					}
+					if (bitRate.isConstant() && (highest == null || bitRate.compareTo(highest) > 0)) {
+						highest = bitRate;
+					}
+				}
+			}
+			if (highest != null && !highest.isUnknown()) {
+				return highest;
+			}
+		}
+		// Backwards compatibility
+		return bitrate > 0 ? new BitRate(BitRateMode.CONSTANT, bitrate, null) : null;
+	}
+
+	/**
+	 * @param bitrate the constant the bitrate to set.
+	 * @since 1.50.0
+	 * @deprecated Use {@link #setBitRate(BitRate)} instead.
+	 */
+	@Deprecated
+	public void setBitrate(int bitrate) { //TODO: (Nad) Remove
+		setBitRate(new BitRate(BitRateMode.CONSTANT, bitrate, null));
+	}
+
+	/**
+	 * Sets the overall media {@link BitRate}.
+	 *
+	 * @param bitRate the overall media {@link BitRate} to set.
+	 * @since 6.7.2
+	 */
+	public void setBitRate(BitRate bitRate) {
+		this.bitRates = new BitRate[] {bitRate};
+	}
+
+	/**
+	 * Sets an array of overall media {@link BitRate}s.
+	 *
+	 * @param bitRates the array of {@link BitRate}s to set, use {@code null} or
+	 *            an empty array if unknown.
+	 */
+	public void setBitRates(BitRate[] bitRates) {
+		if (bitRates == null && this.bitRates != null) {
+			this.bitRates = null;
+		} else if (bitRates != null) {
+			if (this.bitRates == null || this.bitRates.length != bitRates.length) {
+				this.bitRates = new BitRate[bitRates.length];
+			}
+			System.arraycopy(bitRates, 0, this.bitRates, 0, bitRates.length);
+		}
 	}
 
 	/**
