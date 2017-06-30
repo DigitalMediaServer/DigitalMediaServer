@@ -193,9 +193,8 @@ public class SevenZipEntry extends DLNAResource implements IPushOutput {
 	public DLNAThumbnailInputStream getThumbnailInputStream() throws IOException {
 		if (getMedia() != null && getMedia().getThumb() != null) {
 			return getMedia().getThumbnailInputStream();
-		} else {
-			return super.getThumbnailInputStream();
 		}
+		return super.getThumbnailInputStream();
 	}
 
 	@Override

@@ -1231,7 +1231,7 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 	}
 
 	protected void refreshChildrenIfNeeded(String search) {
-		if (isDiscovered() && shouldRefresh(search)) {
+		if (isDiscovered() && shouldRefresh()) {
 			refreshChildren(search);
 			notifyRefresh();
 		}
@@ -1290,7 +1290,7 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 				}
 			} else {
 				// if not, then the regular isRefreshNeeded/doRefreshChildren pair.
-				if (shouldRefresh(searchStr)) {
+				if (shouldRefresh()) {
 					doRefreshChildren(searchStr);
 					notifyRefresh();
 				}
@@ -1298,7 +1298,7 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 		}
 	}
 
-	private boolean shouldRefresh(String searchStr) {
+	private boolean shouldRefresh() {
 		return isRefreshNeeded();
 	}
 
@@ -1326,8 +1326,24 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 	 * @param searchStr
 	 * @return Item found, or null otherwise.
 	 * @see #getId()
+	 * @deprecated Use {@link #search(String, int, RendererConfiguration)} instead.
 	 */
+	@Deprecated
 	public DLNAResource search(String searchId, int count, RendererConfiguration renderer, String searchStr) {
+		return search(searchId, count, renderer);
+	}
+
+	/**
+	 * Recursive function that searches for a given ID.
+	 *
+	 * @param searchId ID to search for.
+	 * @param count
+	 * @param renderer
+	 * @param searchStr
+	 * @return Item found, or null otherwise.
+	 * @see #getId()
+	 */
+	public DLNAResource search(String searchId, int count, RendererConfiguration renderer) {
 		if (id != null && searchId != null) {
 			String[] indexPath = searchId.split("\\$", 2);
 			if (id.equals(indexPath[0])) {
@@ -1337,7 +1353,7 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 				discoverWithRenderer(renderer, count, false, null);
 
 				for (DLNAResource file : children) {
-					DLNAResource found = file.search(indexPath[1], count, renderer, null);
+					DLNAResource found = file.search(indexPath[1], count, renderer);
 					if (found != null) {
 						// Make sure it's ready
 						//found.resolve();
@@ -1352,7 +1368,7 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 		return null;
 	}
 
-	private DLNAResource search(String[] searchIds, RendererConfiguration renderer) {
+	private static DLNAResource search(String[] searchIds, RendererConfiguration renderer) {
 		DLNAResource dlna;
 		for (String searchId : searchIds) {
 			if (searchId.equals("0")) {
@@ -1446,7 +1462,7 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 	}
 
 	public boolean refreshChildren(String search) {
-		if (shouldRefresh(search)) {
+		if (shouldRefresh()) {
 			doRefreshChildren(search);
 			return true;
 		}
@@ -1706,8 +1722,7 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 		sb.append("/get/").append(getResourceId()).append("/thumbnail0000");
 		if (profile != null) {
 			if (DLNAImageProfile.JPEG_RES_H_V.equals(profile)) {
-				sb.append("JPEG_RES").append(profile.getH()).append("x");
-				sb.append(profile.getV()).append("_");
+				sb.append("JPEG_RES").append(profile.getH()).append("x").append(profile.getV()).append("_");
 			} else {
 				sb.append(profile).append("_");
 			}
@@ -2985,7 +3000,7 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 			url = getURL(
 				(DLNAImageProfile.JPEG_RES_H_V.equals(resElement.getProfile()) ?
 					"JPEG_RES" + resElement.getWidth() + "x" + resElement.getHeight() :
-					resElement.getProfile().toString()
+					resElement.getProfile().getValue()
 				) + "_"
 			);
 		}
@@ -4501,7 +4516,7 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 			type == Format.IMAGE ? new FeedItem(name, uri, null, null, Format.IMAGE) : null
 			:
 			new RealFile(new File(uri));
-		if (format == null && !isweb) {
+		if (format == null && !isweb && resource != null) {
 			resource.setFormat(FormatFactory.getAssociatedFormat(".mpg"));
 		}
 
