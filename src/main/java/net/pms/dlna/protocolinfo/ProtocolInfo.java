@@ -78,6 +78,9 @@ public class ProtocolInfo implements Comparable<ProtocolInfo>, Serializable {
 	/** The cached string representation. */
 	protected final String stringValue;
 
+	/** The cached DLNA flag */
+	protected final boolean isDLNA;
+
 	/**
 	 * Creates a new instance by parsing a {@code ProtocolInfo} string.
 	 *
@@ -115,6 +118,7 @@ public class ProtocolInfo implements Comparable<ProtocolInfo>, Serializable {
 		attributes = Collections.unmodifiableSortedMap(parseAdditionalInfo());
 		attributesString = generateAttributesString();
 		stringValue = generateStringValue();
+		isDLNA = getDLNAProfileName() != null;
 	}
 
 	/**
@@ -136,6 +140,7 @@ public class ProtocolInfo implements Comparable<ProtocolInfo>, Serializable {
 		this.attributes = Collections.unmodifiableSortedMap(parseAdditionalInfo());
 		this.attributesString = generateAttributesString();
 		this.stringValue = generateStringValue();
+		isDLNA = getDLNAProfileName() != null;
 	}
 
 	/**
@@ -157,6 +162,7 @@ public class ProtocolInfo implements Comparable<ProtocolInfo>, Serializable {
 		this.attributes = Collections.unmodifiableSortedMap(parseAdditionalInfo());
 		this.attributesString = generateAttributesString();
 		this.stringValue = generateStringValue();
+		isDLNA = getDLNAProfileName() != null;
 	}
 
 	/**
@@ -186,6 +192,7 @@ public class ProtocolInfo implements Comparable<ProtocolInfo>, Serializable {
 		this.attributesString = generateAttributesString();
 		this.additionalInfo = this.attributesString;
 		this.stringValue = generateStringValue();
+		isDLNA = getDLNAProfileName() != null;
 	}
 
 	/**
@@ -215,6 +222,7 @@ public class ProtocolInfo implements Comparable<ProtocolInfo>, Serializable {
 		this.attributesString = generateAttributesString();
 		this.additionalInfo = this.attributesString;
 		this.stringValue = generateStringValue();
+		isDLNA = getDLNAProfileName() != null;
 	}
 
 	/**
@@ -242,6 +250,7 @@ public class ProtocolInfo implements Comparable<ProtocolInfo>, Serializable {
 		this.attributesString = generateAttributesString();
 		this.additionalInfo = this.attributesString;
 		this.stringValue = generateStringValue();
+		isDLNA = getDLNAProfileName() != null;
 	}
 
 	/**
@@ -269,6 +278,7 @@ public class ProtocolInfo implements Comparable<ProtocolInfo>, Serializable {
 		this.attributesString = generateAttributesString();
 		this.additionalInfo = this.attributesString;
 		this.stringValue = generateStringValue();
+		isDLNA = getDLNAProfileName() != null;
 	}
 
 	/**
@@ -288,6 +298,7 @@ public class ProtocolInfo implements Comparable<ProtocolInfo>, Serializable {
 		this.attributesString = generateAttributesString();
 		this.additionalInfo = this.attributesString;
 		this.stringValue = generateStringValue();
+		isDLNA = getDLNAProfileName() != null;
 	}
 
 	/**
@@ -315,6 +326,7 @@ public class ProtocolInfo implements Comparable<ProtocolInfo>, Serializable {
 		this.attributesString = generateAttributesString();
 		this.additionalInfo = this.attributesString;
 		this.stringValue = generateStringValue();
+		isDLNA = getDLNAProfileName() != null;
 	}
 
 	/**
@@ -421,7 +433,7 @@ public class ProtocolInfo implements Comparable<ProtocolInfo>, Serializable {
 	 * @return {@code true} if this instance is DLNA, {@code false} otherwise.
 	 */
 	public boolean isDLNA() {
-		return getDLNAProfileName() != null;
+		return isDLNA;
 	}
 
 	/**
