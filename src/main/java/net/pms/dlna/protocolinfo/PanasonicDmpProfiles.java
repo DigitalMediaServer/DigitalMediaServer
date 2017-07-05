@@ -62,7 +62,7 @@ public class PanasonicDmpProfiles implements Serializable {
 	private static final Logger LOGGER = LoggerFactory.getLogger(PanasonicDmpProfiles.class);
 
 	/** The static singleton {@code X-PANASONIC-DMP-Profile} identifier */
-	public static final DeviceProtocolInfoSource<PanasonicDmpProfiles> PANASONIC_DMP = new PanasonicDmpProfileType();
+	public static final DeviceProtocolInfoOrigin<PanasonicDmpProfiles> PANASONIC_DMP = new PanasonicDmpProfileType();
 
 	/** The populated status */
 	protected volatile boolean populated;
@@ -495,12 +495,12 @@ public class PanasonicDmpProfiles implements Serializable {
 	}
 
 	/**
-	 * This is an implementation of {@link DeviceProtocolInfoSource} where
+	 * This is an implementation of {@link DeviceProtocolInfoOrigin} where
 	 * {@link PanasonicDmpProfiles} is the parsing class.
 	 *
 	 * @author Nadahar
 	 */
-	public static class PanasonicDmpProfileType extends DeviceProtocolInfoSource<PanasonicDmpProfiles> {
+	public static class PanasonicDmpProfileType extends DeviceProtocolInfoOrigin<PanasonicDmpProfiles> {
 
 		private static final long serialVersionUID = 1L;
 
@@ -517,8 +517,13 @@ public class PanasonicDmpProfiles implements Serializable {
 		}
 
 		@Override
-		public String getType() {
+		public String getOrigin() {
 			return "X-PANASONIC-DMP-Profile";
+		}
+
+		@Override
+		public ProtocolInfoType getType() {
+			return ProtocolInfoType.SINK;
 		}
 	}
 
