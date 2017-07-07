@@ -37,12 +37,10 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
  *
  * @author Nadahar
  */
-public class DLNAImageResElement {
-	//private final DLNAImageProfile profile;
-	//private final Integer ciFlag;
+public class DLNAImageResElement extends UPnPImageResElement {
+
+	private static final long serialVersionUID = 1L;
 	protected final ProtocolInfo protocolInfo;
-	//TODO: (Nad) desc
-	private final boolean thumbnail;
 	private final HypotheticalResult hypotheticalResult;
 
 	/**
@@ -55,7 +53,7 @@ public class DLNAImageResElement {
 	 * @param thumbnail whether the source for this {@code <res>} element is a
 	 *            thumbnail.
 	 *
-	 * @see #isThumbnail()
+	 * @see #isThumbnailSource()
 	 */
 	public DLNAImageResElement(ProtocolInfo protocolInfo, ImageInfo imageInfo, boolean thumbnail) {
 		this(protocolInfo, imageInfo, thumbnail, null);
@@ -74,7 +72,7 @@ public class DLNAImageResElement {
 	 *            element. Pass {@code null} for automatic setting of the CI
 	 *            flag.
 	 *
-	 * @see #isThumbnail()
+	 * @see #isThumbnailSource()
 	 */
 	public DLNAImageResElement(ProtocolInfo protocolInfo, ImageInfo imageInfo, boolean thumbnail, Integer overrideCIFlag) {
 		if (!(protocolInfo.getDLNAProfileName() instanceof DLNAImageProfile)) {
@@ -101,7 +99,22 @@ public class DLNAImageResElement {
 			}
 		}
 		this.protocolInfo = protocolInfo;
-		this.thumbnail = thumbnail;
+		this.thumbnailSource = thumbnail;
+	}
+
+	@Override
+	protected String getURL(DLNAResource resource, boolean isThumbnail) {
+		String result;
+		if (isThumbnail) {
+			result = resource.getThumbnailURL(resElement.getProfile());
+		} else {
+			result = resource.getURL(
+				(DLNAImageProfile.JPEG_RES_H_V.equals(resElement.getProfile()) ?
+					"JPEG_RES" + resElement.getWidth() + "x" + resElement.getHeight() :
+					resElement.getProfile().getValue()
+				) + "_"
+			);
+		}
 	}
 
 	/**
@@ -116,19 +129,6 @@ public class DLNAImageResElement {
 	 */
 	public DLNAOrgConversionIndicator getCiFlag() {
 		return protocolInfo.getDLNAConversionIndicator();
-	}
-
-	/**
-	 * Note: This can be confusing. This doesn't indicate whether the res
-	 * element is <b>used</b> as a thumbnail, but if the res element's source is
-	 * a thumbnail from DMS' point of view. For low resolution images (where the
-	 * resolution is equal or smaller than the cached thumbnail), the thumbnail
-	 * source can be used also for the image itself for increased performance.
-	 *
-	 * @return Whether this element has a thumbnail source.
-	 */
-	public boolean isThumbnail() {
-		return thumbnail;
 	}
 
 	/**
@@ -175,7 +175,7 @@ public class DLNAImageResElement {
 	public String toString() {
 		return "DLNAImageResElement [" +
 			"protocolInfo=" + protocolInfo +
-			", thumbnail=" + thumbnail +
+			", thumbnail=" + thumbnailSource +
 			", hypotheticalResult=" + hypotheticalResult +
 		"]";
 	}
@@ -186,12 +186,12 @@ public class DLNAImageResElement {
 		int result = 1;
 		result = prime * result + ((hypotheticalResult == null) ? 0 : hypotheticalResult.hashCode());
 		result = prime * result + ((protocolInfo == null) ? 0 : protocolInfo.hashCode());
-		result = prime * result + (thumbnail ? 1231 : 1237);
+		result = prime * result + (thumbnailSource ? 1231 : 1237);
 		return result;
 	}
 
 	@Override
-	public boolean equals(Object object) {
+	public boolean equals(Object object) { //TODO: (Nad) Update
 		if (this == object) {
 			return true;
 		}
@@ -216,7 +216,7 @@ public class DLNAImageResElement {
 		} else if (!protocolInfo.equals(other.protocolInfo)) {
 			return false;
 		}
-		if (thumbnail != other.thumbnail) {
+		if (thumbnailSource != other.thumbnailSource) {
 			return false;
 		}
 		return true;
@@ -280,8 +280,8 @@ public class DLNAImageResElement {
 					return -1;
 				}
 
-				if (o1.isThumbnail() != o2.isThumbnail()) {
-					return (o1.isThumbnail() ? 1 : 0) - (o2.isThumbnail() ? 1 : 0);
+				if (o1.isThumbnailSource() != o2.isThumbnailSource()) {
+					return (o1.isThumbnailSource() ? 1 : 0) - (o2.isThumbnailSource() ? 1 : 0);
 				}
 
 				int i =
@@ -430,7 +430,7 @@ public class DLNAImageResElement {
 			throw new IllegalArgumentException("Resolution cannot be unknown for DLNAImageProfile.JPEG_RES_H_V");
 		}
 		String url;
-		if (thumbnail) {
+		if (thumbnailSource) {
 			url = resource.getThumbnailURL(profile);
 		} else if (DLNAImageProfile.JPEG_RES_H_V.equals(profile)) {
 			url = resource.getURL("JPEG_RES" + getWidth() + "x" + getHeight() + "_");
