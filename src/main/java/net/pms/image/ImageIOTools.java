@@ -282,7 +282,7 @@ public class ImageIOTools {
 		}
 
 		while (iter.hasNext()) {
-			ImageInputStreamSpi spi = (ImageInputStreamSpi)iter.next();
+			ImageInputStreamSpi spi = iter.next();
 			if (spi.getInputClass().isInstance(input)) {
 				try {
 					return spi.createInputStreamInstance(input, false, null);

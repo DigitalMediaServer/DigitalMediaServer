@@ -200,7 +200,7 @@ public class Image implements Serializable {
 	 * @param inputStream the source image in a supported format.
 	 * @return The populated {@link Image} or {@code null} if the source image
 	 *         is {@code null}.
-	 * @throws IOException
+	 * @throws IOException if an error occurs during the operation.
 	 */
 	public static Image toImage(InputStream inputStream) throws IOException {
 		return toImage(inputStream, 0, 0, null, ImageFormat.SOURCE, false);
@@ -214,7 +214,7 @@ public class Image implements Serializable {
 	 * @param imageByteArray the source image in a supported format.
 	 * @return The populated {@link Image} or {@code null} if the source image
 	 *         is {@code null}.
-	 * @throws IOException
+	 * @throws IOException if an error occurs during the operation.
 	 */
 	public static Image toImage(byte[] imageByteArray) throws IOException {
 		return toImage(imageByteArray, 0, 0, null, ImageFormat.SOURCE, false);
@@ -235,7 +235,7 @@ public class Image implements Serializable {
 	 *            match target aspect.
 	 * @return The populated {@link Image} or {@code null} if the source image
 	 *         is {@code null}.
-	 * @throws IOException
+	 * @throws IOException if an error occurs during the operation.
 	 */
 	public static Image toImage(
 		Image inputImage,
@@ -275,7 +275,7 @@ public class Image implements Serializable {
 	 *            match target aspect.
 	 * @return The populated {@link Image} or {@code null} if the source image
 	 *         is {@code null}.
-	 * @throws IOException
+	 * @throws IOException if an error occurs during the operation.
 	 */
 	public static Image toImage(
 		InputStream inputStream,
@@ -312,7 +312,7 @@ public class Image implements Serializable {
 	 *            match target aspect.
 	 * @return The populated {@link Image} or {@code null} if the source image
 	 *         is {@code null}.
-	 * @throws IOException
+	 * @throws IOException if an error occurs during the operation.
 	 */
 	public static Image toImage(
 			byte[] imageByteArray,
@@ -357,7 +357,6 @@ public class Image implements Serializable {
 		int width,
 		int height,
 		ScaleType scaleType,
-		boolean updateMetadata,
 		boolean dlnaCompliant,
 		boolean dlnaThumbnail,
 		boolean padToSize
@@ -605,6 +604,7 @@ public class Image implements Serializable {
 	 *
 	 * @param sb the {@link StringBuilder} to add information to.
 	 */
+	@SuppressWarnings("unused")
 	protected void buildToString(StringBuilder sb) {
 	}
 
