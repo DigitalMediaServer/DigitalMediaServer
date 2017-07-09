@@ -1166,7 +1166,9 @@ public class DLNAImageProfile implements DLNAOrgProfileName, Comparable<DLNAImag
 	 * Immutable {@link #calculateHypotheticalProperties(ImageInfo)} data
 	 * structure. Please note that {@code size} might be {@code null}.
 	 */
-	public static class CalculatedImage {
+	public static class CalculatedImage implements Serializable {
+
+		private static final long serialVersionUID = 1L;
 		/**
 		 * The calculated width or {@link ImageInfo#UNKNOWN} if unknown.
 		 */
