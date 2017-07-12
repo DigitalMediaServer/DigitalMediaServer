@@ -1,1 +1,1 @@
-UMS sync with: 931f8da8ae9201560830477a1f40ccf6b01b524b 6.6.0 (Java 7)
+UMS sync with: 43fc326219ce10af3acb17746417bf11de400afe 6.7.0
