@@ -169,7 +169,7 @@ public class PluginTab {
 					if (!FileUtil.getFilePermissions(configuration.getPluginDirectory()).isWritable()) {
 						JOptionPane.showMessageDialog(
 							looksFrame,
-							Messages.getString("PluginTab.16") + (Platform.isWindows() ? "\n" + Messages.getString("AutoUpdate.13") : ""),
+							Messages.getString("PluginTab.16") + (Platform.isWindows() ? "\n" + Messages.getString("General.NeedAdmin") : ""),
 							Messages.getString("Dialog.PermissionsError"),
 							JOptionPane.ERROR_MESSAGE
 						);

@@ -30,8 +30,6 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.util.Observable;
-import java.util.Observer;
 import javax.swing.*;
 import javax.swing.border.Border;
 import javax.swing.border.EmptyBorder;
@@ -51,16 +49,13 @@ import net.pms.newgui.components.AnimatedIcon.AnimatedIconStage;
 import net.pms.newgui.components.AnimatedIcon.AnimatedIconType;
 import net.pms.newgui.components.JAnimatedButton;
 import net.pms.newgui.components.JImageButton;
-import net.pms.newgui.update.AutoUpdateDialog;
-import net.pms.update.AutoUpdater;
 import net.pms.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class LooksFrame extends JFrame implements IFrame, Observer {
+public class LooksFrame extends JFrame implements IFrame {
 	private static final Logger LOGGER = LoggerFactory.getLogger(LooksFrame.class);
 
-	private final AutoUpdater autoUpdater;
 	private final PmsConfiguration configuration;
 	public static final String START_SERVICE = "start.service";
 	private static final long serialVersionUID = 8723727186288427690L;
@@ -207,8 +202,7 @@ public class LooksFrame extends JFrame implements IFrame, Observer {
 	 * Constructs a <code>DemoFrame</code>, configures the UI,
 	 * and builds the content.
 	 */
-	public LooksFrame(AutoUpdater autoUpdater, PmsConfiguration configuration) {
-		this.autoUpdater = autoUpdater;
+	public LooksFrame(PmsConfiguration configuration) {
 		this.configuration = configuration;
 		assert this.configuration != null;
 		Options.setDefaultIconSize(new Dimension(18, 18));
@@ -228,12 +222,6 @@ public class LooksFrame extends JFrame implements IFrame, Observer {
 
 		// Swing Settings
 		initializeLookAndFeel();
-
-		// wait till the look and feel has been initialized before (possibly) displaying the update notification dialog
-		if (autoUpdater != null) {
-			autoUpdater.addObserver(this);
-			autoUpdater.pollServer();
-		}
 
 		// http://propedit.sourceforge.jp/propertieseditor.jnlp
 		Font sf = null;
@@ -653,29 +641,6 @@ public class LooksFrame extends JFrame implements IFrame, Observer {
 	@Override
 	public void addEngines() {
 		tr.addEngines();
-	}
-
-	// Fired on AutoUpdater state changes
-	@Override
-	public void update(Observable o, Object arg) {
-		if (configuration.isAutoUpdate()) {
-			checkForUpdates(true);
-		}
-	}
-
-	/**
-	 * Start the process of checking for updates.
-	 *
-	 * @param isStartup whether this is being called via startup or button
-	 */
-	public void checkForUpdates(boolean isStartup) {
-		if (autoUpdater != null) {
-			try {
-				AutoUpdateDialog.showIfNecessary(this, autoUpdater, isStartup);
-			} catch (NoClassDefFoundError ncdfe) {
-				LOGGER.error("Error displaying AutoUpdateDialog", ncdfe);
-			}
-		}
 	}
 
 	@Override

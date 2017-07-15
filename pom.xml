@@ -159,37 +159,12 @@
 			<artifactId>commons-configuration</artifactId>
 			<!--
 				commons-logging:commons-logging is shared with
-					- commons-httpclient:commons-httpclient
 					- com.github.junrar:junrar
 					- fm.last:coverartarchive-api
 
 				Check the commons-logging:commons-logging version of the other libraries before upgrading
 			-->
 			<version>1.10</version>
-		</dependency>
-		<dependency>
-			<groupId>commons-httpclient</groupId>
-			<artifactId>commons-httpclient</artifactId> <!-- TODO this should be changed to org.apache.httpcomponents which is the follower. -->
-			<version>3.1</version>
-			<exclusions>
-				<exclusion>
-					<!--
-						commons-logging:commons-logging is shared with
-							- commons-configuration:commons-configuration
-							- com.github.junrar:junrar
-							- fm.last:coverartarchive-api
-
-						The other libraries use a much newer version since commons-httpclient is ancient and abandoned
-					-->
-					<groupId>commons-logging</groupId>
-					<artifactId>commons-logging</artifactId>
-				</exclusion>
-				<exclusion>
-					<!-- fm.last:coverartarchive-api uses a much newer version since commons-httpclient is ancient and abandoned -->
-					<groupId>commons-codec</groupId>
-					<artifactId>commons-codec</artifactId>
-				</exclusion>
-			</exclusions>
 		</dependency>
 		<dependency>
 			<groupId>commons-io</groupId>
@@ -356,7 +331,6 @@
 			<!--
 				commons-logging:commons-logging is shared with
 					- commons-configuration:commons-configuration
-					- commons-httpclient:commons-httpclient
 					- fm.last:coverartarchive-api
 
 				Check the commons-logging:commons-logging version of the other libraries before upgrading
@@ -480,7 +454,6 @@
 
 				commons-logging:commons-logging is shared with
 					- commons-configuration:commons-configuration
-					- commons-httpclient:commons-httpclient
 					- com.github.junrar:junrar
 
 				Check the commons-logging:commons-logging version of the other libraries before upgrading

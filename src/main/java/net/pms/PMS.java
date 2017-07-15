@@ -45,7 +45,6 @@ import javax.imageio.spi.ImageReaderSpi;
 import javax.imageio.spi.ImageWriterSpi;
 import javax.jmdns.JmDNS;
 import javax.swing.*;
-import net.pms.configuration.Build;
 import net.pms.configuration.DeviceConfiguration;
 import net.pms.configuration.NameFilter;
 import net.pms.configuration.PmsConfiguration;
@@ -70,7 +69,6 @@ import net.pms.network.UPNPHelper;
 import net.pms.newgui.*;
 import net.pms.newgui.StatusTab.ConnectionState;
 import net.pms.remote.RemoteWeb;
-import net.pms.update.AutoUpdater;
 import net.pms.util.*;
 import net.pms.util.jna.macos.iokit.IOKitUtils;
 import org.apache.commons.configuration.ConfigurationException;
@@ -590,19 +588,13 @@ public class PMS {
 
 		globalRepo = new GlobalIdRepo();
 
-		AutoUpdater autoUpdater = null;
-		if (Build.isUpdatable()) {
-			String serverURL = Build.getUpdateServerURL();
-			autoUpdater = new AutoUpdater(serverURL, getVersion());
-		}
-
 		registry = createSystemUtils();
 
 		// Create SleepManager
 		sleepManager = new SleepManager();
 
 		if (!isHeadless()) {
-			frame = new LooksFrame(autoUpdater, configuration);
+			frame = new LooksFrame(configuration);
 		} else {
 			LOGGER.info("Graphics environment not available or headless mode is forced");
 			LOGGER.info("Switching to console mode");
