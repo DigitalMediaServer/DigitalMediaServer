@@ -31,7 +31,6 @@ import java.util.List;
 import javax.swing.*;
 import net.pms.Messages;
 import net.pms.PMS;
-import net.pms.configuration.Build;
 import net.pms.configuration.PmsConfiguration;
 import net.pms.configuration.RendererConfiguration;
 import net.pms.network.NetworkConfiguration;
@@ -53,7 +52,6 @@ public class GeneralTab {
 
 	public JCheckBox smcheckBox;
 	private JCheckBox autoStart;
-	private JCheckBox autoUpdateCheckBox;
 	private JCheckBox hideAdvancedOptions;
 	private JCheckBox newHTTPEngine;
 	private JComboBox<String> preventSleep;
@@ -188,30 +186,6 @@ public class GeneralTab {
 
 			builder.add(installService, FormLayoutUtil.flip(cc.xy(1, ypos), colSpec, orientation));
 			ypos += 2;
-		}
-
-		CustomJButton checkForUpdates = new CustomJButton(Messages.getString("NetworkTab.8"));
-		checkForUpdates.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				looksFrame.checkForUpdates(false);
-			}
-		});
-		builder.add(checkForUpdates, FormLayoutUtil.flip(cc.xy(1, ypos), colSpec, orientation));
-
-		autoUpdateCheckBox = new JCheckBox(Messages.getString("NetworkTab.9"), configuration.isAutoUpdate());
-		autoUpdateCheckBox.setContentAreaFilled(false);
-		autoUpdateCheckBox.addItemListener(new ItemListener() {
-			@Override
-			public void itemStateChanged(ItemEvent e) {
-				configuration.setAutoUpdate((e.getStateChange() == ItemEvent.SELECTED));
-			}
-		});
-		builder.add(GuiUtil.getPreferredSizeComponent(autoUpdateCheckBox), FormLayoutUtil.flip(cc.xyw(3, ypos, 7), colSpec, orientation));
-		ypos += 2;
-		if (!Build.isUpdatable()) {
-			checkForUpdates.setEnabled(false);
-			autoUpdateCheckBox.setEnabled(false);
 		}
 
 		hideAdvancedOptions = new JCheckBox(Messages.getString("NetworkTab.61"), configuration.isHideAdvancedOptions());

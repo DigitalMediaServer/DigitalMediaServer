@@ -130,7 +130,6 @@ public class PmsConfiguration extends RendererConfiguration {
 	protected static final String KEY_AUDIO_SUB_LANGS = "audio_subtitles_languages";
 	protected static final String KEY_AUDIO_THUMBNAILS_METHOD = "audio_thumbnails_method";
 	protected static final String KEY_AUDIO_USE_PCM = "audio_use_pcm";
-	protected static final String KEY_AUTO_UPDATE = "auto_update";
 	protected static final String KEY_AUTOLOAD_SUBTITLES = "autoload_external_subtitles";
 	protected static final String KEY_AVISYNTH_CONVERT_FPS = "avisynth_convert_fps";
 	protected static final String KEY_AVISYNTH_INTERFRAME = "avisynth_interframe";
@@ -3367,14 +3366,6 @@ public class PmsConfiguration extends RendererConfiguration {
 		}
 
 		return getString(KEY_PROFILE_NAME, HOSTNAME);
-	}
-
-	public boolean isAutoUpdate() {
-		return Build.isUpdatable() && getBoolean(KEY_AUTO_UPDATE, false);
-	}
-
-	public void setAutoUpdate(boolean value) {
-		configuration.setProperty(KEY_AUTO_UPDATE, value);
 	}
 
 	public int getUpnpPort() {
