@@ -30,7 +30,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Helper class that implements common getters for the various types stored in renderer confs and PMS.conf.
+ * Helper class that implements common getters for the various types stored in renderer confs and DMS.conf.
  */
 public class ConfigurationReader {
 	private static final Logger LOGGER = LoggerFactory.getLogger(ConfigurationReader.class);
@@ -285,11 +285,11 @@ public class ConfigurationReader {
 		log(key, value, def);
 		return value;
 	}
-	
+
 	public boolean getLogOverrides() {
 		return logOverrides;
 	}
-	
+
 	public void setLogOverrides(boolean logOverrides) {
 		this.logOverrides = logOverrides;
 	}

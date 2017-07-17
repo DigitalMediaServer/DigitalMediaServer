@@ -20,17 +20,12 @@
 package net.pms.formats.image;
 
 public class BMP extends ImageBase {
-	/**
-	 * {@inheritDoc}
-	 */
+
 	@Override
 	public Identifier getIdentifier() {
 		return Identifier.BMP;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public String[] getSupportedExtensions() {
 		return new String[] { "bmp" };

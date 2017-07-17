@@ -349,9 +349,9 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 	/**
 	 * String representing this resource ID. This string is used by the UPNP
 	 * ContentDirectory service. There is no hard spec on the actual numbering
-	 * except for the root container that always has to be "0". In PMS the
+	 * except for the root container that always has to be "0". In DMS the
 	 * format used is <i>number($number)+</i>. A common client that expects a
-	 * different format than the one used here is the XBox360. PMS translates
+	 * different format than the one used here is the XBox360. DMS translates
 	 * the XBox360 queries on the fly. For more info, check
 	 * <ul>
 	 * <li><a href="http://www.mperfect.net/whsUpnp360/">whsUpnp360</a></li>
@@ -785,7 +785,7 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 	 * @return A player if transcoding or null if streaming
 	 */
 	public Player resolvePlayer(RendererConfiguration renderer) {
-		// Use device-specific pms conf, if any
+		// Use device-specific DMS conf, if any
 		PmsConfiguration configurationSpecificToRenderer = PMS.getConfiguration(renderer);
 		boolean parserV2 = media != null && renderer != null && renderer.isUseMediaInfo();
 		Player resolvedPlayer = null;
@@ -992,7 +992,7 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 
 	/**
 	 * Return the transcode folder for this resource.
-	 * If UMS is configured to hide transcode folders, null is returned.
+	 * If DMS is configured to hide transcode folders, null is returned.
 	 * If no folder exists and the create argument is false, null is returned.
 	 * If no folder exists and the create argument is true, a new transcode folder is created.
 	 * This method is called on the parent folder each time a child is added to that parent
@@ -1816,20 +1816,15 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 	 *    11 - seek by both
 	 *
 	 * See here for an example of how these options can be mapped to keys on the renderer's controller:
-	 * http://www.ps3mediaserver.org/forum/viewtopic.php?f=2&t=2908&p=12550#p12550
 	 *
 	 * Note that seek-by-byte is the preferred option for streamed files [1] and seek-by-time is the
 	 * preferred option for transcoded files.
-	 *
-	 * [1] see http://www.ps3mediaserver.org/forum/viewtopic.php?f=6&t=15841&p=76201#p76201
 	 *
 	 * seek-by-time requires a) support by the renderer (via the SeekByTime renderer conf option)
 	 * and b) support by the transcode engine.
 	 *
 	 * The seek-by-byte fallback doesn't work well with transcoded files [2], but it's better than
 	 * disabling seeking (and pausing) altogether.
-	 *
-	 * [2] http://www.ps3mediaserver.org/forum/viewtopic.php?f=6&t=3507&p=16567#p16567 (bottom post)
 	 *
 	 * @param mediaRenderer
 	 * 			Media Renderer for which to represent this information.
@@ -1842,10 +1837,10 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 			/**
 			 * Some renderers - e.g. the PS3 and Panasonic TVs - behave erratically when
 			 * transcoding if we keep the default seek-by-byte permission on when permitting
-			 * seek-by-time: http://www.ps3mediaserver.org/forum/viewtopic.php?f=6&t=15841
+			 * seek-by-time.
 			 *
 			 * It's not clear if this is a bug in the DLNA libraries of these renderers or a bug
-			 * in UMS, but setting an option in the renderer conf that disables seek-by-byte when
+			 * in DMS, but setting an option in the renderer conf that disables seek-by-byte when
 			 * we permit seek-by-time - e.g.:
 			 *
 			 *    SeekByTime = exclusive
@@ -1887,7 +1882,7 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 	 */
 	@SuppressWarnings("deprecation")
 	private String getDlnaOrgPnFlags(RendererConfiguration mediaRenderer, int localizationValue) {
-		// Use device-specific pms conf, if any
+		// Use device-specific DMS conf, if any
 		PmsConfiguration configurationSpecificToRenderer = PMS.getConfiguration(mediaRenderer);
 		String mime = getRendererMimeType(mediaRenderer);
 
@@ -2346,7 +2341,7 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 	 *         {@code <container id="0$1" childCount="1" parentID="0" restricted="1">}
 	 */
 	public final String getDidlString(RendererConfiguration mediaRenderer) {
-		// Use device-specific pms conf, if any
+		// Use device-specific DMS conf, if any
 		PmsConfiguration configurationSpecificToRenderer = PMS.getConfiguration(mediaRenderer);
 		StringBuilder sb = new StringBuilder();
 		boolean subsAreValidForStreaming = false;
@@ -2723,7 +2718,7 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 		/*
 		 * There's no technical difference between the image itself and the
 		 * thumbnail for an object.item.imageItem, they are all simply listed
-		 * as <res> entries. To UMS there is a difference since the thumbnail
+		 * as <res> entries. To DMS there is a difference since the thumbnail
 		 * is cached while the image itself is not. The idea here is therefore
 		 * to offer any size smaller than or equal to the cached thumbnail
 		 * using the cached thumbnail as the source, and offer anything bigger
@@ -3267,7 +3262,7 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 	 * @throws IOException
 	 */
 	public synchronized InputStream getInputStream(Range range, RendererConfiguration mediarenderer) throws IOException {
-		// Use device-specific pms conf, if any
+		// Use device-specific DMS conf, if any
 		PmsConfiguration configurationSpecificToRenderer = PMS.getConfiguration(mediarenderer);
 		LOGGER.trace("Asked stream chunk : " + range + " of " + getName() + " and player " + player);
 
@@ -3530,7 +3525,7 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 	 * @param renderer The renderer profile
 	 */
 	protected void checkThumbnail(InputFile inputFile, RendererConfiguration renderer) {
-		// Use device-specific pms conf, if any
+		// Use device-specific DMS conf, if any
 		PmsConfiguration configurationSpecificToRenderer = PMS.getConfiguration(renderer);
 		if (
 			media != null &&

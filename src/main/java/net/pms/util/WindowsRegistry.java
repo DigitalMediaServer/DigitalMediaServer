@@ -17,16 +17,15 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-
-/**
- * Based on http://transoceanic.blogspot.cz/2011/12/java-read-key-from-windows-registry.html
- */
 package net.pms.util;
 
 import java.io.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Based on http://transoceanic.blogspot.cz/2011/12/java-read-key-from-windows-registry.html
+ */
 public class WindowsRegistry {
 	private static final Logger LOGGER = LoggerFactory.getLogger(WindowsRegistry.class);
 

@@ -30,8 +30,6 @@ import net.pms.dlna.DLNAMediaLang;
 /**
  * This class provides a list of languages mapped to ISO 639 language codes
  * and some methods to verify which language matches which ISO code.
- *
- * Made immutable in UMS version 5.2.3
  */
 public final class Iso639 {
 	/**
@@ -161,7 +159,7 @@ public final class Iso639 {
 
 	/**
 	 * Returns the ISO code, except when the alias "loc" is used. In that case
-	 * the ISO code of the preferred language in the UMS settings is returned.
+	 * the ISO code of the preferred language in the DMS settings is returned.
 	 *
 	 * @param isoCode An ISO code, or <code>"loc"</code>.
 	 * @return The code.
@@ -208,7 +206,7 @@ public final class Iso639 {
 	 * Verifies that two ISO codes match the same language. Returns true if a
 	 * match can be made, false otherwise. The alias "loc" can be used as a code,
 	 * it will be replaced by the ISO code of the preferred language from the
-	 * PMS settings.
+	 * DMS settings.
 	 *
 	 * @param code1 The first ISO code.
 	 * @param code2 The second ISO code.

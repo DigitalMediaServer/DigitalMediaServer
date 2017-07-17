@@ -125,7 +125,7 @@ public class Request extends HTTPResource {
 
 	public void setMediaRenderer(RendererConfiguration mediaRenderer) {
 		this.mediaRenderer = mediaRenderer;
-		// Use device-specific pms conf
+		// Use device-specific DMS conf
 		configuration = PMS.getConfiguration(mediaRenderer);
 	}
 
@@ -209,7 +209,7 @@ public class Request extends HTTPResource {
 	/**
 	 * This class will construct and transmit a proper HTTP response to a given HTTP request.
 	 * @param method The {@link String} that defines the HTTP method to be used.
-	 * @param argument The {@link String} containing instructions for PMS. It contains a command,
+	 * @param argument The {@link String} containing instructions for DMS. It contains a command,
 	 * 		a unique resource id and a resource name, all separated by slashes.
 	 */
 	public Request(String method, String argument) {
@@ -578,8 +578,8 @@ public class Request extends HTTPResource {
 
 				if (xbox360) {
 					LOGGER.debug("DLNA changes for Xbox 360");
-					s = s.replace("Universal Media Server", configuration.getServerDisplayName() + " : Windows Media Connect");
-					s = s.replace("<modelName>UMS</modelName>", "<modelName>Windows Media Connect</modelName>");
+					s = s.replace("Digital Media Server", configuration.getServerDisplayName() + " : Windows Media Connect");
+					s = s.replace("<modelName>DMS</modelName>", "<modelName>Windows Media Connect</modelName>");
 					s = s.replace("<serviceList>", "<serviceList>" + CRLF + "<service>" + CRLF +
 						"<serviceType>urn:microsoft.com:service:X_MS_MediaReceiverRegistrar:1</serviceType>" + CRLF +
 						"<serviceId>urn:microsoft.com:serviceId:X_MS_MediaReceiverRegistrar</serviceId>" + CRLF +
@@ -587,7 +587,7 @@ public class Request extends HTTPResource {
 						"<controlURL>/upnp/mrr/control</controlURL>" + CRLF +
 						"</service>" + CRLF);
 				} else {
-					s = s.replace("Universal Media Server", configuration.getServerDisplayName());
+					s = s.replace("Digital Media Server", configuration.getServerDisplayName());
 				}
 
 				inputStream = new ByteArrayInputStream(s.getBytes(StandardCharsets.UTF_8));

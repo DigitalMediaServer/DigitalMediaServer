@@ -110,7 +110,7 @@ public class DCRaw extends ImagePlayer {
 			params = new OutputParams(PMS.getConfiguration());
 		}
 
-		// Use device-specific pms conf
+		// Use device-specific DMS conf
 		PmsConfiguration configuration = PMS.getConfiguration(params);
 
 		params.log = false;
@@ -165,7 +165,7 @@ public class DCRaw extends ImagePlayer {
 			params = new OutputParams(PMS.getConfiguration());
 		}
 
-		// Use device-specific pms conf
+		// Use device-specific DMS conf
 		PmsConfiguration configuration = PMS.getConfiguration(params);
 		params.log = false;
 

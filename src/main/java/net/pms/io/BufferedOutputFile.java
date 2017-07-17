@@ -23,7 +23,7 @@ import java.io.InputStream;
 
 /**
  * Interface to easily subclass different implementations while keeping most of
- * the other PMS code the same. The original code has been moved to
+ * the other DMS code the same. The original code has been moved to
  * {@link BufferedOutputFileImpl}.
  */
 public interface BufferedOutputFile {

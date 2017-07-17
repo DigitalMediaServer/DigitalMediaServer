@@ -13,20 +13,20 @@ esac
 
 # For Cygwin, ensure paths are in UNIX format before anything is touched
 if $cygwin ; then
-    [ -n "$PMS_HOME" ] &&
-		PMS_HOME=`cygpath --unix "$PMS_HOME"`
+    [ -n "$DMS_HOME" ] &&
+		DMS_HOME=`cygpath --unix "$DMS_HOME"`
     [ -n "$JAVA_HOME" ] &&
 		JAVA_HOME=`cygpath --unix "$JAVA_HOME"`
 fi
 
-# Setup PMS_HOME
-if [ "x$PMS_HOME" = "x" ]; then
-    PMS_HOME="$DIRNAME"
+# Setup DMS_HOME
+if [ "x$DMS_HOME" = "x" ]; then
+    DMS_HOME="$DIRNAME"
 fi
 
-export PMS_HOME
+export DMS_HOME
 # XXX: always cd to the working dir: https://code.google.com/p/ps3mediaserver/issues/detail?id=730
-cd "$PMS_HOME"
+cd "$DMS_HOME"
 
 # Setup the JVM
 if [ "x$JAVA" = "x" ]; then
@@ -40,11 +40,11 @@ fi
 # Setup the classpath
 # since we always cd to the working dir, these a) can be unqualified and b) *must*
 # be unqualified: https://code.google.com/p/ps3mediaserver/issues/detail?id=1122
-PMS_JARS="update.jar:ums.jar"
+DMS_JARS="update.jar:dms.jar"
 
 # For Cygwin, switch paths to Windows format before running java
 if $cygwin; then
-    PMS_HOME=`cygpath --path --windows "$PMS_HOME"`
+    DMS_HOME=`cygpath --path --windows "$DMS_HOME"`
     JAVA_HOME=`cygpath --path --windows "$JAVA_HOME"`
 fi
  
@@ -59,9 +59,9 @@ if [ "x$FONTCONFIG_FILE" = "x" ]; then
 fi
 
 # Provide a means of setting max memory using an environment variable
-if [ "x$UMS_MAX_MEMORY" = "x" ]; then
-    UMS_MAX_MEMORY=768M
+if [ "x$DMS_MAX_MEMORY" = "x" ]; then
+    DMS_MAX_MEMORY=768M
 fi
 
 # Execute the JVM
-exec "$JAVA" $JAVA_OPTS -Xmx$UMS_MAX_MEMORY -Xss2048k -Dfile.encoding=UTF-8 -Djava.net.preferIPv4Stack=true -Djna.nosys=true -classpath "$PMS_JARS" net.pms.PMS "$@"
+exec "$JAVA" $JAVA_OPTS -Xmx$DMS_MAX_MEMORY -Xss2048k -Dfile.encoding=UTF-8 -Djava.net.preferIPv4Stack=true -Djna.nosys=true -classpath "$DMS_JARS" net.pms.PMS "$@"

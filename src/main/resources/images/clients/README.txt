@@ -1,5 +1,5 @@
 This directory contains images of renderers which are shown on the Status tab
-when UMS identifies that renderer.
+when DMS identifies that renderer.
 
 These images typically follow the same convention:
    - A photo of the renderer.

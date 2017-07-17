@@ -313,7 +313,7 @@ public class LibMediaInfoParser {
 
 				/*
 				 * Some container formats (like MP4/M4A) can represent both audio
-				 * and video media. UMS initially recognized this as video, but this
+				 * and video media. DMS initially recognized this as video, but this
 				 * is corrected here it the content is only audio.
 				 */
 				if (media.isAudioOrVideoContainer() && media.isAudio()) {

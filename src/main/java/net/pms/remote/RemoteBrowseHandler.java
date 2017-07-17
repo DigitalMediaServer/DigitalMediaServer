@@ -95,13 +95,13 @@ public class RemoteBrowseHandler implements HttpHandler {
 				// Let's take the VVA real early
 				sb.setLength(0);
 				HashMap<String, String> item = new HashMap<>();
-				sb.append("<a href=\"#\" onclick=\"umsAjax('/play/").append(idForWeb)
+				sb.append("<a href=\"#\" onclick=\"dmsAjax('/play/").append(idForWeb)
 						.append("', true);return false;\" title=\"").append(name).append("\">")
 						.append("<img class=\"thumb\" src=\"").append(thumb).append("\" alt=\"").append(name).append("\">")
 						.append("</a>");
 				item.put("thumb", sb.toString());
 				sb.setLength(0);
-				sb.append("<a href=\"#\" onclick=\"umsAjax('/play/").append(idForWeb)
+				sb.append("<a href=\"#\" onclick=\"dmsAjax('/play/").append(idForWeb)
 						.append("', true);return false;\" title=\"").append(name).append("\">")
 						.append("<span class=\"caption\">").append(name).append("</span>")
 						.append("</a>");
@@ -151,11 +151,11 @@ public class RemoteBrowseHandler implements HttpHandler {
 						   .append("')\" title=\"").append(RemoteUtil.getMsgString("Web.3", t)).append("\"></a>");
 					}
 					if (resource.getParent() instanceof Playlist) {
-						sb.append("\n<a class=\"playlist_del\" href=\"#\" onclick=\"umsAjax('/playlist/del/")
+						sb.append("\n<a class=\"playlist_del\" href=\"#\" onclick=\"dmsAjax('/playlist/del/")
 							.append(idForWeb).append("', true);return false;\" title=\"")
 						    .append(RemoteUtil.getMsgString("Web.4", t)).append("\"></a>");
 					} else {
-						sb.append("\n<a class=\"playlist_add\" href=\"#\" onclick=\"umsAjax('/playlist/add/")
+						sb.append("\n<a class=\"playlist_add\" href=\"#\" onclick=\"dmsAjax('/playlist/add/")
 							.append(idForWeb).append("', false);return false;\" title=\"")
 						    .append(RemoteUtil.getMsgString("Web.5", t)).append("\"></a>");
 					}

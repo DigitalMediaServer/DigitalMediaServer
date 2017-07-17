@@ -24,7 +24,7 @@ public class DeviceConfiguration extends PmsConfiguration {
 
 	public static final int DEVICE = 0;
 	public static final int RENDERER = 1;
-	public static final int PMSCONF = 2;
+	public static final int DMSCONF = 2;
 
 	private PropertiesConfiguration deviceConf = null;
 	private RendererConfiguration ref = null;
@@ -54,7 +54,7 @@ public class DeviceConfiguration extends PmsConfiguration {
 
 	/**
 	 * Creates a composite configuration for this device consisting of a dedicated device
-	 * configuration plus the given reference renderer configuration and the default pms
+	 * configuration plus the given reference renderer configuration and the default DMS
 	 * configuration for fallback lookup.
 	 *
 	 * @param ref The reference renderer configuration.
@@ -68,7 +68,7 @@ public class DeviceConfiguration extends PmsConfiguration {
 		cconf.addConfiguration(deviceConf != null ? deviceConf : initConfiguration(null), true);
 		// 2. The reference renderer configuration (read-only)
 		cconf.addConfiguration(ref.getConfiguration());
-		// 3. The default pms configuration (read-only)
+		// 3. The default DMS configuration (read-only)
 		PmsConfiguration baseConf = PMS.getConfiguration();
 		cconf.addConfiguration(baseConf.getConfiguration());
 
@@ -256,7 +256,7 @@ public class DeviceConfiguration extends PmsConfiguration {
 			conf.add("#----------------------------------------------------------------------------");
 			conf.add("# Custom Device profile");
 			conf.add("# See DefaultRenderer.conf for descriptions of all possible renderer options");
-			conf.add("# and UMS.conf for program options.");
+			conf.add("# and DMS.conf for program options.");
 			conf.add("");
 			conf.add("# Options in this file override the default settings for the specific " + r.getSimpleName(r) + " device(s) listed below.");
 			conf.add("# Specify devices by uuid (or address if no uuid), separated by commas if more than one.");

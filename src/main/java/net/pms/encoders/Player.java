@@ -279,7 +279,7 @@ public abstract class Player {
 
 	/**
 	 * This method populates the supplied {@link OutputParams} object with the correct audio track (aid)
-	 * and subtitles (sid), based on the given filename, its MediaInfo metadata and PMS configuration settings.
+	 * and subtitles (sid), based on the given filename, its MediaInfo metadata and DMS configuration settings.
 	 *
 	 * @param fileName
 	 * The file name used to determine the availability of subtitles.
@@ -295,7 +295,7 @@ public abstract class Player {
 
 	/**
 	 * This method populates the supplied {@link OutputParams} object with the correct audio track (aid)
-	 * based on the MediaInfo metadata and PMS configuration settings.
+	 * based on the MediaInfo metadata and DMS configuration settings.
 	 *
 	 * @param media
 	 * The MediaInfo metadata for the file.
@@ -303,7 +303,7 @@ public abstract class Player {
 	 * The parameters to populate.
 	 */
 	public static void setAudioOutputParameters(DLNAMediaInfo media, OutputParams params) {
-		// Use device-specific pms conf
+		// Use device-specific DMS conf
 		PmsConfiguration configuration = PMS.getConfiguration(params);
 		if (params.aid == null && media != null && media.getFirstAudioTrack() != null) {
 			// check for preferred audio
@@ -338,7 +338,7 @@ public abstract class Player {
 
 	/**
 	 * This method populates the supplied {@link OutputParams} object with the correct subtitles (sid)
-	 * based on the given filename, its MediaInfo metadata and PMS configuration settings.
+	 * based on the given filename, its MediaInfo metadata and DMS configuration settings.
 	 *
 	 * TODO: Rewrite this crazy method to be more concise and logical.
 	 *
@@ -350,7 +350,7 @@ public abstract class Player {
 	 * The parameters to populate.
 	 */
 	public static void setSubtitleOutputParameters(String fileName, DLNAMediaInfo media, OutputParams params) {
-		// Use device-specific pms conf
+		// Use device-specific DMS conf
 		PmsConfiguration configuration = PMS.getConfiguration(params);
 		String currentLang = null;
 		DLNAMediaSubtitle matchedSub = null;

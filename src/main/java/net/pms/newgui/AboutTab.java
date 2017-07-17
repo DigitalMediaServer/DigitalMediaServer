@@ -62,9 +62,9 @@ public class AboutTab {
 
 		final LinkMouseListener dmsLink = new LinkMouseListener(projectName + " " + PMS.getVersion(),
 			"http://www.digitalmediaserver.org/");
-		JLabel lUmsLink = builder.addLabel(dmsLink.getLabel(), cc.xy(2, 1, "center, fill"));
-		lUmsLink.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-		lUmsLink.addMouseListener(dmsLink);
+		JLabel lDmsLink = builder.addLabel(dmsLink.getLabel(), cc.xy(2, 1, "center, fill"));
+		lDmsLink.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+		lDmsLink.addMouseListener(dmsLink);
 
 		// Create a build name from the available git properties
 		String commitId = PropertiesUtil.getProjectProperties().get("git.commit.id");
@@ -89,9 +89,9 @@ public class AboutTab {
 		lCrowdinLink.addMouseListener(crowdinLink);
 
 		final LinkMouseListener umsLink = new LinkMouseListener("Universal Media Server", "http://www.universalmediaserver.com/");
-		JLabel lPs3msLink = builder.addLabel(umsLink.getLabel(), cc.xy(2, 11, "center, fill"));
-		lPs3msLink.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-		lPs3msLink.addMouseListener(umsLink);
+		JLabel lUmsLink = builder.addLabel(umsLink.getLabel(), cc.xy(2, 11, "center, fill"));
+		lUmsLink.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+		lUmsLink.addMouseListener(umsLink);
 
 		final LinkMouseListener ffmpegLink = new LinkMouseListener("FFmpeg", "http://ffmpeg.org/");
 		JLabel lFfmpegLink = builder.addLabel(ffmpegLink.getLabel(), cc.xy(2, 13, "center, fill"));

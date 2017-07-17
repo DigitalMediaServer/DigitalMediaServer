@@ -58,6 +58,7 @@ public class RemoteWeb {
 		// Add "classpaths" for resolving web resources
 		resources = AccessController.doPrivileged(new PrivilegedAction<RemoteUtil.ResourceManager>() {
 
+			@Override
 			public RemoteUtil.ResourceManager run() {
 				return new RemoteUtil.ResourceManager(
 					"file:" + configuration.getProfileFolder() + "/web/",
@@ -79,8 +80,8 @@ public class RemoteWeb {
 			} catch (IOException e) {
 				LOGGER.error("Failed to start WEB interface on HTTPS: {}", e.getMessage());
 				LOGGER.trace("", e);
-				if (e.getMessage().contains("UMS.jks")) {
-					LOGGER.info("To enable HTTPS please generate a self-signed keystore file called \"UMS.jks\" using the java 'keytool' commandline utility.");
+				if (e.getMessage().contains("DMS.jks")) {
+					LOGGER.info("To enable HTTPS please generate a self-signed keystore file called \"DMS.jks\" using the java 'keytool' commandline utility.");
 				}
 			} catch (GeneralSecurityException e) {
 				LOGGER.error("Failed to start WEB interface on HTTPS due to a security error: {}", e.getMessage());
@@ -114,9 +115,9 @@ public class RemoteWeb {
 
 	private HttpServer httpsServer(InetSocketAddress address) throws IOException, GeneralSecurityException {
 		// Initialize the keystore
-		char[] password = "umsums".toCharArray();
+		char[] password = "dmsdms".toCharArray();
 		ks = KeyStore.getInstance("JKS");
-		try (FileInputStream fis = new FileInputStream("UMS.jks")) {
+		try (FileInputStream fis = new FileInputStream("DMS.jks")) {
 			ks.load(fis, password);
 		}
 
@@ -173,7 +174,7 @@ public class RemoteWeb {
 
 	public RootFolder getRoot(String user, boolean create, HttpExchange t) {
 		String groupTag = getTag(user);
-		String cookie = RemoteUtil.getCookie("UMS", t);
+		String cookie = RemoteUtil.getCookie("DMS", t);
 		RootFolder root;
 		synchronized (roots) {
 			root = roots.get(cookie);
@@ -198,7 +199,7 @@ public class RemoteWeb {
 			}
 
 			if (!create || (root != null)) {
-				t.getResponseHeaders().add("Set-Cookie", "UMS=" + cookie + ";Path=/");
+				t.getResponseHeaders().add("Set-Cookie", "DMS=" + cookie + ";Path=/");
 				return root;
 			}
 
@@ -221,7 +222,7 @@ public class RemoteWeb {
 					render.setSubLang(StringUtils.join(RemoteUtil.getLangs(t), ","));
 				}
 //				render.setUA(t.getRequestHeaders().getFirst("User-agent"));
-				render.setBrowserInfo(RemoteUtil.getCookie("UMSINFO", t), t.getRequestHeaders().getFirst("User-agent"));
+				render.setBrowserInfo(RemoteUtil.getCookie("DMSINFO", t), t.getRequestHeaders().getFirst("User-agent"));
 				PMS.get().setRendererFound(render);
 			} catch (ConfigurationException e) {
 				root.setDefaultRenderer(RendererConfiguration.getDefaultConf());
@@ -229,7 +230,7 @@ public class RemoteWeb {
 			//root.setDefaultRenderer(RendererConfiguration.getRendererConfigurationByName("web"));
 			root.discoverChildren();
 			cookie = UUID.randomUUID().toString();
-			t.getResponseHeaders().add("Set-Cookie", "UMS=" + cookie + ";Path=/");
+			t.getResponseHeaders().add("Set-Cookie", "DMS=" + cookie + ";Path=/");
 			roots.put(cookie, root);
 		}
 		return root;
@@ -346,7 +347,7 @@ public class RemoteWeb {
 					if (StringUtils.isNotEmpty(log)) {
 						x = x + fullLink;
 					}
-					response = "<html><title>UMS LOG</title><body>" + x + "</body></html>";
+					response = "<html><title>DMS LOG</title><body>" + x + "</body></html>";
 				} else {
 					File file = parent.getResources().getFile(filename);
 					if (file != null) {

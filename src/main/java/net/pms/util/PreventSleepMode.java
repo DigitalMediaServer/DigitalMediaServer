@@ -15,7 +15,7 @@ public enum PreventSleepMode {
 	/** Prevent sleep during playback */
 	PLAYBACK,
 
-	/** Prevent sleep while UMS is running */
+	/** Prevent sleep while DMS is running */
 	RUNNING;
 
 	/**

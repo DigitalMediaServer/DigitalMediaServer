@@ -31,7 +31,7 @@ public class ProfileChooser {
 
 		if (returnVal == JFileChooser.APPROVE_OPTION) {
 			File file = fc.getSelectedFile();
-			System.setProperty("ums.profile.path", file.getAbsolutePath());
+			System.setProperty("dms.profile.path", file.getAbsolutePath());
 		} // else the open command was cancelled by the user
 	}
 }

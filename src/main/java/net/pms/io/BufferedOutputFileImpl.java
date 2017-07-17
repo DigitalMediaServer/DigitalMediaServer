@@ -173,13 +173,13 @@ public class BufferedOutputFileImpl extends OutputStream implements BufferedOutp
 	/**
 	 * Constructor to create a memory buffer based on settings that are
 	 * passed on. Will also start up a timer task to display buffer size and
-	 * usage in the PMS main screen.
+	 * usage in the DMS main screen.
 	 *
 	 * @param params {@link OutputParams} object that contains preferences
 	 * for the buffers dimensions and behavior.
 	 */
 	public BufferedOutputFileImpl(OutputParams params) {
-		// Use device-specific pms conf
+		// Use device-specific DMS conf
 		configuration = PMS.getConfiguration(params);
 		this.renderer = params.mediaRenderer;
 		this.forcefirst = (configuration.getTrancodeBlocksMultipleConnections() && configuration.getTrancodeKeepFirstConnections());
@@ -447,7 +447,7 @@ public class BufferedOutputFileImpl extends OutputStream implements BufferedOutp
 		if (buffer[m9] == 0
 			&& buffer[m8] == 0
 			&& buffer[m7] == 1
-			&& buffer[m6] == -70 && // 0xBA - Java/PMS wants -70
+			&& buffer[m6] == -70 && // 0xBA - Java/DMS wants -70
 			// control bits
 			!((buffer[m5] & 128) == 128)
 			&& ((buffer[m5] & 64) == 64)
@@ -500,7 +500,7 @@ public class BufferedOutputFileImpl extends OutputStream implements BufferedOutp
 		if (buffer[m7] == 0
 			&& buffer[m6] == 0
 			&& buffer[m5] == 1
-			&& buffer[m4] == -72 && // 0xB8 - Java/PMS wants -72
+			&& buffer[m4] == -72 && // 0xB8 - Java/DMS wants -72
 			// control bits
 			((buffer[m2] & 0x08) == 0x08)
 			&& ((buffer[m0] & 31) == 0)

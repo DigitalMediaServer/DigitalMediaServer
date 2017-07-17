@@ -44,7 +44,7 @@ import org.slf4j.LoggerFactory;
 public class OpenSubtitle {
 	private static final Logger LOGGER = LoggerFactory.getLogger(OpenSubtitle.class);
 	private static final String SUB_DIR = "subs";
-	private static final String UA = "Universal Media Server v1";
+	private static final String UA = "Digital Media Server v1";
 	private static final long TOKEN_AGE_TIME = 10 * 60 * 1000; // 10 mins
 	//private static final long SUB_FILE_AGE = 14 * 24 * 60 * 60 * 1000; // two weeks
 
@@ -79,7 +79,9 @@ public class OpenSubtitle {
 			long tailChunkPosition = length - chunkSizeForFile;
 
 			// Seek to position of the tail chunk, or not at all if length is smaller than two chunks
-			while (position < tailChunkPosition && (position += in.skip(tailChunkPosition - position)) >= 0);
+			while (position < tailChunkPosition && (position += in.skip(tailChunkPosition - position)) >= 0) {
+				;
+			}
 
 			// Second chunk, or the rest of the data if length is smaller than two chunks
 			in.readFully(chunkBytes, chunkSizeForFile, chunkBytes.length - chunkSizeForFile);

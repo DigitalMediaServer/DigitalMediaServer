@@ -16,7 +16,7 @@ import org.slf4j.LoggerFactory;
  */
 class TempFolder {
 	private static final Logger LOGGER = LoggerFactory.getLogger(TempFolder.class);
-	private static final String DEFAULT_TEMP_FOLDER_NAME = "UMS";
+	private static final String DEFAULT_TEMP_FOLDER_NAME = "DMS";
 	private final String userSpecifiedFolder;
 	private File tempFolder;
 

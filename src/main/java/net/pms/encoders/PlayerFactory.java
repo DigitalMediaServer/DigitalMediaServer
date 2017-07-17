@@ -72,7 +72,7 @@ public final class PlayerFactory {
 	private static PmsConfiguration configuration = PMS.getConfiguration();
 
 	/**
-	 * This takes care of sorting the players by the given PMS configuration.
+	 * This takes care of sorting the players by the given DMS configuration.
 	 */
 	@SuppressWarnings("serial")
 	private static class PlayerSort implements Comparator<Player>, Serializable {

@@ -237,18 +237,18 @@ public class ProcessUtil {
 
 	// Rebooting
 
-	// Reboot UMS same as now
+	// Reboot DMS same as now
 	public static void reboot() {
 		reboot((ArrayList<String>)null, null, null);
 	}
 
-	// Reboot UMS same as now, adding these options
-	public static void reboot(String... UMSOptions) {
-		reboot(null, null, null, UMSOptions);
+	// Reboot DMS same as now, adding these options
+	public static void reboot(String... dmsOptions) {
+		reboot(null, null, null, dmsOptions);
 	}
 
-	// Shutdown UMS and either reboot or run the given command (e.g. a script to restart UMS)
-	public static void reboot(ArrayList<String> cmd, Map<String,String> env, String startdir, String... UMSOptions) {
+	// Shutdown DMS and either reboot or run the given command (e.g. a script to restart DMS)
+	public static void reboot(ArrayList<String> cmd, Map<String,String> env, String startdir, String... dmsOptions) {
 		final ArrayList<String> reboot;
 		String macAppPath = null;
 		if (Platform.isMac()) {
@@ -267,25 +267,25 @@ public class ProcessUtil {
 			reboot.add("-n");
 			reboot.add("-a");
 			reboot.add(macAppPath);
-			if (UMSOptions.length > 0) {
+			if (dmsOptions.length > 0) {
 				reboot.add("--args");
 			}
 		} else {
-			reboot = getUMSCommand();
+			reboot = getDMSCommand();
 		}
 
-		if (UMSOptions.length > 0) {
-			reboot.addAll(Arrays.asList(UMSOptions));
+		if (dmsOptions.length > 0) {
+			reboot.addAll(Arrays.asList(dmsOptions));
 		}
 		if (cmd == null) {
 			// We're doing a straight reboot
 			cmd = reboot;
 		} else {
-			// We're running a script that will eventually restart UMS
+			// We're running a script that will eventually restart DMS
 			if (env == null) {
 				env = new HashMap<>();
 			}
-			// Tell the script how to restart UMS
+			// Tell the script how to restart DMS
 			env.put("RESTART_CMD", StringUtils.join(reboot, " "));
 			env.put("RESTART_DIR", System.getProperty("user.dir"));
 		}
@@ -313,7 +313,7 @@ public class ProcessUtil {
 	// Reconstruct the command that started this jvm, including all options.
 	// See http://stackoverflow.com/questions/4159802/how-can-i-restart-a-java-application
 	//     http://stackoverflow.com/questions/1518213/read-java-jvm-startup-parameters-eg-xmx
-	public static ArrayList<String> getUMSCommand() {
+	public static ArrayList<String> getDMSCommand() {
 		ArrayList<String> reboot = new ArrayList<>();
 		File jvmPath = new File(System.getProperty("java.home"));
 		String jvmExecutableName = Platform.isWindows() && System.console() == null ? "javaw" : "java";

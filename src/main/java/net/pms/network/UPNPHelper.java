@@ -41,7 +41,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Helper class to handle the UPnP traffic that makes UMS discoverable by
+ * Helper class to handle the UPnP traffic that makes DMS discoverable by
  * other clients.
  * See http://upnp.org/specs/arch/UPnP-arch-DeviceArchitecture-v1.0.pdf
  * and http://upnp.org/specs/arch/UPnP-arch-DeviceArchitecture-v1.1-AnnexA.pdf
@@ -524,10 +524,10 @@ public class UPNPHelper extends UPNPControl {
 					} catch (BindException e) {
 						if (!bindErrorReported) {
 							LOGGER.error("Unable to bind to " + configuration.getUpnpPort()
-							+ ", which means that UMS will not automatically appear on your renderer! "
+							+ ", which means that DMS will not automatically appear on your renderer! "
 							+ "This usually means that another program occupies the port. Please "
 							+ "stop the other program and free up the port. "
-							+ "UMS will keep trying to bind to it...[" + e.getMessage() + "]");
+							+ "DMS will keep trying to bind to it...[" + e.getMessage() + "]");
 						}
 
 						bindErrorReported = true;

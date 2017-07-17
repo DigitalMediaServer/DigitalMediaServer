@@ -725,7 +725,7 @@ public class FFMpegVideo extends Player {
 		InputFile newInput = new InputFile();
 		newInput.setFilename(filename);
 		newInput.setPush(params.stdin);
-		// Use device-specific pms conf
+		// Use device-specific DMS conf
 		PmsConfiguration prev = configuration;
 		configuration = (DeviceConfiguration) params.mediaRenderer;
 		RendererConfiguration renderer = params.mediaRenderer;
@@ -1084,7 +1084,7 @@ public class FFMpegVideo extends Player {
 			pipe = new PipeProcess(System.currentTimeMillis() + "tsmuxerout.ts");
 
 			TsMuxeRVideo ts = new TsMuxeRVideo();
-			File f = new File(configuration.getTempFolder(), "pms-tsmuxer.meta");
+			File f = new File(configuration.getTempFolder(), "dms-tsmuxer.meta");
 			String cmd[] = new String[]{ ts.executable(), f.getAbsolutePath(), pipe.getInputPipe() };
 			pw = new ProcessWrapperImpl(cmd, params);
 

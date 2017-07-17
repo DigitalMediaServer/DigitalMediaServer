@@ -32,16 +32,16 @@
 
 	<h2>What does it do?</h2>
 
-	<p>Universal Media Server (or UMS for short) is a program that
+	<p>Digital Media Server (or DMS for short) is a program that
 		streams media like video, audio or images from your computer or the
 		web to a device called a "renderer" that can be anything that supports
 		DLNA like a game console, a TV, a computer software or a mobile phone.</p>
 
 	<p>This might sound simple, but it is in fact a complex matter.
 		There are dozens of media formats in the world, and your console or TV
-		only understands a couple of them. UMS allows you to browse media on
+		only understands a couple of them. DMS allows you to browse media on
 		your favorite renderer without having to worry about the details
-		of what you are viewing. UMS takes care of retrieving the media (from
+		of what you are viewing. DMS takes care of retrieving the media (from
 		file, network or web) and translating it to the best format that your
 		device understands.</p>
 
@@ -49,13 +49,15 @@
 	<h2>Media renderers</h2>
 
 	<p>
-		UMS is a <a
-			href="http://en.wikipedia.org/wiki/Digital_Living_Network_Alliance">DLNA</a>
-		compliant <a href="http://en.wikipedia.org/wiki/UPnP">UPnP</a> Media
-		Server. It was originally written to support the PlayStation 3.
-		However, other renderers support the same standards as the
-		PlayStation 3 and UMS has been expanded to support a range of them,
-		including Xbox 360 and various Samsung and Sony televisions.
+		Digital Media Server is a <a href="http://en.wikipedia.org/wiki/Digital_Living_Network_Alliance">DLNA</a>
+		compatible <a href="http://en.wikipedia.org/wiki/Universal_Plug_and_Play#UPnP_AV_standards">UPnP AV</a> Media Server.
+		It is capable of sharing digital video, audio and image resources to UPnP AV and DLNA capable devices. It is based on
+		PS3 Media Server by shagrath and Universal Media Server.
+	</p>
+	<p>
+		PS3 Media Server was originally written to support the PlayStation 3. However, other renderers support the same
+		standards (UPnP AV and DLNA) as the PlayStation 3 and the program has since been expanded to generally support UPnP AV
+		and DLNA capable devices.
 	</p>
 
 
@@ -83,51 +85,39 @@
 		and embedded systems. It can be customized very well by experienced
 		shellscript gurus. It is not a good choice for beginners.</p>
 
-	<h2>Why UMS?</h2>
+	<h2>Why DMS?</h2>
 
 	<p>
-		UMS is available for Windows, Linux and Mac OS X. A prerequisite is the
+		DMS is available for Windows, Linux and Mac OS X. A prerequisite is the
 		installation of <a href="http://java.com/en/download/">Java
-			Runtime Environment</a> (JRE) because UMS is programmed in Java.
+			Runtime Environment</a> (JRE) because DMS is programmed in Java.
 	</p>
 
-	<p>UMS is shipped with all required software to make it work out of
+	<p>DMS is shipped with all required software to make it work out of
 		the box. However, additional features may require the installation of
 		additional software.</p>
 
 	<p>There are a lot of technical details involved in the process of
-		translating media. UMS tries to minimalize this for the user by
+		translating media. DMS tries to minimalize this for the user by
 		shipping with working defaults for most situations. You simply start
-		UMS and it will find your device and start communicating with it
+		DMS and it will find your device and start communicating with it
 		without any extra configuration.</p>
 
-	<p>UMS is optimized for use with the Playstation 3. But you can
+	<p>DMS is optimized for use with the Playstation 3. But you can
 		also use an Xbox 360, Popcorn Hour and various Samsung or Sony TVs as
 		streaming clients.</p>
 
 	<p>In the old days, people would use a conversion program like
 		"mkv2vob" and connect USB hard drives with converted files to the PS3.
-		With UMS there is no need for converting files any more. If converting
-		is necessary, UMS will do it for you on the fly.</p>
+		With DMS there is no need for converting files any more. If converting
+		is necessary, DMS will do it for you on the fly.</p>
 
-	<p>UMS also makes it possible to stream web content like Youtube,
-		GameTrailers, web radio or Picasa to your device.</p>
-
-	<p>
-		UMS is free Open Source software and has been designed to allow third
-		party plugins to extend its functionality. You are welcome to help
-		improve UMS or write a plugin for others to use. See the <a
-			href="http://www.universalmediaserver.com">project homepage</a>
-		for more information.
-	</p>
-
-	<p>The most important features of UMS are transcoding and muxing.</p>
-
+	<p>The most important features of DMS are transcoding and muxing.</p>
 
 	<h2>What are transcoding and muxing?</h2>
 
 	<p>
-		If the video codec is not supported by your renderer, UMS can convert
+		If the video codec is not supported by your renderer, DMS can convert
 		the video stream to a device-compatible codec. For example, the PS3 is
 		compatible with MPEG2. This procedure is called <a
 			href="http://en.wikipedia.org/wiki/Transcoding">transcoding</a> and
@@ -136,22 +126,22 @@
 
 	<p>
 		When you try to play a media file on your renderer and the
-		format is not supported you get a "data corrupted" message. UMS is
-		able to help in this case. UMS is able to change the container format
-		on the fly if it is not supported by your device. UMS extracts the
+		format is not supported you get a "data corrupted" message. DMS is
+		able to help in this case. DMS is able to change the container format
+		on the fly if it is not supported by your device. DMS extracts the
 		audio and video stream and puts it into a supported M2TS-container.
 		This is called <a href="http://en.wikipedia.org/wiki/Muxing">muxing</a>.
 	</p>
 
-	<p>Together, transcoding and muxing make it possible for UMS to
-		stream almost every multimedia format to your renderer. UMS
+	<p>Together, transcoding and muxing make it possible for DMS to
+		stream almost every multimedia format to your renderer. DMS
 		enables you to view media on TV that you could formerly only view on
 		your computer.</p>
 
 	<h2>Hardware requirements</h2>
 
 	<p>You can stream media files with quite old computers. If the
-		device does not recognize the video container format and UMS has to
+		device does not recognize the video container format and DMS has to
 		remux you will need some additional CPU power. A 2 GHz CPU should be
 		sufficient. When transcoding a full HD resolution video, an up-to-date
 		dual core processor from Intel or AMD running at at least 2.6 GHz is

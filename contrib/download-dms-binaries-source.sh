@@ -1,11 +1,11 @@
 #!/bin/bash
 #
-# download-pms-binaries-source.sh
+# download-dms-binaries-source.sh
 #
 # Version: 1.1
 # Last updated: 2012-01-26
 # Authors: Happy-Neko
-# Based on build-pms-binaries.sh by Patrick Atoon and Happy-Neko
+# Based on build-dms-binaries.sh by Patrick Atoon and Happy-Neko
 #
 #
 # DESCRIPTION
@@ -780,22 +780,22 @@ download_tsmuxer() {
 
 
 ##########################################
-# PS3MEDIASERVER
-# https://github.com/ps3mediaserver/ps3mediaserver
+# DIGITAL MEDIA SERVER
+# https://github.com/DigitalMediaServer/DigitalMediaServer
 #
-download_ps3mediaserver() {
-    start_download ps3mediaserver
+download_digitalmediaserver() {
+    start_download digitalmediaserver
     cd $SRC
 
-    if [ -d ps3mediaserver ]; then
-        rm -rf ps3mediaserver
+    if [ -d digitalmediaserver ]; then
+        rm -rf digitalmediaserver
     fi
-    $GIT clone git://github.com/ps3mediaserver/ps3mediaserver.git ps3mediaserver
+    $GIT clone git://github.com/DigitalMediaServer/DigitalMediaServer.git DigitalMediaServer
     exit_on_error
-    cd ps3mediaserver
+    cd DigitalMediaServer
 
     if [ "$FIXED_REVISIONS" == "yes" ]; then
-        $GIT checkout ${VERSION_PS3MEDIASERVER}
+        $GIT checkout ${VERSION_DIGITALMEDIASERVER}
         exit_on_error
     fi
 
@@ -841,7 +841,7 @@ download_lzo
 download_x264
 download_xvid
 
-# Tools for including with PS3 Media Server
+# Tools for including with Digital Media Server
 download_flac
 download_dcraw
 download_enca
@@ -849,4 +849,4 @@ download_libass
 download_ffmpeg
 download_mplayer
 download_tsmuxer
-#download_ps3mediaserver
+#download_digitalmediaserver

@@ -7,7 +7,7 @@ import net.pms.encoders.Player;
 import net.pms.io.OutputParams;
 
 /**
- * Classes implementing this interface and packaged as pms plugins will have the
+ * Classes implementing this interface and packaged as DMS plugins will have the
  * possibility to modify transcoding arguments when a resource is being
  * transcoded
  */
@@ -15,7 +15,7 @@ public interface FinalizeTranscoderArgsListener extends ExternalListener {
 	/**
 	 * Called before the transcoding of a resource starts to determine the list
 	 * of commands to be used
-	 * 
+	 *
 	 * @param player
 	 *            the player being used
 	 * @param filename

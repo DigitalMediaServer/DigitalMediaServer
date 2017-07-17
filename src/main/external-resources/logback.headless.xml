@@ -6,7 +6,7 @@
 	-->
 
 	<!--
-		Let UMS decide the path for the logfile: either the current directory
+		Let DMS decide the path for the logfile: either the current directory
 		or (when that is read only) the system temp directory.
 	-->
 	<define name="logFilePath" class="net.pms.logging.DebugLogPropertyDefiner">
@@ -34,7 +34,7 @@
 
 	<!--
 		Appender for the default logfile that will keep the file growing in size
-		until UMS is restarted.
+		until DMS is restarted.
 	-->
 	<appender name="default.log" class="ch.qos.logback.core.FileAppender">
 		<!-- No threshold filtering, log everything the root logger allows -->

@@ -37,7 +37,7 @@ public class SubtitleUtilsTest {
 	 */
 	@Before
 	public final void setUp() {
-		// Silence all log messages from the PMS code that is being tested
+		// Silence all log messages from the DMS code that is being tested
 		LoggerContext context = (LoggerContext) LoggerFactory.getILoggerFactory();
 		context.reset();
 	}
@@ -89,7 +89,7 @@ public class SubtitleUtilsTest {
 		DLNAMediaSubtitle sub5 = new DLNAMediaSubtitle();
 		sub5.setExternalFile(file_koi8_r, null);
 		assertThat(getSubCpOptionForMencoder(sub5)).isEqualTo("enca:ru:cp1251");
-		
+
 		File file_cp1250 = FileUtils.toFile(CLASS.getResource("../../util/czech-cp1250.srt"));
 		DLNAMediaSubtitle sub6 = new DLNAMediaSubtitle();
 		sub6.setExternalFile(file_cp1250, null);

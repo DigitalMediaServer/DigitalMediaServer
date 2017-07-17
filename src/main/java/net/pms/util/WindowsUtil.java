@@ -14,12 +14,12 @@ public class WindowsUtil {
 	private WindowsUtil() {}
 
 	/**
-	 * Checks if is the Universal Media Server service is installed.
+	 * Checks if is the Digital Media Server service is installed.
 	 *
-	 * @return true, if a service named Universal Media Server is installed
+	 * @return true, if a service named Digital Media Server is installed
 	 */
-	public static boolean isUmsServiceInstalled() {
-		String[] commands = new String[]{ "sc", "query", "\"Universal Media Server\"" };
+	public static boolean isServiceInstalled() {
+		String[] commands = new String[]{ "sc", "query", "\"Digital Media Server\"" };
 		int[] expectedExitCodes = { 0, 1060 };
 		String response = ProcessUtil.run(expectedExitCodes, commands);
 		return response.contains("TYPE");
@@ -30,7 +30,7 @@ public class WindowsUtil {
 	 * that starts whenever the machine is started.
 	 * This function is called from the General tab.
 	 *
-	 * @return true if UMS could be installed as a Windows service.
+	 * @return true if DMS could be installed as a Windows service.
 	 * @see net.pms.newgui.GeneralTab#build()
 	 */
 	public static boolean installWin32Service() {

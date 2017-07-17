@@ -91,16 +91,16 @@ public class VersionTest {
 		assertThat(v2.hashCode()).isNotEqualTo(v1.hashCode());
 	}
 
-	private void assertIsPmsUpdatable(Version v1, Version v2) {
+	private void assertIsDmsUpdatable(Version v1, Version v2) {
 		assertVersionIsGreaterThan(v2, v1);
-		assertTrue(Version.isPmsUpdatable(v1, v2));
-		assertFalse(Version.isPmsUpdatable(v2, v1));
+		assertTrue(Version.isDmsUpdatable(v1, v2));
+		assertFalse(Version.isDmsUpdatable(v2, v1));
 	}
 
-	private void assertIsNotPmsUpdatable(Version v1, Version v2) {
+	private void assertIsNotDmsUpdatable(Version v1, Version v2) {
 		assertVersionIsGreaterThan(v1, v2);
-		assertFalse(Version.isPmsUpdatable(v1, v2));
-		assertTrue(Version.isPmsUpdatable(v2, v1));
+		assertFalse(Version.isDmsUpdatable(v1, v2));
+		assertTrue(Version.isDmsUpdatable(v2, v1));
 	}
 
 	private void assertVersionToStringEquals(Version v, String s) {
@@ -291,83 +291,83 @@ public class VersionTest {
 	}
 
 	@Test
-	public void testIsPmsUpdatable() {
-		assertIsPmsUpdatable(v("2"), v("2.0.1"));
-		assertIsPmsUpdatable(v("2"), v("02.00.01"));
-		assertIsPmsUpdatable(v("2"), v("2.0.1.0"));
-		assertIsPmsUpdatable(v("2"), v("02.00.01.00"));
+	public void testIsDmsUpdatable() {
+		assertIsDmsUpdatable(v("2"), v("2.0.1"));
+		assertIsDmsUpdatable(v("2"), v("02.00.01"));
+		assertIsDmsUpdatable(v("2"), v("2.0.1.0"));
+		assertIsDmsUpdatable(v("2"), v("02.00.01.00"));
 
-		assertIsPmsUpdatable(v("2.2"), v("2.2.1"));
-		assertIsPmsUpdatable(v("2.2"), v("02.02.01"));
-		assertIsPmsUpdatable(v("2.2"), v("2.2.0.1"));
-		assertIsPmsUpdatable(v("2.2"), v("02.02.00.01"));
+		assertIsDmsUpdatable(v("2.2"), v("2.2.1"));
+		assertIsDmsUpdatable(v("2.2"), v("02.02.01"));
+		assertIsDmsUpdatable(v("2.2"), v("2.2.0.1"));
+		assertIsDmsUpdatable(v("2.2"), v("02.02.00.01"));
 
-		assertIsPmsUpdatable(v("2.2.2"), v("2.2.3"));
-		assertIsPmsUpdatable(v("2.2.2"), v("02.02.03"));
-		assertIsPmsUpdatable(v("2.2.2"), v("2.2.2.1"));
-		assertIsPmsUpdatable(v("2.2.2"), v("02.02.02.01"));
+		assertIsDmsUpdatable(v("2.2.2"), v("2.2.3"));
+		assertIsDmsUpdatable(v("2.2.2"), v("02.02.03"));
+		assertIsDmsUpdatable(v("2.2.2"), v("2.2.2.1"));
+		assertIsDmsUpdatable(v("2.2.2"), v("02.02.02.01"));
 
-		assertIsPmsUpdatable(v("2.2.2.2"), v("2.2.2.3"));
-		assertIsPmsUpdatable(v("2.2.2.2"), v("02.02.02.03"));
-		assertIsPmsUpdatable(v("2.2.2.2"), v("2.2.3.0"));
-		assertIsPmsUpdatable(v("2.2.2.2"), v("02.02.03.00"));
+		assertIsDmsUpdatable(v("2.2.2.2"), v("2.2.2.3"));
+		assertIsDmsUpdatable(v("2.2.2.2"), v("02.02.02.03"));
+		assertIsDmsUpdatable(v("2.2.2.2"), v("2.2.3.0"));
+		assertIsDmsUpdatable(v("2.2.2.2"), v("02.02.03.00"));
 	}
 
 	@Test
-	public void testIsNotPmsUpdatable() {
-		assertIsNotPmsUpdatable(v("2"), v("1"));
-		assertIsNotPmsUpdatable(v("2"), v("01"));
-		assertIsNotPmsUpdatable(v("2"), v("1.0"));
-		assertIsNotPmsUpdatable(v("2"), v("01.00"));
-		assertIsNotPmsUpdatable(v("2"), v("1.0.0"));
-		assertIsNotPmsUpdatable(v("2"), v("01.00.00"));
-		assertIsNotPmsUpdatable(v("2"), v("1.0.0.0"));
-		assertIsNotPmsUpdatable(v("2"), v("01.00.00.00"));
+	public void testIsNotDmsUpdatable() {
+		assertIsNotDmsUpdatable(v("2"), v("1"));
+		assertIsNotDmsUpdatable(v("2"), v("01"));
+		assertIsNotDmsUpdatable(v("2"), v("1.0"));
+		assertIsNotDmsUpdatable(v("2"), v("01.00"));
+		assertIsNotDmsUpdatable(v("2"), v("1.0.0"));
+		assertIsNotDmsUpdatable(v("2"), v("01.00.00"));
+		assertIsNotDmsUpdatable(v("2"), v("1.0.0.0"));
+		assertIsNotDmsUpdatable(v("2"), v("01.00.00.00"));
 
-		assertIsNotPmsUpdatable(v("2.2"), v("1"));
-		assertIsNotPmsUpdatable(v("2.2"), v("01"));
-		assertIsNotPmsUpdatable(v("2.2"), v("1.0"));
-		assertIsNotPmsUpdatable(v("2.2"), v("01.00"));
-		assertIsNotPmsUpdatable(v("2.2"), v("1.0.0"));
-		assertIsNotPmsUpdatable(v("2.2"), v("01.00.00"));
-		assertIsNotPmsUpdatable(v("2.2"), v("1.0.0.0"));
-		assertIsNotPmsUpdatable(v("2.2"), v("01.00.00.00"));
+		assertIsNotDmsUpdatable(v("2.2"), v("1"));
+		assertIsNotDmsUpdatable(v("2.2"), v("01"));
+		assertIsNotDmsUpdatable(v("2.2"), v("1.0"));
+		assertIsNotDmsUpdatable(v("2.2"), v("01.00"));
+		assertIsNotDmsUpdatable(v("2.2"), v("1.0.0"));
+		assertIsNotDmsUpdatable(v("2.2"), v("01.00.00"));
+		assertIsNotDmsUpdatable(v("2.2"), v("1.0.0.0"));
+		assertIsNotDmsUpdatable(v("2.2"), v("01.00.00.00"));
 
-		assertIsNotPmsUpdatable(v("2.2"), v("2.1"));
-		assertIsNotPmsUpdatable(v("2.2"), v("02.01"));
-		assertIsNotPmsUpdatable(v("2.2"), v("2.1.0"));
-		assertIsNotPmsUpdatable(v("2.2"), v("02.01.00"));
-		assertIsNotPmsUpdatable(v("2.2"), v("2.1.0.0"));
-		assertIsNotPmsUpdatable(v("2.2"), v("02.01.00.00"));
+		assertIsNotDmsUpdatable(v("2.2"), v("2.1"));
+		assertIsNotDmsUpdatable(v("2.2"), v("02.01"));
+		assertIsNotDmsUpdatable(v("2.2"), v("2.1.0"));
+		assertIsNotDmsUpdatable(v("2.2"), v("02.01.00"));
+		assertIsNotDmsUpdatable(v("2.2"), v("2.1.0.0"));
+		assertIsNotDmsUpdatable(v("2.2"), v("02.01.00.00"));
 
-		assertIsNotPmsUpdatable(v("2.2.2"), v("1"));
-		assertIsNotPmsUpdatable(v("2.2.2"), v("01"));
-		assertIsNotPmsUpdatable(v("2.2.2"), v("1.0"));
-		assertIsNotPmsUpdatable(v("2.2.2"), v("01.00"));
-		assertIsNotPmsUpdatable(v("2.2.2"), v("1.0.0"));
-		assertIsNotPmsUpdatable(v("2.2.2"), v("01.00.00"));
-		assertIsNotPmsUpdatable(v("2.2.2"), v("1.0.0.0"));
-		assertIsNotPmsUpdatable(v("2.2.2"), v("01.00.00.00"));
+		assertIsNotDmsUpdatable(v("2.2.2"), v("1"));
+		assertIsNotDmsUpdatable(v("2.2.2"), v("01"));
+		assertIsNotDmsUpdatable(v("2.2.2"), v("1.0"));
+		assertIsNotDmsUpdatable(v("2.2.2"), v("01.00"));
+		assertIsNotDmsUpdatable(v("2.2.2"), v("1.0.0"));
+		assertIsNotDmsUpdatable(v("2.2.2"), v("01.00.00"));
+		assertIsNotDmsUpdatable(v("2.2.2"), v("1.0.0.0"));
+		assertIsNotDmsUpdatable(v("2.2.2"), v("01.00.00.00"));
 
-		assertIsNotPmsUpdatable(v("2.2.2"), v("2.1.0"));
-		assertIsNotPmsUpdatable(v("2.2.2"), v("02.01.00"));
-		assertIsNotPmsUpdatable(v("2.2.2"), v("2.1.0.0"));
-		assertIsNotPmsUpdatable(v("2.2.2"), v("02.01.00.00"));
+		assertIsNotDmsUpdatable(v("2.2.2"), v("2.1.0"));
+		assertIsNotDmsUpdatable(v("2.2.2"), v("02.01.00"));
+		assertIsNotDmsUpdatable(v("2.2.2"), v("2.1.0.0"));
+		assertIsNotDmsUpdatable(v("2.2.2"), v("02.01.00.00"));
 
-		assertIsNotPmsUpdatable(v("2.2.2.2"), v("1"));
-		assertIsNotPmsUpdatable(v("2.2.2.2"), v("01"));
-		assertIsNotPmsUpdatable(v("2.2.2.2"), v("1.0"));
-		assertIsNotPmsUpdatable(v("2.2.2.2"), v("01.00"));
-		assertIsNotPmsUpdatable(v("2.2.2.2"), v("1.0.0"));
-		assertIsNotPmsUpdatable(v("2.2.2.2"), v("01.00.00"));
-		assertIsNotPmsUpdatable(v("2.2.2.2"), v("1.0.0.0"));
-		assertIsNotPmsUpdatable(v("2.2.2.2"), v("01.00.00.00"));
+		assertIsNotDmsUpdatable(v("2.2.2.2"), v("1"));
+		assertIsNotDmsUpdatable(v("2.2.2.2"), v("01"));
+		assertIsNotDmsUpdatable(v("2.2.2.2"), v("1.0"));
+		assertIsNotDmsUpdatable(v("2.2.2.2"), v("01.00"));
+		assertIsNotDmsUpdatable(v("2.2.2.2"), v("1.0.0"));
+		assertIsNotDmsUpdatable(v("2.2.2.2"), v("01.00.00"));
+		assertIsNotDmsUpdatable(v("2.2.2.2"), v("1.0.0.0"));
+		assertIsNotDmsUpdatable(v("2.2.2.2"), v("01.00.00.00"));
 
-		assertIsNotPmsUpdatable(v("2.2.2.2"), v("2.1"));
-		assertIsNotPmsUpdatable(v("2.2.2.2"), v("02.01"));
-		assertIsNotPmsUpdatable(v("2.2.2.2"), v("2.1.0"));
-		assertIsNotPmsUpdatable(v("2.2.2.2"), v("02.01.00"));
-		assertIsNotPmsUpdatable(v("2.2.2.2"), v("2.1.0.0"));
-		assertIsNotPmsUpdatable(v("2.2.2.2"), v("02.01.00.00"));
+		assertIsNotDmsUpdatable(v("2.2.2.2"), v("2.1"));
+		assertIsNotDmsUpdatable(v("2.2.2.2"), v("02.01"));
+		assertIsNotDmsUpdatable(v("2.2.2.2"), v("2.1.0"));
+		assertIsNotDmsUpdatable(v("2.2.2.2"), v("02.01.00"));
+		assertIsNotDmsUpdatable(v("2.2.2.2"), v("2.1.0.0"));
+		assertIsNotDmsUpdatable(v("2.2.2.2"), v("02.01.00.00"));
 	}
 }

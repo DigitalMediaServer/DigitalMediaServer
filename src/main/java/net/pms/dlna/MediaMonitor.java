@@ -40,7 +40,7 @@ public class MediaMonitor extends VirtualFolder {
 	 * @return The file
 	 */
 	private File monitorFile() {
-		return new File(config.getDataFile("UMS.mon"));
+		return new File(config.getDataFile("DMS.mon"));
 	}
 
 	private void parseMonitorFile() {
@@ -231,7 +231,7 @@ public class MediaMonitor extends VirtualFolder {
 									LOGGER.info("Failed to move {}", playedFile.getName());
 								}
 							} catch (InterruptedException e) {
-								LOGGER.warn("Abandoning moving of {} because the thread was interrupted, probably due to UMS shutdown", e.getMessage());
+								LOGGER.warn("Abandoning moving of {} because the thread was interrupted, probably due to DMS shutdown", e.getMessage());
 								LOGGER.trace("", e);
 								Thread.currentThread().interrupt();
 							}
@@ -261,7 +261,7 @@ public class MediaMonitor extends VirtualFolder {
 	}
 
 	/**
-	 * Populates UMS.mon with a list of completely played media.
+	 * Populates DMS.mon with a list of completely played media.
 	 *
 	 * @throws IOException
 	 */
