@@ -27,7 +27,7 @@
 				<include>*</include>
 			</includes>
 			<excludes>
-				<exclude>pms.icns</exclude>
+				<exclude>dms.icns</exclude>
 			</excludes>
 		</fileSet>
 
@@ -70,7 +70,7 @@
 			<outputDirectory>${project.name}.app/Contents/Resources</outputDirectory>
 			<fileMode>0644</fileMode>
 			<includes>
-				<include>UMS.conf</include>
+				<include>DMS.conf</include>
 				<include>WEB.conf</include>
 				<include>logback.headless.xml</include>
 				<include>logback.xml</include>

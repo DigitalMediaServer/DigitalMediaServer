@@ -27,7 +27,7 @@ import java.util.List;
 import net.pms.newgui.IFrame;
 
 /**
- * Special Logback appender to 'print' log messages on the UMS GUI.
+ * Special Logback appender to 'print' log messages on the DMS GUI.
  *
  * @author thomas@innot.de
  */
@@ -59,9 +59,9 @@ public class FrameAppender<E> extends UnsynchronizedAppenderBase<E> {
 		}
 	}
 
-	// Callback called by UMS when the GUI (or dummy GUI) has been initialised.
+	// Callback called by DMS when the GUI (or dummy GUI) has been initialised.
 	// everywhere else in the codebase accesses the frame via PMS.get().getFrame(),
-	// but we can't do that here as UMS is in the process of constructing
+	// but we can't do that here as DMS is in the process of constructing
 	// the instance that PMS.get() returns when this class is instantiated.
 	public static void setFrame(IFrame iframe) {
 		frame = iframe;

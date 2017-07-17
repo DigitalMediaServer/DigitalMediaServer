@@ -103,7 +103,7 @@ public class NetworkConfiguration {
 
 			return displayName;
 		}
-		
+
 		@Override
 		public String toString() {
 			return "InterfaceAssociation(addr=" + addr + ", iface=" + iface + ", parent=" + parentName + ')';
@@ -137,7 +137,7 @@ public class NetworkConfiguration {
 
 	/**
 	 * The list of configured network interface names that should be skipped.
-	 * 
+	 *
 	 * @see PmsConfiguration#getSkipNetworkInterfaces()
 	 */
 	private List<String> skipNetworkInterfaces = PMS.getConfiguration().getSkipNetworkInterfaces();
@@ -155,7 +155,7 @@ public class NetworkConfiguration {
 	/**
 	 * Collect all of the relevant addresses for the given network interface,
 	 * add them to the global address map and return them.
-	 * 
+	 *
 	 * @param networkInterface
 	 *            The network interface.
 	 * @return The available addresses.
@@ -165,7 +165,7 @@ public class NetworkConfiguration {
 		LOGGER.trace("available addresses for {} is: {}", networkInterface.getName(), Collections.list(networkInterface.getInetAddresses()));
 
 		/**
-		 * networkInterface.getInterfaceAddresses() returns 'null' on some adapters if 
+		 * networkInterface.getInterfaceAddresses() returns 'null' on some adapters if
 		 * the parameter 'java.net.preferIPv4Stack=true' is passed to the JVM
 		 * Use networkInterface.getInetAddresses() instead
 		 */
@@ -188,7 +188,7 @@ public class NetworkConfiguration {
 	/**
 	 * Returns true if the provided address is relevant, i.e. when the address
 	 * is not an IPv6 address or a loopback address.
-	 * 
+	 *
 	 * @param address
 	 *            The address to test.
 	 * @return True when the address is relevant, false otherwise.
@@ -201,7 +201,7 @@ public class NetworkConfiguration {
 	 * Discovers the list of relevant network interfaces based on the provided
 	 * list of network interfaces. The parent name is passed on for logging and
 	 * identification purposes, it can be <code>null</code>.
-	 * 
+	 *
 	 * @param networkInterfaces
 	 *            The network interface list to check.
 	 * @param parentName
@@ -232,7 +232,7 @@ public class NetworkConfiguration {
 	/**
 	 * Returns the list of discovered available addresses for the provided list
 	 * of network interfaces.
-	 * 
+	 *
 	 * @param networkInterfaces
 	 *            The list of network interfaces.
 	 * @return The list of addresses.
@@ -258,7 +258,7 @@ public class NetworkConfiguration {
 	 * might also have relevant addresses. Discovery is therefore handled
 	 * recursively. The parent name is passed on for identification and logging
 	 * purposes, it can be <code>null</code>.
-	 * 
+	 *
 	 * @param networkInterface
 	 *            The network interface to check.
 	 * @param parentName
@@ -364,7 +364,7 @@ public class NetworkConfiguration {
 	 * Returns the first interface from the list of discovered interfaces that
 	 * has an address. If no such interface can be found or if no interfaces
 	 * were discovered, <code>null</code> is returned.
-	 * 
+	 *
 	 * @return The interface.
 	 */
 	private InterfaceAssociation getFirstInterfaceWithAddress() {
@@ -380,7 +380,7 @@ public class NetworkConfiguration {
 	/**
 	 * Returns the default IP address associated with the the given interface
 	 * name, or <code>null</code> if it has not been discovered.
-	 * 
+	 *
 	 * @param name
 	 *            The name of the interface.
 	 * @return The IP address.
@@ -392,7 +392,7 @@ public class NetworkConfiguration {
 	/**
 	 * Returns true if the name or displayname match the configured interfaces
 	 * to skip, false otherwise.
-	 * 
+	 *
 	 * @param name
 	 *            The name of the interface.
 	 * @param displayName
@@ -408,7 +408,7 @@ public class NetworkConfiguration {
 				if (name != null && name.toLowerCase().startsWith(current.toLowerCase())) {
 					return true;
 				}
-	
+
 				if (displayName != null && displayName.toLowerCase().startsWith(current.toLowerCase())) {
 					return true;
 				}
@@ -419,9 +419,9 @@ public class NetworkConfiguration {
 	}
 
 	/**
-	 * Returns the network interface for the servername configured in PMS, or
+	 * Returns the network interface for the servername configured in DMS, or
 	 * <code>null</code> if no servername is configured.
-	 * 
+	 *
 	 * @return The network interface.
 	 * @throws SocketException
 	 *             If an I/O error occurs.

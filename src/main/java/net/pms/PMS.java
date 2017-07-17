@@ -130,8 +130,8 @@ public class PMS {
 	private SleepManager sleepManager = null;
 
 	/**
-	 * Returns a pointer to the PMS GUI's main window.
-	 * @return {@link net.pms.newgui.IFrame} Main PMS window.
+	 * Returns a pointer to the DMS GUI's main window.
+	 * @return {@link net.pms.newgui.IFrame} Main DMS window.
 	 */
 	public IFrame getFrame() {
 		return frame;
@@ -164,7 +164,7 @@ public class PMS {
 	}
 
 	/**
-	 * Pointer to a running PMS server.
+	 * Pointer to a running DMS server.
 	 */
 	private static PMS instance = null;
 
@@ -247,7 +247,7 @@ public class PMS {
 	}
 
 	/**
-	 * {@link net.pms.newgui.IFrame} object that represents the PMS GUI.
+	 * {@link net.pms.newgui.IFrame} object that represents the DMS GUI.
 	 */
 	private IFrame frame;
 
@@ -645,7 +645,7 @@ public class PMS {
 		credMgr = new CredMgr(configuration.getCredFile());
 
 		// init dbs
-		keysDb = new UmsKeysDb();
+		keysDb = new DmsKeysDb();
 		infoDb = new InfoDb();
 		codes = new CodeDb();
 		masterCode = null;
@@ -877,8 +877,10 @@ public class PMS {
 	private MediaLibrary mediaLibrary;
 
 	/**
-	 * Returns the MediaLibrary used by PMS.
-	 * @return (MediaLibrary) Used mediaLibrary, if any. null if none is in use.
+	 * Returns the MediaLibrary used by DMS.
+	 *
+	 * @return The current {@link MediaLibrary} or {@code null} if none is in
+	 *         use.
 	 */
 	public MediaLibrary getLibrary() {
 		return mediaLibrary;
@@ -981,7 +983,7 @@ public class PMS {
 	}
 
 	/**
-	 * Restarts the server. The trigger is either a button on the main PMS window or via
+	 * Restarts the server. The trigger is either a button on the main DMS window or via
 	 * an action item.
 	 */
 	// XXX: don't try to optimize this by reusing the same server instance.
@@ -1015,7 +1017,7 @@ public class PMS {
 	}
 
 	// Cannot remove these methods because of backwards compatibility;
-	// none of the PMS code uses it, but some plugins still do.
+	// none of the DMS code uses it, but some plugins still do.
 
 	/**
 	 * @deprecated Use the SLF4J logging API instead.
@@ -1119,9 +1121,9 @@ public class PMS {
 	 */
 	@Nonnull
 	public static PMS get() {
-		// XXX when PMS is run as an application, the instance is initialized via the createInstance call in main().
-		// However, plugin tests may need access to a PMS instance without going
-		// to the trouble of launching the PMS application, so we provide a fallback
+		// XXX when DMS is run as an application, the instance is initialized via the createInstance call in main().
+		// However, plugin tests may need access to a DMS instance without going
+		// to the trouble of launching the DMS application, so we provide a fallback
 		// initialization here. Either way, createInstance() should only be called once (see below)
 		if (instance == null) {
 			createInstance();
@@ -1348,8 +1350,8 @@ public class PMS {
 
 	/**
 	 * Retrieves the {@link net.pms.configuration.PmsConfiguration PmsConfiguration} object
-	 * that contains all configured settings for PMS. The object provides getters for all
-	 * configurable PMS settings.
+	 * that contains all configured settings for DMS. The object provides getters for all
+	 * configurable DMS settings.
 	 *
 	 * @return The configuration object
 	 */
@@ -1382,8 +1384,8 @@ public class PMS {
 
 	/**
 	 * Sets the {@link net.pms.configuration.PmsConfiguration PmsConfiguration} object
-	 * that contains all configured settings for PMS. The object provides getters for all
-	 * configurable PMS settings.
+	 * that contains all configured settings for DMS. The object provides getters for all
+	 * configurable DMS settings.
 	 *
 	 * @param conf The configuration object.
 	 */
@@ -1392,7 +1394,7 @@ public class PMS {
 	}
 
 	/**
-	 * Returns the project version for PMS.
+	 * Returns the project version for DMS.
 	 *
 	 * @return The project version.
 	 */
@@ -1556,7 +1558,7 @@ public class PMS {
 	}
 
 	private static String pidFile() {
-		return configuration.getDataFile("pms.pid");
+		return configuration.getDataFile("dms.pid");
 	}
 
 	private static void killProc() throws AccessControlException, IOException{
@@ -1953,7 +1955,7 @@ public class PMS {
 		return instance.credMgr.verify(owner, tag, user, pwd);
 	}
 
-	private UmsKeysDb keysDb;
+	private DmsKeysDb keysDb;
 
 	public static String getKey(String key) {
 		 return instance.keysDb.get(key);

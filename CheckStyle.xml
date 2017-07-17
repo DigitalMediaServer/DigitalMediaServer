@@ -5,9 +5,9 @@
     This configuration file was written by the eclipse-cs plugin configuration editor
 -->
 <!--
-    Checkstyle-Configuration: UMS
+    Checkstyle-Configuration: DMS
     Description:
-Checkstyle configuration for Universal Media Server.
+Checkstyle configuration for Digital Media Server.
 -->
 <module name="Checker">
   <property name="severity" value="warning"/>

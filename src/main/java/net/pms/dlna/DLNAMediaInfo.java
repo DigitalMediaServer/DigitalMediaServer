@@ -362,7 +362,7 @@ public class DLNAMediaInfo implements Cloneable {
 	 * core layer. Valid cores include AAC-LC, AAC Scalable (without LTP), ER
 	 * AAC LC, ER AAC Scalable, and ER BSAC.
 	 * <p>
-	 * Since UMS currently only implements AAC-LC among the valid core layer
+	 * Since DMS currently only implements AAC-LC among the valid core layer
 	 * codecs, AAC-LC is the only core layer format "approved" by this test. If
 	 * further codecs are added in the future, this test should be modified
 	 * accordingly.

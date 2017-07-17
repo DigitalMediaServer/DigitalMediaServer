@@ -47,7 +47,7 @@ public class FileUtilTest {
 	 */
 	@Before
 	public final void setUp() throws ConfigurationException {
-		// Silence all log messages from the PMS code that is being tested
+		// Silence all log messages from the DMS code that is being tested
 		LoggerContext context = (LoggerContext) LoggerFactory.getILoggerFactory();
 		context.getLogger(Logger.ROOT_LOGGER_NAME).setLevel(Level.OFF);;
 		PMS.get();
@@ -56,26 +56,26 @@ public class FileUtilTest {
 
 	@Test
 	public void testIsUrl() throws Exception {
-		assertThat(FileUtil.isUrl("universalmediaserver.com")).isFalse();
-		assertThat(FileUtil.isUrl("http://www.universalmediaserver.com")).isTrue();
+		assertThat(FileUtil.isUrl("digitalmediaserver.org")).isFalse();
+		assertThat(FileUtil.isUrl("http://www.digitalmediaserver.org")).isTrue();
 	}
 
 	@Test
 	public void testGetProtocol() throws Exception {
-		assertThat(FileUtil.getProtocol("universalmediaserver.com")).isNull();
-		assertThat(FileUtil.getProtocol("http://www.universalmediaserver.com")).isEqualTo("http");
+		assertThat(FileUtil.getProtocol("digitalmediaserver.org")).isNull();
+		assertThat(FileUtil.getProtocol("http://www.digitalmediaserver.org")).isEqualTo("http");
 	}
 
 	@Test
 	public void testUrlJoin() throws Exception {
-		assertThat(FileUtil.urlJoin("", "http://www.universalmediaserver.com")).isEqualTo("http://www.universalmediaserver.com");
-		assertThat(FileUtil.urlJoin("http://www.universalmediaserver.com", "index.php")).isEqualTo("http://www.universalmediaserver.com/index.php");
+		assertThat(FileUtil.urlJoin("", "http://www.digitalmediaserver.org")).isEqualTo("http://www.digitalmediaserver.org");
+		assertThat(FileUtil.urlJoin("http://www.digitalmediaserver.org", "index.php")).isEqualTo("http://www.digitalmediaserver.org/index.php");
 	}
 
 	@Test
 	public void testGetUrlExtension() throws Exception {
 		assertThat(FileUtil.getUrlExtension("filename")).isNull();
-		assertThat(FileUtil.getUrlExtension("http://www.universalmediaserver.com/file.html?foo=bar")).isEqualTo("html");
+		assertThat(FileUtil.getUrlExtension("http://www.digitalmediaserver.org/file.html?foo=bar")).isEqualTo("html");
 	}
 
 	@Test
@@ -92,40 +92,40 @@ public class FileUtilTest {
 	@Test
 	public void testGetFileNameWithRewriting() throws Exception {
 		// Video of a TV episode
-		assertThat(FileUtil.getFileNamePrettified("Universal.Media.Server.S01E02.720p.mkv", null)).isEqualTo("Universal Media Server - 102");
+		assertThat(FileUtil.getFileNamePrettified("Digital.Media.Server.S01E02.720p.mkv", null)).isEqualTo("Digital Media Server - 102");
 
 		// Video of a TV episode in double-digit seasons
-		assertThat(FileUtil.getFileNamePrettified("Universal.Media.Server.S12E03.720p.mkv", null)).isEqualTo("Universal Media Server - 1203");
+		assertThat(FileUtil.getFileNamePrettified("Digital.Media.Server.S12E03.720p.mkv", null)).isEqualTo("Digital Media Server - 1203");
 
 		// Video spanning two TV episodes
-		assertThat(FileUtil.getFileNamePrettified("Universal.Media.Server.S01E02E03.720p.mkv", null)).isEqualTo("Universal Media Server - 102-03");
-		assertThat(FileUtil.getFileNamePrettified("Universal.Media.Server.S01E02-E03.720p.mkv", null)).isEqualTo("Universal Media Server - 102-03");
-		assertThat(FileUtil.getFileNamePrettified("Universal.Media.Server.S12E03-E04.720p.mkv", null)).isEqualTo("Universal Media Server - 1203-04");
+		assertThat(FileUtil.getFileNamePrettified("Digital.Media.Server.S01E02E03.720p.mkv", null)).isEqualTo("Digital Media Server - 102-03");
+		assertThat(FileUtil.getFileNamePrettified("Digital.Media.Server.S01E02-E03.720p.mkv", null)).isEqualTo("Digital Media Server - 102-03");
+		assertThat(FileUtil.getFileNamePrettified("Digital.Media.Server.S12E03-E04.720p.mkv", null)).isEqualTo("Digital Media Server - 1203-04");
 
 		// Video of an extended TV episode
-		assertThat(FileUtil.getFileNamePrettified("Universal.Media.Server.S01E02.EXTENDED.720p.mkv", null)).isEqualTo("Universal Media Server - 102");
+		assertThat(FileUtil.getFileNamePrettified("Digital.Media.Server.S01E02.EXTENDED.720p.mkv", null)).isEqualTo("Digital Media Server - 102");
 
 		// Video of a TV episode with the "Mysterious Wordplay" title
-		assertThat(FileUtil.getFileNamePrettified("Universal.Media.Server.S01E02.Mysterious.Wordplay.720p.mkv", null)).isEqualTo("Universal Media Server - 102 - Mysterious Wordplay");
+		assertThat(FileUtil.getFileNamePrettified("Digital.Media.Server.S01E02.Mysterious.Wordplay.720p.mkv", null)).isEqualTo("Digital Media Server - 102 - Mysterious Wordplay");
 
 		// Video of an uncut TV episode
-		assertThat(FileUtil.getFileNamePrettified("Universal.Media.Server.S01E02.UNCUT.720p.mkv", null)).isEqualTo("Universal Media Server - 102 (Uncut)");
+		assertThat(FileUtil.getFileNamePrettified("Digital.Media.Server.S01E02.UNCUT.720p.mkv", null)).isEqualTo("Digital Media Server - 102 (Uncut)");
 
 		// Video of an extended cut of a TV episode
-		assertThat(FileUtil.getFileNamePrettified("Universal.Media.Server.S01E02.Extended.Cut.720p.mkv", null)).isEqualTo("Universal Media Server - 102 (Extended Cut)");
+		assertThat(FileUtil.getFileNamePrettified("Digital.Media.Server.S01E02.Extended.Cut.720p.mkv", null)).isEqualTo("Digital Media Server - 102 (Extended Cut)");
 
 		// Video of a TV episode that airs very regularly
-		assertThat(FileUtil.getFileNamePrettified("Universal.Media.Server.2015.01.23.720p.mkv", null)).isEqualTo("Universal Media Server - 2015/01/23");
+		assertThat(FileUtil.getFileNamePrettified("Digital.Media.Server.2015.01.23.720p.mkv", null)).isEqualTo("Digital Media Server - 2015/01/23");
 
 		// Video of a TV episode that airs very regularly and has an episode title
-		assertThat(FileUtil.getFileNamePrettified("Universal.Media.Server.2015.01.23.Mysterious.Wordplay.720p.mkv", null)).isEqualTo("Universal Media Server - 2015/01/23 - Mysterious Wordplay");
+		assertThat(FileUtil.getFileNamePrettified("Digital.Media.Server.2015.01.23.Mysterious.Wordplay.720p.mkv", null)).isEqualTo("Digital Media Server - 2015/01/23 - Mysterious Wordplay");
 
 		// Video of a movie
-		assertThat(FileUtil.getFileNamePrettified("Universal.Media.Server.2015.720p.mkv", null)).isEqualTo("Universal Media Server (2015)");
+		assertThat(FileUtil.getFileNamePrettified("Digital.Media.Server.2015.720p.mkv", null)).isEqualTo("Digital Media Server (2015)");
 
 		// Video of a special edition of a movie
-		assertThat(FileUtil.getFileNamePrettified("Universal.Media.Server.Special.Edition.2015.720p.mkv", null)).isEqualTo("Universal Media Server (2015) (Special Edition)");
-		assertThat(FileUtil.getFileNamePrettified("Universal.Media.Server.2015.Special.Edition.720p.mkv", null)).isEqualTo("Universal Media Server (2015) (Special Edition)");
+		assertThat(FileUtil.getFileNamePrettified("Digital.Media.Server.Special.Edition.2015.720p.mkv", null)).isEqualTo("Digital Media Server (2015) (Special Edition)");
+		assertThat(FileUtil.getFileNamePrettified("Digital.Media.Server.2015.Special.Edition.720p.mkv", null)).isEqualTo("Digital Media Server (2015) (Special Edition)");
 	}
 
 	@Test
@@ -356,7 +356,7 @@ public class FileUtilTest {
 		}
 		assertNull("NoSuchFileIsNull", FileUtil.getFilePermissionsNoThrow(new File(file.getParentFile(),"No such file")));
 
-		path = String.format("UMS_temp_writable_file_%d.tmp", new Random().nextInt(10000));
+		path = String.format("DMS_temp_writable_file_%d.tmp", new Random().nextInt(10000));
 		file = new File(System.getProperty("java.io.tmpdir"), path);
 		try {
 			if (file.createNewFile()) {

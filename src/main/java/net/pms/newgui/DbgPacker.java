@@ -56,7 +56,7 @@ public class DbgPacker implements ActionListener {
 			zippedLogFile = PMS.getConfiguration().getDefaultLogFilePath();
 		}
 		if (!zippedLogFile.isEmpty()) {
-			zippedLogFile = FileUtil.appendPathSeparator(zippedLogFile) + "ums_dbg.zip";
+			zippedLogFile = FileUtil.appendPathSeparator(zippedLogFile) + "dms_debug.zip";
 		} else {
 			LOGGER.error("Could not find destination folder for packed debug files");
 		}
@@ -126,8 +126,8 @@ public class DbgPacker implements ActionListener {
 		}
 		PmsConfiguration configuration = PMS.getConfiguration();
 
-		// check dbgpack property in UMS.conf
-		LOGGER.debug("Checking dbgpack property in UMS.conf");
+		// check dbgpack property in DMS.conf
+		LOGGER.debug("Checking dbgpack property in DMS.conf");
 		String f = (String) configuration.getCustomProperty("dbgpack");
 		if (f != null) {
 			add(f.split(","));

@@ -225,7 +225,7 @@ public class AviSynthMEncoder extends MEncoderVideo {
 	 */
 	public static File getAVSScript(String fileName, DLNAMediaSubtitle subTrack, int fromFrame, int toFrame, String frameRateRatio, String frameRateNumber, PmsConfiguration configuration) throws IOException {
 		String onlyFileName = fileName.substring(1 + fileName.lastIndexOf('\\'));
-		File file = new File(configuration.getTempFolder(), "pms-avs-" + onlyFileName + ".avs");
+		File file = new File(configuration.getTempFolder(), "dms-avs-" + onlyFileName + ".avs");
 		try (PrintWriter pw = new PrintWriter(new FileOutputStream(file))) {
 			String numerator;
 			String denominator;

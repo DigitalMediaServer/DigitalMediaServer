@@ -145,7 +145,7 @@ public class ProcessWrapperImpl extends Thread implements ProcessWrapper {
 			Map<String,String> environment = pb.environment();
 
 			// The variable params.env is initialized to null in the OutputParams
-			// constructor and never set to another value in PMS code. Plugins
+			// constructor and never set to another value in DMS code. Plugins
 			// might use it?
 			if (params.env != null && !params.env.isEmpty()) {
 				// Actual name of system path var is case-sensitive
@@ -167,13 +167,13 @@ public class ProcessWrapperImpl extends Thread implements ProcessWrapper {
 			// Fontconfig on Mac OS X may have problems locating fonts. As a result
 			// subtitles may be rendered invisible. Force feed fontconfig the
 			// FONTCONFIG_PATH environment variable to the prepackaged fontconfig
-			// configuration directory that comes with UMS on Mac OS X to make
+			// configuration directory that comes with DMS on Mac OS X to make
 			// sure it has sensible defaults.
 			if (Platform.isMac()) {
 				// Do not overwrite the variable if it already exists.
 				if (!environment.containsKey(FONTCONFIG_PATH)) {
-					String pmsWorkingDirectory = new File("").getAbsolutePath();
-					String fontconfigFontsPath = pmsWorkingDirectory + "/fonts";
+					String dmsWorkingDirectory = new File("").getAbsolutePath();
+					String fontconfigFontsPath = dmsWorkingDirectory + "/fonts";
 					LOGGER.trace("Setting FONTCONFIG_PATH to \"" + fontconfigFontsPath + "\"");
 					environment.put(FONTCONFIG_PATH, fontconfigFontsPath);
 				}

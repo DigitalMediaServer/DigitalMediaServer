@@ -47,7 +47,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class DownloadPlugins {
-	private final static String PLUGIN_LIST_URL = "http://www.universalmediaserver.com/plugins/list.php";
+	private final static String PLUGIN_LIST_URL = "http://www.universalmediaserver.com/plugins/list.php"; //TODO: (Nad) Fix
 	private final static String PLUGIN_TEST_FILE = "plugin_inst.tst";
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(DownloadPlugins.class);
@@ -386,7 +386,7 @@ public class DownloadPlugins {
 		pb.redirectErrorStream(true);
 		Map<String, String> env = pb.environment();
 		env.put("PROFILE_PATH", configuration.getProfilePath());
-		env.put("UMS_VERSION", PMS.getVersion());
+		env.put("DMS_VERSION", PMS.getVersion());
 
 		LOGGER.debug("running '" + args + "'");
 		Process pid = pb.start();

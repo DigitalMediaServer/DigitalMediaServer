@@ -79,7 +79,7 @@ public class RemotePlayHandler implements HttpHandler {
 			throw new IOException("Unknown root");
 		}
 		WebRender renderer = (WebRender) root.getDefaultRenderer();
-		renderer.setBrowserInfo(RemoteUtil.getCookie("UMSINFO", t), t.getRequestHeaders().getFirst("User-agent"));
+		renderer.setBrowserInfo(RemoteUtil.getCookie("DMSINFO", t), t.getRequestHeaders().getFirst("User-agent"));
 		//List<DLNAResource> res = root.getDLNAResources(id, false, 0, 0, renderer);
 		DLNAResource r = root.getDLNAResource(id, renderer);
 		if (r == null) {

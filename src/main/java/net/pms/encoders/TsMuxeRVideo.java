@@ -112,7 +112,7 @@ public class TsMuxeRVideo extends Player {
 		DLNAMediaInfo media,
 		OutputParams params
 	) throws IOException {
-		// Use device-specific pms conf
+		// Use device-specific DMS conf
 		PmsConfiguration prev = configuration;
 		configuration = (DeviceConfiguration) params.mediaRenderer;
 		final String filename = dlna.getFileName();
@@ -481,7 +481,7 @@ public class TsMuxeRVideo extends Player {
 			}
 		}
 
-		File f = new File(configuration.getTempFolder(), "pms-tsmuxer.meta");
+		File f = new File(configuration.getTempFolder(), "dms-tsmuxer.meta");
 		params.log = false;
 		try (PrintWriter pw = new PrintWriter(f)) {
 			pw.print("MUXOPT --no-pcr-on-video-pid");
@@ -784,7 +784,7 @@ public class TsMuxeRVideo extends Player {
 		// Check whether the subtitle actually has a language defined,
 		// uninitialized DLNAMediaSubtitle objects have a null language.
 		if (subtitle != null && subtitle.getLang() != null) {
-			// The resource needs a subtitle, but PMS does not support subtitles for tsMuxeR.
+			// The resource needs a subtitle, but DMS does not support subtitles for tsMuxeR.
 			return false;
 		}
 
@@ -793,7 +793,7 @@ public class TsMuxeRVideo extends Player {
 			String defaultAudioTrackName = resource.getMedia().getAudioTracksList().get(0).toString();
 
 			if (!audioTrackName.equals(defaultAudioTrackName)) {
-				// PMS only supports playback of the default audio track for tsMuxeR
+				// DMS only supports playback of the default audio track for tsMuxeR
 				return false;
 			}
 		} catch (NullPointerException e) {

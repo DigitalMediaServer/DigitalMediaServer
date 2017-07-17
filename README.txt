@@ -1,62 +1,16 @@
-Universal Media Server
+Digital Media Server
 ======================
 
-Based on PS3 Media Server by shagrath, all files copyright shagrath unless otherwise specified.
-
+Based on PS3 Media Server by shagrath and Universal Media Server.
 
 Current Developers
 ------------------
 
-* SubJunk
-* SharkHunter
-* valib
-* skeptical
-
-Current Forum Moderators
-------------------------
-
-* Optimus_prime
-* DeFlanko
-
+* Nadahar
 
 Links
 -----
 
-* Website:       http://www.universalmediaserver.com/
-* Source code:   https://github.com/UniversalMediaServer/UniversalMediaServer
-* Issue tracker: http://code.google.com/p/universal-media-server/issues/list
-
-
-Thanks
-------
-
-Thanks to:
-
-* Redlum
-* tcox
-* taconaut
-* tomeko
-* chocolateboy
-* ditlew
-* Raptor399
-* renszarv
-* happy.neko
-
-for major code contributions.
-
-Thanks to:
-
-* meskibob
-* otmanix
-
-for documentation and contributions to the community.
-
-Thanks to:
-
-* AlfredoRamos
-* Tianuchka
-
-for significant/frequent language translations.
-
-* boblinds and snoots for the network test cases :)
-* sarraken, bleuecinephile, bd.azerty, fabounnet for the support and feedback
+* Website:       http://www.digitalmediaserver.org/
+* Source code:   https://github.com/DigitalMediaServer/DigitalMediaServer
+* Issue tracker: https://github.com/DigitalMediaServer/DigitalMediaServer/issues

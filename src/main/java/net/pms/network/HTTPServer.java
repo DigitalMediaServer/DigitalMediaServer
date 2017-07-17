@@ -134,8 +134,8 @@ public class HTTPServer implements Runnable {
 
 				group.add(channel);
 			} catch (Exception e) {
-				LOGGER.error("Another program is using port " + port + ", which UMS needs.");
-				LOGGER.error("You can change the port UMS uses on the General Configuration tab.");
+				LOGGER.error("Another program is using port " + port + ", which DMS needs.");
+				LOGGER.error("You can change the port DMS uses on the General Configuration tab.");
 				LOGGER.trace("The error was: " + e);
 				PMS.get().getFrame().setConnectionState(ConnectionState.BLOCKED);
 			}

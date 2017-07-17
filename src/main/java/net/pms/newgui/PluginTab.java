@@ -208,11 +208,11 @@ public class PluginTab {
 						for (int i = 0; i < rows.length; i++) {
 							DownloadPlugins plugin = plugins.get(rows[i]);
 							if (plugin.isOld()) {
-								// This plugin requires newer UMS
+								// This plugin requires newer DMS
 								// display error and skip it.
 								JOptionPane.showMessageDialog(
 										looksFrame,
-										"Plugin " + plugin.getName() + " requires a newer version of UMS. Please upgrade.",
+										"Plugin " + plugin.getName() + " requires a newer version of DMS. Please upgrade.",
 										"Version Error",
 										JOptionPane.ERROR_MESSAGE
 									);

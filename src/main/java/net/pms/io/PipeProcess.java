@@ -39,7 +39,7 @@ public class PipeProcess {
 	private boolean forcereconnect;
 
 	public PipeProcess(String pipeName, OutputParams params, String... extras) {
-		// Use device-specific pms conf
+		// Use device-specific DMS conf
 		configuration = PMS.getConfiguration(params);
 		forcereconnect = false;
 		boolean in = true;

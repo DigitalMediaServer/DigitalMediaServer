@@ -77,7 +77,7 @@ public class WebRender extends DeviceConfiguration implements RendererConfigurat
 		new BMP()
 	};
 
-	private static final Matcher umsInfo = Pattern.compile("platform=(.+)&width=(.+)&height=(.+)&isTouchDevice=(.+)").matcher("");
+	private static final Matcher dmsInfo = Pattern.compile("platform=(.+)&width=(.+)&height=(.+)&isTouchDevice=(.+)").matcher("");
 
 	protected static final int CHROME = 1;
 	protected static final int MSIE = 2;
@@ -192,11 +192,11 @@ public class WebRender extends DeviceConfiguration implements RendererConfigurat
 		setUA(userAgent);
 		browser = getBrowser(userAgent);
 
-		if (info != null && umsInfo.reset(info).find()) {
-			platform = umsInfo.group(1).toLowerCase();
-			screenWidth = Integer.valueOf(umsInfo.group(2));
-			screenHeight = Integer.valueOf(umsInfo.group(3));
-			isTouchDevice = Boolean.valueOf(umsInfo.group(4));
+		if (info != null && dmsInfo.reset(info).find()) {
+			platform = dmsInfo.group(1).toLowerCase();
+			screenWidth = Integer.valueOf(dmsInfo.group(2));
+			screenHeight = Integer.valueOf(dmsInfo.group(3));
+			isTouchDevice = Boolean.valueOf(dmsInfo.group(4));
 
 			LOGGER.debug("Setting {} browser info: platform:{}, screen:{}x{}, isTouchDevice:{}",
 				getRendererName(), platform, screenWidth, screenHeight, isTouchDevice);

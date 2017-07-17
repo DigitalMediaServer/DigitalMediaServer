@@ -1,21 +1,20 @@
 /*
- * Universal Media Server, for streaming any media to DLNA
- * compatible renderers based on the http://www.ps3mediaserver.org.
- * Copyright (C) 2012 UMS developers.
+ * Digital Media Server, for streaming digital media to UPnP AV or DLNA
+ * compatible devices based on PS3 Media Server and Universal Media Server.
+ * Copyright (C) 2016 Digital Media Server developers.
  *
- * This program is a free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; version 2
- * of the License only.
+ * This program is free software: you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License as published by the Free Software
+ * Foundation, either version 3 of the License, or (at your option) any later
+ * version.
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+ * details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ * You should have received a copy of the GNU General Public License along with
+ * this program. If not, see http://www.gnu.org/licenses/.
  */
 package net.pms.logging;
 
@@ -77,7 +76,7 @@ public class LoggingTest {
 
 	@Before
 	public void setUp() {
-		// Silence all log messages from the UMS code that is being tested
+		// Silence all log messages from the DMS code that is being tested
 		LoggerContext context = (LoggerContext) LoggerFactory.getILoggerFactory();
 		context.getLogger(Logger.ROOT_LOGGER_NAME).setLevel(Level.OFF);
 	}
@@ -155,7 +154,7 @@ public class LoggingTest {
 	@Test
 	public void testDebugLogPropertyDefiner() throws ConfigurationException {
 
-		// Set up PMS configuration
+		// Set up DMS configuration
 		PMS.get();
 		PMS.setConfiguration(new PmsConfiguration());
 		DebugLogPropertyDefiner propertyDefiner = new DebugLogPropertyDefiner();
@@ -192,7 +191,7 @@ public class LoggingTest {
 		LoggerContext context = (LoggerContext) LoggerFactory.getILoggerFactory();
 		Logger rootLogger = context.getLogger(Logger.ROOT_LOGGER_NAME);
 
-		/* During UMS build a valid configuration should be accessible at least under "external resources"
+		/* During DMS build a valid configuration should be accessible at least under "external resources"
 		 * and thus testing for a valid configuration is considered OK to be able to do the other tests.
 		 * "internal defaults" is returned if a valid configuration can't be found.
 		 */

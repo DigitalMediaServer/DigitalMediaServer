@@ -23,7 +23,7 @@ public class NameFilter {
 		configurationReader = new ConfigurationReader(configuration, true); // true: log
 		configuration.setListDelimiter((char) 0);
 
-		File denyFile = new File(PMS.getConfiguration().getProfileFolder(), "UMS.deny");
+		File denyFile = new File(PMS.getConfiguration().getProfileFolder(), "DMS.deny");
 
 		try {
 			if (FileUtil.getFilePermissions(denyFile).isReadable()) {

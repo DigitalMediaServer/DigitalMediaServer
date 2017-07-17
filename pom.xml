@@ -6,7 +6,7 @@
 		DMS consists of two major parts: DMS itself and the third party software needed to
 		run it. While DMS itself is 100% pure Java, some of the third party software is
 		not. This means building a platform specific distribution boils down to first
-		building the pms.jar and then assembling all application resources.
+		building the dms.jar and then assembling all application resources.
 
 		Note that Maven 3 does not automatically install all dependencies, unlike Maven 2.
 		To install external dependencies to your local repository, run the following commands:
@@ -513,7 +513,7 @@
 
 						/example.res
 
-					The old PMS ant build packaged them in a "resources" directory
+					The old DMS ant build packaged them in a "resources" directory
 					e.g:
 
 						/resources/example.res
@@ -886,7 +886,7 @@
 		        </reportSets>
 			</plugin>
 
-			<!-- PMS tests report -->
+			<!-- DMS tests report -->
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-surefire-report-plugin</artifactId>
@@ -1030,7 +1030,7 @@
 										<mainClass>net.pms.PMS</mainClass>
 										<!--
 											this is required to make the ImageIo image "plugins" provided by jai-imageio-core-standalone work.
-											without it, the following exception is thrown when PMS starts:
+											without it, the following exception is thrown when DMS starts:
 
 											Configuration error: java.util.ServiceConfigurationError: javax.imageio.spi.ImageInputStreamSpi:
 												Provider com.sun.media.imageioimpl.stream.ChannelImageInputStreamSpi could not be instantiated:
@@ -1054,7 +1054,7 @@
 					</plugin>
 
 					<!--
-						Plugin to move the pms-x.x.x-jar-with-dependencies.jar to pms.jar
+						Plugin to move the dms-x.x.x-jar-with-dependencies.jar to dms.jar
 					-->
 					<plugin>
 						<groupId>org.apache.maven.plugins</groupId>
@@ -1155,7 +1155,7 @@
 								</goals>
 								<configuration>
 									<target>
-										<!-- Copy the pms-x.x.x-jar-with-dependencies.jar to pms.jar -->
+										<!-- Copy the dms-x.x.x-jar-with-dependencies.jar to dms.jar -->
 										<copy file="${project.basedir}/target/${project.artifactId}-${project.version}-jar-with-dependencies.jar"
 										      tofile="${project.basedir}/target/dms.jar" overwrite="true" />
 
@@ -1173,7 +1173,7 @@
 						Plugin to build a Windows installer using the nullsoft scriptable install system (NSIS)
 						The "generate-project" goal generates a file "target/project.nsh", which contains the
 						definitions for project variables like "${PROJECT_BASEDIR}" that can be used in the
-						"pms.nsi" and "setup.nsi" files.
+						"dms.nsi" and "setup.nsi" files.
 					-->
 					<plugin>
 						<groupId>org.codehaus.mojo</groupId>
@@ -1181,11 +1181,11 @@
 						<version>1.0-SNAPSHOT</version>
 						<executions>
 							<execution>
-								<id>build-pms-windows</id>
+								<id>build-dms-windows</id>
 								<configuration>
 									<makensisBin>${makensis-bin}</makensisBin>
 									<outputFile>${project.build.directory}/DMS.exe</outputFile>
-									<setupScript>${project.external-resources}/nsis/pms.nsi</setupScript>
+									<setupScript>${project.external-resources}/nsis/dms.nsi</setupScript>
 								</configuration>
 								<phase>package</phase>
 								<goals>
@@ -1252,9 +1252,9 @@
 								</configuration>
 							</execution>
 
-							<!-- Assemble the PMS distribution file. -->
+							<!-- Assemble the DMS distribution file. -->
 							<execution>
-								<id>build-pms-linux</id>
+								<id>build-dms-linux</id>
 								<phase>package</phase>
 								<goals>
 									<goal>single</goal>
@@ -1685,7 +1685,7 @@
 			</build>
 		</profile>
 		<!--
-			Hudson (windows-jar): minimal profile that builds pms.jar with the
+			Hudson (windows-jar): minimal profile that builds dms.jar with the
 			Windows JNA. The POSIX JNA causes snapshot builds to crash the JVM on
 			Windows, whereas the Windows JNA only disables MediaInfo for Ubuntu
 			users, who can still use ffmpeg.
@@ -1732,7 +1732,7 @@
 
 					<!--
 						Use the antrun plugin to: copy the
-						pms-x.x.x-jar-with-dependencies.jar to pms.jar
+						dms-x.x.x-jar-with-dependencies.jar to dms.jar
 					-->
 					<plugin>
 						<groupId>org.apache.maven.plugins</groupId>
@@ -1748,7 +1748,7 @@
 								<configuration>
 									<target>
 										<copy file="${project.basedir}/target/${project.artifactId}-${project.version}-jar-with-dependencies.jar"
-										      tofile="${project.basedir}/target/pms.jar" overwrite="true" />
+										      tofile="${project.basedir}/target/dms.jar" overwrite="true" />
 									</target>
 								</configuration>
 							</execution>

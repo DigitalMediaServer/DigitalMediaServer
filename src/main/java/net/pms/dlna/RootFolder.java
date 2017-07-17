@@ -113,7 +113,7 @@ public class RootFolder extends DLNAResource {
 
 		if (!configuration.isHideRecentlyPlayedFolder()) {
 			last = new Playlist(Messages.getString("VirtualFolder.1"),
-				PMS.getConfiguration().getDataFile("UMS.last"),
+				PMS.getConfiguration().getDataFile("DMS.last"),
 				PMS.getConfiguration().getInt("last_play_limit", 250),
 				Playlist.PERMANENT|Playlist.AUTOSAVE);
 			addChild(last);
@@ -566,7 +566,7 @@ public class RootFolder extends DLNAResource {
 
 	/**
 	 * Returns Aperture folder. Used by manageRoot, so it is usually used as
-	 * a folder at the root folder. Only works when PMS is run on Mac OS X.
+	 * a folder at the root folder. Only works when DMS is run on Mac OS X.
 	 * TODO: Requirements for Aperture.
 	 */
 	private DLNAResource getApertureFolder() {
@@ -733,7 +733,7 @@ public class RootFolder extends DLNAResource {
 	/**
 	 * Returns the iTunes XML file. This file has all the information of the
 	 * iTunes database. The methods used in this function depends on whether
-	 * UMS runs on Mac OS X or Windows.
+	 * DMS runs on Mac OS X or Windows.
 	 *
 	 * @return (String) Absolute path to the iTunes XML file.
 	 * @throws Exception
@@ -1175,7 +1175,7 @@ public class RootFolder extends DLNAResource {
 			});
 		}
 
-		// Reboot UMS
+		// Reboot DMS
 		res.addChild(new VirtualVideoAction(Messages.getString("PMS.149"), true) {
 			@Override
 			public boolean enable() {

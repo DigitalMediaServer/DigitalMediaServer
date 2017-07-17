@@ -7,7 +7,7 @@
 		<link rel="stylesheet" href="/files/web-wide.css" type="text/css" media="screen and (min-width: 1081px)">
 		<link rel="icon" href="/files/favicon.ico" type="image/x-icon">
 		<script src="/files/jquery.min.js"></script>
-		<script src="/files/jquery.ums.js"></script>
+		<script src="/files/jquery.dms.js"></script>
 		<script src="/files/js.cookie-2.1.0.min.js"></script>
 		<title>{{name}}</title>
 	</head>
@@ -44,7 +44,7 @@
 					<button id="prev" onclick="prev()"{{prevAttr}}><<</button>
 					<button id="next" onclick="next()"{{nextAttr}}>>></button>
 {{#plsSign}}
-                    <button id="playlist" title="{{plsAttr}}" onclick="umsAjax('/playlist/{{plsOp}}/{{id1}}', false);return false;">{{plsSign}}</button>
+                    <button id="playlist" title="{{plsAttr}}" onclick="dmsAjax('/playlist/{{plsOp}}/{{id1}}', false);return false;">{{plsSign}}</button>
 {{/plsSign}}
 {{#isVideo}}
 					<button id="flash" onclick="flash()" title="Switch to flash player">Flash</button>

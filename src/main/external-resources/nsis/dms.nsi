@@ -6,7 +6,7 @@
 !include "..\..\..\..\target\project.nsh"
 !include "..\..\..\..\target\extra.nsh"
 
-Name "UMS"
+Name "DMS"
 Caption "${PROJECT_NAME}"
 Icon "${PROJECT_BASEDIR}\src\main\external-resources\icon.ico"
 
@@ -19,9 +19,9 @@ VIAddVersionKey "FileDescription" "${PROJECT_NAME}"
 VIAddVersionKey "FileVersion" "${PROJECT_VERSION}"
 VIProductVersion "${PROJECT_VERSION_SHORT}.0"
 
-!define JARPATH "${PROJECT_BUILD_DIR}\ums.jar"
+!define JARPATH "${PROJECT_BUILD_DIR}\dms.jar"
 !define CLASS "net.pms.PMS"
-!define PRODUCT_NAME "UMS"
+!define PRODUCT_NAME "DMS"
 !define REG_KEY_SOFTWARE "SOFTWARE\${PROJECT_NAME}"
 
 ; Definitions for Java
@@ -61,7 +61,7 @@ Section ""
 	; Change for your purpose (-jar etc.)
 	${GetParameters} $1
 
-	StrCpy $0 '"$R0" -classpath update.jar;ums.jar $R3 -Djava.net.preferIPv4Stack=true -Dfile.encoding=UTF-8 ${CLASS} $1'
+	StrCpy $0 '"$R0" -classpath update.jar;dms.jar $R3 -Djava.net.preferIPv4Stack=true -Dfile.encoding=UTF-8 ${CLASS} $1'
 
 	SetOutPath $EXEDIR
 	Exec $0

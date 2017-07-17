@@ -183,7 +183,7 @@ public class FFmpegWebVideo extends FFMpegVideo {
 	) throws IOException {
 		params.minBufferSize = params.minFileSize;
 		params.secondread_minsize = 100000;
-		// Use device-specific pms conf
+		// Use device-specific DMS conf
 		PmsConfiguration prev = configuration;
 		configuration = (DeviceConfiguration) params.mediaRenderer;
 		RendererConfiguration renderer = params.mediaRenderer;

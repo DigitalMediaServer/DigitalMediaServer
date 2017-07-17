@@ -1,9 +1,9 @@
 package net.pms.util;
 
-public class UmsKeysDb implements DbHandler {
+public class DmsKeysDb implements DbHandler {
 	private FileDb db;
 
-	public UmsKeysDb() {
+	public DmsKeysDb() {
 		db = new FileDb(this);
 		db.setMinCnt(2);
 		db.init();
@@ -29,6 +29,6 @@ public class UmsKeysDb implements DbHandler {
 
 	@Override
 	public String name() {
-		return "UMSKeys.db";
+		return "DMSKeys.db";
 	}
 }

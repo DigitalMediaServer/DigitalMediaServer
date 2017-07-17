@@ -1404,7 +1404,7 @@ public class FileUtil {
 						isAdmin = false;
 						return false;
 					} catch (IOException | InterruptedException e) {
-						LOGGER.error("An error prevented UMS from checking Windows permissions: {}", e.getMessage());
+						LOGGER.error("An error prevented DMS from checking Windows permissions: {}", e.getMessage());
 					}
 				} else {
 					isAdmin = true;
@@ -1434,15 +1434,15 @@ public class FileUtil {
 						((Platform.isLinux() && exitLine.matches(".*\\broot\\b.*")) ||
 						(Platform.isMac() && exitLine.matches(".*\\badmin\\b.*")))
 					{
-						LOGGER.trace("isAdmin: UMS has {} privileges", Platform.isLinux() ? "root" : "admin");
+						LOGGER.trace("isAdmin: DMS has {} privileges", Platform.isLinux() ? "root" : "admin");
 						isAdmin = true;
 						return true;
 					}
-					LOGGER.trace("isAdmin: UMS does not have {} privileges", Platform.isLinux() ? "root" : "admin");
+					LOGGER.trace("isAdmin: DMS does not have {} privileges", Platform.isLinux() ? "root" : "admin");
 					isAdmin = false;
 					return false;
 				} catch (IOException | InterruptedException e) {
-					LOGGER.error("An error prevented UMS from checking {} permissions: {}", Platform.isMac() ? "OS X" : "Linux" ,e.getMessage());
+					LOGGER.error("An error prevented DMS from checking {} permissions: {}", Platform.isMac() ? "OS X" : "Linux" ,e.getMessage());
 				}
 			}
 			isAdmin = false;

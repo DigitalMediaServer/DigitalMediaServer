@@ -1,35 +1,41 @@
-# Universal Media Server Plugin Development
+# Digital Media Server Plugin Development
+
+## Important
+Plugins has been disabled in Digital Media Server. The current implementation allows plugins too 
+much access to DMS' inner workings, which leads to bugs and instability. Furthermore, the
+existing plugins mostly hasn't been updated in years. Until the plugin implementation is refactored,
+plugins will not register with Digital Media Server. 
 
 ## Basics
-Universal Media Server Plugin is a self-contained .jar which is loaded during the runtime of
-Universal Media Server (UMS). UMS checks the ```plugins/``` folder from its root and loads the
-correctly constructed jars. From the UMS trace you can find a line about trying to load
+Digital Media Server Plugin is a self-contained .jar which is loaded during the runtime of
+Digital Media Server (DMS). DMS checks the ```plugins/``` folder from its root and loads the
+correctly constructed jars. From the DMS trace you can find a line about trying to load
 plugins from the folder, e.g. ```Searching for plugins in /xxx/xxx/plugins```
 
-By default UMS does not load all jars from the plugins/ folder. The jar must contain a text file named
+By default DMS does not load all jars from the plugins/ folder. The jar must contain a text file named
 ```plugin``` in its root, which contains the package and class of your plugin interface
 (contained in the jar). Example plugin file contains one line and looks like this: 
-```com.glebb.helloworld.Plugin``` The class Plugin must implement a UMS plugin interface
+```com.glebb.helloworld.Plugin``` The class Plugin must implement a DMS plugin interface
 ExternalListener or extend some other class implementing it. If these two conditions are satisfied,
-UMS will try to load the plugin.
+DMS will try to load the plugin.
 
 ## Getting started
-Here is a step-by-step guide to start developing plugins for UMS.
+Here is a step-by-step guide to start developing plugins for DMS.
 You can develop using whatever tools you like, but in this guide we are using the Gradle
 build system and the Eclipse IDE.
 
 Prerequisites:
-   * You have built a snapshot UMS as described in the [instructions](https://github.com/ps3mediaserver/ps3mediaserver/blob/master/BUILD.md) and you have set up the development environment.
+   * You have built a snapshot DMS as described in the [instructions](https://github.com/DigitalMediaServer/DigitalMediaServer/blob/master/BUILD.md) and you have set up the development environment.
    * [Gradle](http://www.gradle.org/) is installed and working
    
-### Step 1: install UMS to local maven repository
-By doing this you don't have to manually load UMS-jars while developing your plugin.
-In the UMS root folder, execute: ```mvn javadoc:jar source:jar install```. The
+### Step 1: install DMS to local maven repository
+By doing this you don't have to manually load DMS-jars while developing your plugin.
+In the DMS root folder, execute: ```mvn javadoc:jar source:jar install```. The
 ```javadoc:jar source:jar``` parameters tell Maven to install additional jars to local
 repository, containing source and javadocs, which makes it easier to develop the plugins
 using an IDE like Eclipse.
 
-NOTICE: Maven plugins to create javadoc and source jars was included in PMS git commit ```0c5414c2bf```.
+NOTICE: Maven plugins to create javadoc and source jars was included in DMS git commit ```0c5414c2bf```.
 If you are using older version, please update, or add the plugins manually to pom.xml and
 run the mvn command after that. You can also omit the "javadoc:jar source:jar" parameters,
 but then you will not be able to jump to the source in the IDE or see the javadocs.
@@ -56,11 +62,11 @@ but then you will not be able to jump to the source in the IDE or see the javado
     }
     
     dependencies {
-        compile group: 'net.pms', name: 'ums', version: '1.5+'
+        compile group: 'net.pms', name: 'dms', version: '1.5+'
     }
    ```
    The content is pretty bare-bone and self-explaining. The dependencies declaration tries to load
-   UMS jars from first local and then mavenCentral repository. You might need to tweak the version.
+   DMS jars from first local and then mavenCentral repository. You might need to tweak the version.
    Also notice the mainClassName, which you want to change later to reflect the main Plugin class
    that you implement.
    3. Execute ```gradle``` to see if it works. If everything goes as planned you should see
@@ -83,7 +89,7 @@ but then you will not be able to jump to the source in the IDE or see the javado
 ### Step 4: Implement Skeleton-Plugin
    1. Create a class (make sure you define the same class as main class in build.gradle) to src/main/java
    2. Make the class implement ```net.pms.external.ExternalListener``` (Gradle should have added
-   the UMS dependency to your project automatically, so the class should be resolvable by default)
+   the DMS dependency to your project automatically, so the class should be resolvable by default)
    3. Add unimplemented methods.
    4. Implement name method: ```return "HelloWorld Plugin";```.
    5. Create a new file called "plugin" to src/main/resources.
@@ -94,9 +100,9 @@ but then you will not be able to jump to the source in the IDE or see the javado
    you can check the jar and make sure the root contains the plugin file with correct path to mainClass,
    which should also be included)
 
-### Step 5: Load the plugin in UMS
-   1. Copy your created jar (e.g. helloworld-1.0.0.jar) to plugins/ folder of your UMS.
-   2. Start UMS.
+### Step 5: Load the plugin in DMS
+   1. Copy your created jar (e.g. helloworld-1.0.0.jar) to plugins/ folder of your DMS.
+   2. Start DMS.
    3. Check from Traces that plugin is loaded:
    ```
     Searching for plugins in ...
@@ -109,7 +115,7 @@ That's it. Now you have a working project to build on, happy plugging!
 You can download a skeleton "HelloWorld" plugin from https://github.com/glebb/pms-helloworld-plugin
 which implements steps stated here.
 
-## Plugin types provided by UMS
+## Plugin types provided by DMS
 By implementing interfaces found from net.pms.external you can create different types of plugins.
 
 ### Example: AdditionalFolderAtRoot
@@ -124,10 +130,10 @@ With this type you should also implement discoverChildren to at least on of the 
 (where you call addChild method to populate folders with actual DLNAResource file (e.g. RealFile).
 RefreshChildren should also be implemented, if you want to update the folders.
 
-## Debugging plugins when running UMS from Eclipse
-Unfortunately the current version of UMS has some problems with debugging plugins. This will be
+## Debugging plugins when running DMS from Eclipse
+Unfortunately the current version of DMS has some problems with debugging plugins. This will be
 fixed when [pms-mlx](http://ps3mediaserver.org/forum/viewtopic.php?f=12&t=9775) will be merged
-into UMS. Until then, here is a workaround:
+into DMS. Until then, here is a workaround:
 
 As the relative path of the plugins directory is not the same when running from Eclipse or when
 packaged, you have to load the plugins dir from a properites file
@@ -135,9 +141,9 @@ packaged, you have to load the plugins dir from a properites file
 and configure the version in a properties file to run from Eclipse
 [click](https://github.com/taconaut/pms-mlx/blob/master/src/test/resources/project.properties#L4)
 and when packaged [click](https://github.com/taconaut/pms-mlx/blob/master/src/main/resources/project.properties#L10).
-In ExternalFactory, specify the UMS classloader as the base class loader for the one
+In ExternalFactory, specify the DMS classloader as the base class loader for the one
 instanciating the plugins [click](https://github.com/taconaut/pms-mlx/blob/master/src/main/java/net/pms/plugins/PluginsFactory.java#L281).
 Then you can put the plugins into /src/main/external-resources/plugins.
 
-Load both the modified UMS and your plugin projects to the same workspace and launch UMS using debug mode.
+Load both the modified DMS and your plugin projects to the same workspace and launch DMS using debug mode.
 

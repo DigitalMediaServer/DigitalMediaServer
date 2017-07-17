@@ -114,7 +114,7 @@ function searchFun(url, txt) {
 	return false;
 }
 
-function umsAjax(u, reload) {
+function dmsAjax(u, reload) {
 	$.ajax({url: u}).done(function() {
 		if(reload) {
 			window.location.reload();

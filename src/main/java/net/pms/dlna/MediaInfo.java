@@ -1,4 +1,4 @@
-/**
+/*
  * MediaInfoDLL - All info about media files, for DLL (JNA version)
  *
  * Copyright (C) 2009-2009 Jerome Martinez, Zen@MediaArea.net

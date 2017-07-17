@@ -20,7 +20,7 @@
 
 package net.pms.configuration;
 
-// a one-stop class for values and methods specific to custom PMS builds
+// a one-stop class for values and methods specific to custom DMS builds
 public class Build {
 	/**
 	 * the name of the subfolder under which DMS config files are stored for this build.
@@ -54,7 +54,7 @@ public class Build {
 
 	/**
 	 * Returns the {@link #PROFILE_FOLDER_NAME} where configuration files
-	 * for this version of PMS are stored.
+	 * for this version of DMS are stored.
 	 *
 	 * @return The profile directory name
 	 */

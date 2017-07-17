@@ -25,8 +25,8 @@
 <body>
 	<h1>General Configuration</h1>
 
-	<p>The "General Configuration" tab of UMS allows you to set general
-		options that determine how UMS will run. Below is an overview of the
+	<p>The "General Configuration" tab of DMS allows you to set general
+		options that determine how DMS will run. Below is an overview of the
 		options on this tab.</p>
 
 
@@ -34,15 +34,15 @@
 
 	<dl>
 		<dt>Language</dt>
-		<dd>Select the language of UMS. To see the selection in effect
-			you have to restart UMS.</dd>
+		<dd>Select the language of DMS. To see the selection in effect
+			you have to restart DMS.</dd>
 
 		<dt>Start minimized</dt>
-		<dd>Apply if you want UMS start in the system tray (window
+		<dd>Apply if you want DMS start in the system tray (window
 			minimized)</dd>
 
 		<dt>Install as a windows service</dt>
-		<dd>Click if you want to install UMS as a service. Further
+		<dd>Click if you want to install DMS as a service. Further
 			configuration may be needed to run successfully as a service.</dd>
 	</dl>
 
@@ -51,23 +51,22 @@
 
 	<dl>
 		<dt>Force networking on interface</dt>
-		<dd>UMS determines the default network to send broadcasts. When
-			UMS does not detect your PS3 and your computer has multiple networks,
+		<dd>DMS determines the default network to send broadcasts. When
+			DMS does not detect your renderer and your computer has multiple networks,
 			it may have chosen the wrong default network. Select the correct
 			network from the pulldown.</dd>
 
 		<dt>Force IP of the server</dt>
-		<dd>By default UMS will use the default IP address of the
+		<dd>By default DMS will use the default IP address of the
 			computer it runs on. If your computer has multiple IP addresses, you
-			enter the preferred IP address for UMS to use here.</dd>
+			enter the preferred IP address for DMS to use here.</dd>
 
 		<dt>Force port of server</dt>
-		<dd>By default UMS uses TCP/IP port 5001. If this port is already
+		<dd>By default DMS uses TCP/IP port 5001. If this port is already
 			in use, set a free alernate port number like 6001</dd>
 
 		<dt>Use IP-filter</dt>
-		<dd>Set IP-address of allowed streaming client (PS3), all other
-			will fail to connect (not working when HTTP Engine v2 is enabled!)</dd>
+		<dd>Set IP-address of allowed renderer, all others will fail to connect</dd>
 	</dl>
 
 
@@ -84,13 +83,13 @@
 			not go to standby mode while streaming.</dd>
 
 		<dt>Default renderer when automatic detection fails</dt>
-		<dd>UMS can recognize many renderers automatically. Sometimes a renderer will
-			connect the UMS does not recognize. This option defines which renderer UMS
+		<dd>DMS can recognize many renderers automatically. Sometimes a renderer will
+			connect the DMS does not recognize. This option defines which renderer DMS
 			should assume.</dd>
 
 		<dt>Force default renderer (disable automatic detection)</dt>
-		<dd>By default UMS tries to automatically detect what renderers try to connect
-			to it. By settings this option to true, UMS will assume any renderer that
+		<dd>By default DMS tries to automatically detect what renderers try to connect
+			to it. By settings this option to true, DMS will assume any renderer that
 			connects is the default renderer.</dd>
 
 	</dl>
@@ -101,7 +100,7 @@
 	<p>
 		Here you will find buttons for the plugins that are installed. See the
 		section <a href="plugins.html">Plugins</a> for more information on
-		plugins for UMS.
+		plugins for DMS.
 	</p>
 
 

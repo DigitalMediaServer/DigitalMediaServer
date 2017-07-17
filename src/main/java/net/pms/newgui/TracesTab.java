@@ -645,7 +645,7 @@ public class TracesTab {
 		JPanel pLogPackButtons = new JPanel(new FlowLayout(FlowLayout.LEFT));
 
 		if (PMS.getTraceMode() == 0) {
-			// PMS was not started in trace mode
+			// DMS was not started in trace mode
 			CustomJButton rebootTrace = new CustomJButton(Messages.getString("TracesTab.12"));
 			rebootTrace.setToolTipText(Messages.getString("TracesTab.39"));
 			rebootTrace.setMnemonic(KeyEvent.VK_T);

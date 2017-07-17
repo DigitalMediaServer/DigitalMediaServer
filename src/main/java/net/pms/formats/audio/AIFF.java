@@ -1,5 +1,5 @@
 /*
- * Universal Media Server, for streaming any medias to DLNA
+ * Universal Media Server, for streaming any media to DLNA
  * compatible renderers based on the http://www.ps3mediaserver.org.
  * Copyright (C) 2012 UMS developers.
  *
@@ -20,17 +20,12 @@
 package net.pms.formats.audio;
 
 public class AIFF extends AudioBase {
-	/**
-	 * {@inheritDoc}
-	 */
+
 	@Override
 	public Identifier getIdentifier() {
 		return Identifier.AIFF;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public String[] getSupportedExtensions() {
 		return new String[] {

@@ -37,7 +37,7 @@ public class DLNAMediaSubtitleTest {
 	 */
 	@Before
 	public final void setUp() {
-		// Silence all log messages from the PMS code that is being tested
+		// Silence all log messages from the DMS code that is being tested
 		LoggerContext context = (LoggerContext) LoggerFactory.getILoggerFactory();
 		context.reset();
 	}

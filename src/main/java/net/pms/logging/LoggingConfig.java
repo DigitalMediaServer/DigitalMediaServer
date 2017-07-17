@@ -358,7 +358,7 @@ public class LoggingConfig {
 	}
 
 	/**
-	 * Shows whether or not UMS' automated syslog function is disabled because
+	 * Shows whether or not DMS' automated syslog function is disabled because
 	 * one or more syslog appenders are manually configured in LogBack
 	 * configuration.
 	 * @return the status.
@@ -373,7 +373,7 @@ public class LoggingConfig {
 	* users without in-depth knowledge of LogBack. Stops file appenders if
 	* syslog is started and vice versa.<P>
 	*
-	* Must be called after {@link #loadFile()} and after UMS configuration is
+	* Must be called after {@link #loadFile()} and after DMS configuration is
 	* loaded.
 	*/
 	public static synchronized void setSyslog() {
@@ -417,8 +417,8 @@ public class LoggingConfig {
 		if (configuration.getLoggingUseSyslog() && syslog == null) {
 			syslog = new SyslogAppender();
 			syslog.setContext(loggerContext);
-			syslog.setSuffixPattern("UMS [%thread] %msg");
-			syslog.setName("UMS syslog");
+			syslog.setSuffixPattern("DMS [%thread] %msg");
+			syslog.setName("DMS syslog");
 			syslog.setCharset(StandardCharsets.UTF_8);
 			action = ActionType.START;
 		} else if (!configuration.getLoggingUseSyslog() && syslog != null) {

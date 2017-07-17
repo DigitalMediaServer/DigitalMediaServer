@@ -26,10 +26,10 @@
 	<h1>Transcoding settings</h1>
 
 	<p>The "Transcoding settings" tab allows you to specify how content
-		will be transcoded. UMS uses external programs to transcode and stream
+		will be transcoded. DMS uses external programs to transcode and stream
 		content to your device. Some of these programs overlap in what kind of
 		media they can transcode. On this tab you can specify which order of
-		preference the programs have when UMS determines how to transcode
+		preference the programs have when DMS determines how to transcode
 		media. For each media type there is a list of programs, sorted by
 		preference. The topmost program is most likely to be used. If it
 		cannot transcode the media, the next program on the list is used, and
@@ -43,8 +43,8 @@
 	<h3>General settings</h3>
 	<dl>
 		<dt>Transcode buffer maximum size</dt>
-		<dd>This value is about how much temporary space should be used
-			for buffering a video before sending it to PS3. Default value is 400.</dd>
+		<dd>This value is about how much temporary space should be used for
+			buffering a video before sending it to your renderer. Default value is 400.</dd>
 
 		<dt>Number of cores used for transcoding</dt>
 		<dd>This value is bout how many CPU cores should be used for
@@ -54,7 +54,7 @@
 			the free tool CPU-z on Windows systems. On Linux have a look at the virtual
 			proc-filesystem. In the file /proc/cpuinfo you will find more details
 			about your CPU. You also get much information about CPUs from AMD and
-			Intel from their Wikipedia-articles. Regardless, UMS should be able to
+			Intel from their Wikipedia-articles. Regardless, DMS should be able to
 			detect and set the correct amount of cores.</dd>
 
 		<dt>Chapters # Transcode # folder support / interval in minutes</dt>
@@ -108,12 +108,12 @@
 			engine.</dd>
 
 		<dt>Mpeg2 Video quality settings (dropdown)</dt>
-		<dd>If UMS is not able to stream directly or mux the audio/video
-			to a PS3 compatible container it will transcode to MPEG2, which is PS3
-			compatible. This costs lots of CPU power. This also will increase the
-			network traffic because MPEG2 compression is not very good for HD
-			videos. You will need a 100MBit/s LAN or DLAN for playback of
-			transcoded HD videos - WLAN won't work (maybe some 720p videos will
+		<dd>If DMS is not able to stream directly or mux the audio/video
+			to a container/format compatible with your renderer. This can cost 
+			a lot of CPU power. This may also increase the network traffic
+			because for example MPEG2 compression is not very good for HD
+			videos. You will need a 100 Mbit/s LAN or better for playback of
+			transcoded HD videos - WLAN below ac won't work (maybe some 720p videos will
 			do). You are able to control the quality settings of MPEG2 encoding
 			which corresponds to needed network bandwidth. So there are some
 			parameters available to control MPEG2 quality. Keyint means keyframes,
@@ -155,7 +155,7 @@
 		<dd>If video and audio get out of sync disabling this might help.</dd>
 
 		<dt>Use video scaler / Width / Height</dt>
-		<dd>Usually the TV or PS3 is used to upscale the video to optimal
+		<dd>Usually the TV or renderer is used to upscale the video to optimal
 			video resolution. MEncoder is also able to do that for you which will
 			cost additional CPU power.</dd>
 
@@ -165,10 +165,10 @@
 
 		<dt>Deinterlace-filter</dt>
 		<dd>Enable deinterlace filter which will usually is done by your
-			PS3 or TV.</dd>
+			renderer or TV.</dd>
 
 		<dt>Remux videos with tsMuxeR when possible instead of transcoding</dt>
-		<dd>When MEncoder transcoding engine is used and UMS
+		<dd>When MEncoder transcoding engine is used and DMS
 			recognizes a compatible video it will stream to tsMuxeR,
 			which means there is no quality loss. Matroska video (mkv)
 			for example aren't supported on	PS3 but often the audio
@@ -183,7 +183,7 @@
 		<dd>Add specific commandline options for the external program MEncoder</dd>
 
 		<dt>Audio language prority</dt>
-		<dd>Fill in the abbreviation of your native language so that UMS
+		<dd>Fill in the abbreviation of your native language so that DMS
 			will automatically select the right audio track.</dd>
 
 		</dl>
@@ -191,15 +191,15 @@
 		<h3>Subtitles settings</h3>
 		<dl>
 		<dt>Subtitles language priority</dt>
-		<dd>Fill in the abbreviation of your native language so that UMS
+		<dd>Fill in the abbreviation of your native language so that DMS
 			will automatically select the right subtitle.</dd>
 
 		<dt>Audio/subtitles language priority</dt>
 		<dd>Language selection specific for DVD playback.</dd>
 
 		<dt>Subtitles codepage</dt>
-		<dd>The codepage should match the codepage setting on your PS3.
-			cp1252 should be default.</dd>
+		<dd>The codepage should match the codepage setting on your renderer.
+			cp1252 should be default on PS3.</dd>
 
 		<dt>FriBiDi mode</dt>
 		<dd>Enable FriBiDi GNU implementation of Unicode algorhithm</dd>
@@ -255,9 +255,9 @@
 		<dt>Alternative FFmpeg path</dt>
 		<dd>This feature is for users of Microsoft Windows Mediacenter
 			Edition. If you have recorded some TV shows and want to watch the
-			DVR-MS files with UMS/PS3 you need a special version of FFmpeg.
-			Download and unzip this file in your UMS installation directory and
-			restart UMS.</dd>
+			DVR-MS files with DMS you need a special version of FFmpeg.
+			Download and unzip this file in your DMS installation directory and
+			restart DMS.</dd>
 	</dl>
 
 

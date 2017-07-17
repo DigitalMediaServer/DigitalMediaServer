@@ -1,21 +1,20 @@
 /*
- * Universal Media Server, for streaming any media to DLNA
- * compatible renderers based on the http://www.ps3mediaserver.org.
- * Copyright (C) 2012 UMS developers.
+ * Digital Media Server, for streaming digital media to UPnP AV or DLNA
+ * compatible devices based on PS3 Media Server and Universal Media Server.
+ * Copyright (C) 2016 Digital Media Server developers.
  *
- * This program is a free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; version 2
- * of the License only.
+ * This program is free software: you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License as published by the Free Software
+ * Foundation, either version 3 of the License, or (at your option) any later
+ * version.
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+ * details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ * You should have received a copy of the GNU General Public License along with
+ * this program. If not, see http://www.gnu.org/licenses/.
  */
 package net.pms.util;
 
@@ -41,16 +40,16 @@ import org.slf4j.LoggerFactory;
 /**
  * This class is a utility class for translation between {@link java.util.Locale}'s
  * <a href="https://en.wikipedia.org/wiki/IETF_language_tag">IEFT BCP 47</a> and
- * UMS' language files. See <a href="http://r12a.github.io/apps/subtags/">here
- * for subtag lookup</a>. If UMS languages are removed or added, this class needs
+ * DMS' language files. See <a href="http://r12a.github.io/apps/subtags/">here
+ * for subtag lookup</a>. If DMS languages are removed or added, this class needs
  * to be updated. The class is immutable.
  *
  * To add a new language, the following must be done:
  * <ul>
- * <li>Add the BCP47 code to {@link #UMS_BCP47_CODES}</li>
- * <li>Add the language to UMS.conf</li>
+ * <li>Add the BCP47 code to {@link #DMS_BCP47_CODES}</li>
+ * <li>Add the language to DMS.conf</li>
  * <li>Modify {@link #localeToLanguageTag(Locale)} to handle the language</li>
- * <li>Modify {@link #languageTagToUMSLanguageTag(String)} to handle the language</li>
+ * <li>Modify {@link #languageTagToDMSLanguageTag(String)} to handle the language</li>
  * <li>Add the language at crowdin</li>
  * <li>Pull crowdin translations containing the new language so that the language file is committed</li>
  * </ul>
@@ -82,9 +81,9 @@ public final class Languages {
 	private static final Logger LOGGER = LoggerFactory.getLogger(Languages.class);
 	/**
 	 * If the below list is changed, methods {@link #localeToLanguageTag(Locale)} and
-	 * {@link #languageTagToUMSLanguageTag(String)} must be updated correspondingly.
+	 * {@link #languageTagToDMSLanguageTag(String)} must be updated correspondingly.
 	 */
-	private final static String[] UMS_BCP47_CODES = {
+	private final static String[] DMS_BCP47_CODES = {
 		"af",      // Afrikaans
 		"ar",      // Arabic
 		"pt-BR",   // Brazilian Portuguese
@@ -128,7 +127,7 @@ public final class Languages {
 	 * This map is also used as a synchronization object for {@link #translationsStatistics},
 	 * {@link #lastpreferredLocale} and {@link #sortedLanguages}
 	 */
-	private static HashMap<String, TranslationStatistics> translationsStatistics = new HashMap<>((int) Math.round(UMS_BCP47_CODES.length * 1.34));
+	private static HashMap<String, TranslationStatistics> translationsStatistics = new HashMap<>((int) Math.round(DMS_BCP47_CODES.length * 1.34));
 	private static Locale lastpreferredLocale = null;
 	private static List<LanguageEntry> sortedLanguages = new ArrayList<>();
 
@@ -229,6 +228,7 @@ public final class Languages {
 	private static class LanguageEntryCoverageComparator implements Comparator<LanguageEntry>, Serializable {
 		private static final long serialVersionUID = 1974719326731763265L;
 
+		@Override
 		public int compare(LanguageEntry o1, LanguageEntry o2) {
 			// Descending
 			return o2.coveragePercent - o1.coveragePercent;
@@ -241,7 +241,7 @@ public final class Languages {
 		 * country/region and a variant. Stating that e.g language
 		 * "ar" should return "ar" means that "messages_ar.properties"
 		 * will be used for any country/region and variant of Arabic.
-		 * This should be true until UMS contains multiple dialects of Arabic,
+		 * This should be true until DMS contains multiple dialects of Arabic,
 		 * in which case different codes would have to be returned for the
 		 * different dialects.
 		 */
@@ -284,7 +284,7 @@ public final class Languages {
 		}
 	}
 
-	private static String languageTagToUMSLanguageTag(String languageTag) {
+	private static String languageTagToDMSLanguageTag(String languageTag) {
 		/*
 		 * Performs the same conversion as localeToLanguageTag() but from a
 		 * language tag instead of a Locale.
@@ -518,7 +518,7 @@ public final class Languages {
 			lastpreferredLocale = preferredLocale;
 			sortedLanguages.clear();
 			populateTranslationsStatistics();
-			for (String tag : UMS_BCP47_CODES) {
+			for (String tag : DMS_BCP47_CODES) {
 				LanguageEntry entry = new LanguageEntry();
 				entry.tag = tag;
 				entry.name = Messages.getString("Language." + tag, preferredLocale);
@@ -664,13 +664,13 @@ public final class Languages {
 
 	/**
 	 * Verifies if a given <a href="https://en.wikipedia.org/wiki/IETF_language_tag">IEFT BCP 47</a>
-	 * language tag is supported by UMS.
+	 * language tag is supported by DMS.
 	 * @param languageTag The language tag in IEFT BCP 47 format.
 	 * @return The result.
 	 */
 	public static boolean isValid(String languageTag) {
 		if (languageTag != null && !languageTag.isEmpty()) {
-			for (String code : UMS_BCP47_CODES) {
+			for (String code : DMS_BCP47_CODES) {
 				if (code.equalsIgnoreCase(languageTag)) {
 					return true;
 				}
@@ -680,7 +680,7 @@ public final class Languages {
 	}
 
 	/**
-	 * Verifies if a given {@link java.util.Locale} is supported by UMS.
+	 * Verifies if a given {@link java.util.Locale} is supported by DMS.
 	 * @param locale The {@link java.util.Locale}.
 	 * @return The result.
 	 */
@@ -690,23 +690,23 @@ public final class Languages {
 
 	/**
 	 * Verifies if a given <a href="https://en.wikipedia.org/wiki/IETF_language_tag">IEFT BCP 47</a>
-	 * language tag is or can be converted into a language tag supported by UMS.
+	 * language tag is or can be converted into a language tag supported by DMS.
 	 * @param languageTag The language tag in IEFT BCP 47 format.
 	 * @return The result.
 	 */
 	public static boolean isCompatible(String languageTag) {
-		return isValid(languageTagToUMSLanguageTag(languageTag));
+		return isValid(languageTagToDMSLanguageTag(languageTag));
 	}
 
 	/** Returns a correctly capitalized <a href="https://en.wikipedia.org/wiki/IETF_language_tag">IEFT BCP 47</a>
-	 *  language tag if the language tag is supported by UMS, or returns null.
+	 *  language tag if the language tag is supported by DMS, or returns null.
 	 * @param languageTag The IEFT BCP 47 compatible language tag.
 	 * @return The IEFT BCP 47 formatted language tag.
 	 */
 	public static String toLanguageTag(String languageTag) {
 		if (languageTag != null && !languageTag.isEmpty()) {
-			languageTag = languageTagToUMSLanguageTag(languageTag);
-			for (String tag : UMS_BCP47_CODES) {
+			languageTag = languageTagToDMSLanguageTag(languageTag);
+			for (String tag : DMS_BCP47_CODES) {
 				if (tag.equalsIgnoreCase(languageTag)) {
 					return tag;
 				}
@@ -716,7 +716,7 @@ public final class Languages {
 	}
 
 	/** Returns a correctly capitalized <a href="https://en.wikipedia.org/wiki/IETF_language_tag">IEFT BCP 47</a>
-	 *  language tag if the language tag is supported by UMS, or returns null.
+	 *  language tag if the language tag is supported by DMS, or returns null.
 	 * @param locale The {@link java.util.Locale}.
 	 * @return The IEFT BCP 47 formatted language tag.
 	 */
@@ -728,7 +728,7 @@ public final class Languages {
 	}
 
 	/**
-	 * Returns a UMS supported {@link java.util.Locale} from the given
+	 * Returns a DMS supported {@link java.util.Locale} from the given
 	 * <code>Local</code> if it can be found (<code>en</code> is translated to
 	 * <code>en-US</code>, <code>zh</code> to <code>zh-Hant</code> etc.).
 	 * Returns <code>null</code> if a valid <code>Locale</code> cannot be found.
@@ -746,7 +746,7 @@ public final class Languages {
 	}
 
 	/**
-	 * Returns a UMS supported {@link java.util.Locale} from the given
+	 * Returns a DMS supported {@link java.util.Locale} from the given
 	 * <a href="https://en.wikipedia.org/wiki/IETF_language_tag">IEFT BCP 47</a>
 	 * if it can be found (<code>en</code> is translated to <code>en-US</code>,
 	 * <code>zh</code> to <code>zh-Hant</code> etc.). Returns <code>null</code>
@@ -756,7 +756,7 @@ public final class Languages {
 	 */
 	public static Locale toLocale(String languageTag) {
 		if (languageTag != null) {
-			String tag = languageTagToUMSLanguageTag(languageTag);
+			String tag = languageTagToDMSLanguageTag(languageTag);
 			if (isValid(tag)) {
 				return Locale.forLanguageTag(tag);
 			}
@@ -765,7 +765,7 @@ public final class Languages {
 	}
 
 	/**
-	 * Returns a sorted string array of UMS supported language tags. The
+	 * Returns a sorted string array of DMS supported language tags. The
 	 * sorting will match that returned by {@link #getLanguageNames(Locale)}
 	 * for the same <code>preferredLocale</code> for easy use with
 	 * {@link JComboBox}. For sorting details see
@@ -788,7 +788,7 @@ public final class Languages {
 	}
 
 	/**
-	 * Returns a sorted string array of localized UMS supported language names
+	 * Returns a sorted string array of localized DMS supported language names
 	 * with coverage/translation percentage in parenthesis. The sorting will
 	 * match that returned by {@link #getLanguageTags(Locale)} for the same
 	 * <code>preferredLocale</code> for easy use with {@link JComboBox}. For

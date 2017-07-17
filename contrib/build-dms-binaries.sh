@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# build-pms-osx.sh
+# build-dms-osx.sh
 #
 # Version: 2.2.1
 # Last updated: 2012-09-30
@@ -9,41 +9,38 @@
 #
 # DESCRIPTION
 #
-# Building all libraries and tools for a statically linked PS3 Media
+# Building all libraries and tools for a statically linked Digital Media
 # Server for OSX and Linux is not an easy task and requires advanced
 # knowledge of everything involved.
 #
-#   IF YOU SIMPLY WANT TO BUILD PMS, THIS SCRIPT IS NOT FOR YOU!
+#   IF YOU SIMPLY WANT TO BUILD DMS, THIS SCRIPT IS NOT FOR YOU!
 #
 # This script is only meant for enthusiasts that want to bundle their
-# PMS with custom built versions of libraries and tools, replacing
-# the standard versions shipped with the regular PMS distribution.
+# DMS with custom built versions of libraries and tools, replacing
+# the standard versions shipped with the regular DMS distribution.
 #
 # This script will take care of building all that is required to build
-# a statically linked PS3 Media Server for OSX or Linux and will bundle
+# a statically linked Digital Media Server for OSX or Linux and will bundle
 # it with statically linked tools. Note that on OSX true static builds
 # are difficult to realize due to Apple only shipping dynamic libraries
 # (see https://discussions.apple.com/thread/2252567?start=0&tstart=-1).
 #
-# For OSX, the script will compile the PS3 Media Server disk image file:
+# For OSX, the script will compile the Digital Media Server disk image file:
 #
-#    pms-macosx-arch-*.*.*.dmg
+#    dms-macosx-arch-*.*.*.dmg
 #
 # For Linux, it will create a distribution archive:
 #
-#    pms-generic-linux-unix-*.*.*.tgz
+#    dms-generic-linux-unix-*.*.*.tgz
 #
-# This script is provided as is. If it works for you, good! If it does
-# not, try to figure out why and share your findings on the PS3 Media
-# Server forums (http://www.ps3mediaserver.org/forum/)
-#
+# This script is provided as is.
 #
 # REQUIREMENTS
 #
 # Sources for libraries and tools must be downloaded manually with the
 # provided download script. Before running this script, run:
 #
-#    ./download-pms-binaries-source.sh
+#    ./download-dms-binaries-source.sh
 # 
 # Some Developer tools need to be installed manually. The script detects
 # this and provides help.
@@ -51,7 +48,7 @@
 #
 # ACKNOWLEDGEMENTS
 #
-# Many thanks to the PS3 Media Server developers and forum moderators
+# Many thanks to the Digital Media Server developers and forum moderators
 # for keeping the project alive and the info coming. Special thanks to
 # Adrian Stutz for sharing his findings of how to build a statically
 # linked MPlayerOSX (http://www.mplayerosx.ch/), without his hard work
@@ -61,7 +58,7 @@
 #
 # TODO
 #
-# - Clean up dependencies that are not needed for PMS
+# - Clean up dependencies that are not needed for DMS
 #
 #
 # COPYRIGHT
@@ -1467,16 +1464,16 @@ build_ncurses() {
 
 
 ##########################################
-# PS3MEDIASERVER
-# https://github.com/ps3mediaserver/ps3mediaserver
+# DIGITAL MEDIA SERVER
+# https://github.com/DigitalMediaServer/DigitalMediaServer
 #
-build_ps3mediaserver() {
-    start_build ps3mediaserver
+build_digitalmediaserver() {
+    start_build digitalmediaserver
     cd $BUILD
 
-    cp -a $SRC/ps3mediaserver ./
+    cp -a $SRC/digitalmediaserver ./
     exit_on_error
-    cd ps3mediaserver
+    cd digitalmediaserver
     exit_on_error
 
     if is_osx; then
@@ -1495,10 +1492,10 @@ build_ps3mediaserver() {
         exit_on_error
 
         # Add the architecture name to the final file
-        PMS_FILENAME_ORIG=`ls pms-macosx-*.dmg | head -1`
-        PMS_FILENAME_NEW=`echo $PMS_FILENAME_ORIG | $SED -e "s/-macosx-/-macosx-$ARCHITECTURE-/"`
-        mv -f $PMS_FILENAME_ORIG $PMS_FILENAME_NEW
-        cp $PMS_FILENAME_NEW $WORKDIR
+        DMS_FILENAME_ORIG=`ls dms-macosx-*.dmg | head -1`
+        DMS_FILENAME_NEW=`echo $DMS_FILENAME_ORIG | $SED -e "s/-macosx-/-macosx-$ARCHITECTURE-/"`
+        mv -f $DMS_FILENAME_ORIG $DMS_FILENAME_NEW
+        cp $DMS_FILENAME_NEW $WORKDIR
     else
         # Linux
         mkdir -p ./target/bin/linux
@@ -1517,8 +1514,8 @@ build_ps3mediaserver() {
         exit_on_error
 
         cd target
-        PMS_FILENAME=`ls pms-generic-linux-*.tgz | head -1`
-        mv $PMS_FILENAME $WORKDIR
+        DMS_FILENAME=`ls dms-generic-linux-*.tgz | head -1`
+        mv $DMS_FILENAME $WORKDIR
     fi
 
     cd $WORKDIR
@@ -1740,12 +1737,12 @@ build_lzo
 build_x264
 build_xvid
 
-# Build tools for including with PS3 Media Server
+# Build tools for including with Digital Media Server
 build_flac
 build_dcraw
 build_tsmuxer
 build_ffmpeg
 build_mplayer
 
-# Build PS3 Media Server itself
-# build_ps3mediaserver
+# Build Digital Media Server itself
+# build_digitalmediaserver

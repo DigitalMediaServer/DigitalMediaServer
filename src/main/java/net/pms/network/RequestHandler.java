@@ -136,7 +136,7 @@ public class RequestHandler implements Runnable {
 				}
 				if (headerLine.toUpperCase().startsWith("USER-AGENT")) {
 					// Is the request from our own Cling service, i.e. self-originating?
-					if (isSelf && headerLine.contains("UMS/")) {
+					if (isSelf && headerLine.contains("DMS/")) {
 						//LOGGER.trace("Ignoring self-originating request from {}:{}", ia, remoteAddress.getPort());
 						return;
 					}

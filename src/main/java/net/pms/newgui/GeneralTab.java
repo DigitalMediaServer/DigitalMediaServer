@@ -258,7 +258,7 @@ public class GeneralTab {
 		}
 
 		if (!configuration.isHideAdvancedOptions()) {
-			// Edit UMS configuration file manually
+			// Edit DMS configuration file manually
 			CustomJButton confEdit = new CustomJButton(Messages.getString("NetworkTab.51"));
 			confEdit.addActionListener(new ActionListener() {
 				@Override
@@ -495,7 +495,7 @@ public class GeneralTab {
 	}
 
 	/**
-	 * Refreshes the state of the button to install/uninstall the Windows service for UMS
+	 * Refreshes the state of the button to install/uninstall the Windows service for DMS
 	 * depending if the service has been installed or not.
 	 *  - Set the button and tooltip text
 	 *  - Add the correct action listener
@@ -507,9 +507,9 @@ public class GeneralTab {
 		} else {
 			installService.setEnabled(true);
 
-			boolean isUmsServiceInstalled = WindowsUtil.isUmsServiceInstalled();
+			boolean isServiceInstalled = WindowsUtil.isServiceInstalled();
 
-			if (isUmsServiceInstalled) {
+			if (isServiceInstalled) {
 				// Update button text and tooltip
 				installService.setText(Messages.getString("GeneralTab.2"));
 				installService.setToolTipText(null);
@@ -524,7 +524,7 @@ public class GeneralTab {
 					@Override
 					public void actionPerformed(ActionEvent e) {
 						WindowsUtil.uninstallWin32Service();
-						LOGGER.info("Uninstalled UMS Windows service");
+						LOGGER.info("Uninstalled DMS Windows service");
 
 						// Refresh the button state after it has been clicked
 						refreshInstallServiceButtonState();
@@ -552,7 +552,7 @@ public class GeneralTab {
 					@Override
 					public void actionPerformed(ActionEvent e) {
 						if (WindowsUtil.installWin32Service()) {
-							LOGGER.info("Installed UMS Windows service");
+							LOGGER.info("Installed DMS Windows service");
 
 							// Refresh the button state after it has been clicked
 							refreshInstallServiceButtonState();

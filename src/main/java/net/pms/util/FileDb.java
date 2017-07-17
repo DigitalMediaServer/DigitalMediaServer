@@ -37,7 +37,7 @@ public class FileDb {
 
 	public FileDb(String f, DbHandler h) {
 		if (StringUtils.isEmpty(f)) {
-			f = "UMS.db";
+			f = "DMS.db";
 		}
 		file = new File(f);
 		handler = h;

@@ -29,7 +29,7 @@ import javax.annotation.Nonnull;
 
 /**
  * Class Messages provides a mechanism to localize the text messages found in
- * UMS. It is based on {@link ResourceBundle}.
+ * DMS. It is based on {@link ResourceBundle}.
  *
  */
 public class Messages {
@@ -94,9 +94,9 @@ public class Messages {
 	 * Returns the locale-specific string associated with the key.
 	 *
 	 * @param key
-	 *            Keys in UMS follow the format "group.x". group states where
+	 *            Keys in DMS follow the format "group.x". group states where
 	 *            this key is likely to be used. For example, StatusTab refers
-	 *            to the status tab in the UMS GUI. "x" can be anything.
+	 *            to the status tab in the DMS GUI. "x" can be anything.
 	 * @return Descriptive string if key is found or a copy of the key string if
 	 *         it is not.
 	 */

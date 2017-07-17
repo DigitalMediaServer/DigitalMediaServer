@@ -55,7 +55,7 @@ public class UPNPControl {
 	};
 
 	private static UpnpService upnpService;
-	private static UpnpHeaders UMSHeaders;
+	private static UpnpHeaders dmsHeaders;
 	private static DocumentBuilder db;
 
 	public static final int ACTIVE = 0;
@@ -283,13 +283,13 @@ public class UPNPControl {
 	public void init() {
 		try {
 			db = DocumentBuilderFactory.newInstance().newDocumentBuilder();
-			UMSHeaders = new UpnpHeaders();
-			UMSHeaders.add(UpnpHeader.Type.USER_AGENT.getHttpName(), "UMS/" + PMS.getVersion() + " " + new ServerClientTokens());
+			dmsHeaders = new UpnpHeaders();
+			dmsHeaders.add(UpnpHeader.Type.USER_AGENT.getHttpName(), "DMS/" + PMS.getVersion() + " " + new ServerClientTokens());
 
 			DefaultUpnpServiceConfiguration sc = new DefaultUpnpServiceConfiguration() {
 				@Override
 				public UpnpHeaders getDescriptorRetrievalHeaders(RemoteDeviceIdentity identity) {
-					return UMSHeaders;
+					return dmsHeaders;
 				}
 			};
 

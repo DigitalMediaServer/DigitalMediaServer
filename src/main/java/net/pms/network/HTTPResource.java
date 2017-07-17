@@ -34,7 +34,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Implements any item that can be transfered through the HTTP pipes.
- * In the PMS case, this item represents media files.
+ * In the DMS case, this item represents media files.
  * @see DLNAResource
  */
 public class HTTPResource {

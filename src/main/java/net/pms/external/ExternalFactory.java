@@ -422,11 +422,11 @@ public class ExternalFactory {
 
 	/**
 	 * This method instantiates the external listeners that need to be
-	 * instantiated immediately so they can influence the PMS initialization
+	 * instantiated immediately so they can influence the DMS initialization
 	 * process.
 	 * <p>
 	 * Not all external listeners are instantiated immediately to avoid
-	 * premature initialization where other parts of PMS have not been
+	 * premature initialization where other parts of DMS have not been
 	 * initialized yet. Those listeners are instantiated at a later time by
 	 * {@link #instantiateLateListeners()}.
 	 */

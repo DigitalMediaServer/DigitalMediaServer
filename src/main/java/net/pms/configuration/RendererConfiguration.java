@@ -242,11 +242,11 @@ public class RendererConfiguration extends UPNPHelper.Renderer {
 	/**
 	 * Load all renderer configuration files and set up the default renderer.
 	 *
-	 * @param pmsConf
+	 * @param dmsConf
 	 */
-	public static void loadRendererConfigurations(PmsConfiguration pmsConf) {
+	public static void loadRendererConfigurations(PmsConfiguration dmsConf) {
 		synchronized(loadRendererConfigurationsLock) {
-			_pmsConfiguration = pmsConf;
+			_pmsConfiguration = dmsConf;
 			enabledRendererConfs = new TreeSet<>(rendererLoadingPriorityComparator);
 
 			try {
@@ -264,7 +264,7 @@ public class RendererConfiguration extends UPNPHelper.Renderer {
 				Arrays.sort(confs);
 				int rank = 1;
 
-				List<String> selectedRenderers = pmsConf.getSelectedRenderers();
+				List<String> selectedRenderers = dmsConf.getSelectedRenderers();
 				for (File f : confs) {
 					if (f.getName().endsWith(".conf")) {
 						try {
@@ -277,7 +277,7 @@ public class RendererConfiguration extends UPNPHelper.Renderer {
 								renderersGroup = rendererName.substring(0, rendererName.indexOf(' '));
 							}
 
-							if (selectedRenderers.contains(rendererName) || selectedRenderers.contains(renderersGroup) || selectedRenderers.contains(pmsConf.ALL_RENDERERS)) {
+							if (selectedRenderers.contains(rendererName) || selectedRenderers.contains(renderersGroup) || selectedRenderers.contains(dmsConf.ALL_RENDERERS)) {
 								enabledRendererConfs.add(r);
 							} else {
 								LOGGER.debug("Ignored \"{}\" configuration", rendererName);
@@ -297,7 +297,7 @@ public class RendererConfiguration extends UPNPHelper.Renderer {
 
 		if (enabledRendererConfs.size() > 0) {
 			// See if a different default configuration was configured
-			String rendererFallback = pmsConf.getRendererDefault();
+			String rendererFallback = dmsConf.getRendererDefault();
 
 			if (StringUtils.isNotBlank(rendererFallback)) {
 				RendererConfiguration fallbackConf = getRendererConfigurationByName(rendererFallback);
@@ -309,7 +309,7 @@ public class RendererConfiguration extends UPNPHelper.Renderer {
 			}
 		}
 		Collections.sort(allRenderersNames, String.CASE_INSENSITIVE_ORDER);
-		DeviceConfiguration.loadDeviceConfigurations(pmsConf);
+		DeviceConfiguration.loadDeviceConfigurations(dmsConf);
 	}
 
 	public int getInt(String key, int def) {
@@ -1643,7 +1643,7 @@ public class RendererConfiguration extends UPNPHelper.Renderer {
 	}
 
 	/**
-	 * RendererName: Determines the name that is displayed in the PMS user
+	 * RendererName: Determines the name that is displayed in the DMS user
 	 * interface when this renderer connects. Default value is "Unknown
 	 * renderer".
 	 *
@@ -1660,7 +1660,7 @@ public class RendererConfiguration extends UPNPHelper.Renderer {
 	}
 
 	/**
-	 * Returns the icon to use for displaying this renderer in PMS as defined
+	 * Returns the icon to use for displaying this renderer in DMS as defined
 	 * in the renderer configurations. Default value is UNKNOWN_ICON.
 	 *
 	 * @return The renderer icon.
@@ -1964,7 +1964,7 @@ public class RendererConfiguration extends UPNPHelper.Renderer {
 	}
 
 	/**
-	 * Returns the override settings for MEncoder custom options in PMS as
+	 * Returns the override settings for MEncoder custom options in DMS as
 	 * defined in the renderer configuration. The default value is "".
 	 *
 	 * @return The MEncoder custom options.
@@ -2166,7 +2166,7 @@ public class RendererConfiguration extends UPNPHelper.Renderer {
 	 * value is false.
 	 * <p>
 	 * Some renderers are particular about the "Content-Length" headers in
-	 * requests (e.g. Sony Blu-ray Disc players). By default, UMS will send a
+	 * requests (e.g. Sony Blu-ray Disc players). By default, DMS will send a
 	 * "Content-Length" that refers to the total media size, even if the exact
 	 * length is unknown.
 	 *
