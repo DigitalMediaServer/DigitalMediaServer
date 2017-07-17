@@ -13,7 +13,7 @@ import javax.swing.plaf.metal.MetalIconFactory;
 import net.pms.Messages;
 import net.pms.util.BasicPlayer;
 import net.pms.util.UMSUtils;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 public class PlayerControlPanel extends JPanel implements ActionListener {
 	private static final long serialVersionUID = 8972730138916895247L;
@@ -215,6 +215,7 @@ public class PlayerControlPanel extends JPanel implements ActionListener {
 		uris.setPrototypeDisplayValue("");
 		uri = (JTextField) uris.getEditor().getEditorComponent();
 		uri.addFocusListener(new java.awt.event.FocusAdapter() {
+			@Override
 			public void focusGained(java.awt.event.FocusEvent evt) {
 				SwingUtilities.invokeLater(new Runnable() {
 					@Override

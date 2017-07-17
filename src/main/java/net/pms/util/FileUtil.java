@@ -29,9 +29,10 @@ import net.pms.dlna.DLNAMediaSubtitle;
 import net.pms.formats.FormatFactory;
 import net.pms.formats.v2.SubtitleType;
 import static net.pms.util.Constants.*;
-import org.apache.commons.io.FilenameUtils;
-import org.apache.commons.lang.WordUtils;
 import static org.apache.commons.lang3.StringUtils.*;
+import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.text.WordUtils;
+import org.apache.commons.text.similarity.JaroWinklerDistance;
 import org.codehaus.plexus.util.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -610,7 +611,7 @@ public class FileUtil {
 		// Remove extra spaces
 		formattedName = formattedName.replaceAll("\\s+", " ");
 
-		/**
+		/*
 		 * Add info from IMDb
 		 *
 		 * We use the Jaro Winkler similarity algorithm to make sure that changes to
@@ -621,6 +622,7 @@ public class FileUtil {
 		 *
 		 * TODO: Make the following logic only happen once.
 		 */
+		JaroWinklerDistance jaroWinklerDistance = new JaroWinklerDistance();
 		if (file != null && (isTVSeriesToLookup || isMovieToLookup)) {
 			InfoDb.InfoDbData info = PMS.get().infoDb().get(file);
 			if (info == null) {
@@ -631,7 +633,7 @@ public class FileUtil {
 					String titleFromFilename = formattedName.substring(0, showNameIndex);
 
 					// The following line can run over 100 times in under 1ms
-					double similarity = org.apache.commons.lang3.StringUtils.getJaroWinklerDistance(titleFromFilename, info.title);
+					double similarity = jaroWinklerDistance.apply(titleFromFilename, info.title);
 					if (similarity > 0.91) {
 						formattedName = info.title + formattedName.substring(showNameIndex);
 
@@ -646,12 +648,12 @@ public class FileUtil {
 			} else if (isMovieToLookup && StringUtils.isNotEmpty(info.title) && StringUtils.isNotEmpty(info.year)) {
 				double similarity;
 				if (isMovieWithoutYear) {
-					similarity = org.apache.commons.lang3.StringUtils.getJaroWinklerDistance(formattedName, info.title);
+					similarity = jaroWinklerDistance.apply(formattedName, info.title);
 					LOGGER.trace("The similarity between '" + info.title + "' and '" + formattedName + "' is " + similarity);
 				} else {
 					int yearIndex = indexOf(Pattern.compile("\\s\\(\\d{4}\\)"), formattedName);
 					String titleFromFilename = formattedName.substring(0, yearIndex);
-					similarity = org.apache.commons.lang3.StringUtils.getJaroWinklerDistance(titleFromFilename, info.title);
+					similarity = jaroWinklerDistance.apply(titleFromFilename, info.title);
 					LOGGER.trace("The similarity between '" + info.title + "' and '" + titleFromFilename + "' is " + similarity);
 				}
 

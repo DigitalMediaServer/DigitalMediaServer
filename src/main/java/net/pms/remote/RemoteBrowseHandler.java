@@ -19,8 +19,8 @@ import net.pms.dlna.RootFolder;
 import net.pms.dlna.virtual.VirtualVideoAction;
 import net.pms.formats.Format;
 import net.pms.util.UMSUtils;
-import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.text.StringEscapeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -89,7 +89,7 @@ public class RemoteBrowseHandler implements HttpHandler {
 			String newId = resource.getResourceId();
 			String idForWeb = URLEncoder.encode(newId, "UTF-8");
 			String thumb = "/thumb/" + idForWeb;
-			String name = StringEscapeUtils.escapeHtml(resource.resumeName());
+			String name = StringEscapeUtils.escapeHtml3(resource.resumeName());
 
 			if (resource instanceof VirtualVideoAction) {
 				// Let's take the VVA real early
@@ -198,7 +198,7 @@ public class RemoteBrowseHandler implements HttpHandler {
 
 		HashMap<String, Object> vars = new HashMap<>();
 		vars.put("name", id.equals("0") ? configuration.getServerDisplayName() :
-			StringEscapeUtils.escapeHtml(root.getDLNAResource(id, null).getDisplayName()));
+			StringEscapeUtils.escapeHtml3(root.getDLNAResource(id, null).getDisplayName()));
 		vars.put("hasFile", hasFile);
 		vars.put("folders", folders);
 		vars.put("media", media);

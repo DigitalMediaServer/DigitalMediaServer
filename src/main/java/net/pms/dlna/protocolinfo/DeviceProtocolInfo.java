@@ -29,8 +29,8 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.text.translate.CharSequenceTranslator;
-import org.apache.commons.lang3.text.translate.LookupTranslator;
+import org.apache.commons.text.translate.CharSequenceTranslator;
+import org.apache.commons.text.translate.LookupTranslator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import net.pms.dlna.DLNAImageProfile;
@@ -84,25 +84,25 @@ public class DeviceProtocolInfo implements Serializable {
 	 * A {@link CharSequenceTranslator} for unescaping individual
 	 * {@code GetProtocolInfo} elements.
 	 */
-	public static final CharSequenceTranslator PROTOCOLINFO_UNESCAPE =
-		new LookupTranslator(
-			new String[][] {
-				{"\\\\", "\\"},
-				{"\\,", ","}
-			}
-		);
+	public static final CharSequenceTranslator PROTOCOLINFO_UNESCAPE;
 
 	/**
 	 * A {@link CharSequenceTranslator} for escaping individual
 	 * {@code GetProtocolInfo} elements.
 	 */
-	public static final CharSequenceTranslator PROTOCOLINFO_ESCAPE =
-		new LookupTranslator(
-			new String[][] {
-				{",", "\\,"},
-				{"\\", "\\\\"},
-			}
-		);
+	public static final CharSequenceTranslator PROTOCOLINFO_ESCAPE;
+
+	static {
+		HashMap<CharSequence, CharSequence> escapeMap = new HashMap<>();
+		escapeMap.put(",", "\\,");   // , - comma
+		escapeMap.put("\\", "\\\\"); // \ - backslash
+		PROTOCOLINFO_ESCAPE = new LookupTranslator(escapeMap);
+
+		HashMap<CharSequence, CharSequence> unescapeMap = new HashMap<>();
+		unescapeMap.put("\\\\", "\\"); // \ - backslash
+		unescapeMap.put("\\,", ",");   // , - comma
+		PROTOCOLINFO_UNESCAPE = new LookupTranslator(unescapeMap);
+	}
 
 	/** The sets lock. */
 	protected final ReentrantReadWriteLock setsLock = new ReentrantReadWriteLock();

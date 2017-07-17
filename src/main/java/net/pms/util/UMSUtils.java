@@ -291,7 +291,7 @@ public class UMSUtils {
 				sb.append("\n");
 				for (DLNAResource r : playlist) {
 					String data = r.write();
-					if (!org.apache.commons.lang.StringUtils.isEmpty(data) && sb.indexOf(data) == -1) {
+					if (!StringUtils.isEmpty(data) && sb.indexOf(data) == -1) {
 						ExternalListener external = r.getMasterParent();
 						String id;
 						if (external != null) {
@@ -408,7 +408,7 @@ public class UMSUtils {
 				String str;
 
 				while ((str = in.readLine()) != null) {
-					if (org.apache.commons.lang.StringUtils.isEmpty(str)) {
+					if (StringUtils.isEmpty(str)) {
 						continue;
 					}
 					if (str.startsWith("#")) {

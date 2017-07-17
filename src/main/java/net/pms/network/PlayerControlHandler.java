@@ -19,7 +19,7 @@ import net.pms.remote.RemoteWeb;
 import net.pms.util.BasicPlayer.Logical;
 import net.pms.util.StringUtil;
 import org.apache.commons.io.FilenameUtils;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

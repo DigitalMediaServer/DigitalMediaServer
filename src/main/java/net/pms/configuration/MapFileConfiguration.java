@@ -10,6 +10,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.reflect.Type;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import net.pms.PMS;
@@ -70,7 +71,7 @@ public class MapFileConfiguration {
 			conf = null;
 
 			try {
-				conf = FileUtils.readFileToString(file);
+				conf = FileUtils.readFileToString(file, StandardCharsets.UTF_8);
 			} catch (FileNotFoundException ex) {
 				LOGGER.warn("Can't read file: {}", ex.getMessage());
 				return null;

@@ -15,7 +15,7 @@ import net.pms.dlna.virtual.VirtualVideoAction;
 import net.pms.util.FileUtil;
 import net.pms.util.FreedesktopTrash;
 import net.pms.util.FullyPlayedAction;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.fest.util.Arrays;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

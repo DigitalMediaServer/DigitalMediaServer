@@ -21,8 +21,8 @@ import net.pms.formats.v2.SubtitleType;
 import net.pms.io.OutputParams;
 import net.pms.util.SubtitleUtils;
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.text.StringEscapeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -64,7 +64,7 @@ public class RemotePlayHandler implements HttpHandler {
 			}
 			String pos = step > 0 ? "next" : "prev";
 			vars.put(pos + "Id", next != null ? next.getResourceId() : null);
-			vars.put(pos + "Attr", next != null ? (" title=\"" + StringEscapeUtils.escapeHtml(next.resumeName()) + "\"") : " disabled");
+			vars.put(pos + "Attr", next != null ? (" title=\"" + StringEscapeUtils.escapeHtml3(next.resumeName()) + "\"") : " disabled");
 		}
 	}
 
@@ -113,7 +113,7 @@ public class RemotePlayHandler implements HttpHandler {
 		// hack here to ensure we got a root folder to use for recently played etc.
 		root.getDefaultRenderer().setRootFolder(root);
 		String id1 = URLEncoder.encode(id, "UTF-8");
-		String name = StringEscapeUtils.escapeHtml(r.resumeName());
+		String name = StringEscapeUtils.escapeHtml3(r.resumeName());
 		String mime = root.getDefaultRenderer().getMimeType(r.mimeType(), r.getMedia());
 		String mediaType = isVideo ? "video" : isAudio ? "audio" : isImage ? "image" : "";
 		String auto = "autoplay";
