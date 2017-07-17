@@ -37,6 +37,7 @@ import net.pms.Messages;
 import net.pms.PMS;
 import net.pms.configuration.DeviceConfiguration;
 import net.pms.configuration.FormatConfiguration;
+import net.pms.configuration.PlatformExecutableInfo;
 import net.pms.configuration.PmsConfiguration;
 import net.pms.configuration.RendererConfiguration;
 import net.pms.dlna.*;
@@ -95,7 +96,7 @@ public class MEncoderVideo extends Player {
 	private static final String INVALID_CUSTOM_OPTIONS_LIST = Arrays.toString(INVALID_CUSTOM_OPTIONS);
 
 	public static final int MENCODER_MAX_THREADS = 8;
-	public static final String ID = "mencoder";
+	public static final PlayerId ID = PlayerId.MENCODER_VIDEO;
 
 	// TODO (breaking change): most (probably all) of these
 	// protected fields should be private. And at least two
@@ -145,13 +146,8 @@ public class MEncoderVideo extends Player {
 		return noskip;
 	}
 
-	@Deprecated
-	public MEncoderVideo(PmsConfiguration configuration) {
-		this();
-	}
-
-	public MEncoderVideo() {
-	}
+	// Not to be instantiated by anything but PlayerFactory
+	MEncoderVideo() {}
 
 	@Override
 	public JComponent config() {
@@ -519,7 +515,7 @@ public class MEncoderVideo extends Player {
 	}
 
 	@Override
-	public String id() {
+	public PlayerId id() {
 		return ID;
 	}
 
@@ -637,8 +633,8 @@ public class MEncoderVideo extends Player {
 	}
 
 	@Override
-	public String executable() {
-		return configuration.getMencoderPath();
+	public PlatformExecutableInfo executables() {
+		return configuration.getMEncoderPaths();
 	}
 
 	private static int[] getVideoBitrateConfig(String bitrate) {
@@ -944,7 +940,7 @@ public class MEncoderVideo extends Player {
 			}
 
 			if (!nomux) {
-				TsMuxeRVideo tv = new TsMuxeRVideo();
+				TsMuxeRVideo tv = (TsMuxeRVideo) PlayerFactory.getPlayer(PlayerId.TSMUXER_VIDEO);
 				params.forceFps = media.getValidFps(false);
 
 				if (media.getCodecV() != null) {
@@ -1034,10 +1030,10 @@ public class MEncoderVideo extends Player {
 			(params.aid.getBitRate() > 370000 && params.aid.getBitRate() < 400000);
 		 */
 
-		final boolean isTsMuxeRVideoEngineEnabled = configuration.getEnginesAsList(PMS.get().getRegistry()).contains(TsMuxeRVideo.ID);
+		final boolean isTsMuxeRVideoEngineActive = PlayerFactory.isPlayerActive(TsMuxeRVideo.ID);
 		final boolean mencoderAC3RemuxAudioDelayBug = (params.aid != null) && (params.aid.getAudioProperties().getAudioDelay() != 0) && (params.timeseek == 0);
 
-		encodedAudioPassthrough = isTsMuxeRVideoEngineEnabled &&
+		encodedAudioPassthrough = isTsMuxeRVideoEngineActive &&
 			configuration.isEncodedAudioPassthrough() &&
 			params.mediaRenderer.isWrapEncodedAudioIntoPCM() &&
 			(
@@ -1064,7 +1060,7 @@ public class MEncoderVideo extends Player {
 			ac3Remux = true;
 		} else {
 			// Now check for DTS remux and LPCM streaming
-			dtsRemux = isTsMuxeRVideoEngineEnabled &&
+			dtsRemux = isTsMuxeRVideoEngineActive &&
 				configuration.isAudioEmbedDtsInPcm() &&
 				(
 					!isDVD ||
@@ -1074,7 +1070,7 @@ public class MEncoderVideo extends Player {
 				!avisynth() &&
 				params.mediaRenderer.isDTSPlayable() &&
 				!combinedCustomOptions.contains("acodec=");
-			pcm = isTsMuxeRVideoEngineEnabled &&
+			pcm = isTsMuxeRVideoEngineActive &&
 				configuration.isAudioUsePCM() &&
 				(
 					!isDVD ||
@@ -2260,7 +2256,7 @@ public class MEncoderVideo extends Player {
 
 				pipe = new PipeProcess(System.currentTimeMillis() + "tsmuxerout.ts");
 
-				TsMuxeRVideo ts = new TsMuxeRVideo();
+				TsMuxeRVideo ts = (TsMuxeRVideo) PlayerFactory.getPlayer(PlayerId.TSMUXER_VIDEO);
 				File f = new File(configuration.getTempFolder(), "pms-tsmuxer.meta");
 				String cmd[] = new String[]{ ts.executable(), f.getAbsolutePath(), pipe.getInputPipe() };
 				pw = new ProcessWrapperImpl(cmd, params);
@@ -2491,7 +2487,7 @@ public class MEncoderVideo extends Player {
 
 	@Override
 	public String name() {
-		return "MEncoder";
+		return ID.name();
 	}
 
 	@Override

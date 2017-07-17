@@ -43,34 +43,34 @@ public class Build {
 	private static final boolean IS_UPDATABLE = true;
 
 	/**
-	 * the name of the subdirectory under which PMS config files are stored for this build.
-	 * the default value is "PMS" e.g.
+	 * the name of the subfolder under which DMS config files are stored for this build.
+	 * the default value is "DigitalMediaServer" e.g.
 	 *
 	 *     Windows:
 	 *
-	 *         %ALLUSERSPROFILE%\PMS
+	 *         %ALLUSERSPROFILE%\DigitalMediaServer
 	 *
-	 *     Mac OS X:
+	 *     OS X:
 	 *
-	 *         /home/<username>/Library/Application Support/PMS
+	 *         /home/<username>/Library/Application Support/DigitalMediaServer
 	 *
-	 *     Linux &c.
+	 *     Linux:
 	 *
-	 *         /home/<username>/.config/PMS
+	 *         /home/<username>/.config/DigitalMediaServer
 	 *
 	 * a custom build can change this to avoid interfering with the config files of other
 	 * builds e.g.:
 	 *
-	 *     PROFILE_DIRECTORY_NAME = "PMS Rendr Edition";
-	 *     PROFILE_DIRECTORY_NAME = "pms-mlx";
+	 *     PROFILE_DIRECTORY_NAME = "DMS Rendr Edition";
+	 *     PROFILE_DIRECTORY_NAME = "DMS-mlx";
 	 *
-	 * Note: custom Windows builds that change this value should change the corresponding "$ALLUSERSPROFILE\PMS"
+	 * Note: custom Windows builds that change this value should change the corresponding "$ALLUSERSPROFILE\DigitalMediaServer"
 	 * value in nsis/setup.nsi
 	 *
-	 * @return The profile directory name
+	 * @return The profile folder name
 	 */
 
-	private static final String PROFILE_DIRECTORY_NAME = "UMS";
+	private static final String PROFILE_FOLDER_NAME = "DigitalMediaServer";
 
 	/**
 	 * Determines whether or not this PMS build can be updated to a more
@@ -90,12 +90,12 @@ public class Build {
 	}
 
 	/**
-	 * Returns the {@link #PROFILE_DIRECTORY_NAME} where configuration files
+	 * Returns the {@link #PROFILE_FOLDER_NAME} where configuration files
 	 * for this version of PMS are stored.
 	 *
 	 * @return The profile directory name
 	 */
-	public static String getProfileDirectoryName() {
-		return PROFILE_DIRECTORY_NAME;
+	public static String getProfileFolderName() {
+		return PROFILE_FOLDER_NAME;
 	}
 }

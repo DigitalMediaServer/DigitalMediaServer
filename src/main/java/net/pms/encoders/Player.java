@@ -22,11 +22,17 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.StringTokenizer;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import javax.swing.JComponent;
+import net.pms.Messages;
 import net.pms.PMS;
+import net.pms.configuration.PlatformExecutableInfo;
 import net.pms.configuration.PmsConfiguration;
+import net.pms.configuration.ProgramExecutableType;
 import net.pms.configuration.RendererConfiguration;
 import net.pms.dlna.DLNAMediaAudio;
 import net.pms.dlna.DLNAMediaInfo;
@@ -54,13 +60,78 @@ public abstract class Player {
 	public static final int VIDEO_WEBSTREAM_PLAYER = 2;
 	public static final int AUDIO_WEBSTREAM_PLAYER = 3;
 	public static final int MISC_PLAYER = 4;
-	public static final String NATIVE = "NATIVE";
+
+	private final String enabledText = String.format(Messages.getString("Engine.Enabled"), name());
+	private final String enabledVersionText = Messages.getString("Engine.EnabledVersion");
+	private final String disabledText = String.format(Messages.getString("Engine.Disabled"), name());
 
 	public abstract int purpose();
 	public abstract JComponent config();
-	public abstract String id();
+	public abstract PlayerId id();
 	public abstract String name();
 	public abstract int type();
+	/**
+	 * Must be used to control all access to {@link #available}
+	 */
+	protected final ReentrantReadWriteLock availableLock = new ReentrantReadWriteLock();
+
+	/**
+	 * Initialized in {@link PlayerFactory#registerPlayer(Player)}.
+	 */
+	protected volatile ProgramExecutableType currentExecutableType;
+
+	/**
+	 * Used to determine if the player can be used, e.g if the binary is
+	 * accessible for the given {@link ProgramExecutableType}. All access must
+	 * be guarded with {@link #availableLock}.
+	 */
+	private Map<ProgramExecutableType, Boolean> available = new HashMap<>();
+
+	/**
+	 * Used to store the available state (localized) text for the given
+	 * {@link ProgramExecutableType}. All access must be guarded with
+	 * {@link #availableLock}.
+	 */
+	private Map<ProgramExecutableType, String> stateText = new HashMap<>();
+
+	/**
+	 * Must be used to control all access to {@link #enabled}
+	 */
+	protected final ReentrantReadWriteLock enabledLock = new ReentrantReadWriteLock();
+
+	/**
+	 * All access must be guarded with {@link #enabledLock}.
+	 */
+	private boolean enabled = false;
+
+	/**
+	 * Gets the current {@link ProgramExecutableType} for this {@link Player}.
+	 * This isn't necessarily the same as the configuration setting for this
+	 * {@link PlayerId} which can be gotten using
+	 * {@link PmsConfiguration#getExecutableType(PlayerId)}. The difference
+	 * is that {@link PlayerFactory#registerPlayer(Player)} will choose the
+	 * {@link ProgramExecutableType} based on configuration, default and test
+	 * results without changing the configuration.
+	 *
+	 * @return The current {@link ProgramExecutableType}
+	 */
+	public ProgramExecutableType getCurrentExecutableType() {
+		return currentExecutableType;
+	}
+
+	/**
+	 * Sets the current {@link ProgramExecutableType} for this {@link Player}
+	 * and optionally also sets the same value in the configuration.
+	 *
+	 * @param executableType the new {@link ProgramExecutableType}.
+	 * @param setConfiguration whether to set the configuration value.
+	 */
+	public void setCurrentExecutableType(ProgramExecutableType executableType, boolean setConfiguration) {
+		currentExecutableType = executableType;
+		if (setConfiguration) {
+			_configuration.setExecutableType(id(), executableType);
+		}
+	}
 
 	// FIXME this is an implementation detail (and not a very good one).
 	// it's entirely up to engines how they construct their command lines.
@@ -68,7 +139,12 @@ public abstract class Player {
 	public abstract String[] args();
 
 	public abstract String mimeType();
-	public abstract String executable();
+	public abstract PlatformExecutableInfo executables();
+
+	public String executable() {
+		return executables().getPath(currentExecutableType);
+	}
+
 	protected static final PmsConfiguration _configuration = PMS.getConfiguration();
 	protected PmsConfiguration configuration = _configuration;
 	private static List<FinalizeTranscoderArgsListener> finalizeTranscoderArgsListeners = new ArrayList<>();
@@ -103,6 +179,173 @@ public abstract class Player {
 
 	public boolean isTimeSeekable() {
 		return false;
+	}
+
+	/**
+	 * Used to determine if the player can be used, e.g if the binary is
+	 * accessible for the given {@link ProgramExecutableType}. Threadsafe.
+	 *
+	 * @param executableType the {@link ProgramExecutableType} to get the state
+	 *                       text for.
+	 */
+	public boolean isAvailable(ProgramExecutableType executableType) {
+		if (executableType == null) {
+			return false;
+		}
+		availableLock.readLock().lock();
+		try {
+			Boolean result = available.get(executableType);
+			return result == null ? false : result.booleanValue();
+		} finally {
+			availableLock.readLock().unlock();
+		}
+	}
+
+	/**
+	 * Used to determine if the player can be used, e.g if the binary is
+	 * accessible for the current {@link ProgramExecutableType}. Threadsafe.
+	 */
+	public boolean isAvailable() {
+		return isAvailable(currentExecutableType);
+	}
+
+	/**
+	 * Returns the current engine state (enabled, available) as a localized
+	 * text for the given {@link ProgramExecutableType}. Threadsafe.
+	 *
+	 * @param executableType the {@link ProgramExecutableType} to get the state
+	 *                       text for.
+	 * @return The localized state text.
+	 */
+	public String getStateText(ProgramExecutableType executableType) {
+		if (executableType == null) {
+			return null;
+		}
+		availableLock.readLock().lock();
+		try {
+			if (isActive(executableType)) {
+				if (StringUtils.isNotBlank(stateText.get(executableType))) {
+					return String.format(enabledVersionText, name(), stateText.get(executableType));
+				} else {
+					return enabledText;
+				}
+			} else if (isAvailable()) {
+				return disabledText;
+			} else {
+				return stateText.get(executableType);
+			}
+		} finally {
+			availableLock.readLock().unlock();
+		}
+	}
+
+	/**
+	 * Returns the current engine state (enabled, available) as a localized
+	 * text for the current {@link ProgramExecutableType}. Threadsafe.
+	 *
+	 * @return The localized state text.
+	 */
+	public String getStateText() {
+		return getStateText(currentExecutableType);
+	}
+
+	/**
+	 * Sets the engine available status with a localized explanation
+	 *
+	 * @param available whether or not the {@link Player} is available
+	 * @param executableType the {@link ProgramExecutableType} for which to set
+	 *                       availability.
+	 * @param stateText the localized description of the unavailable state or
+	 *                  the executable version number if available.
+	 */
+	public void setAvailable(boolean available, ProgramExecutableType executableType, String stateText) {
+		if (executableType == null || executableType.equals(ProgramExecutableType.UNKNOWN)) {
+			throw new IllegalArgumentException("executableType cannot be null or unknown");
+		}
+		availableLock.writeLock().lock();
+		try {
+			this.available.put(executableType, Boolean.valueOf(available));
+			this.stateText.put(executableType, stateText);
+		} finally {
+			availableLock.writeLock().unlock();
+		}
+	}
+
+	/**
+	 * Marks the engine as available for use.
+	 *
+	 * @param executableType the {@link ProgramExecutableType} for which to set
+	 *                       availability.
+	 * @param stateText the executable version number.
+	 */
+	public void setAvailable(ProgramExecutableType executableType, String stateText) {
+		setAvailable(true, executableType, stateText);
+	}
+
+	/**
+	 * Marks the engine as unavailable for use with a localized explanation
+	 *
+	 * @param executableType the {@link ProgramExecutableType} for which to set
+	 *                       availability.
+	 * @param stateText the localized description of the unavailable state
+	 */
+	public void setUnavailable(ProgramExecutableType executableType, String stateText) {
+		setAvailable(false, executableType, stateText);
+	}
+
+	/**
+	 * Threadsafe.
+	 */
+	public boolean isEnabled() {
+		enabledLock.readLock().lock();
+		try {
+			return enabled == true;
+		} finally {
+			enabledLock.readLock().unlock();
+		}
+	}
+
+	public void setEnabled(boolean enabled, boolean setConfiguration) {
+		enabledLock.writeLock().lock();
+		try {
+			this.enabled = enabled;
+			if (setConfiguration) {
+				_configuration.setEngineEnabled(id(), enabled);
+			}
+		} finally {
+			enabledLock.writeLock().unlock();
+		}
+	}
+
+	public void toggleEnabled(boolean setConfiguration) {
+		enabledLock.writeLock().lock();
+		try {
+			enabled = !enabled;
+			if (setConfiguration) {
+				_configuration.setEngineEnabled(id(), enabled);
+			}
+		} finally {
+			enabledLock.writeLock().unlock();
+		}
+	}
+
+	/**
+	 * Convenience method to check that a player is both available and enabled
+	 * for the given {@link ProgramExecutableType}.
+	 *
+	 * @param executableType the {@link ProgramExecutableType} for which to
+	 *                       check availability.
+	 */
+	public boolean isActive(ProgramExecutableType executableType) {
+		return isAvailable(executableType) && isEnabled();
+	}
+
+	/**
+	 * Convenience method to check that a player is both available and enabled
+	 * for the current {@link ProgramExecutableType}.
+	 */
+	public boolean isActive() {
+		return isAvailable(currentExecutableType) && isEnabled();
 	}
 
 	/**
@@ -521,48 +764,34 @@ public abstract class Player {
 	public abstract boolean isCompatible(DLNAResource resource);
 
 	/**
-	 * Returns whether or not another player has the same
-	 * name and id as this one.
+	 * Returns whether or not another {@link Player} has the same id as this.
 	 *
-	 * @param other
-	 * The other player.
-	 * @return True if names and ids match, false otherwise.
+	 * @return True if ids match, false otherwise.
 	 */
 	@Override
-	public boolean equals(Object other) {
-		if (this == other) {
+	public boolean equals(Object obj) { //TODO: (Nad) Check correctness, should .name() be compared as well?
+		if (this == obj) {
 			return true;
 		}
-		if (other == null) {
+		if (obj == null || !(obj instanceof Player)) {
 			return false;
 		}
-		if (!(other instanceof Player)) {
-			return false;
-		}
-		Player otherPlayer = (Player) other;
-		if (this.name() == null) {
-			if (otherPlayer.name() != null) {
+		Player other = (Player) obj;
+		if (id() == null) {
+			if (other.id() != null) {
 				return false;
 			}
-		} else if (!this.name().equals(otherPlayer.name())) {
-			return false;
-		}
-		if (this.id() == null) {
-			if (otherPlayer.id() != null) {
-				return false;
-			}
-		} else if (!this.id().equals(otherPlayer.id())) {
+		} else if (!id().equals(other.id())) {
 			return false;
 		}
 		return true;
 	}
 
 	@Override
-	public int hashCode() {
+	public int hashCode() { //TODO: (Nad) Check correctness, should .name() be included as well?
 		final int prime = 31;
 		int result = 1;
-		result = prime * result + (name() == null ? 0 : name().hashCode());
-		result = prime * result + (id() == null ? 0 : id().hashCode());
+		result = prime * result + ((id() == null) ? 0 : id().hashCode());
 		return result;
 	}
 }

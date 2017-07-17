@@ -29,6 +29,8 @@ import net.pms.dlna.Range.Time;
 import net.pms.encoders.FFmpegAudio;
 import net.pms.encoders.MEncoderVideo;
 import net.pms.encoders.Player;
+import net.pms.encoders.PlayerFactory;
+import net.pms.encoders.PlayerId;
 import net.pms.formats.Format;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -157,12 +159,12 @@ public class CueFolder extends DLNAResource {
 											r.resolveFormat(); // sets the format based on the filename
 											defaultPlayer = PlayerFactory.getPlayer(realFile);
 									*/
-									defaultPlayer = new MEncoderVideo();
+									defaultPlayer = PlayerFactory.getPlayer(PlayerId.MENCODER_VIDEO);
 								} else {
 									if (realFile.getFormat().isAudio()) {
-										defaultPlayer = new FFmpegAudio();
+										defaultPlayer = PlayerFactory.getPlayer(PlayerId.FFMPEG_AUDIO);
 									} else {
-										defaultPlayer = new MEncoderVideo();
+										defaultPlayer = PlayerFactory.getPlayer(PlayerId.MENCODER_VIDEO);
 									}
 								}
 							}

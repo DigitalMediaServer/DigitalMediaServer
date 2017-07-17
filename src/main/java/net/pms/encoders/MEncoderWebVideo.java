@@ -21,6 +21,7 @@ package net.pms.encoders;
 import java.io.IOException;
 import javax.swing.JComponent;
 import net.pms.configuration.DeviceConfiguration;
+import net.pms.configuration.PlatformExecutableInfo;
 import net.pms.configuration.PmsConfiguration;
 import net.pms.dlna.DLNAMediaInfo;
 import net.pms.dlna.DLNAResource;
@@ -32,7 +33,7 @@ import net.pms.io.ProcessWrapperImpl;
 import net.pms.util.PlayerUtil;
 
 public class MEncoderWebVideo extends Player {
-	public static final String ID = "mencoderwebvideo";
+	public static final PlayerId ID = PlayerId.MENCODER_WEB_VIDEO;
 
 	@Override
 	public JComponent config() {
@@ -40,7 +41,7 @@ public class MEncoderWebVideo extends Player {
 	}
 
 	@Override
-	public String id() {
+	public PlayerId id() {
 		return ID;
 	}
 
@@ -77,13 +78,8 @@ public class MEncoderWebVideo extends Player {
 			};
 	}
 
-	@Deprecated
-	public MEncoderWebVideo(PmsConfiguration configuration) {
-		this();
-	}
-
-	public MEncoderWebVideo() {
-	}
+	// Not to be instantiated by anything but PlayerFactory
+	MEncoderWebVideo() {}
 
 	@Override
 	public ProcessWrapper launchTranscode(
@@ -147,7 +143,7 @@ public class MEncoderWebVideo extends Player {
 
 	@Override
 	public String name() {
-		return "MEncoder Web";
+		return ID.name();
 	}
 
 	@Override
@@ -156,8 +152,8 @@ public class MEncoderWebVideo extends Player {
 	}
 
 	@Override
-	public String executable() {
-		return configuration.getMencoderPath();
+	public PlatformExecutableInfo executables() {
+		return configuration.getMEncoderPaths();
 	}
 
 	@Override

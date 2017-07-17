@@ -15,7 +15,7 @@ import org.slf4j.LoggerFactory;
 import com.drew.lang.ByteArrayReader;
 import net.coobird.thumbnailator.Thumbnails;
 import net.pms.PMS;
-import net.pms.configuration.PmsConfiguration;
+import net.pms.configuration.PlatformExecutableInfo;
 import net.pms.dlna.DLNAMediaInfo;
 import net.pms.dlna.DLNAResource;
 import net.pms.formats.Format;
@@ -30,8 +30,12 @@ import net.pms.io.ProcessWrapper;
 import net.pms.io.ProcessWrapperImpl;
 
 public class DCRaw extends ImagePlayer {
-	public final static String ID = "dcraw";
+	public final static PlayerId ID = PlayerId.RAW_THUMBNAILER; //TODO: (Nad) Rename
 	private static final Logger LOGGER = LoggerFactory.getLogger(DCRaw.class);
+
+	// Not to be instantiated by anything but PlayerFactory
+	DCRaw() { //TODO: (Nad) Package protected won't work
+	}
 
 	protected String[] getDefaultArgs() {
 		return new String[]{ "-e", "-c" };
@@ -48,12 +52,12 @@ public class DCRaw extends ImagePlayer {
 	}
 
 	@Override
-	public String executable() {
-		return configuration.getDCRawPath();
+	public PlatformExecutableInfo executables() {
+		return configuration.getDCRawPaths();
 	}
 
 	@Override
-	public String id() {
+	public PlayerId id() {
 		return ID;
 	}
 
@@ -84,7 +88,7 @@ public class DCRaw extends ImagePlayer {
 
 	@Override
 	public String name() {
-		return "DCRaw";
+		return ID.name();
 	}
 
 	@Override
@@ -110,9 +114,6 @@ public class DCRaw extends ImagePlayer {
 			params = new OutputParams(PMS.getConfiguration());
 		}
 
-		// Use device-specific pms conf
-		PmsConfiguration configuration = PMS.getConfiguration(params);
-
 		params.log = false;
 		// Setting the buffer to the size of the source file or 5 MB. The
 		// output won't be the same size as the input, but it will hopefully
@@ -125,7 +126,7 @@ public class DCRaw extends ImagePlayer {
 
 		// First try to get the embedded thumbnail
 		String cmdArray[] = new String[5];
-		cmdArray[0] = configuration.getDCRawPath();
+		cmdArray[0] = PlayerFactory.getPlayerExecutable(ID);
 		cmdArray[1] = "-c";
 		cmdArray[2] = "-M";
 		cmdArray[3] = "-w";
@@ -165,8 +166,6 @@ public class DCRaw extends ImagePlayer {
 			params = new OutputParams(PMS.getConfiguration());
 		}
 
-		// Use device-specific pms conf
-		PmsConfiguration configuration = PMS.getConfiguration(params);
 		params.log = false;
 
 		// This is a wild guess at a decent buffer size for an embedded thumbnail.
@@ -175,7 +174,7 @@ public class DCRaw extends ImagePlayer {
 
 		// First try to get the embedded thumbnail
 		String cmdArray[] = new String[6];
-		cmdArray[0] = configuration.getDCRawPath();
+		cmdArray[0] = PlayerFactory.getPlayerExecutable(ID);
 		cmdArray[1] = "-e";
 		cmdArray[2] = "-c";
 		cmdArray[3] = "-M";
@@ -234,9 +233,9 @@ public class DCRaw extends ImagePlayer {
 							imageAspect = (double) imageInfo.getWidth() / imageInfo.getHeight();
 						}
 						if (ImagesUtil.isExifAxesSwapNeeded(thumbnailOrientation)) {
-							thumbnailAspect = (double) jpegResolution.getHeight() / jpegResolution.getWidth();
+							thumbnailAspect = jpegResolution.getHeight() / jpegResolution.getWidth();
 						} else {
-							thumbnailAspect = (double) jpegResolution.getWidth() / jpegResolution.getHeight();
+							thumbnailAspect = jpegResolution.getWidth() / jpegResolution.getHeight();
 						}
 
 						if (Math.abs(imageAspect - thumbnailAspect) > 0.001d) {
@@ -313,7 +312,7 @@ public class DCRaw extends ImagePlayer {
 		params.log = true;
 
 		String cmdArray[] = new String[4];
-		cmdArray[0] = configuration.getDCRawPath();
+		cmdArray[0] = PlayerFactory.getPlayerExecutable(ID); //TODO: (Nad) Verify ID
 		cmdArray[1] = "-i";
 		cmdArray[2] = "-v";
 		cmdArray[3] = file.getAbsolutePath();

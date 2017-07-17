@@ -66,6 +66,7 @@ import net.pms.network.HTTPServer;
 import net.pms.network.ProxyServer;
 import net.pms.network.UPNPHelper;
 import net.pms.newgui.*;
+import net.pms.newgui.StatusTab.ConnectionState;
 import net.pms.remote.RemoteWeb;
 import net.pms.update.AutoUpdater;
 import net.pms.util.*;
@@ -79,6 +80,7 @@ import org.slf4j.ILoggerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@SuppressWarnings("restriction")
 public class PMS {
 	private static final String SCROLLBARS = "scrollbars";
 	private static final String NATIVELOOK = "nativelook";
@@ -88,8 +90,8 @@ public class PMS {
 	private static final String PROFILES = "profiles";
 	private static final String PROFILE = "^(?i)profile(?::|=)([^\"*<>?]+)$";
 	private static final String TRACE = "trace";
-	public static final String NAME = "Universal Media Server";
-	public static final String CROWDIN_LINK = "https://crowdin.com/project/universalmediaserver";
+	public static final String NAME = "Digital Media Server";
+	public static final String CROWDIN_LINK = "http://crowdin.com/project/DigitalMediaServer";
 
 	/**
 	 * @deprecated The version has moved to the resources/project.properties file. Use {@link #getVersion()} instead.
@@ -168,12 +170,11 @@ public class PMS {
 	private static PMS instance = null;
 
 	/**
-	 * Array of {@link net.pms.configuration.RendererConfiguration} that have
-	 * been found by UMS.<br><br>
-	 *
+	 * An array of {@link RendererConfiguration}s that have been found by DMS.
+	 * <p>
 	 * Important! If iteration is done on this list it's not thread safe unless
-	 * the iteration loop is enclosed by a <code>synchronized</code> block on
-	 * the <code>List itself</code>.
+	 * the iteration loop is enclosed by a {@code synchronized} block on the <b>
+	 * {@link List} itself</b>.
 	 */
 	private final List<RendererConfiguration> foundRenderers = Collections.synchronizedList(new ArrayList<RendererConfiguration>());
 
@@ -209,18 +210,16 @@ public class PMS {
 	 * @since 1.82.0
 	 */
 	public void setRendererFound(RendererConfiguration renderer) {
-		synchronized (foundRenderers) {
-			if (!foundRenderers.contains(renderer) && !renderer.isFDSSDP()) {
-				LOGGER.debug("Adding status button for " + renderer.getRendererName());
-				foundRenderers.add(renderer);
-				frame.addRenderer(renderer);
-				frame.setStatusCode(0, Messages.getString("PMS.18"), "icon-status-connected.png");
-			}
+		if (!foundRenderers.contains(renderer) && !renderer.isFDSSDP()) { //TODO: (Nad) Check synchronization need
+			LOGGER.debug("Adding status button for {}", renderer.getRendererName());
+			foundRenderers.add(renderer);
+			frame.addRenderer(renderer);
+			frame.setConnectionState(ConnectionState.CONNECTED);
 		}
 	}
 
 	public void updateRenderer(RendererConfiguration renderer) {
-		LOGGER.debug("Updating status button for " + renderer.getRendererName());
+		LOGGER.debug("Updating status button for {}", renderer.getRendererName());
 		frame.updateRenderer(renderer);
 	}
 
@@ -252,10 +251,10 @@ public class PMS {
 	private IFrame frame;
 
 	/**
-	 * Interface to Windows-specific functions, like Windows Registry. registry is set by {@link #init()}.
+	 * Interface to Windows-specific functions, like Windows Registry.
 	 * @see net.pms.io.WinUtils
 	 */
-	private SystemUtils registry;
+	private final SystemUtils registry = createSystemUtils();
 
 	/**
 	 * @see net.pms.io.WinUtils
@@ -289,8 +288,8 @@ public class PMS {
 	private void displayBanner() throws IOException {
 		LOGGER.debug("");
 		LOGGER.info("Starting " + PropertiesUtil.getProjectProperties().get("project.name") + " " + getVersion());
-		LOGGER.info("Based on PS3 Media Server by shagrath, copyright 2008-2014");
-		LOGGER.info("http://www.universalmediaserver.com");
+		LOGGER.info("Based on PS3 Media Server by shagrath and Universal Media Server");
+		LOGGER.info("http://www.digitalmediaserver.org");
 		LOGGER.info("");
 
 		String commitId = PropertiesUtil.getProjectProperties().get("git.commit.id");
@@ -315,7 +314,7 @@ public class PMS {
 		File javaTmpdir = new File(System.getProperty("java.io.tmpdir"));
 
 		if (!FileUtil.getFilePermissions(javaTmpdir).isWritable()) {
-			LOGGER.error("The Java temp directory \"" + javaTmpdir.getAbsolutePath() + "\" is not writable by UMS");
+			LOGGER.error("The Java temp directory \"" + javaTmpdir.getAbsolutePath() + "\" is not writable by DMS");
 			LOGGER.error("Please make sure the directory is writable for user \"" + System.getProperty("user.name") + "\"");
 			throw new IOException("Cannot write to Java temp directory: " + javaTmpdir.getAbsolutePath());
 		}
@@ -345,7 +344,7 @@ public class PMS {
 		}
 
 		String profilePath = configuration.getProfilePath();
-		String profileDirectoryPath = configuration.getProfileDirectory();
+		String profileDirectoryPath = configuration.getProfileFolder();
 
 		LOGGER.info("");
 		LOGGER.info("Profile directory: {}", profileDirectoryPath);
@@ -403,7 +402,7 @@ public class PMS {
 	}
 
 	/**
-	 * Initialization procedure for UMS.
+	 * Initialization procedure for DMS.
 	 *
 	 * @return <code>true</code> if the server has been initialized correctly.
 	 *         <code>false</code> if initialization was aborted.
@@ -486,7 +485,7 @@ public class PMS {
 				// The current question number
 				int currentQuestionNumber = 1;
 
-				// Ask if they want UMS to start minimized
+				// Ask if they want DMS to start minimized
 				int whetherToStartMinimized = JOptionPane.showConfirmDialog(
 					null,
 					Messages.getString("Wizard.3"),
@@ -594,8 +593,6 @@ public class PMS {
 			autoUpdater = new AutoUpdater(serverURL, getVersion());
 		}
 
-		registry = createSystemUtils();
-
 		// Create SleepManager
 		sleepManager = new SleepManager();
 
@@ -637,6 +634,7 @@ public class PMS {
 			@Override
 			public void configurationChanged(ConfigurationEvent event) {
 				if ((!event.isBeforeUpdate()) && PmsConfiguration.NEED_RELOAD_FLAGS.contains(event.getPropertyName())) {
+					//TODO: (Nad) Shouldn't this be in the event dispatcher?
 					frame.setReloadable(true);
 				}
 			}
@@ -676,7 +674,7 @@ public class PMS {
 		if (!configuration.isDisableSubtitles()) {
 			LOGGER.info("Checking the fontconfig cache in the background, this can take two minutes or so.");
 
-			ProcessWrapperImpl mplayer = new ProcessWrapperImpl(new String[]{configuration.getMplayerPath(), "dummy"}, outputParams);
+			ProcessWrapperImpl mplayer = new ProcessWrapperImpl(new String[]{configuration.getMPlayerDefaultPath(), "dummy"}, outputParams);
 			mplayer.runInNewThread();
 
 			/**
@@ -684,14 +682,20 @@ public class PMS {
 			 * different caches, which is why here we ask FFmpeg (64-bit
 			 * if possible) to create a cache.
 			 * This should result in all of the necessary caches being built.
+			 * TODO: Rewrite fontconfig generation
 			 */
 			if (!Platform.isWindows() || Platform.is64Bit()) {
-				ProcessWrapperImpl ffmpeg = new ProcessWrapperImpl(new String[]{configuration.getFfmpegPath(), "-y", "-f", "lavfi", "-i", "nullsrc=s=720x480:d=1:r=1", "-vf", "ass=DummyInput.ass", "-target", "ntsc-dvd", "-"}, outputParams);
+				ProcessWrapperImpl ffmpeg = new ProcessWrapperImpl(
+					new String[]{
+						configuration.getFFmpegPaths().getDefaultPath(),
+						"-y", "-f", "lavfi", "-i", "nullsrc=s=720x480:d=1:r=1", "-vf", "ass=DummyInput.ass", "-target", "ntsc-dvd", "-"},
+					outputParams
+				);
 				ffmpeg.runInNewThread();
 			}
 		}
 
-		frame.setStatusCode(0, Messages.getString("PMS.130"), "icon-status-connecting.png");
+		frame.setConnectionState(ConnectionState.SEARCHING);
 
 		// Check the existence of VSFilter / DirectVobSub
 		if (registry.isAvis() && registry.getAvsPluginsDir() != null) {
@@ -796,9 +800,9 @@ public class PMS {
 				}
 
 				if (foundRenderers.isEmpty()) {
-					frame.setStatusCode(0, Messages.getString("PMS.0"), "icon-status-notconnected.png");
+					frame.setConnectionState(ConnectionState.DISCONNECTED);
 				} else {
-					frame.setStatusCode(0, Messages.getString("PMS.18"), "icon-status-connected.png");
+					frame.setConnectionState(ConnectionState.CONNECTED);
 				}
 			}
 		}.start();
@@ -827,7 +831,7 @@ public class PMS {
 		ready = true;
 
 		// UPNPHelper.sendByeBye();
-		Runtime.getRuntime().addShutdownHook(new Thread("UMS Shutdown") {
+		Runtime.getRuntime().addShutdownHook(new Thread("DMS Shutdown") {
 			@Override
 			public void run() {
 				try {
@@ -1093,7 +1097,7 @@ public class PMS {
 				}
 			}
 
-			LOGGER.info("Using the following UUID configured in UMS.conf: {}", uuid);
+			LOGGER.info("Using the following UUID configured in DMS.conf: {}", uuid);
 		}
 
 		return "uuid:" + uuid;
@@ -1111,7 +1115,7 @@ public class PMS {
 			sb.append(System.getProperty("os.arch").replace(" ", "_"));
 			sb.append('-');
 			sb.append(System.getProperty("os.version").replace(" ", "_"));
-			sb.append(", UPnP/1.0 DLNADOC/1.50, UMS/").append(getVersion());
+			sb.append(", UPnP/1.0 DLNADOC/1.50, DMS/").append(getVersion());
 			serverName = sb.toString();
 		}
 
@@ -1181,7 +1185,7 @@ public class PMS {
 		if (args.length > 0) {
 			Pattern pattern = Pattern.compile(PROFILE);
 			for (String arg : args) {
-				switch (arg) {
+				switch (arg.toLowerCase()) {
 					case HEADLESS:
 					case CONSOLE:
 						forceHeadless();
@@ -1236,7 +1240,7 @@ public class PMS {
 				LOGGER.warn("Specified profile ({}) doesn't exist - using default profile", profilePath.getAbsolutePath());
 			} else {
 				LOGGER.debug("Using specified profile: {}", profilePath.getAbsolutePath());
-				System.setProperty("ums.profile.path", profilePath.getAbsolutePath());
+				System.setProperty("dms.profile.path", profilePath.getAbsolutePath());
 			}
 		} else if (!isHeadless() && displayProfileChooser) {
 			ProfileChooser.display();
@@ -1317,6 +1321,8 @@ public class PMS {
 					JOptionPane.ERROR_MESSAGE
 				);
 			}
+		} catch (InterruptedException e) {
+			// Interrupted during startup
 		}
 	}
 
@@ -1449,12 +1455,12 @@ public class PMS {
 		LOGGER.info("");
 
 		if (Platform.isMac() && !IOKitUtils.isMacOsVersionEqualOrGreater(6, 0)) {
-			// The binaries shipped with the Mac OS X version of UMS are being
+			// The binaries shipped with the Mac OS X version of DMS are being
 			// compiled against specific OS versions, making them incompatible
 			// with older versions. Warn the user about this when necessary.
 			LOGGER.warn("-----------------------------------------------------------------");
 			LOGGER.warn("WARNING!");
-			LOGGER.warn("UMS ships with external binaries compiled for Mac OS X 10.6 or");
+			LOGGER.warn("DMS ships with external binaries compiled for Mac OS X 10.6 or");
 			LOGGER.warn("higher. You are running an older version of Mac OS X which means");
 			LOGGER.warn("that these binaries used for example for transcoding may not work!");
 			LOGGER.warn("To solve this, replace the binaries found int the \"osx\"");
@@ -1499,7 +1505,7 @@ public class PMS {
 		} catch (AccessControlException e) {
 			LOGGER.error(
 				"Failed to check for already running instance: " + e.getMessage() +
-				(Platform.isWindows() ? "\nUMS might need to run as an administrator to access the PID file" : "")
+				(Platform.isWindows() ? "\nDMS might need to run as an administrator to access the PID file" : "")
 			);
 		} catch (FileNotFoundException e) {
 			LOGGER.debug("PID file not found, cannot check for running process");
@@ -1512,7 +1518,7 @@ public class PMS {
 		} catch (FileNotFoundException e) {
 			LOGGER.error(
 				"Failed to write PID file: "+ e.getMessage() +
-				(Platform.isWindows() ? "\nUMS might need to run as an administrator to enforce single instance" : "")
+				(Platform.isWindows() ? "\nDMS might need to run as an administrator to enforce single instance" : "")
 			);
 		} catch (IOException e) {
 			LOGGER.error("Error dumping PID " + e);
@@ -1554,9 +1560,9 @@ public class PMS {
 
 		// check first and last, update since taskkill changed
 		// also check 2nd last since we migh have ", POSSIBLY UNSTABLE" in there
-		boolean ums = tmp[tmp.length - 1].contains("universal media server") ||
-			  		  tmp[tmp.length - 2].contains("universal media server");
-		return tmp[0].equals("javaw.exe") && ums;
+		boolean dms = tmp[tmp.length - 1].contains("digital media server") ||
+			  		  tmp[tmp.length - 2].contains("digital media server");
+		return tmp[0].equals("javaw.exe") && dms;
 	}
 
 	private static String pidFile() {
@@ -1634,17 +1640,13 @@ public class PMS {
 		tfm.add(f, cleanTime);
 	}
 
-	@Deprecated
-	public void registerPlayer(Player player) {
-		PlayerFactory.registerPlayer(player);
-	}
-
 	private static ReadWriteLock headlessLock = new ReentrantReadWriteLock();
 	private static Boolean headless = null;
 
 	/**
-	 * Checks if UMS is running in headless (console) mode, since some Linux
-	 * distros seem to not use java.awt.GraphicsEnvironment.isHeadless() properly
+	 * Checks if DMS is running in headless (console) mode, since some Linux
+	 * distributions seem to not use java.awt.GraphicsEnvironment.isHeadless()
+	 * properly.
 	 */
 	public static boolean isHeadless() {
 		headlessLock.readLock().lock();
@@ -1671,7 +1673,7 @@ public class PMS {
 	}
 
 	/**
-	 * Forces UMS to run in headless (console) mode whether a graphics
+	 * Forces DMS to run in headless (console) mode whether a graphics
 	 * environment is available or not.
 	 */
 	public static void forceHeadless() {
@@ -1687,7 +1689,7 @@ public class PMS {
 	private static ReadWriteLock localeLock = new ReentrantReadWriteLock();
 
 	/**
-	 * Gets UMS' current {@link Locale} to be used in any {@link Locale}
+	 * Gets DMS' current {@link Locale} to be used in any {@link Locale}
 	 * sensitive operations. If <code>null</code> the default {@link Locale}
 	 * is returned.
 	 */
@@ -1705,7 +1707,7 @@ public class PMS {
 	}
 
 	/**
-	 * Sets UMS' {@link Locale}.
+	 * Sets DMS' {@link Locale}.
 	 * @param aLocale the {@link Locale} to set
 	 */
 
@@ -1720,7 +1722,7 @@ public class PMS {
 	}
 
 	/**
-	 * Sets UMS' {@link Locale} with the same parameters as the
+	 * Sets DMS' {@link Locale} with the same parameters as the
 	 * {@link Locale} class constructor. <code>null</code> values are
 	 * treated as empty strings.
 	 *
@@ -1750,7 +1752,7 @@ public class PMS {
 	}
 
 	/**
-	 * Sets UMS' {@link Locale} with the same parameters as the
+	 * Sets DMS' {@link Locale} with the same parameters as the
 	 * {@link Locale} class constructor. <code>null</code> values are
 	 * treated as empty strings.
 	 *
@@ -1766,7 +1768,7 @@ public class PMS {
 	}
 
 	/**
-	 * Sets UMS' {@link Locale} with the same parameters as the {@link Locale}
+	 * Sets DMS' {@link Locale} with the same parameters as the {@link Locale}
 	 * class constructor. <code>null</code> values are
 	 * treated as empty strings.
 	 *

@@ -166,7 +166,7 @@ public class PluginTab {
 				// See if we have write permission in 'plugins'. We don't necessarily
 				// need admin rights here.
 				try {
-					if (!FileUtil.getFilePermissions(configuration.getPluginDirectory()).isWritable()) {
+					if (!FileUtil.getFilePermissions(configuration.getPluginFolder()).isWritable()) {
 						JOptionPane.showMessageDialog(
 							looksFrame,
 							Messages.getString("PluginTab.16") + (Platform.isWindows() ? "\n" + Messages.getString("AutoUpdate.13") : ""),
@@ -178,7 +178,7 @@ public class PluginTab {
 				} catch (FileNotFoundException e1) {
 					JOptionPane.showMessageDialog(
 							looksFrame,
-							String.format(Messages.getString("PluginTab.17"), configuration.getPluginDirectory()),
+							String.format(Messages.getString("PluginTab.17"), configuration.getPluginFolder()),
 							Messages.getString("Dialog.Error"),
 							JOptionPane.ERROR_MESSAGE
 						);

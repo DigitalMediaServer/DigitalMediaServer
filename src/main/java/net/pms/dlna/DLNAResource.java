@@ -639,7 +639,7 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 							playerTranscoding = child.player;
 						} else {
 							for (Player p : PlayerFactory.getPlayers()) {
-								String end = "[" + p.id() + "]";
+								String end = "[" + p.id().toString() + "]";
 
 								if (name.endsWith(end)) {
 									nametruncate = name.lastIndexOf(end);
@@ -748,7 +748,7 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 						if (!newChild.format.isCompatible(newChild.media, defaultRenderer)) {
 							Player playerTranscoding = PlayerFactory.getPlayer(newChild);
 							newChild.setPlayer(playerTranscoding);
-							LOGGER.trace("Secondary format \"{}\" will use player \"{}\" for \"{}\"", newChild.format.toString(), newChild.getPlayer().name(), newChild.getName());
+							LOGGER.trace("Secondary format \"{}\" will use player \"{}\" for \"{}\"", newChild.format.toString(), player == null ? "null" : player.name(), newChild.getName());
 						}
 
 						if (child.media != null && child.media.isSecondaryFormatValid()) {
@@ -3366,7 +3366,7 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 
 				params.timeseek = resume.getTimeOffset() / 1000;
 				if (player == null) {
-					player = new FFMpegVideo();
+					player = PlayerFactory.getPlayer(PlayerId.FFMPEG_VIDEO);
 				}
 			}
 

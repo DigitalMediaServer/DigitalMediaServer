@@ -20,18 +20,33 @@
 package net.pms.encoders;
 
 import com.sun.jna.Platform;
-import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.Serializable;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import net.pms.Messages;
 import net.pms.PMS;
+import net.pms.configuration.PlatformExecutableInfo;
 import net.pms.configuration.PmsConfiguration;
+import net.pms.configuration.ProgramExecutableType;
 import net.pms.dlna.DLNAResource;
-import net.pms.formats.Format;
 import net.pms.formats.FormatFactory;
+import net.pms.io.SimpleProcessWrapper;
+import net.pms.io.SimpleProcessWrapper.SimpleProcessWrapperResult;
 import net.pms.io.SystemUtils;
+import net.pms.util.FilePermissions;
+import net.pms.util.FileUtil;
+import net.pms.util.StringUtil;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,18 +60,17 @@ public final class PlayerFactory {
 	/**
 	 * Logger used for all logging.
 	 */
-	private static final Logger LOGGER = LoggerFactory
-			.getLogger(FormatFactory.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(FormatFactory.class);
 
 	/**
-	 * List of registered and approved {@link Player} objects.
+	 * Must be used to lock all access to {@link #PLAYERS}.
 	 */
-	private static ArrayList<Player> players = new ArrayList<>();
+	private static final ReentrantReadWriteLock PLAYERS_LOCK = new ReentrantReadWriteLock();
 
 	/**
-	 * List of registered {@link Player} objects.
+	 * An {@link ArrayList} of all registered {@link Player} objects.
 	 */
-	private static ArrayList<Player> allPlayers = new ArrayList<>();
+	private static final ArrayList<Player> PLAYERS = new ArrayList<>(); //TODO: (Nad) Map
 
 	/**
 	 * Interface to Windows specific functions, like Windows Registry. The
@@ -74,11 +88,10 @@ public final class PlayerFactory {
 
 		@Override
 		public int compare(Player player1, Player player2) {
-			List<String> prefs = configuration.getEnginesAsList(utils);
-			Integer index1 = prefs.indexOf(player1.id());
-			Integer index2 = prefs.indexOf(player2.id());
+			Integer index1 = configuration.getEnginePriority(player1);
+			Integer index2 = configuration.getEnginePriority(player2);
 
-			// Not being in the configuration settings will sort the player as last.
+			// Not being in the priority list will sort the player as last.
 			if (index1 == -1) {
 				index1 = 999;
 			}
@@ -97,35 +110,29 @@ public final class PlayerFactory {
 	private PlayerFactory() {
 	}
 
-	@Deprecated
-	public static void initialize(final PmsConfiguration configuration) {
-		initialize();
-	}
-
 	/**
 	 * Constructor that registers all players based on the given configuration,
 	 * frame and registry.
+	 * @throws InterruptedException
 	 */
-	public static void initialize() {
+	public static void initialize() throws InterruptedException {
 		utils = PMS.get().getRegistry();
 		registerPlayers();
 	}
 
 	/**
-	 * Register a known set of audio or video transcoders.
+	 * Register a known set of transcoding engines.
+	 * @throws InterruptedException
 	 */
-	private static void registerPlayers() {
+	private static void registerPlayers() throws InterruptedException {
 		if (Platform.isWindows()) {
 			registerPlayer(new AviSynthFFmpeg());
+			registerPlayer(new AviSynthMEncoder());
+			registerPlayer(new FFmpegDVRMSRemux());
 		}
 
 		registerPlayer(new FFmpegAudio());
 		registerPlayer(new MEncoderVideo());
-
-		if (Platform.isWindows()) {
-			registerPlayer(new AviSynthMEncoder());
-		}
-
 		registerPlayer(new FFMpegVideo());
 		registerPlayer(new VLCVideo());
 		registerPlayer(new FFmpegWebVideo());
@@ -135,16 +142,9 @@ public final class PlayerFactory {
 		registerPlayer(new TsMuxeRAudio());
 		registerPlayer(new VideoLanAudioStreaming());
 		registerPlayer(new VideoLanVideoStreaming());
-
-		if (Platform.isWindows()) {
-			registerPlayer(new FFmpegDVRMSRemux());
-		}
-
 		registerPlayer(new DCRaw());
 
-		// Sort the players according to the configuration settings
-		Collections.sort(allPlayers, new PlayerSort());
-		Collections.sort(players, new PlayerSort());
+		FFmpegWebVideo.initializeProtocols();
 	}
 
 	/**
@@ -152,120 +152,252 @@ public final class PlayerFactory {
 	 * added to the list, it is verified to be okay.
 	 *
 	 * @param player Player to be added to the list.
+	 * @throws InterruptedException
 	 */
-	public static synchronized void registerPlayer(final Player player) {
-		if (allPlayers.contains(player)) {
-			LOGGER.info("Transcoding engine " + player + " already exists, skipping...");
-			return;
-		}
+	public static void registerPlayer(final Player player) throws InterruptedException {
+		configuration.capitalizeEngineId(player);
+		PLAYERS_LOCK.writeLock().lock();
+		try {
+			if (PLAYERS.contains(player)) {
+				LOGGER.info("Transcoding engine {} already exists, skipping registration...", player);
+				return;
+			}
 
-		boolean ok = false;
-		allPlayers.add(player);
+			LOGGER.info("Checking transcoding engine: {}", player);
+			PLAYERS.add(player);
+			player.setEnabled(configuration.isEngineEnabled(player), false);
 
-		if (Player.NATIVE.equals(player.executable())) {
-			ok = true;
-		} else {
-			if (Platform.isWindows()) {
-				if (player.executable() == null) {
-					LOGGER.info("Executable of transcoder profile " + player
-							+ " not defined");
-					return;
-				}
+			PlatformExecutableInfo executableInfo = player.executables();
+			ReentrantReadWriteLock executableInfoLock = executableInfo.getLock();
+			// Lock it for consistency during tests
+			executableInfoLock.readLock().lock();
+			try {
+				for (ProgramExecutableType executableType : executableInfo.executablesTypes()) {
 
-				File executable = new File(player.executable());
-				File executable2 = new File(player.executable() + ".exe");
+					if (executableInfo.getPath(executableType) == null) {
+						player.setUnavailable(
+							executableType,
+							String.format(Messages.getString("Engine.ExecutableNotDefined"),player)
+						);
+						LOGGER.warn("{} executable of transcoding engine {} is undefined", executableType, player);
+						continue;
+					}
 
-				if (executable.exists() || executable2.exists()) {
-					ok = true;
-				} else {
-					LOGGER.info("Executable of transcoder profile " + player
-							+ " not found");
-					return;
-				}
-
-				if (player.avisynth()) {
-					ok = false;
-
-					if (utils.isAvis()) {
-						ok = true;
+					Path executable;
+					if (Platform.isWindows()) {
+						String[] validExtensions = {"exe", "com", "bat"};
+						String extension = FileUtil.getExtension(executableInfo.getPath(executableType));
+						if (extension == null || !Arrays.asList(validExtensions).contains(extension.toLowerCase())) {
+							executable = Paths.get(executableInfo.getPath(executableType) + ".exe");
+						} else {
+							executable = Paths.get(executableInfo.getPath(executableType));
+						}
+					} else if (player.avisynth()) {
+						LOGGER.debug("Skipping transcoding engine {} ({}) as it's not compatible with this platform", player, executableType);
+						player.setUnavailable(executableType, String.format(Messages.getString("Engine.ExecutablePlatformIncompatible"), player));
+						continue;
 					} else {
-						LOGGER.info("Transcoder profile " + player
-								+ " will not be used because AviSynth was not found");
+						executable = Paths.get(executableInfo.getPath(executableType));
+					}
+
+					/*
+					 * Don't make executables that only is a file name absolute
+					 * or check for file permissions as they probably depend on
+					 * the local path.
+					 */
+					if (!executable.equals(executable.getFileName())) {
+						executable = executable.toAbsolutePath();
+
+						try {
+							FilePermissions permissions = new FilePermissions(executable);
+							if (!permissions.isExecutable()) {
+								LOGGER.warn("Insufficient permission to execute \"{}\" for transcoding engine {} ({})", executable, player, executableType);
+								player.setUnavailable(executableType, String.format(Messages.getString("Engine.MissingExecutePermission"), executable, player));
+								continue;
+							}
+						} catch (FileNotFoundException e) {
+							LOGGER.warn("{} executable \"{}\" of transcoding engine {} not found: {}", executableType, executable, player, e.getMessage());
+							player.setUnavailable(executableType, String.format(Messages.getString("Engine.ExecutableNotFound"), executable, player));
+							continue;
+						}
+					}
+					if (Platform.isWindows() && player.avisynth() && !utils.isAvis()) {
+						LOGGER.debug("Transcoding engine {} ({}) is unavailable since AviSynth couldn't be found", player, executableType);
+						player.setUnavailable(executableType, String.format(Messages.getString("Engine.AviSynthNotFound"), player));
+						continue;
+					}
+					if (!playerTest(player, executableType, executable)) {
+						// Only set available if this isn't already done by the test to avoid overwriting the state
+						player.setAvailable(executableType, null);
 					}
 				}
-			} else if (!player.avisynth()) {
-				ok = true;
-			}
-		}
 
-		if (ok) {
-			LOGGER.info("Registering transcoding engine: " + player);
-			players.add(player);
+				// Find the best executable type to use, first read the one from configuration
+				ProgramExecutableType currentExecutableType = configuration.getExecutableType(player.id());
+				if (!player.isAvailable(currentExecutableType)) {
+					// Set the platform default if that is available
+					if (player.isAvailable(executableInfo.getDefault())) {
+						currentExecutableType = executableInfo.getDefault();
+					} else {
+						// Set the first one that is available, if any
+						for (ProgramExecutableType executableType : executableInfo.executablesTypes()) {
+							if (player.isAvailable(executableType)) {
+								currentExecutableType = executableType;
+								break;
+							}
+						}
+					}
+					// Leave it to the configured type if none other is available
+				}
+				player.setCurrentExecutableType(currentExecutableType, false);
+
+			} finally {
+				executableInfoLock.readLock().unlock();
+			}
+
+			if (player.isAvailable()) {
+				LOGGER.info("Transcoding engine \"{}\" is available", player);
+			} else {
+				LOGGER.warn("Transcoding engine \"{}\" is not available", player);
+			}
+
+			// Sort the players according to the configuration settings. This
+			// will have to be after each registered player in case a player is
+			// registered at a later stage than during initialization.
+			sortPlayers();
+
+		} finally {
+			PLAYERS_LOCK.writeLock().unlock();
 		}
 	}
 
 	/**
-	 * Returns the list of all players. This includes the ones not verified as
-	 * being okay.
+	 * Used to (re)sort {@link #PLAYERS} every time either {@link #PLAYERS}
+	 * or {@link PmsConfiguration#enginesPriority} has changed so that
+	 * {@link #PLAYERS} always is sorted according to priority.
+	 */
+	public static void sortPlayers() { //TODO: (Nad) Better way...
+		PLAYERS_LOCK.writeLock().lock();
+		try {
+			Collections.sort(PLAYERS, new PlayerSort());
+		} finally {
+			PLAYERS_LOCK.writeLock().unlock();
+		}
+	}
+
+	/**
+	 * Returns the a copy of the list of all {@link Player}s. This includes the
+	 * ones not verified as being okay.
 	 *
-	 * @return The list of players.
+	 * @return A {@link List} of {@link Player}s.
 	 */
 	public static ArrayList<Player> getAllPlayers() {
-		return allPlayers;
+		PLAYERS_LOCK.readLock().lock();
+		try {
+			return new ArrayList<Player>(PLAYERS);
+		} finally {
+			PLAYERS_LOCK.readLock().unlock();
+		}
 	}
 
 	/**
-	 * Returns the list of players that have been verified as okay.
+	 * Returns a {@link List} of {@link Player}s according to the given filters
+	 * ordered by priority.
+	 *
+	 * @param onlyEnabled whether or not to filter on enabled {@link Player}s.
+	 * @param onlyAvailable whether or not to filter on available {@link Player}s.
+	 * @return The {@link List} of {@link Player}s.
+	 */
+	public static ArrayList<Player> getPlayers(boolean onlyEnabled, boolean onlyAvailable) {
+		PLAYERS_LOCK.readLock().lock();
+		try {
+			ArrayList<Player> resultPlayers = new ArrayList<>();
+			for (Player player : PLAYERS) {
+				if ((!onlyAvailable || player.isAvailable()) && (!onlyEnabled || player.isEnabled())) {
+					resultPlayers.add(player);
+				}
+			}
+			return resultPlayers;
+		} finally {
+			PLAYERS_LOCK.readLock().unlock();
+		}
+	}
+
+	/**
+	 * Returns the list of enabled and available players ordered by priority.
 	 *
 	 * @return The list of players.
 	 */
 	public static ArrayList<Player> getPlayers() {
-		return players;
+		return getPlayers(true, true);
 	}
 
 	/**
-	 * Returns the {@link Player} that matches the given class and format if it is
-	 * enabled. If no {@link Player} is found or the {@link Player} isn't
-	 * enabled, {@code null} is returned.
+	 * Checks if a {@link Player} of the given type is both available and
+	 * enabled.
 	 *
-	 * @param profileClass
-	 *            The class to match.
-	 * @param ext
-	 *            The format to match.
-	 * @return The {@link Player} if found and enabled, otherwise {@code null}.
+	 * @param id the {@link Player} type to check for.
+	 * @return The result.
 	 */
-	public static Player getEnabledPlayer(final Class<? extends Player> profileClass, final Format ext) {
-		Player player = getPlayer(profileClass, ext);
-		if (player != null && configuration.getEnginesAsList(utils).contains(player.id())) {
-			return player;
+	public static boolean isPlayerActive(PlayerId id) {
+		if (id == null) {
+			return false;
 		}
-		return null;
-	}
 
-	/**
-	 * @deprecated Use {@link #getPlayer(DLNAResource)} instead.
-	 *
-	 * Returns the player that matches the given class and format.
-	 *
-	 * @param profileClass
-	 *            The class to match.
-	 * @param ext
-	 *            The format to match.
-	 * @return The player if a match could be found, <code>null</code>
-	 *         otherwise.
-	 */
-	@Deprecated
-	public static Player getPlayer(final Class<? extends Player> profileClass, final Format ext) {
-
-		for (Player player : players) {
-			if (player.getClass().equals(profileClass)
-					&& player.type() == ext.getType()
-					&& !player.excludeFormat(ext)) {
-				return player;
+		PLAYERS_LOCK.readLock().lock();
+		try {
+			for (Player player : PLAYERS) {
+				if (id.equals(player.id())) {
+					return player.isActive();
+				}
 			}
+			return false;
+		} finally {
+			PLAYERS_LOCK.readLock().unlock();
 		}
+	}
 
-		return null;
+	/**
+	 * Returns the {@link Player} that matches the given {@code id} if it exists
+	 * and is enabled and available. If no {@link Player} is found or it isn't
+	 * enabled and available, {@code null} is returned.
+	 *
+	 * @param id the {@link PlayerId} to look for.
+	 * @return The {@link Player} if found or {@code null}.
+	 */
+	public static Player getActivePlayer(PlayerId id) {
+		return getPlayer(id, true, true);
+	}
+
+	/**
+	 * Returns the {@link Player} that matches the given {@code id} if it exists
+	 * and matches the given criteria. If no {@link Player} is found or the
+	 * given criteria isn't met, {@code null} is returned.
+	 *
+	 * @param id the {@link PlayerId} to look for.
+	 * @param onlyEnabled whether or not to filter on enabled {@link Player}s.
+	 * @param onlyAvailable whether or not to filter on available
+	 *        {@link Player}s.
+	 * @return The {@link Player} if found or {@code null}.
+	 */
+	public static Player getPlayer(PlayerId id, boolean onlyEnabled, boolean onlyAvailable) {
+		if (id == null) {
+			return null;
+		}
+		PLAYERS_LOCK.readLock().lock();
+		try {
+			for (Player player : PLAYERS) {
+				if (id.equals(player.id())) {
+					if ((!onlyAvailable || player.isAvailable()) && (!onlyEnabled || player.isEnabled())) {
+						return player;
+					}
+					return null;
+				}
+			}
+			return null;
+		} finally {
+			PLAYERS_LOCK.readLock().unlock();
+		}
 	}
 
 	/**
@@ -287,25 +419,35 @@ public final class PlayerFactory {
 		LOGGER.trace("Getting player for resource \"{}\"", resource.getName());
 		boolean isImage = resource.getMedia() != null ? resource.getMedia().isImage() : false;
 
-		List<String> enabledEngines = configuration.getEnginesAsList(utils);
-
-		for (Player player : players) {
-			boolean enabled = enabledEngines.contains(player.id());
-
-			if (enabled && (!isImage || player instanceof ImagePlayer)) {
-				boolean compatible = player.isCompatible(resource);
-
-				if (compatible) {
-					// Player is enabled and compatible
-					LOGGER.trace("Returning compatible player \"{}\"", player.name());
-					return player;
+		PLAYERS_LOCK.readLock().lock();
+		try {
+			for (Player player : PLAYERS) {
+				if (isImage && !(player instanceof ImagePlayer)) {
+					continue;
 				}
-				LOGGER.trace("Player \"{}\" is incompatible", player.name());
-			} else {
-				if (!isImage || player instanceof ImagePlayer) {
-					LOGGER.trace("Player \"{}\" is disabled", player.name());
+				boolean enabled = player.isEnabled();
+				boolean available = player.isAvailable();
+				if (enabled && available) {
+					boolean compatible = player.isCompatible(resource);
+					if (compatible) {
+						// Player is enabled and compatible
+						LOGGER.trace("Returning compatible player \"{}\"", player.name());
+						return player;
+					} else if (LOGGER.isTraceEnabled()) {
+						LOGGER.trace("Player \"{}\" is incompatible", player.name());
+					}
+				} else if (LOGGER.isTraceEnabled()) {
+					if (available) {
+						LOGGER.trace("Player \"{}\" is disabled", player.name());
+					} else if (enabled) {
+						LOGGER.trace("Player \"{}\" isn't available", player.name());
+					} else {
+						LOGGER.trace("Player \"{}\" is neither available nor enabled", player.name());
+					}
 				}
 			}
+		} finally {
+			PLAYERS_LOCK.readLock().unlock();
 		}
 
 		LOGGER.trace("No player found for {}", resource.getName());
@@ -314,32 +456,28 @@ public final class PlayerFactory {
 	}
 
 	/**
-	 * @deprecated Use {@link #getPlayer(DLNAResource)} instead.
+	 * Gets a {@link Player}s currently active executable the registered
+	 * players or {@code null} if the no such {@link Player} is registered.
 	 *
-	 * Returns the players matching the given classes and type.
-	 *
-	 * @param profileClasses
-	 *            The classes to match.
-	 * @param type
-	 *            The type to match.
-	 * @return The list of players that match. If no players match, an empty
-	 *         list is returned.
+	 * @param id the {@link PlayerId} to use for lookup.
+	 * @return the executable {@link String} or {@code null}.
 	 */
-	@Deprecated
-	public static ArrayList<Player> getPlayers(
-			final ArrayList<Class<? extends Player>> profileClasses,
-			final int type) {
-
-		ArrayList<Player> compatiblePlayers = new ArrayList<>();
-
-		for (Player player : players) {
-			if (profileClasses.contains(player.getClass())
-					&& player.type() == type) {
-				compatiblePlayers.add(player);
-			}
+	public static String getPlayerExecutable(final PlayerId id) {
+		if (id == null) {
+			return null;
 		}
 
-		return compatiblePlayers;
+		playersLock.readLock().lock();
+		try {
+			for (Player player : players) {
+				if (id.equals(player.id())) {
+					return player.executable();
+				}
+			}
+		} finally {
+			playersLock.readLock().unlock();
+		}
+		return null;
 	}
 
 	/**
@@ -358,28 +496,221 @@ public final class PlayerFactory {
 			return null;
 		}
 
-		List<String> enabledEngines = configuration.getEnginesAsList(utils);
 		ArrayList<Player> compatiblePlayers = new ArrayList<>();
+		PLAYERS_LOCK.readLock().lock();
+		try {
+			for (Player player : PLAYERS) {
+				if (player.isEnabled() && player.isAvailable() && player.isCompatible(resource)) {
+					// Player is enabled, available and compatible
+					LOGGER.trace("Player {} is compatible with resource \"{}\"", player.name(), resource.getName());
+					compatiblePlayers.add(player);
+				}
+			}
+		} finally {
+			PLAYERS_LOCK.readLock().unlock();
+		}
+		return compatiblePlayers;
+	}
 
-		for (Player player : players) {
-			if (enabledEngines.contains(player.id()) && player.isCompatible(resource)) {
-				// Player is enabled and compatible
-				LOGGER.trace("Player " + player.name() + " is compatible with resource " + resource.getName());
-				compatiblePlayers.add(player);
+	/**
+	 * Protected by {@link #playersLock}
+	 */
+	private static final List<PlayerTestRecord> testRecords = new ArrayList<>();
+
+	/**
+	 * Must only be called when a lock is held on {@link #playersLock}
+	 * @param player the player whose executable to test
+	 *
+	 * @return {@code true} if a test was performed, {@code false} otherwise.
+	 * @throws InterruptedException
+	 */
+	private static boolean playerTest(Player player, ProgramExecutableType executableType, Path executable) throws InterruptedException {
+		if (executable == null) {
+			return false;
+		}
+
+		for (PlayerTestRecord testRecord : testRecords) {
+			if (executable.equals(testRecord.executable)) {
+				player.setAvailable(testRecord.pass, executableType, testRecord.result);
+				return true;
 			}
 		}
 
-		return compatiblePlayers;
+		// Return true if a test is performed and availability is set
+		if (player instanceof FFMpegVideo || player instanceof FFmpegDVRMSRemux) {
+			final String arg = "-version";
+			String state = null;
+			try {
+				SimpleProcessWrapperResult result = SimpleProcessWrapper.runProcess(executable.toString(), arg);
+				if (result.exitCode == 0) {
+					if (result.output != null && result.output.size() > 0) {
+						Pattern pattern = Pattern.compile("^ffmpeg version\\s+(.*?)\\s+Copyright", Pattern.CASE_INSENSITIVE);
+						Matcher matcher = pattern.matcher(result.output.get(0));
+						if (matcher.find()) {
+							state = matcher.group(1);
+							player.setAvailable(executableType, state);
+						} else {
+							player.setAvailable(executableType, null);
+						}
+					} else {
+						player.setAvailable(executableType, null);
+					}
+				} else {
+					if (result.output.size() > 2) {
+						state =
+							String.format(Messages.getString("Engine.Error"), player) + " \n" +
+							result.output.get(result.output.size() - 2) + " " +
+							result.output.get(result.output.size() - 1);
+						player.setUnavailable(executableType, state);
+					} else if (result.output.size() > 1) {
+						state =
+							String.format(Messages.getString("Engine.Error"), player) + " \n" +
+							result.output.get(result.output.size() - 1);
+						player.setUnavailable(executableType, state);
+					} else {
+						state = String.format(Messages.getString("Engine.Error"), player) + Messages.getString("General.3");
+						player.setUnavailable(executableType, state);
+					}
+				}
+			} catch (IOException e) {
+				LOGGER.debug("\"{} {}\" ({}) failed with error: {}", executable, arg, executableType, e.getMessage());
+				state = String.format(Messages.getString("Engine.Error"), player) + " \n" + e.getMessage();
+				player.setUnavailable(executableType, state);
+			}
+			testRecords.add(new PlayerTestRecord(executable, player.isAvailable(executableType) , state));
+			return true;
+		} else if (player instanceof MEncoderVideo || player instanceof MEncoderWebVideo) {
+			final String arg = "-info:help";
+			String state = null;
+			try {
+				SimpleProcessWrapperResult result = SimpleProcessWrapper.runProcess(executable.toString(), arg);
+				if (result.exitCode == 0) {
+					if (result.output != null && result.output.size() > 0) {
+						Pattern pattern = Pattern.compile("^MEncoder\\s+(.*?)\\s+\\(C\\)", Pattern.CASE_INSENSITIVE);
+						Matcher matcher = pattern.matcher(result.output.get(0));
+						if (matcher.find()) {
+							state = matcher.group(1);
+							player.setAvailable(executableType, state);
+						} else {
+							player.setAvailable(executableType, null);
+						}
+					} else {
+						player.setAvailable(executableType, null);
+					}
+				} else {
+					if (result.output != null &&
+						result.output.size() > 3 &&
+						StringUtil.hasValue(result.output.get(result.output.size() - 1)) &&
+						!StringUtil.hasValue(result.output.get(result.output.size() - 2)) &&
+						StringUtil.hasValue(result.output.get(result.output.size() - 3))
+					) {
+						state =
+							String.format(Messages.getString("Engine.Error"), player) + " \n" +
+							result.output.get(result.output.size() - 3);
+						player.setUnavailable(executableType, state);
+					} else {
+						state = String.format(Messages.getString("Engine.Error"), player) + Messages.getString("General.3");
+						player.setUnavailable(executableType, state);
+					}
+				}
+			} catch (IOException e) {
+				LOGGER.debug("\"{} {}\" ({}) failed with error: {}", executable, arg, executableType, e.getMessage());
+				state = String.format(Messages.getString("Engine.Error"), player) + " \n" + e.getMessage();
+				player.setUnavailable(executableType, state);
+			}
+			testRecords.add(new PlayerTestRecord(executable, player.isAvailable(executableType), state));
+			return true;
+		} else if (player instanceof TsMuxeRVideo) {
+			final String arg = "-v";
+			String state = null;
+			try {
+				SimpleProcessWrapperResult result = SimpleProcessWrapper.runProcess(executable.toString(), arg);
+				if (result.exitCode == 0) {
+					if (result.output != null && result.output.size() > 0) {
+						Pattern pattern = Pattern.compile("tsMuxeR\\.\\s+Version\\s(\\S+)\\s+", Pattern.CASE_INSENSITIVE);
+						Matcher matcher = pattern.matcher(result.output.get(0));
+						if (matcher.find()) {
+							state = matcher.group(1);
+							player.setAvailable(executableType, state);
+						} else {
+							player.setAvailable(executableType, null);
+						}
+					} else {
+						player.setAvailable(executableType, null);
+					}
+				} else {
+					state = String.format(Messages.getString("Engine.ExitCode"), player, result.exitCode);
+					if (Platform.isLinux() && Platform.is64Bit()) {
+						state += ". \n" + Messages.getString("Engine.tsMuxerErrorLinux");
+					}
+					player.setUnavailable(executableType, state);
+				}
+			} catch (IOException e) {
+				LOGGER.debug("\"{} {}\" ({}) failed with error: {}", executable, arg, executableType, e.getMessage());
+				state = String.format(Messages.getString("Engine.Error"), player) + " \n" + e.getMessage();
+				player.setUnavailable(executableType, state);
+			}
+			testRecords.add(new PlayerTestRecord(executable, player.isAvailable(executableType), state));
+			return true;
+		} else if (player instanceof DCRaw) {
+			String state = null;
+			try {
+				SimpleProcessWrapperResult result = SimpleProcessWrapper.runProcess(executable.toString());
+				if (result.output != null && StringUtils.isBlank(result.output.get(0))) {
+					if (result.output.size() > 1) {
+						Pattern pattern = Pattern.compile("decoder\\s\"dcraw\"\\s(\\S+)", Pattern.CASE_INSENSITIVE);
+						Matcher matcher = pattern.matcher(result.output.get(1));
+						if (matcher.find()) {
+							state = matcher.group(1);
+							player.setAvailable(executableType, state);
+						} else {
+							player.setAvailable(executableType, null);
+						}
+					} else {
+						player.setAvailable(executableType, null);
+					}
+				} else if (result.output != null && result.output.size() > 0){
+					state =
+						String.format(Messages.getString("Engine.Error"), player) + " \n" +
+						result.output.get(0);
+					player.setUnavailable(executableType, state);
+				} else {
+					state = String.format(Messages.getString("Engine.Error"), player) + Messages.getString("General.3");
+					player.setUnavailable(executableType, state);
+				}
+			} catch (IOException e) {
+				LOGGER.debug("\"{}\" ({}) failed with error: {}", executable, executableType, e.getMessage());
+				state = String.format(Messages.getString("Engine.Error"), player) + " \n" + e.getMessage();
+				player.setUnavailable(executableType, state);
+			}
+			testRecords.add(new PlayerTestRecord(executable, player.isAvailable(executableType), state));
+			return true;
+		}
+		// No test has been made for VLC, found no way to get feedback on stdout: https://forum.videolan.org/viewtopic.php?t=73665
+
+		return false;
 	}
 
 	/**
 	 * @deprecated Use {@link #getPlayers(DLNAResource)} instead.
 	 *
-	 * @param resource The resource to match
+	 * @param resource the resource to match
 	 * @return The list of players if a match could be found, null otherwise.
 	 */
 	@Deprecated
 	public static ArrayList<Player> getEnabledPlayers(final DLNAResource resource) {
 		return getPlayers(resource);
+	}
+
+	private static class PlayerTestRecord {
+		public final Path executable;
+		public final boolean pass;
+		public final String result;
+
+		public PlayerTestRecord(Path executable, boolean pass, String result) {
+			this.executable = executable;
+			this.pass = pass;
+			this.result = result;
+		}
 	}
 }

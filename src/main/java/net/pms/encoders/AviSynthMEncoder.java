@@ -52,15 +52,10 @@ import org.slf4j.LoggerFactory;
 public class AviSynthMEncoder extends MEncoderVideo {
 	private static final Logger LOGGER = LoggerFactory.getLogger(AviSynthMEncoder.class);
 
-	@Deprecated
-	public AviSynthMEncoder(PmsConfiguration configuration) {
-		this();
-	}
+	// Not to be instantiated by anything but PlayerFactory
+	AviSynthMEncoder() {}
 
-	public AviSynthMEncoder() {
-	}
-
-	public static final String ID = "avsmencoder";
+	public static final PlayerId ID = PlayerId.AVI_SYNTH_MENCODER;
 
 	private JTextArea textArea;
 	private JCheckBox convertfps;
@@ -201,7 +196,7 @@ public class AviSynthMEncoder extends MEncoderVideo {
 	}
 
 	@Override
-	public String id() {
+	public PlayerId id() {
 		return ID;
 	}
 
@@ -212,7 +207,7 @@ public class AviSynthMEncoder extends MEncoderVideo {
 
 	@Override
 	public String name() {
-		return "AviSynth/MEncoder";
+		return ID.name();
 	}
 
 	@Override
@@ -269,7 +264,7 @@ public class AviSynthMEncoder extends MEncoderVideo {
 			String mtLine2         = "";
 			String mtLine3         = "";
 			String interframeLines = null;
-			String interframePath  = configuration.getInterFramePath();
+			String interframePath  = configuration.getInterFrameDefaultPath();
 
 			int Cores = 1;
 			if (configuration.getAvisynthMultiThreading()) {

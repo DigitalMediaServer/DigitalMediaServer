@@ -34,8 +34,8 @@ import java.util.regex.Pattern;
 import javax.swing.JCheckBox;
 import javax.swing.JComponent;
 import net.pms.Messages;
-import net.pms.PMS;
 import net.pms.configuration.DeviceConfiguration;
+import net.pms.configuration.PlatformExecutableInfo;
 import net.pms.configuration.PmsConfiguration;
 import net.pms.configuration.RendererConfiguration;
 import net.pms.dlna.DLNAMediaInfo;
@@ -85,17 +85,11 @@ public class FFMpegVideo extends Player {
 	private static final Logger LOGGER = LoggerFactory.getLogger(FFMpegVideo.class);
 	private static final String DEFAULT_QSCALE = "3";
 
-	public FFMpegVideo() {
+	// Not to be instantiated by anything but PlayerFactory
+	FFMpegVideo() {
 	}
 
-	@Deprecated
-	public FFMpegVideo(PmsConfiguration configuration) {
-		this();
-	}
-
-	// FIXME we have an id() accessor for this; no need for the field to be public
-	@Deprecated
-	public static final String ID = "ffmpegvideo";
+	public static final PlayerId ID = PlayerId.FFMPEG_VIDEO;
 
 	/**
 	 * Returns a list of strings representing the rescale options for this transcode i.e. the ffmpeg -vf
@@ -324,10 +318,10 @@ public class FFMpegVideo extends Player {
 			transcodeOptions.add("-f");
 			transcodeOptions.add("asf");
 		} else { // MPEGPSMPEG2AC3, MPEGTSMPEG2AC3, MPEGTSH264AC3 or MPEGTSH264AAC
-			final boolean isTsMuxeRVideoEngineEnabled = configuration.getEnginesAsList(PMS.get().getRegistry()).contains(TsMuxeRVideo.ID);
+			final boolean isTsMuxeRVideoEngineActive = PlayerFactory.isPlayerActive(TsMuxeRVideo.ID);
 
 			// Output audio codec
-			dtsRemux = isTsMuxeRVideoEngineEnabled &&
+			dtsRemux = isTsMuxeRVideoEngineActive &&
 				configuration.isAudioEmbedDtsInPcm() &&
 				params.aid != null &&
 				params.aid.isDTS() &&
@@ -627,8 +621,7 @@ public class FFMpegVideo extends Player {
 	}
 
 	@Override
-	// TODO make this static so it can replace ID, instead of having both
-	public String id() {
+	public PlayerId id() {
 		return ID;
 	}
 
@@ -656,7 +649,7 @@ public class FFMpegVideo extends Player {
 
 	@Override
 	public String name() {
-		return "FFmpeg";
+		return ID.name();
 	}
 
 	@Override
@@ -710,8 +703,8 @@ public class FFMpegVideo extends Player {
 	}
 
 	@Override
-	public String executable() {
-		return configuration.getFfmpegPath();
+	public PlatformExecutableInfo executables() {
+		return configuration.getFFmpegPaths();
 	}
 
 	@Override
@@ -796,7 +789,7 @@ public class FFMpegVideo extends Player {
 			cmdList.add(String.valueOf(nThreads));
 		}
 
-		final boolean isTsMuxeRVideoEngineEnabled = configuration.getEnginesAsList(PMS.get().getRegistry()).contains(TsMuxeRVideo.ID);
+		final boolean isTsMuxeRVideoEngineActive = PlayerFactory.isPlayerActive(TsMuxeRVideo.ID);
 		final boolean isXboxOneWebVideo = params.mediaRenderer.isXboxOne() && purpose() == VIDEO_WEBSTREAM_PLAYER;
 
 		ac3Remux = false;
@@ -815,7 +808,7 @@ public class FFMpegVideo extends Player {
 			ac3Remux = true;
 		} else {
 			// Now check for DTS remux and LPCM streaming
-			dtsRemux = isTsMuxeRVideoEngineEnabled &&
+			dtsRemux = isTsMuxeRVideoEngineActive &&
 				configuration.isAudioEmbedDtsInPcm() &&
 				params.aid != null &&
 				params.aid.isDTS() &&
@@ -841,11 +834,13 @@ public class FFMpegVideo extends Player {
 
 		/**
 		 * Defer to MEncoder for subtitles if:
+		 * - MEncoder is enabled and available
 		 * - The setting is enabled
 		 * - There are subtitles to transcode
 		 * - The file is not being played via the transcode folder
 		 */
 		if (
+			PlayerFactory.isPlayerActive(MEncoderVideo.ID) &&
 			!(renderer instanceof RendererConfiguration.OutputOverride) &&
 			params.sid != null &&
 			!(
@@ -922,7 +917,7 @@ public class FFMpegVideo extends Player {
 				LOGGER.trace(prependTraceReason + "the resolution is incompatible with the renderer.");
 			}
 			if (deferToTsmuxer) {
-				TsMuxeRVideo tv = new TsMuxeRVideo();
+				TsMuxeRVideo tv = (TsMuxeRVideo) PlayerFactory.getPlayer(PlayerId.TSMUXER_VIDEO);
 				params.forceFps = media.getValidFps(false);
 
 				if (media.getCodecV() != null) {
@@ -1087,7 +1082,7 @@ public class FFMpegVideo extends Player {
 		} else {
 			pipe = new PipeProcess(System.currentTimeMillis() + "tsmuxerout.ts");
 
-			TsMuxeRVideo ts = new TsMuxeRVideo();
+			TsMuxeRVideo ts = (TsMuxeRVideo) PlayerFactory.getPlayer(PlayerId.TSMUXER_VIDEO);
 			File f = new File(configuration.getTempFolder(), "pms-tsmuxer.meta");
 			String cmd[] = new String[]{ ts.executable(), f.getAbsolutePath(), pipe.getInputPipe() };
 			pw = new ProcessWrapperImpl(cmd, params);

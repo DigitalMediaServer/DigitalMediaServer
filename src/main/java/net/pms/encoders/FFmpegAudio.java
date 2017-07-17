@@ -46,19 +46,14 @@ import org.slf4j.LoggerFactory;
 
 public class FFmpegAudio extends FFMpegVideo {
 	private static final Logger LOGGER = LoggerFactory.getLogger(FFmpegAudio.class);
-	public static final String ID = "ffmpegaudio";
+	public static final PlayerId ID = PlayerId.FFMPEG_AUDIO;
 
 	// should be private
 	@Deprecated
 	JCheckBox noresample;
 
-	@Deprecated
-	public FFmpegAudio(PmsConfiguration configuration) {
-		this();
-	}
-
-	public FFmpegAudio() {
-	}
+	// Not to be instantiated by anything but PlayerFactory
+	FFmpegAudio() {}
 
 	@Override
 	public JComponent config() {
@@ -95,7 +90,7 @@ public class FFmpegAudio extends FFMpegVideo {
 	}
 
 	@Override
-	public String id() {
+	public PlayerId id() {
 		return ID;
 	}
 
@@ -111,7 +106,7 @@ public class FFmpegAudio extends FFMpegVideo {
 
 	@Override
 	public String name() {
-		return "FFmpeg Audio";
+		return ID.name();
 	}
 
 	@Override

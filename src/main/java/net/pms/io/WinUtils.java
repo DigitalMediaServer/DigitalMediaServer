@@ -26,6 +26,7 @@ import java.io.File;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.CharBuffer;
+import java.nio.charset.Charset;
 import java.util.prefs.Preferences;
 import net.pms.PMS;
 import org.slf4j.Logger;
@@ -249,8 +250,10 @@ public class WinUtils extends BasicSystemUtils {
 				}
 				if (handles.length == 2 && handles[0] != 0 && handles[1] == 0) {
 					valb = (byte[]) winRegQueryValue.invoke(systemRoot, handles[0], toCstr(""));
-					vlcp = (valb != null ? new String(valb).trim() : null);
+					//TODO: (Nad) The below is a bug, we need to know the OS charset but it isn't available because it's being overwritten to UTF-8 during startup
+					vlcp = (valb != null ? new String(valb,Charset.forName("cp1252")).trim() : null);
 					valb = (byte[]) winRegQueryValue.invoke(systemRoot, handles[0], toCstr("Version"));
+					//TODO: (Nad) The below is a bug, same as above
 					vlcv = (valb != null ? new String(valb).trim() : null);
 					closeKey.invoke(systemRoot, handles[0]);
 				}
@@ -313,7 +316,7 @@ public class WinUtils extends BasicSystemUtils {
 
 	@Override
 	public String[] getPingCommand(String hostAddress, int count, int packetSize) {
-		String cmd = PMS.getConfiguration().pingPath();
+		String cmd = PMS.getConfiguration().pingPath(); //TODO: (Nad) Check closer, why was the else removed?
 		if (cmd == null) {
 			return new String[]{"ping", /* count */ "-n", Integer.toString(count), /* size */ "-l", Integer.toString(packetSize), hostAddress};
 		} else {
@@ -323,7 +326,7 @@ public class WinUtils extends BasicSystemUtils {
 	}
 
 	@Override
-	public String parsePingLine(String line) {
+	public String parsePingLine(String line) {//TODO: (Nad) Check closer, why was this removed?
 		if (PMS.getConfiguration().pingPath() == null) {
 			return super.parsePingLine(line);
 		}

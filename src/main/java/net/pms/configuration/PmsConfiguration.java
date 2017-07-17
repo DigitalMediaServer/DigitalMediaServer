@@ -33,13 +33,31 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
 import net.pms.Messages;
 import net.pms.PMS;
 import net.pms.dlna.CodeEnter;
+import net.pms.encoders.AviSynthFFmpeg;
+import net.pms.encoders.AviSynthMEncoder;
+import net.pms.encoders.DCRaw;
+import net.pms.encoders.FFMpegVideo;
+import net.pms.encoders.FFmpegAudio;
+import net.pms.encoders.FFmpegDVRMSRemux;
+import net.pms.encoders.FFmpegWebVideo;
+import net.pms.encoders.MEncoderVideo;
+import net.pms.encoders.MEncoderWebVideo;
+import net.pms.encoders.Player;
+import net.pms.encoders.PlayerFactory;
+import net.pms.encoders.PlayerId;
+import net.pms.encoders.TsMuxeRAudio;
+import net.pms.encoders.TsMuxeRVideo;
+import net.pms.encoders.VLCVideo;
+import net.pms.encoders.VLCWebVideo;
+import net.pms.encoders.VideoLanAudioStreaming;
+import net.pms.encoders.VideoLanVideoStreaming;
 import net.pms.formats.Format;
-import net.pms.io.SystemUtils;
 import net.pms.util.CoverSupplier;
 import net.pms.util.FilePermissions;
 import net.pms.util.FileUtil;
@@ -50,10 +68,10 @@ import net.pms.util.Languages;
 import net.pms.util.LogSystemInformationMode;
 import net.pms.util.PreventSleepMode;
 import net.pms.util.PropertiesUtil;
+import net.pms.util.StringUtil;
 import net.pms.util.SubtitleColor;
 import net.pms.util.UMSUtils;
 import net.pms.util.WindowsRegistry;
-import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.commons.configuration.event.ConfigurationListener;
@@ -79,6 +97,14 @@ public class PmsConfiguration extends RendererConfiguration {
 	public static final int LOGGING_LOGS_TAB_LINEBUFFER_MIN = 100;
 	public static final int LOGGING_LOGS_TAB_LINEBUFFER_STEP = 500;
 
+	private static volatile boolean enabledEnginesBuilt = false;
+	private static final ReentrantReadWriteLock enabledEnginesLock = new ReentrantReadWriteLock();
+	private static List<PlayerId> enabledEngines;
+
+	private static volatile boolean enginesPriorityBuilt = false;
+	private static final ReentrantReadWriteLock enginesPriorityLock = new ReentrantReadWriteLock();
+	private static List<PlayerId> enginesPriority;
+
 	/*
 	 * MEncoder has a hardwired maximum of 8 threads for -lavcopts and 16
 	 * for -lavdopts.
@@ -86,9 +112,6 @@ public class PmsConfiguration extends RendererConfiguration {
 	 * for compatibility with other operating systems.
 	 */
 	protected static final int MENCODER_MAX_THREADS = 8;
-
-	// TODO: Get this out of here
-	protected static boolean avsHackLogged = false;
 
 	protected static final String KEY_3D_SUBTITLES_DEPTH = "3d_subtitles_depth";
 	protected static final String KEY_ALIVE_DELAY = "ALIVE_delay";
@@ -131,6 +154,7 @@ public class PmsConfiguration extends RendererConfiguration {
 	protected static final String KEY_CODE_THUMBS = "code_show_thumbs_no_code";
 	protected static final String KEY_CODE_TMO = "code_valid_timeout";
 	protected static final String KEY_CODE_USE = "code_enable";
+	protected static final String KEY_DCRAW_EXECUTABLE_TYPE = "dcraw_executable_type";
 	protected static final String KEY_DISABLE_FAKESIZE = "disable_fakesize";
 	public    static final String KEY_DISABLE_SUBTITLES = "disable_subtitles";
 	protected static final String KEY_DISABLE_TRANSCODE_FOR_EXTENSIONS = "disable_transcode_for_extensions";
@@ -142,11 +166,13 @@ public class PmsConfiguration extends RendererConfiguration {
 	protected static final String KEY_DYNAMIC_PLS_SAVE_PATH = "dynamic_playlist_save_path";
 	protected static final String KEY_ENCODED_AUDIO_PASSTHROUGH = "encoded_audio_passthrough";
 	protected static final String KEY_ENGINES = "engines";
+	protected static final String KEY_ENGINES_PRIORITY = "engines_priority";
 	protected static final String KEY_FFMPEG_ALTERNATIVE_PATH = "alternativeffmpegpath"; // TODO: FFmpegDVRMSRemux will be removed and DVR-MS will be transcoded
 	protected static final String KEY_FFMPEG_AVISYNTH_CONVERT_FPS = "ffmpeg_avisynth_convertfps";
 	protected static final String KEY_FFMPEG_AVISYNTH_INTERFRAME = "ffmpeg_avisynth_interframe";
 	protected static final String KEY_FFMPEG_AVISYNTH_INTERFRAME_GPU = "ffmpeg_avisynth_interframegpu";
 	protected static final String KEY_FFMPEG_AVISYNTH_MULTITHREADING = "ffmpeg_avisynth_multithreading";
+	protected static final String KEY_FFMPEG_EXECUTABLE_TYPE = "ffmpeg_executable_type";
 	protected static final String KEY_FFMPEG_FONTCONFIG = "ffmpeg_fontconfig";
 	protected static final String KEY_FFMPEG_MENCODER_PROBLEMATIC_SUBTITLES = "ffmpeg_mencoder_problematic_subtitles";
 	protected static final String KEY_FFMPEG_MULTITHREADING = "ffmpeg_multithreading";
@@ -196,6 +222,7 @@ public class PmsConfiguration extends RendererConfiguration {
 	protected static final String KEY_LOGGING_SYSLOG_HOST = "logging_syslog_host";
 	protected static final String KEY_LOGGING_SYSLOG_PORT = "logging_syslog_port";
 	protected static final String KEY_LOGGING_USE_SYSLOG = "logging_use_syslog";
+	protected static final String KEY_LOGGING_DATABASE = "logging_database";
 	protected static final String KEY_MAX_AUDIO_BUFFER = "maximum_audio_buffer_size";
 	protected static final String KEY_MAX_BITRATE = "maximum_bitrate";
 	protected static final String KEY_MAX_MEMORY_BUFFER_SIZE = "maximum_video_buffer_size";
@@ -204,6 +231,7 @@ public class PmsConfiguration extends RendererConfiguration {
 	protected static final String KEY_MENCODER_AC3_FIXED = "mencoder_ac3_fixed";
 	protected static final String KEY_MENCODER_CODEC_SPECIFIC_SCRIPT = "mencoder_codec_specific_script";
 	protected static final String KEY_MENCODER_CUSTOM_OPTIONS = "mencoder_custom_options";
+	protected static final String KEY_MENCODER_EXECUTABLE_TYPE = "mencoder_executable_type";
 	protected static final String KEY_MENCODER_FONT_CONFIG = "mencoder_fontconfig";
 	protected static final String KEY_MENCODER_FORCE_FPS = "mencoder_forcefps";
 	protected static final String KEY_MENCODER_INTELLIGENT_SYNC = "mencoder_intelligent_sync";
@@ -238,11 +266,10 @@ public class PmsConfiguration extends RendererConfiguration {
 	protected static final String KEY_NUMBER_OF_CPU_CORES = "number_of_cpu_cores";
 	protected static final String KEY_OPEN_ARCHIVES = "enable_archive_browsing";
 	protected static final String KEY_OVERSCAN = "mencoder_overscan";
-	protected static final String KEY_PING_PATH = "ping_path";
 	protected static final String KEY_PLAYLIST_AUTO_ADD_ALL= "playlist_auto_add_all";
 	protected static final String KEY_PLAYLIST_AUTO_CONT = "playlist_auto_continue";
 	protected static final String KEY_PLAYLIST_AUTO_PLAY= "playlist_auto_play";
-	protected static final String KEY_PLUGIN_DIRECTORY = "plugins";
+	protected static final String KEY_PLUGIN_FOLDER = "plugins";
 	protected static final String KEY_PLUGIN_PURGE_ACTION = "plugin_purge";
 	protected static final String KEY_PRETTIFY_FILENAMES = "prettify_filenames";
 	/**
@@ -296,6 +323,8 @@ public class PmsConfiguration extends RendererConfiguration {
 	protected static final String KEY_TRANSCODE_BLOCKS_MULTIPLE_CONNECTIONS = "transcode_block_multiple_connections";
 	protected static final String KEY_TRANSCODE_FOLDER_NAME = "transcode_folder_name";
 	protected static final String KEY_TRANSCODE_KEEP_FIRST_CONNECTION = "transcode_keep_first_connection";
+	protected static final String KEY_TSMUXER_EXECUTABLE_TYPE = "tsmuxer_executable_type";
+	protected static final String KEY_TSMUXER_NEW_EXECUTABLE_TYPE = "tsmuxer-new_executable_type";
 	protected static final String KEY_TSMUXER_FORCEFPS = "tsmuxer_forcefps";
 	protected static final String KEY_UPNP_ENABLED = "upnp_enable";
 	protected static final String KEY_UPNP_PORT = "upnp_port";
@@ -308,6 +337,7 @@ public class PmsConfiguration extends RendererConfiguration {
 	protected static final String KEY_VIRTUAL_FOLDERS = "virtual_folders";
 	protected static final String KEY_VIRTUAL_FOLDERS_FILE = "virtual_folders_file";
 	protected static final String KEY_VLC_AUDIO_SYNC_ENABLED = "vlc_audio_sync_enabled";
+	protected static final String KEY_VLC_EXECUTABLE_TYPE = "vlc_executable_type";
 	protected static final String KEY_VLC_SAMPLE_RATE = "vlc_sample_rate";
 	protected static final String KEY_VLC_SAMPLE_RATE_OVERRIDE = "vlc_sample_rate_override";
 	protected static final String KEY_VLC_SCALE = "vlc_scale";
@@ -351,7 +381,7 @@ public class PmsConfiguration extends RendererConfiguration {
 
 	// The name of the subdirectory under which UMS config files are stored for this build (default: UMS).
 	// See Build for more details
-	protected static final String PROFILE_DIRECTORY_NAME = Build.getProfileDirectoryName();
+	protected static final String PROFILE_FOLDER_NAME = Build.getProfileFolderName();
 
 	// The default profile name displayed on the renderer
 	protected static String HOSTNAME;
@@ -364,10 +394,10 @@ public class PmsConfiguration extends RendererConfiguration {
 	public final String ALL_RENDERERS = "All renderers";
 
 	// Path to default logfile directory
-	protected String defaultLogFileDir = null;
+	protected String defaultLogFileFolder = null;
 
 	public TempFolder tempFolder;
-	public ProgramPaths programPaths;
+	protected final PlatformProgramPaths programPaths;
 	public IpFilter filter;
 
 	/**
@@ -381,7 +411,6 @@ public class PmsConfiguration extends RendererConfiguration {
 			KEY_CHAPTER_SUPPORT,
 			KEY_DISABLE_TRANSCODE_FOR_EXTENSIONS,
 			KEY_DISABLE_TRANSCODING,
-			KEY_ENGINES,
 			KEY_FOLDERS,
 			KEY_FORCE_TRANSCODE_FOR_EXTENSIONS,
 			KEY_HIDE_EMPTY_FOLDERS,
@@ -458,7 +487,7 @@ public class PmsConfiguration extends RendererConfiguration {
 	protected static final String DEFAULT_CREDENTIALS_FILENAME = "UMS.cred";
 
 	// Path to directory containing UMS config files
-	protected static final String PROFILE_DIRECTORY;
+	protected static final String PROFILE_FOLDER;
 
 	// Absolute path to profile file e.g. /path/to/UMS.conf
 	protected static final String PROFILE_PATH;
@@ -471,7 +500,7 @@ public class PmsConfiguration extends RendererConfiguration {
 	protected static final String SKEL_PROFILE_PATH;
 
 	protected static final String PROPERTY_PROFILE_PATH = "ums.profile.path";
-	protected static final String SYSTEM_PROFILE_DIRECTORY;
+	protected static final String SYSTEM_PROFILE_FOLDER;
 
 	static {
 		// first of all, set up the path to the default system profile directory
@@ -479,24 +508,24 @@ public class PmsConfiguration extends RendererConfiguration {
 			String programData = System.getenv("ALLUSERSPROFILE");
 
 			if (programData != null) {
-				SYSTEM_PROFILE_DIRECTORY = String.format("%s\\%s", programData, PROFILE_DIRECTORY_NAME);
+				SYSTEM_PROFILE_FOLDER = String.format("%s\\%s", programData, PROFILE_FOLDER_NAME);
 			} else {
-				SYSTEM_PROFILE_DIRECTORY = ""; // i.e. current (working) directory
+				SYSTEM_PROFILE_FOLDER = ""; // i.e. current (working) directory
 			}
 		} else if (Platform.isMac()) {
-			SYSTEM_PROFILE_DIRECTORY = String.format(
+			SYSTEM_PROFILE_FOLDER = String.format(
 				"%s/%s/%s",
 				System.getProperty("user.home"),
 				"/Library/Application Support",
-				PROFILE_DIRECTORY_NAME
+				PROFILE_FOLDER_NAME
 			);
 		} else {
 			String xdgConfigHome = System.getenv("XDG_CONFIG_HOME");
 
 			if (xdgConfigHome == null) {
-				SYSTEM_PROFILE_DIRECTORY = String.format("%s/.config/%s", System.getProperty("user.home"), PROFILE_DIRECTORY_NAME);
+				SYSTEM_PROFILE_FOLDER = String.format("%s/.config/%s", System.getProperty("user.home"), PROFILE_FOLDER_NAME);
 			} else {
-				SYSTEM_PROFILE_DIRECTORY = String.format("%s/%s", xdgConfigHome, PROFILE_DIRECTORY_NAME);
+				SYSTEM_PROFILE_FOLDER = String.format("%s/%s", xdgConfigHome, PROFILE_FOLDER_NAME);
 			}
 		}
 
@@ -512,11 +541,11 @@ public class PmsConfiguration extends RendererConfiguration {
 		// if customProfilePath is still blank, the default profile dir/filename is used
 		FileLocation profileLocation = FileUtil.getFileLocation(
 			customProfilePath,
-			SYSTEM_PROFILE_DIRECTORY,
+			SYSTEM_PROFILE_FOLDER,
 			DEFAULT_PROFILE_FILENAME
 		);
 		PROFILE_PATH = profileLocation.getFilePath();
-		PROFILE_DIRECTORY = profileLocation.getDirectoryPath();
+		PROFILE_FOLDER = profileLocation.getDirectoryPath();
 
 		// Set SKEL_PROFILE_PATH for Linux systems
 		String skelDir = PropertiesUtil.getProjectProperties().get("project.skelprofile.dir");
@@ -525,7 +554,7 @@ public class PmsConfiguration extends RendererConfiguration {
 				new File(
 					new File(
 						skelDir,
-						PROFILE_DIRECTORY_NAME
+						PROFILE_FOLDER_NAME
 					).getAbsolutePath(),
 					DEFAULT_PROFILE_FILENAME
 				).getAbsolutePath()
@@ -540,8 +569,9 @@ public class PmsConfiguration extends RendererConfiguration {
 	 * from the profile path.
 	 *
 	 * @throws org.apache.commons.configuration.ConfigurationException
+	 * @throws InterruptedException
 	 */
-	public PmsConfiguration() throws ConfigurationException {
+	public PmsConfiguration() throws ConfigurationException, InterruptedException {
 		this(true);
 	}
 
@@ -551,8 +581,9 @@ public class PmsConfiguration extends RendererConfiguration {
 	 * @param loadFile Set to true to attempt to load the PMS configuration
 	 *                 file from the profile path. Set to false to skip
 	 *                 loading.
+	 * @throws InterruptedException
 	 */
-	public PmsConfiguration(boolean loadFile) {
+	public PmsConfiguration(boolean loadFile) throws ConfigurationException, InterruptedException {
 		super(0);
 
 		if (loadFile) {
@@ -581,7 +612,7 @@ public class PmsConfiguration extends RendererConfiguration {
 		((PropertiesConfiguration)configuration).setPath(PROFILE_PATH);
 
 		tempFolder = new TempFolder(getString(KEY_TEMP_FOLDER_PATH, null));
-		programPaths = createProgramPathsChain(configuration);
+		programPaths = PlatformProgramPaths.get(configuration);
 		filter = new IpFilter();
 		PMS.setLocale(getLanguageLocale(true));
 		//TODO: The line below should be removed once all calls to Locale.getDefault() is replaced with PMS.getLocale()
@@ -600,20 +631,21 @@ public class PmsConfiguration extends RendererConfiguration {
 	 * The following 2 constructors are for minimal instantiation in the context of subclasses
 	 * (i.e. DeviceConfiguration) that use our getters and setters on another Configuration object.
 	 * Here our main purpose is to initialize RendererConfiguration as required.
+	 * @throws InterruptedException
 	 */
-	protected PmsConfiguration(int ignored) {
+	protected PmsConfiguration(int ignored) throws InterruptedException {
 		// Just instantiate
 		super(0);
 		tempFolder = null;
-		programPaths = null;
+		programPaths = PlatformProgramPaths.get(configuration);
 		filter = null;
 	}
 
-	protected PmsConfiguration(File f, String uuid) throws ConfigurationException {
+	protected PmsConfiguration(File f, String uuid) throws ConfigurationException, InterruptedException {
 		// Just initialize super
 		super(f, uuid);
 		tempFolder = null;
-		programPaths = null;
+		programPaths = PlatformProgramPaths.get(configuration);
 		filter = null;
 	}
 
@@ -621,20 +653,6 @@ public class PmsConfiguration extends RendererConfiguration {
 	public void reset() {
 		// This is just to prevent super.reset() from being invoked. Actual resetting would
 		// require rebooting here, since all of the application settings are implicated.
-	}
-
-	/**
-	 * Check if we have disabled something first, then check the config file,
-	 * then the Windows registry, then check for a platform-specific
-	 * default.
-	 */
-	protected static ProgramPaths createProgramPathsChain(Configuration configuration) {
-		return new ConfigurationProgramPaths(
-			configuration,
-			new WindowsRegistryProgramPaths(
-				new PlatformSpecificDefaultPathsFactory().get()
-			)
-		);
 	}
 
 	private static String verifyLogFolder(File folder, String fallbackTo) {
@@ -681,7 +699,7 @@ public class PmsConfiguration extends RendererConfiguration {
 	 * </p>
 	 */
 	public synchronized String getDefaultLogFileFolder() {
-		if (defaultLogFileDir == null) {
+		if (defaultLogFileFolder == null) {
 			if (Platform.isLinux()) {
 				if (LOGGER.isTraceEnabled()) {
 					LOGGER.trace("getDefaultLogFileFolder: System is Linux, trying \"/var/log/UMS/{}/\"", System.getProperty("user.name"));
@@ -700,27 +718,27 @@ public class PmsConfiguration extends RendererConfiguration {
 						LOGGER.debug("Could not create \"{}\": {}", logDirectory.getAbsolutePath(), e.getMessage());
 					}
 				}
-				defaultLogFileDir = verifyLogFolder(logDirectory, "profile folder");
+				defaultLogFileFolder = verifyLogFolder(logDirectory, "profile folder");
 			}
 
-			if (defaultLogFileDir == null) {
+			if (defaultLogFileFolder == null) {
 				// Log to profile directory if it is writable.
-				final File profileDirectory = new File(PROFILE_DIRECTORY);
-				defaultLogFileDir = verifyLogFolder(profileDirectory, "temporary folder");
+				final File profileDirectory = new File(PROFILE_FOLDER);
+				defaultLogFileFolder = verifyLogFolder(profileDirectory, "temporary folder");
 			}
 
-			if (defaultLogFileDir == null) {
+			if (defaultLogFileFolder == null) {
 				// Try user-defined temporary folder or fall back to system temporary folder.
 				try {
-					defaultLogFileDir = verifyLogFolder(getTempFolder(), "working folder");
+					defaultLogFileFolder = verifyLogFolder(getTempFolder(), "working folder");
 				} catch (IOException e) {
 					LOGGER.error("Could not determine default logfile folder, falling back to working directory: {}", e.getMessage());
-					defaultLogFileDir = "";
+					defaultLogFileFolder = "";
 				}
 			}
 		}
 
-		return defaultLogFileDir;
+		return defaultLogFileFolder;
 	}
 
 	public String getDefaultLogFileName() {
@@ -739,44 +757,92 @@ public class PmsConfiguration extends RendererConfiguration {
 		return tempFolder.getTempFolder();
 	}
 
-	public String getVlcPath() {
-		return programPaths.getVlcPath();
+	public PlatformExecutableInfo getVLCPaths() {
+		return programPaths.getVLC();
 	}
 
-	public String getMencoderPath() {
-		return programPaths.getMencoderPath();
+	public String getExecutableTypeKey(PlayerId id) {
+		switch (id.toInt()) {
+			case PlayerId.AVI_SYNTH_FFMPEG_INT:
+			case PlayerId.FFMPEG_AUDIO_INT:
+			case PlayerId.FFMPEG_DVRMS_REMUX_INT:
+			case PlayerId.FFMPEG_VIDEO_INT:
+			case PlayerId.FFMPEG_WEB_VIDEO_INT:
+				return KEY_FFMPEG_EXECUTABLE_TYPE;
+			case PlayerId.AVI_SYNTH_MENCODER_INT:
+			case PlayerId.MENCODER_VIDEO_INT:
+			case PlayerId.MENCODER_WEB_VIDEO_INT:
+				return KEY_MENCODER_EXECUTABLE_TYPE;
+			case PlayerId.RAW_THUMBNAILER_INT:
+				return KEY_DCRAW_EXECUTABLE_TYPE;
+			case PlayerId.TSMUXER_AUDIO_INT:
+			case PlayerId.TSMUXER_VIDEO_INT:
+				return KEY_TSMUXER_EXECUTABLE_TYPE;
+			case PlayerId.VLC_AUDIO_STREAMING_INT:
+			case PlayerId.VLC_VIDEO_INT:
+			case PlayerId.VLC_VIDEO_STREAMING_INT:
+			case PlayerId.VLC_WEB_VIDEO_INT:
+				return KEY_VLC_EXECUTABLE_TYPE;
+			default:
+				return null;
+		}
+	}
+
+	public ProgramExecutableType getExecutableType(PlayerId id) {
+		switch (id.toInt()) {
+			case PlayerId.AVI_SYNTH_FFMPEG_INT:
+			case PlayerId.FFMPEG_AUDIO_INT:
+			case PlayerId.FFMPEG_DVRMS_REMUX_INT:
+			case PlayerId.FFMPEG_VIDEO_INT:
+			case PlayerId.FFMPEG_WEB_VIDEO_INT:
+				return ProgramExecutableType.toProgramExecutableType(getString(KEY_FFMPEG_EXECUTABLE_TYPE, null), programPaths.getFFmpeg().getDefault());
+			case PlayerId.AVI_SYNTH_MENCODER_INT:
+			case PlayerId.MENCODER_VIDEO_INT:
+			case PlayerId.MENCODER_WEB_VIDEO_INT:
+				return ProgramExecutableType.toProgramExecutableType(getString(KEY_MENCODER_EXECUTABLE_TYPE, null), programPaths.getMEncoder().getDefault());
+			case PlayerId.RAW_THUMBNAILER_INT:
+				return ProgramExecutableType.toProgramExecutableType(getString(KEY_DCRAW_EXECUTABLE_TYPE, null), programPaths.getDCRaw().getDefault());
+			case PlayerId.TSMUXER_AUDIO_INT:
+			case PlayerId.TSMUXER_VIDEO_INT:
+				return ProgramExecutableType.toProgramExecutableType(getString(KEY_TSMUXER_EXECUTABLE_TYPE, null), programPaths.gettsMuxeR().getDefault());
+			case PlayerId.VLC_AUDIO_STREAMING_INT:
+			case PlayerId.VLC_VIDEO_INT:
+			case PlayerId.VLC_VIDEO_STREAMING_INT:
+			case PlayerId.VLC_WEB_VIDEO_INT:
+				return ProgramExecutableType.toProgramExecutableType(getString(KEY_VLC_EXECUTABLE_TYPE, null), programPaths.getVLC().getDefault());
+			default:
+				return ProgramExecutableType.UNKNOWN;
+		}
+	}
+
+	public void setExecutableType(PlayerId id, ProgramExecutableType executableType) {
+		if (id == null || id.equals(PlayerId.UNKNOWN)) {
+			throw new IllegalArgumentException("id cannot be null or unknown");
+		}
+		if (executableType == null || executableType.equals(ProgramExecutableType.UNKNOWN)) {
+			throw new IllegalArgumentException("executableType cannot be null or unknown");
+		}
+		configuration.setProperty(getExecutableTypeKey(id), executableType.toString());
+	}
+
+	public PlatformExecutableInfo getMEncoderPaths() {
+		return programPaths.getMEncoder();
 	}
 
 	public int getMencoderMaxThreads() {
 		return Math.min(getInt(KEY_MENCODER_MAX_THREADS, getNumberOfCpuCores()), MENCODER_MAX_THREADS);
 	}
 
-	public String getDCRawPath() {
+	public PlatformExecutableInfo getDCRawPaths() {
 		return programPaths.getDCRaw();
 	}
 
-	public String getFfmpegPath() {
-		return programPaths.getFfmpegPath();
+	public PlatformExecutableInfo getFFmpegPaths() {
+		return programPaths.getFFmpeg();
 	}
 
-	public String getMplayerPath() {
-		return programPaths.getMplayerPath();
-	}
-
-	public String getTsmuxerPath() {
-		return programPaths.getTsmuxerPath();
-	}
-
-	public String getTsmuxerNewPath() {
-		return programPaths.getTsmuxerNewPath();
-	}
-
-	public String getFlacPath() {
-		return programPaths.getFlacPath();
-	}
-
-	public String getInterFramePath() {
-		return programPaths.getInterFramePath();
+	public PlatformExecutableInfo getMPlayerPaths() {
+		return programPaths.getMPlayer();
 	}
 
 	public LogSystemInformationMode getLogSystemInformation() {
@@ -784,6 +850,42 @@ public class PmsConfiguration extends RendererConfiguration {
 		String value = getString(KEY_LOG_SYSTEM_INFO, defaultValue.toString());
 		LogSystemInformationMode result = LogSystemInformationMode.typeOf(value);
 		return result != null ? result : defaultValue;
+	}
+
+	public String getMPlayerDefaultPath() {
+		return getMPlayerPaths().getDefaultPath();
+	}
+
+	public PlatformExecutableInfo gettsMuxeRPaths() {
+		return programPaths.gettsMuxeR();
+	}
+
+	public PlatformExecutableInfo gettsMuxeRNewPaths() {
+		return programPaths.gettsMuxeRNew();
+	}
+
+	public String gettsMuxeRNewPath() {
+		ProgramExecutableType executableType = getExecutableType(PlayerId.TSMUXER_VIDEO);
+		if (executableType != null && executableType != ProgramExecutableType.UNKNOWN) {
+			return gettsMuxeRNewPaths().getPath(executableType);
+		}
+		return gettsMuxeRNewPaths().getDefaultPath();
+	}
+
+	public PlatformExecutableInfo getFLACPaths() {
+		return programPaths.getFLAC();
+	}
+
+	public String getFLACDefaultPath() {
+		return getFLACPaths().getDefaultPath();
+	}
+
+	public PlatformExecutableInfo getInterFramePaths() {
+		return programPaths.getInterFrame();
+	}
+
+	public String getInterFrameDefaultPath() {
+		return getInterFramePaths().getDefaultPath();
 	}
 
 	/**
@@ -2281,78 +2383,344 @@ public class PmsConfiguration extends RendererConfiguration {
 		configuration.setProperty(KEY_MENCODER_OVERSCAN_COMPENSATION_HEIGHT, value);
 	}
 
-	public void setEnginesAsList(ArrayList<String> enginesAsList) {
-		configuration.setProperty(KEY_ENGINES, listToString(enginesAsList));
+	/**
+	 * Lazy implementation, call before accessing {@link #enabledEngines}
+	 */
+	private void buildEnabledEngines() {
+		if (enabledEnginesBuilt) {
+			return;
+		}
+		enabledEnginesLock.writeLock().lock();
+		try {
+			// Not a bug, using double checked locking
+			if (enabledEnginesBuilt) {
+				return;
+			}
+			String engines = configuration.getString(KEY_ENGINES).trim();
+			if (!StringUtil.hasValue(engines)) {
+				// Set default
+				// boolean includeAviSynth = Platform.isWindows() && PMS.get().getRegistry().isAvis();
+				enabledEngines = new ArrayList<>(12);
+				enabledEngines.add(FFMpegVideo.ID);
+				enabledEngines.add(MEncoderVideo.ID);
+				enabledEngines.add(TsMuxeRVideo.ID);
+				enabledEngines.add(FFmpegAudio.ID);
+				enabledEngines.add(TsMuxeRAudio.ID);
+				enabledEngines.add(FFmpegWebVideo.ID);
+				enabledEngines.add(VLCWebVideo.ID);
+				enabledEngines.add(VideoLanVideoStreaming.ID);
+				enabledEngines.add(MEncoderWebVideo.ID);
+				enabledEngines.add(VideoLanAudioStreaming.ID);
+				if (Platform.isWindows()) {
+					enabledEngines.add(FFmpegDVRMSRemux.ID);
+				}
+				enabledEngines.add(DCRaw.ID);
+				configuration.setProperty(KEY_ENGINES, listToString(enabledEngines));
+			} else if (engines.equalsIgnoreCase("None")) {
+				enabledEngines = new ArrayList<>();
+			} else {
+				enabledEngines = stringToPlayerIDList(engines.trim());
+			}
+			enabledEnginesBuilt = true;
+		} finally {
+			enabledEnginesLock.writeLock().unlock();
+		}
 	}
 
 	/**
-	 * TODO look at the changes that were made to this in PMS and if they seem
-	 * stable, merge them.
+	 * Get a {@link List} of the enabled engines IDs in no particular order.
+	 * Returns a new instance, any modifications won't be stored in the
+	 * original list. Threadsafe.
 	 */
-	public List<String> getEnginesAsList(SystemUtils registry) {
-		String defaultEngines = StringUtils.join(
-			new String[] {
-				"ffmpegvideo",
-				"mencoder",
-				"tsmuxer",
-				"ffmpegaudio",
-				"tsmuxeraudio",
-				"ffmpegwebvideo",
-				"vlcwebvideo", // (VLCWebVideo)
-				"vlcvideo", // (VideoLanVideoStreaming) TODO (legacy web video engine): remove
-				"mencoderwebvideo",
-				"vlcaudio", // (VideoLanAudioStreaming) TODO (legacy web audio engine): remove
-				"ffmpegdvrmsremux",
-				"dcraw"
-			},
-			","
-		);
-		List<String> engines = stringToList(
-			// Possibly blank: An empty string means: disable all engines
-			// http://www.ps3mediaserver.org/forum/viewtopic.php?f=6&t=15416
-			configurationReader.getPossiblyBlankConfigurationString(
-				KEY_ENGINES,
-				defaultEngines
-			)
-		);
-
-		engines = hackAvs(registry, engines);
-		// Backwards compatibility, can be removed when sufficient time has passed - 2017-01
-		int i = engines.indexOf("rawthumbs");
-		if (i >= 0) {
-			engines.set(i, "dcraw");
+	public List<PlayerId> getEnabledEngines() {
+		buildEnabledEngines();
+		enabledEnginesLock.readLock().lock();
+		try {
+			return new ArrayList<PlayerId>(enabledEngines);
+		} finally {
+			enabledEnginesLock.readLock().unlock();
 		}
-
-		return engines;
 	}
 
-	private static String listToString(List<String> enginesAsList) {
+	public boolean isEngineEnabled(PlayerId id) {
+		if (id == null) {
+			throw new NullPointerException("id cannot be null");
+		}
+		buildEnabledEngines();
+		enabledEnginesLock.readLock().lock();
+		try {
+			return enabledEngines.contains(id);
+		} finally {
+			enabledEnginesLock.readLock().unlock();
+		}
+	}
+
+	public boolean isEngineEnabled(Player player) {
+		if (player == null) {
+			throw new NullPointerException("player cannot be null");
+		}
+
+		return isEngineEnabled(player.id());
+	}
+
+	public void setEngineEnabled(PlayerId id, boolean enabled) {
+		if (id == null || PlayerId.UNKNOWN.equals(id)) {
+			throw new IllegalArgumentException("Unrecognized id");
+		}
+
+		enabledEnginesLock.writeLock().lock();
+		try {
+			buildEnabledEngines();
+			if (enabledEngines.contains(id)) {
+				if (!enabled) {
+					enabledEngines.remove(id);
+				}
+			} else {
+				if (enabled) {
+					enabledEngines.add(id);
+				}
+			}
+			configuration.setProperty(KEY_ENGINES, listToString(enabledEngines));
+		} finally {
+			enabledEnginesLock.writeLock().unlock();
+		}
+	}
+
+	public void setEngineEnabled(Player player, boolean enabled) {
+		setEngineEnabled(player.id(), enabled);
+	}
+
+	/**
+	 * This is to make sure that any incorrect capitalization in the
+	 * configuration file is corrected. This should only need to be called
+	 * from {@link PlayerFactory#registerPlayer(Player)}.
+	 *
+	 * @param player the engine for which to assure correct capitalization
+	 */
+	public void capitalizeEngineId(Player player) {
+		if (player == null) {
+			throw new NullPointerException("player cannot be null");
+		}
+
+		String engines = configuration.getString(KEY_ENGINES).trim();
+		if (StringUtils.isNotBlank(engines)) {
+			String capitalizedEngines = StringUtil.caseReplace(engines, player.id().toString());
+			if (!engines.equals(capitalizedEngines)) {
+				configuration.setProperty(KEY_ENGINES, capitalizedEngines);
+			}
+		}
+
+		engines = configuration.getString(KEY_ENGINES_PRIORITY).trim();
+		if (StringUtils.isNotBlank(engines)) {
+			String capitalizedEngines = StringUtil.caseReplace(engines, player.id().toString());
+			if (!engines.equals(capitalizedEngines)) {
+				configuration.setProperty(KEY_ENGINES_PRIORITY, capitalizedEngines);
+			}
+		}
+	}
+
+	/**
+	 * Lazy implementation, call before accessing {@link #enginesPriority}
+	 */
+	private void buildEnginesPriority() {
+		if (enginesPriorityBuilt) {
+			return;
+		}
+		enginesPriorityLock.writeLock().lock();
+		try {
+			// Not a bug, using double checked locking
+			if (enginesPriorityBuilt) {
+				return;
+			}
+			String enginesPriorityString = configuration.getString(KEY_ENGINES_PRIORITY);
+			if (!StringUtil.hasValue(enginesPriorityString)) {
+				// Set default
+				enginesPriority = new ArrayList<>(12);
+				enginesPriority.add(FFMpegVideo.ID);
+				enginesPriority.add(MEncoderVideo.ID);
+				enginesPriority.add(TsMuxeRVideo.ID);
+				if (Platform.isWindows()) {
+					enginesPriority.add(AviSynthFFmpeg.ID);
+					enginesPriority.add(AviSynthMEncoder.ID);
+				}
+				enginesPriority.add(FFmpegAudio.ID);
+				enginesPriority.add(TsMuxeRAudio.ID);
+				enginesPriority.add(FFmpegWebVideo.ID);
+				enginesPriority.add(VLCWebVideo.ID);
+				enginesPriority.add(VideoLanVideoStreaming.ID);
+				enginesPriority.add(MEncoderWebVideo.ID);
+				enginesPriority.add(VideoLanAudioStreaming.ID);
+				if (Platform.isWindows()) {
+					enginesPriority.add(FFmpegDVRMSRemux.ID);
+				}
+				enginesPriority.add(VLCVideo.ID);
+				enginesPriority.add(DCRaw.ID);
+
+				configuration.setProperty(KEY_ENGINES_PRIORITY, listToString(enginesPriority));
+			} else {
+				enginesPriority = stringToPlayerIDList(enginesPriorityString.trim());
+			}
+			enginesPriorityBuilt = true;
+		} finally {
+			enginesPriorityLock.writeLock().unlock();
+		}
+	}
+
+	/**
+	 * Get a {@link List} of the engines IDs ordered by priority. Returns a new
+	 * instance, any modifications won't be stored in the original list.
+	 * Threadsafe.
+	 */
+	public List<PlayerId> getEnginesPriority() {
+		buildEnginesPriority();
+		enginesPriorityLock.readLock().lock();
+		try {
+			return new ArrayList<PlayerId>(enginesPriority);
+		} finally {
+			enginesPriorityLock.readLock().unlock();
+		}
+	}
+
+	/**
+	 * Returns the priority index according to the rules of {@link List#indexOf(String)}
+	 */
+	public int getEnginePriority(PlayerId id) {
+		if (id == null) {
+			throw new NullPointerException("id cannot be null");
+		}
+
+		buildEnginesPriority();
+		enginesPriorityLock.readLock().lock();
+		try {
+			return enginesPriority.indexOf(id);
+		} finally {
+			enginesPriorityLock.readLock().unlock();
+		}
+	}
+
+	/**
+	 * Returns the priority index according to the rules of {@link List#indexOf(String)}
+	 */
+	public int getEnginePriority(Player player) {
+		if (player == null) {
+			throw new NullPointerException("player cannot be null");
+		}
+		return getEnginePriority(player.id());
+	}
+
+	/**
+	 * Moves or inserts a engine id directly above another engine id in the
+	 * priority list. If {@link aboveId} is <code>null</code> {@link id} will
+	 * be placed first in the list. If {@link aboveId} is unknown or not found,
+	 * {@link id} will be placed last in the list.
+	 * @param id the engine id to move or insert in the priority list
+	 * @param aboveId the engine id to place {@link id} relative to
+	 */
+	public void setEnginePriorityAbove(PlayerId id, PlayerId aboveId) {
+		if (id == null || PlayerId.UNKNOWN.equals(id)) {
+			throw new IllegalArgumentException("Unrecognized id");
+		}
+
+		enginesPriorityLock.writeLock().lock();
+		try {
+			buildEnginesPriority();
+
+			if (enginesPriority.indexOf(id) > -1) {
+				enginesPriority.remove(id);
+			}
+
+			int newPosition;
+			if (aboveId == null) {
+				newPosition = 0;
+			} else {
+				newPosition = enginesPriority.indexOf(aboveId);
+				if (newPosition < 0) {
+					newPosition = enginesPriority.size();
+				}
+			}
+			enginesPriority.add(newPosition, id);
+			configuration.setProperty(KEY_ENGINES_PRIORITY, listToString(enginesPriority));
+		} finally {
+			enginesPriorityLock.writeLock().unlock();
+		}
+		PlayerFactory.sortPlayers();
+	}
+
+	/**
+	 * @see #setEnginePriorityAbove(String, String)
+	 * @param player the engine to move or insert in the priority list
+	 * @param abovePlayer the engine to place {@link player} relative to
+	 */
+	public void setEnginePriorityAbove(Player player, Player abovePlayer) {
+		setEnginePriorityAbove(player.id(), abovePlayer.id());
+	}
+
+	/**
+	 * Moves or inserts a engine id directly below another engine id in the
+	 * priority list. If {@link belowId} is <code>null</code> {@link id} will
+	 * be placed last in the list. If {@link belowId} is unknown or not found,
+	 * {@link id} will also be placed last in the list.
+	 * @param id the engine id to move or insert in the priority list
+	 * @param belowId the engine id to place {@link id} relative to
+	 */
+	public void setEnginePriorityBelow(PlayerId id, PlayerId belowId) {
+		if (id == null || PlayerId.UNKNOWN.equals(id)) {
+			throw new IllegalArgumentException("Unrecognized id");
+		}
+
+		enginesPriorityLock.writeLock().lock();
+		try {
+			buildEnginesPriority();
+
+			if (enginesPriority.indexOf(id) > -1) {
+				enginesPriority.remove(id);
+			}
+
+			int newPosition;
+			if (belowId == null) {
+				newPosition = enginesPriority.size();
+			} else {
+				newPosition = enginesPriority.indexOf(belowId) + 1;
+				if (newPosition < 0) {
+					newPosition = enginesPriority.size();
+				}
+			}
+			enginesPriority.add(newPosition, id);
+			configuration.setProperty(KEY_ENGINES_PRIORITY, listToString(enginesPriority));
+		} finally {
+			enginesPriorityLock.writeLock().unlock();
+		}
+		PlayerFactory.sortPlayers();
+	}
+
+	/**
+	 * @see #setEnginePriorityBelow(String, String)
+	 * @param player the engine to move or insert in the priority list
+	 * @param belowPlayer the engine to place {@link player} relative to
+	 */
+	public void setEnginePriorityBelow(Player player, Player belowPlayer) {
+		setEnginePriorityBelow(player.id(), belowPlayer.id());
+	}
+
+	private static String listToString(List<?> enginesAsList) {
 		return StringUtils.join(enginesAsList, LIST_SEPARATOR);
 	}
 
-	private static List<String> stringToList(String input) {
+	@SuppressWarnings("unused")
+	private static List<String> stringToStringList(String input) {
 		List<String> output = new ArrayList<>();
 		Collections.addAll(output, StringUtils.split(input, LIST_SEPARATOR));
 		return output;
 	}
 
-	// TODO: Get this out of here
-	private static List<String> hackAvs(SystemUtils registry, List<String> input) {
-		List<String> toBeRemoved = new ArrayList<>();
-		for (String engineId : input) {
-			if (engineId.startsWith("avs") && !registry.isAvis() && Platform.isWindows()) {
-				if (!avsHackLogged) {
-					LOGGER.info("AviSynth is not installed. You cannot use " + engineId + " as a transcoding engine.");
-					avsHackLogged = true;
-				}
-
-				toBeRemoved.add(engineId);
+	private static List<PlayerId> stringToPlayerIDList(String input) {
+		List<PlayerId> output = new ArrayList<>();
+		for (String s : StringUtils.split(input, LIST_SEPARATOR)) {
+			PlayerId playerID = PlayerId.toPlayerID(s);
+			if (!PlayerId.UNKNOWN.equals(playerID)) {
+				output.add(playerID);
 			}
 		}
-
-		List<String> output = new ArrayList<>();
-		output.addAll(input);
-		output.removeAll(toBeRemoved);
 		return output;
 	}
 
@@ -3026,8 +3394,8 @@ public class PmsConfiguration extends RendererConfiguration {
 		return PROFILE_PATH;
 	}
 
-	public String getProfileDirectory() {
-		return PROFILE_DIRECTORY;
+	public String getProfileFolder() {
+		return PROFILE_FOLDER;
 	}
 
 	/**
@@ -3045,7 +3413,7 @@ public class PmsConfiguration extends RendererConfiguration {
 		if (WEB_CONF_PATH == null) {
 			WEB_CONF_PATH = FileUtil.getFileLocation(
 				getString(KEY_WEB_CONF_PATH, null),
-				PROFILE_DIRECTORY,
+				PROFILE_FOLDER,
 				DEFAULT_WEB_CONF_FILENAME
 			).getFilePath();
 		}
@@ -3053,12 +3421,12 @@ public class PmsConfiguration extends RendererConfiguration {
 		return getString(KEY_WEB_CONF_PATH, WEB_CONF_PATH);
 	}
 
-	public String getPluginDirectory() {
-		return getString(KEY_PLUGIN_DIRECTORY, "plugins");
+	public String getPluginFolder() {
+		return getString(KEY_PLUGIN_FOLDER, "plugins");
 	}
 
-	public void setPluginDirectory(String value) {
-		configuration.setProperty(KEY_PLUGIN_DIRECTORY, value);
+	public void setPluginFolder(String value) {
+		configuration.setProperty(KEY_PLUGIN_FOLDER, value);
 	}
 
 	public String getProfileName() {
@@ -3268,7 +3636,7 @@ public class PmsConfiguration extends RendererConfiguration {
 		if (path != null && !path.trim().isEmpty()) {
 			return new File(path);
 		}
-		return new File(getProfileDirectory(), DEFAULT_CREDENTIALS_FILENAME);
+		return new File(getProfileFolder(), DEFAULT_CREDENTIALS_FILENAME);
 	}
 
 	public int getATZLimit() {
@@ -3298,7 +3666,7 @@ public class PmsConfiguration extends RendererConfiguration {
 	}
 
 	public String getDataDir() {
-		return getProfileDirectory() + File.separator + "data";
+		return getProfileFolder() + File.separator + "data";
 	}
 
 	public String getDataFile(String str) {
@@ -3415,6 +3783,14 @@ public class PmsConfiguration extends RendererConfiguration {
 
 	public void setLoggingUseSyslog(boolean value) {
 		configuration.setProperty(KEY_LOGGING_USE_SYSLOG, value);
+	}
+
+	public boolean getLoggingDatabase() {
+		boolean enabled = getBoolean(KEY_LOGGING_DATABASE, false);
+		if (!enabled && PMS.getTraceMode() == 2) {
+			enabled = true;
+		}
+		return enabled;
 	}
 
 	public boolean isVlcUseHardwareAccel() {
@@ -3651,7 +4027,15 @@ public class PmsConfiguration extends RendererConfiguration {
 	public File getWebPath() {
 		File path = new File(getString(KEY_WEB_PATH, "web"));
 		if (!path.exists()) {
-			path.mkdirs();
+			// Make it work while debugging
+			File debugPath = new File("src/main/external-resources/" + getString(KEY_WEB_PATH, "web"));
+			if (debugPath.exists()) {
+				return debugPath;
+			}
+
+			if (!path.mkdirs()) {
+				path = null;
+			}
 		}
 		return path;
 	}
@@ -3710,10 +4094,6 @@ public class PmsConfiguration extends RendererConfiguration {
 			RendererConfiguration.calculateAllSpeeds();
 		}
 		configuration.setProperty(KEY_AUTOMATIC_MAXIMUM_BITRATE, b);
-	}
-
-	public String pingPath() {
-		return getString(KEY_PING_PATH, null);
 	}
 
 	public boolean isSpeedDbg() {

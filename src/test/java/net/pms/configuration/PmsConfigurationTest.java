@@ -36,7 +36,7 @@ public class PmsConfigurationTest {
 
 	private PmsConfiguration configuration;
 	@Before
-	public void setUp() throws ConfigurationException {
+	public void setUp() throws ConfigurationException, InterruptedException {
 		// Silence all log messages from the UMS code that is being tested
 		LoggerContext context = (LoggerContext) LoggerFactory.getILoggerFactory();
 		context.getLogger(Logger.ROOT_LOGGER_NAME).setLevel(Level.OFF);
