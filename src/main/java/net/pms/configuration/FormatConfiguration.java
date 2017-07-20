@@ -169,6 +169,7 @@ public class FormatConfiguration {
 	private static class SupportSpec {
 		private int iMaxBitrate = Integer.MAX_VALUE;
 		private int iMaxFramerate = Integer.MAX_VALUE;
+		private int iMinFrequency = Integer.MIN_VALUE;
 		private int iMaxFrequency = Integer.MAX_VALUE;
 		private int iMaxNbChannels = Integer.MAX_VALUE;
 		private int iMaxVideoHeight = Integer.MAX_VALUE;
@@ -181,6 +182,7 @@ public class FormatConfiguration {
 		private String format;
 		private String maxBitrate;
 		private String maxFramerate;
+		private String minFrequency;
 		private String maxFrequency;
 		private String maxNbChannels;
 		private String maxVideoHeight;
@@ -248,6 +250,21 @@ public class FormatConfiguration {
 					LOGGER.error(
 						"Error parsing number of channels \"{}\" from line \"{}\": {}",
 						maxNbChannels,
+						supportLine,
+						nfe.getMessage()
+					);
+					LOGGER.trace("", nfe);
+					return false;
+				}
+			}
+
+			if (isNotBlank(minFrequency)) {
+				try {
+					iMinFrequency = Integer.parseInt(minFrequency);
+				} catch (NumberFormatException nfe) {
+					LOGGER.error(
+						"Error parsing minimum frequency \"{}\" from line \"{}\": {}",
+						minFrequency,
 						supportLine,
 						nfe.getMessage()
 					);
@@ -403,6 +420,11 @@ public class FormatConfiguration {
 
 			if (framerate > 0 && iMaxFramerate > 0 && framerate > iMaxFramerate) {
 				LOGGER.trace("Framerate \"{}\" failed to match support line {}", framerate, supportLine);
+				return false;
+			}
+
+			if (frequency > 0 && iMinFrequency > 0 && frequency < iMinFrequency) {
+				LOGGER.trace("Frequency \"{}\" failed to match support line {}", frequency, supportLine);
 				return false;
 			}
 
@@ -693,6 +715,8 @@ public class FormatConfiguration {
 				supportSpec.maxNbChannels = token.substring(2).trim();
 			} else if (token.startsWith("s:")) {
 				supportSpec.maxFrequency = token.substring(2).trim();
+			} else if (token.startsWith("smin:")) {
+				supportSpec.minFrequency = token.substring(5).trim();
 			} else if (token.startsWith("w:")) {
 				supportSpec.maxVideoWidth = token.substring(2).trim();
 			} else if (token.startsWith("h:")) {
