@@ -316,10 +316,10 @@ public class FormatConfigurationRegressionTest0 {
 
   @Test
   public void test39() throws Throwable {
-    java.lang.String str0 = net.pms.configuration.FormatConfiguration.DSD;
+    java.lang.String str0 = net.pms.configuration.FormatConfiguration.DSF;
 
     // Regression assertion (captures the current behavior of the code)
-    org.junit.Assert.assertTrue("'" + str0 + "' != '" + "dsd"+ "'", str0.equals("dsd"));
+    org.junit.Assert.assertTrue("'" + str0 + "' != '" + "dsf"+ "'", str0.equals("dsf"));
   }
 
   @Test
@@ -721,4 +721,12 @@ public class FormatConfigurationRegressionTest0 {
     org.junit.Assert.assertTrue("'" + str0 + "' != '" + "wma10"+ "'", str0.equals("wma10"));
 
   }
+  @Test
+  public void testDFF() throws Throwable {
+    java.lang.String str0 = net.pms.configuration.FormatConfiguration.DFF;
+
+    // Regression assertion (captures the current behavior of the code)
+    org.junit.Assert.assertTrue("'" + str0 + "' != '" + "dff"+ "'", str0.equals("dff"));
+  }
+
 }
