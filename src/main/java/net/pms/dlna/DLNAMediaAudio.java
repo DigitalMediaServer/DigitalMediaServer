@@ -136,13 +136,6 @@ public class DLNAMediaAudio extends DLNAMediaLang implements Cloneable {
 	}
 
 	/**
-	 * @return True if the audio codec is 3GA.
-	 */
-	public boolean is3GA() {
-		return FormatConfiguration.THREEGA.equalsIgnoreCase(getCodecA());
-	}
-
-	/**
 	 * @return True if the audio codec is one of the AAC variants.
 	 */
 	public boolean isAAC() {
@@ -220,10 +213,17 @@ public class DLNAMediaAudio extends DLNAMediaLang implements Cloneable {
 	}
 
 	/**
-	 * @return True if the audio codec is DSD Audio.
+	 * @return True if the audio codec is DFF.
 	 */
-	public boolean isDSDAudio() {
-		return FormatConfiguration.DSD.equalsIgnoreCase(getCodecA());
+	public boolean isDFF() {
+		return FormatConfiguration.DFF.equalsIgnoreCase(getCodecA());
+	}
+
+	/**
+	 * @return True if the audio codec is DSF.
+	 */
+	public boolean isDSF() {
+		return FormatConfiguration.DSF.equalsIgnoreCase(getCodecA());
 	}
 
 	/**
@@ -266,13 +266,6 @@ public class DLNAMediaAudio extends DLNAMediaLang implements Cloneable {
 	 */
 	public boolean isHEAAC() {
 		return FormatConfiguration.HE_AAC.equalsIgnoreCase(getCodecA());
-	}
-
-	/**
-	 * @return True if the audio codec is Matroska Audio.
-	 */
-	public boolean isMKA() {
-		return FormatConfiguration.MKA.equalsIgnoreCase(getCodecA());
 	}
 
 	/**
@@ -469,9 +462,7 @@ public class DLNAMediaAudio extends DLNAMediaLang implements Cloneable {
 	 * @return The standardized name.
 	 */
 	public String getAudioCodec() {
-		if (is3GA()) {
-			return "3GA";
-		} else if (isAACLC()) {
+		if (isAACLC()) {
 			return "AAC-LC";
 		} else if (isAC3()) {
 			return "AC3";
@@ -491,8 +482,10 @@ public class DLNAMediaAudio extends DLNAMediaLang implements Cloneable {
 			return "ATRAC";
 		} else if (isCook()) {
 			return "Cook";
-		} else if (isDSDAudio()) {
-			return "DSD Audio";
+		} else if (isDFF()) {
+			return "DFF";
+		} else if (isDSF()) {
+			return "DSF";
 		} else if (isDTS()) {
 			return "DTS";
 		} else if (isDTSHD()) {
@@ -505,8 +498,6 @@ public class DLNAMediaAudio extends DLNAMediaLang implements Cloneable {
 			return "G.729";
 		} else if (isHEAAC()) {
 			return "HE-AAC";
-		} else if (isMKA()) {
-			return "Matroska Audio";
 		} else if (isMLP()) {
 			return "MLP";
 		} else if (isMonkeysAudio()) {

@@ -18,15 +18,15 @@
  */
 	package net.pms.formats.audio;
 
-	public class DSDAudio extends AudioBase {
+	public class DFF extends AudioBase {
 
 		@Override
 		public Identifier getIdentifier() {
-			return Identifier.DSD;
+			return Identifier.DFF;
 		}
 
 		@Override
 		public String[] getSupportedExtensions() {
-			return new String[] { "dff", "dsf" };
+			return new String[] { "dff" };
 		}
 	}
