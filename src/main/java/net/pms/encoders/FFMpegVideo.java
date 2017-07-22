@@ -1051,14 +1051,6 @@ public class FFMpegVideo extends Player {
 		String[] cmdArray = new String[cmdList.size()];
 		cmdList.toArray(cmdArray);
 
-		cmdArray = finalizeTranscoderArgs(
-			filename,
-			dlna,
-			media,
-			params,
-			cmdArray
-		);
-
 		ProcessWrapperImpl pw = new ProcessWrapperImpl(cmdArray, params);
 
 		setOutputParsing(dlna, pw, false);
@@ -1098,14 +1090,6 @@ public class FFMpegVideo extends Player {
 
 			String[] cmdArrayDts = new String[cmdList.size()];
 			cmdList.toArray(cmdArrayDts);
-
-			cmdArrayDts = finalizeTranscoderArgs(
-				filename,
-				dlna,
-				media,
-				params,
-				cmdArrayDts
-			);
 
 			ProcessWrapperImpl ffVideo = new ProcessWrapperImpl(cmdArrayDts, ffparams);
 

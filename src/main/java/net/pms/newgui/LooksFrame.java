@@ -89,7 +89,6 @@ public class LooksFrame extends JFrame implements IFrame {
 	private TranscodingTab tr;
 	private GeneralTab gt;
 	private HelpTab ht;
-	private PluginTab pt;
 	private final JAnimatedButton reload = createAnimatedToolBarButton(Messages.getString("LooksFrame.12"), "button-restart.png");;
 	private final AnimatedIcon restartRequredIcon = new AnimatedIcon(
 		reload, true, AnimatedIcon.buildAnimation("button-restart-requiredF%d.png", 0, 24, true, 800, 300, 15)
@@ -126,10 +125,6 @@ public class LooksFrame extends JFrame implements IFrame {
 
 	public GeneralTab getGt() {
 		return gt;
-	}
-
-	public PluginTab getPt() {
-		return pt;
 	}
 
 	public static void initializeLookAndFeel() {
@@ -485,7 +480,6 @@ public class LooksFrame extends JFrame implements IFrame {
 		st = new StatusTab(configuration);
 		tt = new TracesTab(configuration, this);
 		gt = new GeneralTab(configuration, this);
-		pt = new PluginTab(configuration, this);
 		nt = new NavigationShareTab(configuration, this);
 		tr = new TranscodingTab(configuration, this);
 		ht = new HelpTab();
@@ -493,7 +487,6 @@ public class LooksFrame extends JFrame implements IFrame {
 		tabbedPane.addTab(Messages.getString("LooksFrame.18"), st.build());
 		tabbedPane.addTab(Messages.getString("LooksFrame.19"), tt.build());
 		tabbedPane.addTab(Messages.getString("LooksFrame.20"), gt.build());
-		tabbedPane.addTab(Messages.getString("LooksFrame.27"), pt.build());
 		tabbedPane.addTab(Messages.getString("LooksFrame.22"), nt.build());
 		if (!configuration.isDisableTranscoding()) {
 			tabbedPane.addTab(Messages.getString("LooksFrame.21"), tr.build());
@@ -669,7 +662,6 @@ public class LooksFrame extends JFrame implements IFrame {
 	public void serverReady() {
 		st.updateMemoryUsage();
 		gt.addRenderers();
-		pt.addPlugins();
 	}
 
 	@Override
