@@ -3709,11 +3709,7 @@ public class PmsConfiguration extends RendererConfiguration {
 	}
 
 	public boolean getLoggingDatabase() {
-		boolean enabled = getBoolean(KEY_LOGGING_DATABASE, false);
-		if (!enabled && PMS.getTraceMode() == 2) {
-			enabled = true;
-		}
-		return enabled;
+		return getBoolean(KEY_LOGGING_DATABASE, false) || PMS.getTraceMode() == 2;
 	}
 
 	public boolean isVlcUseHardwareAccel() {
