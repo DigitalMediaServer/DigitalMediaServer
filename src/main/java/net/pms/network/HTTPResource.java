@@ -57,7 +57,9 @@ public class HTTPResource {
 	public static final String AUDIO_DTSHD_TYPEMIME = "audio/vnd.dts.hd";
 	public static final String AUDIO_EAC3_TYPEMIME = "audio/eac3";
 	public static final String AUDIO_FLAC_TYPEMIME = "audio/x-flac";
+	public static final String AUDIO_LPCM_8_TYPEMIME = "audio/L8";
 	public static final String AUDIO_LPCM_TYPEMIME = "audio/L16";
+	public static final String AUDIO_LPCM_24_TYPEMIME = "audio/L24";
 	public static final String AUDIO_M4A_TYPEMIME = "audio/mp4";
 	public static final String AUDIO_MKA_TYPEMIME = "audio/x-matroska";
 	public static final String AUDIO_MLP_TYPEMIME = "audio/vnd.dolby.mlp";

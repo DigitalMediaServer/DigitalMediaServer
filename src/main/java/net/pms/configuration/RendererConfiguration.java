@@ -127,6 +127,7 @@ public class RendererConfiguration extends UPNPHelper.Renderer {
 	// property names
 	protected static final String ACCURATE_DLNA_ORGPN = "AccurateDLNAOrgPN";
 	protected static final String AUDIO = "Audio";
+	protected static final String AUDIO_24_BIT_SUPPORTED = "Audio24BitSupport";
 	protected static final String AUTO_PLAY_TMO = "AutoPlayTmo";
 	protected static final String BYTE_TO_TIMESEEK_REWIND_SECONDS = "ByteToTimeseekRewindSeconds"; // Ditlew
 	protected static final String CBR_VIDEO_BITRATE = "CBRVideoBitrate"; // Ditlew
@@ -1140,6 +1141,10 @@ public class RendererConfiguration extends UPNPHelper.Renderer {
 		return getBoolean(AUDIO, true);
 	}
 
+	public boolean isAudio24BitSupported() {
+		return getBoolean(AUDIO_24_BIT_SUPPORTED, false);
+	}
+
 	public boolean isImageSupported() {
 		return getBoolean(IMAGE, true);
 	}
@@ -1296,6 +1301,8 @@ public class RendererConfiguration extends UPNPHelper.Renderer {
 					matchedMimeType = getFormatConfiguration().match(FormatConfiguration.WAV, null, null);
 				} else if (isTranscodeToMP3()) {
 					matchedMimeType = getFormatConfiguration().match(FormatConfiguration.MP3, null, null);
+//				} else if (params.mediaRenderer.isAudio24BitSupported()) {) {
+//					matchedMimeType = getFormatConfiguration().match(FormatConfiguration.LPCM24, null, null);
 				} else {
 					// Default audio transcoding mime type
 					matchedMimeType = getFormatConfiguration().match(FormatConfiguration.LPCM, null, null);
