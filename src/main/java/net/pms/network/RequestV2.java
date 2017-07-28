@@ -1010,9 +1010,9 @@ public class RequestV2 extends HTTPResource {
 
 			if (range.isStartOffsetAvailable() && dlna != null) {
 				// Add timeseek information headers.
-				String timeseekValue = StringUtil.convertTimeToString(range.getStartOrZero(), StringUtil.DURATION_TIME_FORMAT);
+				String timeseekValue = StringUtil.formatDLNADuration(range.getStartOrZero());
 				String timetotalValue = dlna.getMedia().getDurationString();
-				String timeEndValue = range.isEndLimitAvailable() ? StringUtil.convertTimeToString(range.getEnd(), StringUtil.DURATION_TIME_FORMAT) : timetotalValue;
+				String timeEndValue = range.isEndLimitAvailable() ? StringUtil.formatDLNADuration(range.getEnd()) : timetotalValue;
 				output.headers().set("TimeSeekRange.dlna.org", "npt=" + timeseekValue + "-" + timeEndValue + "/" + timetotalValue);
 				output.headers().set("X-Seek-Range", "npt=" + timeseekValue + "-" + timeEndValue + "/" + timetotalValue);
 			}
