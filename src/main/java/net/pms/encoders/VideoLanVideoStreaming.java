@@ -49,6 +49,7 @@ import net.pms.io.ProcessWrapperImpl;
 import net.pms.io.SimpleProcessWrapper;
 import net.pms.util.PlayerUtil;
 import net.pms.util.Version;
+import net.pms.util.Version.WindowsVersionType;
 
 /* XXX this is the old/obsolete VLC web video streaming engine */
 public class VideoLanVideoStreaming extends Player {
@@ -247,6 +248,8 @@ public class VideoLanVideoStreaming extends Player {
 		if (Platform.isWindows()) {
 			if (executableInfo.getPath().isAbsolute() && executableInfo.getPath().equals(BasicSystemUtils.INSTANCE.getVlcPath())) {
 				result.version(BasicSystemUtils.INSTANCE.getVlcVersion());
+			} else {
+				result.version(Version.getWindowsFileVersion(executableInfo.getPath(), WindowsVersionType.PRODUCT_VERSION_FIRST));
 			}
 			result.available(Boolean.TRUE);
 		} else {

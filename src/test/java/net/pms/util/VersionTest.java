@@ -19,16 +19,23 @@
 package net.pms.util;
 
 import static org.assertj.core.api.Assertions.*;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertArrayEquals;
 import org.junit.Test;
 
 public class VersionTest {
-	private final Version v(String version) {
+	private final static Version version(String version) {
 		return new Version(version);
 	}
 
-	private void assertVersionEquals(Version v1, Version v2) {
+	private final static Version version(String version, boolean hex) {
+		return new Version(version, hex);
+	}
+
+	private static void assertVersionEquals(Version v1, Version v2) {
 		// non-nullity
 		assertFalse(v1 == null);
 		assertFalse(v2 == null);
@@ -71,7 +78,79 @@ public class VersionTest {
 		assertTrue(v2.isLessThanOrEqualTo(v1));
 	}
 
-	private void assertVersionIsGreaterThan(Version v1, Version v2) {
+	private static void assertVersionEqualsDetailed(Version v1, Version v2) {
+		// symmetry (and equality)
+		assertTrue(v1.equalsDetailed(v2));
+		assertTrue(v2.equalsDetailed(v1));
+
+		// reflexivity
+		assertTrue(v1.equalsDetailed(v1));
+		assertTrue(v2.equalsDetailed(v2));
+
+		// consistency
+		assertTrue(v1.equalsDetailed(v2));
+		assertTrue(v2.equalsDetailed(v1));
+
+		assertFalse(v1.isGreaterThan(v1, true));
+		assertFalse(v2.isGreaterThan(v2, true));
+		assertFalse(v1.isGreaterThan(v2, true));
+		assertFalse(v2.isGreaterThan(v1, true));
+
+		assertFalse(v1.isLessThan(v1, true));
+		assertFalse(v2.isLessThan(v2, true));
+		assertFalse(v1.isLessThan(v2, true));
+		assertFalse(v2.isLessThan(v1, true));
+
+		assertTrue(v1.isGreaterThanOrEqualTo(v1, true));
+		assertTrue(v2.isGreaterThanOrEqualTo(v2, true));
+		assertTrue(v1.isGreaterThanOrEqualTo(v2, true));
+		assertTrue(v2.isGreaterThanOrEqualTo(v1, true));
+
+		assertTrue(v1.isLessThanOrEqualTo(v1, true));
+		assertTrue(v2.isLessThanOrEqualTo(v2, true));
+		assertTrue(v1.isLessThanOrEqualTo(v2, true));
+		assertTrue(v2.isLessThanOrEqualTo(v1, true));
+	}
+
+	private static boolean versionEqualsExact(Version v1, Version v2, boolean caseSensitive) {
+		return
+			// symmetry (and equality)
+			v1.equalsExcact(v2, caseSensitive) &&
+			v2.equalsExcact(v1, caseSensitive) &&
+
+			// reflexivity
+			v1.equalsExcact(v1, caseSensitive) &&
+			v2.equalsExcact(v2, caseSensitive) &&
+
+			// consistency
+			v1.equalsExcact(v2, caseSensitive) &&
+			v2.equalsExcact(v1, caseSensitive) &&
+
+			(
+				!caseSensitive ||
+				!v1.isGreaterThan(v1, true) &&
+				!v2.isGreaterThan(v2, true) &&
+				!v1.isGreaterThan(v2, true) &&
+				!v2.isGreaterThan(v1, true) &&
+
+				!v1.isLessThan(v1, true) &&
+				!v2.isLessThan(v2, true) &&
+				!v1.isLessThan(v2, true) &&
+				!v2.isLessThan(v1, true) &&
+
+				v1.isGreaterThanOrEqualTo(v1, true) &&
+				v2.isGreaterThanOrEqualTo(v2, true) &&
+				v1.isGreaterThanOrEqualTo(v2, true) &&
+				v2.isGreaterThanOrEqualTo(v1, true) &&
+
+				v1.isLessThanOrEqualTo(v1, true) &&
+				v2.isLessThanOrEqualTo(v2, true) &&
+				v1.isLessThanOrEqualTo(v2, true) &&
+				v2.isLessThanOrEqualTo(v1, true)
+			);
+	}
+
+	private static void assertVersionIsGreaterThan(Version v1, Version v2) {
 		assertTrue(v1.isGreaterThan(v2));
 		assertFalse(v2.isGreaterThan(v1));
 
@@ -91,35 +170,67 @@ public class VersionTest {
 		assertThat(v2.hashCode()).isNotEqualTo(v1.hashCode());
 	}
 
-	private void assertIsDmsUpdatable(Version v1, Version v2) {
-		assertVersionIsGreaterThan(v2, v1);
-		assertTrue(Version.isDmsUpdatable(v1, v2));
-		assertFalse(Version.isDmsUpdatable(v2, v1));
+	private static void assertVersionIsGreaterThanSuffix(Version v1, Version v2) {
+		assertTrue(v1.isGreaterThan(v2, true));
+		assertFalse(v2.isGreaterThan(v1, true));
+
+		assertTrue(v2.isLessThan(v1, true));
+		assertFalse(v1.isLessThan(v2, true));
+
+		assertTrue(v1.isGreaterThanOrEqualTo(v2, true));
+		assertFalse(v2.isGreaterThanOrEqualTo(v1, true));
+
+		assertTrue(v2.isLessThanOrEqualTo(v1, true));
+		assertFalse(v1.isLessThanOrEqualTo(v2, true));
+
+		assertFalse(v1.equalsDetailed(v2));
+		assertFalse(v2.equalsDetailed(v1));
 	}
 
-	private void assertIsNotDmsUpdatable(Version v1, Version v2) {
-		assertVersionIsGreaterThan(v1, v2);
-		assertFalse(Version.isDmsUpdatable(v1, v2));
-		assertTrue(Version.isDmsUpdatable(v2, v1));
-	}
-
-	private void assertVersionToStringEquals(Version v, String s) {
+	private static void assertVersionToStringEquals(Version v, String s) {
 		assertThat(v.toString()).isEqualTo(s);
 	}
 
 	@Test
 	public void testTransitivity() {
-		Version v1 = v("1.1.1");
-		Version v2 = v("2.2.2");
-		Version v3 = v("3.3.3");
+		Version v1 = version("1.1.1");
+		Version v2 = version("2.2.2");
+		Version v3 = version("3.3.3");
 
 		assertVersionIsGreaterThan(v2, v1);
 		assertVersionIsGreaterThan(v3, v2);
 		assertVersionIsGreaterThan(v3, v1);
 
-		Version va = v("2.2.2");
-		Version vb = v("2.2.2");
-		Version vc = v("2.2.2");
+		Version v4 = version("1.1.1-beta");
+		Version v5 = version("2.2.2-snapshot");
+		Version v6 = version("3.3.3_b34");
+		Version v7 = version("3.3.3_b34", true);
+
+		assertVersionIsGreaterThanSuffix(v2, v1);
+		assertVersionIsGreaterThanSuffix(v3, v2);
+		assertVersionIsGreaterThanSuffix(v3, v1);
+		assertVersionIsGreaterThanSuffix(v4, v1);
+		assertVersionIsGreaterThanSuffix(v5, v1);
+		assertVersionIsGreaterThanSuffix(v6, v1);
+		assertVersionIsGreaterThanSuffix(v7, v1);
+		assertVersionIsGreaterThanSuffix(v2, v4);
+		assertVersionIsGreaterThanSuffix(v5, v2);
+		assertVersionIsGreaterThanSuffix(v6, v2);
+		assertVersionIsGreaterThanSuffix(v7, v2);
+		assertVersionIsGreaterThanSuffix(v3, v4);
+		assertVersionIsGreaterThanSuffix(v3, v5);
+		assertVersionIsGreaterThanSuffix(v6, v3);
+		assertVersionIsGreaterThanSuffix(v7, v3);
+		assertVersionIsGreaterThanSuffix(v7, v6);
+		assertVersionIsGreaterThanSuffix(v7, v5);
+		assertVersionIsGreaterThanSuffix(v7, v4);
+		assertVersionIsGreaterThanSuffix(v6, v5);
+		assertVersionIsGreaterThanSuffix(v6, v4);
+		assertVersionIsGreaterThanSuffix(v5, v4);
+
+		Version va = version("2.2.2");
+		Version vb = version("2.2.2");
+		Version vc = version("2.2.2");
 
 		assertVersionEquals(vb, vc);
 		assertVersionEquals(va, vb);
@@ -128,246 +239,353 @@ public class VersionTest {
 
 	@Test
 	public void testToString() {
-		assertVersionToStringEquals(v(""), "0");
-		assertVersionToStringEquals(v("foo"), "0");
-		assertVersionToStringEquals(v("0"), "0");
-		assertVersionToStringEquals(v("0.0"), "0.0");
-		assertVersionToStringEquals(v("1"), "1");
-		assertVersionToStringEquals(v("1.2"), "1.2");
-		assertVersionToStringEquals(v("1.2.3"), "1.2.3");
-		assertVersionToStringEquals(v("1.2.3.4"), "1.2.3.4");
-		assertVersionToStringEquals(v("foo.1"), "0.1");
-		assertVersionToStringEquals(v("1.foo"), "1.0");
-		assertVersionToStringEquals(v("1.2-foo"), "1.0");
-		assertVersionToStringEquals(v("1.foo-2"), "1.0");
-		assertVersionToStringEquals(v("1.2-foo-2"), "1.0");
-		assertVersionToStringEquals(v("foo.42.bar"), "0.42.0");
-		assertVersionToStringEquals(v("foo-1.42.1-bar"), "0.42.0");
+		assertVersionToStringEquals(version(""), "");
+		assertVersionToStringEquals(version("foo"), "foo");
 	}
 
 	@Test
 	public void testEquals() {
-		assertVersionEquals(v(""), v(""));
-		assertVersionEquals(v(""), v("0"));
-		assertVersionEquals(v(""), v("00"));
-		assertVersionEquals(v(""), v("00.00"));
-		assertVersionEquals(v(""), v("0.0.0"));
-		assertVersionEquals(v(""), v("00.00.00"));
-		assertVersionEquals(v(""), v("0.0.0.0"));
-		assertVersionEquals(v(""), v("00.00.00.00"));
+		assertVersionEquals(version(""), version(""));
+		assertVersionEquals(version(""), version("0"));
+		assertVersionEquals(version(""), version("00"));
+		assertVersionEquals(version(""), version("00.00"));
+		assertVersionEquals(version(""), version("0.0.0"));
+		assertVersionEquals(version(""), version("00.00.00"));
+		assertVersionEquals(version(""), version("0.0.0.0"));
+		assertVersionEquals(version(""), version("00.00.00.00"));
 
-		assertVersionEquals(v("foo"), v("0"));
-		assertVersionEquals(v("foo"), v("00"));
-		assertVersionEquals(v("foo"), v("0.0"));
-		assertVersionEquals(v("foo"), v("00.00"));
-		assertVersionEquals(v("foo"), v("0.0.0"));
-		assertVersionEquals(v("foo"), v("00.00.00"));
-		assertVersionEquals(v("foo"), v("0.0.0.0"));
-		assertVersionEquals(v("foo"), v("00.00.00.00"));
+		assertVersionEquals(version("foo"), version("0"));
+		assertVersionEquals(version("foo"), version("00"));
+		assertVersionEquals(version("foo"), version("0.0"));
+		assertVersionEquals(version("foo"), version("00.00"));
+		assertVersionEquals(version("foo"), version("0.0.0"));
+		assertVersionEquals(version("foo"), version("00.00.00"));
+		assertVersionEquals(version("foo"), version("0.0.0.0"));
+		assertVersionEquals(version("foo"), version("00.00.00.00"));
 
-		assertVersionEquals(v("1foo2"), v("0"));
-		assertVersionEquals(v("1foo2"), v("00"));
-		assertVersionEquals(v("1foo2"), v("0.0"));
-		assertVersionEquals(v("1foo2"), v("00.00"));
-		assertVersionEquals(v("1foo2"), v("0.0.0"));
-		assertVersionEquals(v("1foo2"), v("00.00.00"));
-		assertVersionEquals(v("1foo2"), v("0.0.0.0"));
-		assertVersionEquals(v("1foo2"), v("00.00.00.00"));
+		assertVersionEquals(version("1foo2"), version("1"));
+		assertVersionEquals(version("1foo2"), version("01"));
+		assertVersionEquals(version("1foo2"), version("1.0"));
+		assertVersionEquals(version("1foo2"), version("01.00"));
+		assertVersionEquals(version("1foo2"), version("1.0.0"));
+		assertVersionEquals(version("1foo2"), version("01.00.00"));
+		assertVersionEquals(version("1foo2"), version("1.0.0.0"));
+		assertVersionEquals(version("1foo2"), version("01.00.00.00"));
 
-		assertVersionEquals(v("2"), v("2"));
-		assertVersionEquals(v("2"), v("02"));
-		assertVersionEquals(v("2"), v("2.0"));
-		assertVersionEquals(v("2"), v("02.00"));
-		assertVersionEquals(v("2"), v("2.0.0"));
-		assertVersionEquals(v("2"), v("02.00.00"));
-		assertVersionEquals(v("2"), v("2.0.0.0"));
-		assertVersionEquals(v("2"), v("02.00.00.00"));
+		assertVersionEquals(version("2"), version("2"));
+		assertVersionEquals(version("2"), version("02"));
+		assertVersionEquals(version("2"), version("2.0"));
+		assertVersionEquals(version("2"), version("02.00"));
+		assertVersionEquals(version("2"), version("2.0.0"));
+		assertVersionEquals(version("2"), version("02.00.00"));
+		assertVersionEquals(version("2"), version("2.0.0.0"));
+		assertVersionEquals(version("2"), version("02.00.00.00"));
 
-		assertVersionEquals(v("2.2"), v("2.2"));
-		assertVersionEquals(v("2.2"), v("02.02"));
-		assertVersionEquals(v("2.2"), v("2.2.0"));
-		assertVersionEquals(v("2.2"), v("02.02.00"));
-		assertVersionEquals(v("2.2"), v("2.2.0.0"));
-		assertVersionEquals(v("2.2"), v("02.02.00.00"));
+		assertVersionEquals(version("2.2"), version("2.2"));
+		assertVersionEquals(version("2.2"), version("02.02"));
+		assertVersionEquals(version("2.2"), version("2.2.0"));
+		assertVersionEquals(version("2.2"), version("02.02.00"));
+		assertVersionEquals(version("2.2"), version("2.2.0.0"));
+		assertVersionEquals(version("2.2"), version("02.02.00.00"));
 
-		assertVersionEquals(v("2.2.2"), v("2.2.2"));
-		assertVersionEquals(v("2.2.2"), v("02.02.02"));
-		assertVersionEquals(v("2.2.2"), v("2.2.2.0"));
-		assertVersionEquals(v("2.2.2"), v("02.02.02.00"));
+		assertVersionEquals(version("2.2.2"), version("2.2.2"));
+		assertVersionEquals(version("2.2.2"), version("02.02.02"));
+		assertVersionEquals(version("2.2.2"), version("2.2.2.0"));
+		assertVersionEquals(version("2.2.2"), version("02.02.02.00"));
 
-		assertVersionEquals(v("2.2.2.2"), v("2.2.2.2"));
-		assertVersionEquals(v("2.2.2.2"), v("02.02.02.02"));
+		assertVersionEquals(version("2.2.2.2"), version("2.2.2.2"));
+		assertVersionEquals(version("2.2.2.2"), version("02.02.02.02"));
+	}
+
+	@Test
+	public void testEqualsDetailed() {
+		assertVersionEqualsDetailed(version(""), version(""));
+		assertVersionEqualsDetailed(version(""), version("0"));
+		assertVersionEqualsDetailed(version(""), version("00"));
+		assertVersionEqualsDetailed(version(""), version("00.00"));
+		assertVersionEqualsDetailed(version(""), version("0.0.0"));
+		assertVersionEqualsDetailed(version(""), version("00.00.00"));
+		assertVersionEqualsDetailed(version(""), version("0.0.0.0"));
+		assertVersionEqualsDetailed(version(""), version("00.00.00.00"));
+
+		assertVersionEqualsDetailed(version("foo"), version("0foo"));
+		assertVersionEqualsDetailed(version("foo"), version("00foo"));
+		assertVersionEqualsDetailed(version("foo"), version("0.0foo"));
+		assertVersionEqualsDetailed(version("foo"), version("00.00foo"));
+		assertVersionEqualsDetailed(version("foo"), version("0.0.0foo"));
+		assertVersionEqualsDetailed(version("foo"), version("00.00.00foo"));
+		assertVersionEqualsDetailed(version("foo"), version("0.0.0.0foo"));
+		assertVersionEqualsDetailed(version("foo"), version("00.00.00.00foo"));
+
+		assertVersionEqualsDetailed(version("1foo2"), version("1foo2"));
+		assertVersionEqualsDetailed(version("1foo2"), version("01foo2"));
+		assertVersionEqualsDetailed(version("1foo2"), version("1.0foo2"));
+		assertVersionEqualsDetailed(version("1foo2"), version("01.00foo2"));
+		assertVersionEqualsDetailed(version("1foo2"), version("1.0.0foo2"));
+		assertVersionEqualsDetailed(version("1foo2"), version("01.00.00foo2"));
+		assertVersionEqualsDetailed(version("1foo2"), version("1.0.0.0foo2"));
+		assertVersionEqualsDetailed(version("1foo2"), version("01.00.00.00foo2"));
+
+		assertVersionEqualsDetailed(version("2"), version("2"));
+		assertVersionEqualsDetailed(version("2"), version("02"));
+		assertVersionEqualsDetailed(version("2"), version("2.0"));
+		assertVersionEqualsDetailed(version("2"), version("02.00"));
+		assertVersionEqualsDetailed(version("2"), version("2.0.0"));
+		assertVersionEqualsDetailed(version("2"), version("02.00.00"));
+		assertVersionEqualsDetailed(version("2"), version("2.0.0.0"));
+		assertVersionEqualsDetailed(version("2"), version("02.00.00.00"));
+
+		assertVersionEqualsDetailed(version("2.2"), version("2.2"));
+		assertVersionEqualsDetailed(version("2.2"), version("02.02"));
+		assertVersionEqualsDetailed(version("2.2"), version("2.2.0"));
+		assertVersionEqualsDetailed(version("2.2"), version("02.02.00"));
+		assertVersionEqualsDetailed(version("2.2"), version("2.2.0.0"));
+		assertVersionEqualsDetailed(version("2.2"), version("02.02.00.00"));
+
+		assertVersionEqualsDetailed(version("2.2.2"), version("2.2.2"));
+		assertVersionEqualsDetailed(version("2.2.2"), version("02.02.02"));
+		assertVersionEqualsDetailed(version("2.2.2"), version("2.2.2.0"));
+		assertVersionEqualsDetailed(version("2.2.2"), version("02.02.02.00"));
+
+		assertVersionEqualsDetailed(version("2.2.2.2"), version("2.2.2.2"));
+		assertVersionEqualsDetailed(version("2.2.2.2"), version("02.02.02.02"));
+
+		assertVersionEqualsDetailed(version("-b34x"), version("-b34x"));
+		assertVersionEqualsDetailed(version("0-b34x"), version("0-b34x"));
+		assertVersionEqualsDetailed(version("0-b34x"), version("00-b34x"));
+		assertVersionEqualsDetailed(version("0-b34x"), version("00.00-b34x"));
+		assertVersionEqualsDetailed(version("0-b34x"), version("0.0.0-b34x"));
+		assertVersionEqualsDetailed(version("0-b34x"), version("00.00.00-b34x"));
+		assertVersionEqualsDetailed(version("0-b34x"), version("0.0.0.0-b34x"));
+		assertVersionEqualsDetailed(version("0-b34x"), version("00.00.00.00-b34x"));
+	}
+
+	@Test
+	public void testEqualsExact() {
+		assertTrue(versionEqualsExact(version(""), version(""), true));
+		assertFalse(versionEqualsExact(version(""), version("0"), false));
+		assertFalse(versionEqualsExact(version(""), version("00"), false));
+		assertFalse(versionEqualsExact(version(""), version("00.00"), false));
+		assertFalse(versionEqualsExact(version(""), version("0.0.0"), false));
+		assertFalse(versionEqualsExact(version(""), version("00.00.00"), false));
+		assertFalse(versionEqualsExact(version(""), version("0.0.0.0"), false));
+		assertFalse(versionEqualsExact(version(""), version("00.00.00.00"), false));
+
+		assertFalse(versionEqualsExact(version("foo"), version("0foo"), false));
+		assertFalse(versionEqualsExact(version("foo"), version("00foo"), false));
+		assertFalse(versionEqualsExact(version("foo"), version("0.0foo"), false));
+		assertFalse(versionEqualsExact(version("foo"), version("00.00foo"), false));
+		assertFalse(versionEqualsExact(version("foo"), version("0.0.0foo"), false));
+		assertFalse(versionEqualsExact(version("foo"), version("00.00.00foo"), false));
+		assertFalse(versionEqualsExact(version("foo"), version("0.0.0.0foo"), false));
+		assertFalse(versionEqualsExact(version("foo"), version("00.00.00.00foo"), false));
+
+		assertTrue(versionEqualsExact(version("1foo2"), version("1foo2"), true));
+		assertTrue(versionEqualsExact(version("1Foo2"), version("1foo2"), false));
+		assertFalse(versionEqualsExact(version("1Foo2"), version("1foo2"), true));
+		assertFalse(versionEqualsExact(version("1foo2"), version("01foo2"), false));
+		assertFalse(versionEqualsExact(version("1foo2"), version("1.0foo2"), false));
+		assertFalse(versionEqualsExact(version("1foo2"), version("01.00foo2"), false));
+		assertFalse(versionEqualsExact(version("1foo2"), version("1.0.0foo2"), false));
+		assertFalse(versionEqualsExact(version("1foo2"), version("01.00.00foo2"), false));
+		assertFalse(versionEqualsExact(version("1foo2"), version("1.0.0.0foo2"), false));
+		assertFalse(versionEqualsExact(version("1foo2"), version("01.00.00.00foo2"), false));
+
+		assertTrue(versionEqualsExact(version("2"), version("2"), false));
+		assertTrue(versionEqualsExact(version("2"), version("2"), true));
+		assertFalse(versionEqualsExact(version("2"), version("02"), false));
+		assertFalse(versionEqualsExact(version("2"), version("2.0"), false));
+		assertFalse(versionEqualsExact(version("2"), version("02.00"), false));
+		assertFalse(versionEqualsExact(version("2"), version("2.0.0"), false));
+		assertFalse(versionEqualsExact(version("2"), version("02.00.00"), false));
+		assertFalse(versionEqualsExact(version("2"), version("2.0.0.0"), false));
+		assertFalse(versionEqualsExact(version("2"), version("02.00.00.00"), false));
+
+		assertTrue(versionEqualsExact(version("2.2"), version("2.2"), false));
+		assertTrue(versionEqualsExact(version("2.2"), version("2.2"), true));
+		assertFalse(versionEqualsExact(version("2.2"), version("02.02"), false));
+		assertFalse(versionEqualsExact(version("2.2"), version("2.2.0"), false));
+		assertFalse(versionEqualsExact(version("2.2"), version("02.02.00"), false));
+		assertFalse(versionEqualsExact(version("2.2"), version("2.2.0.0"), false));
+		assertFalse(versionEqualsExact(version("2.2"), version("02.02.00.00"), false));
+
+		assertTrue(versionEqualsExact(version("2.2.2"), version("2.2.2"), false));
+		assertTrue(versionEqualsExact(version("2.2.2"), version("2.2.2"), true));
+		assertFalse(versionEqualsExact(version("2.2.2"), version("02.02.02"), false));
+		assertFalse(versionEqualsExact(version("2.2.2"), version("2.2.2.0"), false));
+		assertFalse(versionEqualsExact(version("2.2.2"), version("02.02.02.00"), false));
+
+		assertTrue(versionEqualsExact(version("2.2.2.2"), version("2.2.2.2"), false));
+		assertTrue(versionEqualsExact(version("2.2.2.2"), version("2.2.2.2"), true));
+		assertFalse(versionEqualsExact(version("2.2.2.2"), version("02.02.02.02"), false));
+
+		assertTrue(versionEqualsExact(version("-b34x"), version("-b34x"), false));
+		assertTrue(versionEqualsExact(version("-b34x"), version("-b34x"), true));
+		assertTrue(versionEqualsExact(version("-B34x"), version("-b34x"), false));
+		assertTrue(versionEqualsExact(version("-B34X"), version("-b34x"), false));
+		assertTrue(versionEqualsExact(version("-b34X"), version("-b34x"), false));
+		assertFalse(versionEqualsExact(version("-B34x"), version("-b34x"), true));
+		assertFalse(versionEqualsExact(version("-B34X"), version("-b34x"), true));
+		assertFalse(versionEqualsExact(version("-b34X"), version("-b34x"), true));
+		assertTrue(versionEqualsExact(version("0-b34x"), version("0-b34x"), false));
+		assertTrue(versionEqualsExact(version("0-b34x"), version("0-b34x"), true));
+		assertFalse(versionEqualsExact(version("0-b34x"), version("00-b34x"), false));
+		assertFalse(versionEqualsExact(version("0-b34x"), version("00.00-b34x"), false));
+		assertFalse(versionEqualsExact(version("0-b34x"), version("0.0.0-b34x"), false));
+		assertFalse(versionEqualsExact(version("0-b34x"), version("00.00.00-b34x"), false));
+		assertFalse(versionEqualsExact(version("0-b34x"), version("0.0.0.0-b34x"), false));
+		assertFalse(versionEqualsExact(version("0-b34x"), version("00.00.00.00-b34x"), false));
 	}
 
 	@Test
 	public void testIsGreaterThan() {
-		assertVersionIsGreaterThan(v("2"), v("1"));
-		assertVersionIsGreaterThan(v("2"), v("01"));
-		assertVersionIsGreaterThan(v("2"), v("1.0"));
-		assertVersionIsGreaterThan(v("2"), v("01.00"));
-		assertVersionIsGreaterThan(v("2"), v("1.0.0"));
-		assertVersionIsGreaterThan(v("2"), v("01.00.00"));
-		assertVersionIsGreaterThan(v("2"), v("1.0.0.0"));
-		assertVersionIsGreaterThan(v("2"), v("01.00.00.00"));
+		assertVersionIsGreaterThan(version("2"), version("1"));
+		assertVersionIsGreaterThan(version("2"), version("01"));
+		assertVersionIsGreaterThan(version("2"), version("1.0"));
+		assertVersionIsGreaterThan(version("2"), version("01.00"));
+		assertVersionIsGreaterThan(version("2"), version("1.0.0"));
+		assertVersionIsGreaterThan(version("2"), version("01.00.00"));
+		assertVersionIsGreaterThan(version("2"), version("1.0.0.0"));
+		assertVersionIsGreaterThan(version("2"), version("01.00.00.00"));
 
-		assertVersionIsGreaterThan(v("2.2"), v("2"));
-		assertVersionIsGreaterThan(v("2.2"), v("02"));
-		assertVersionIsGreaterThan(v("2.2"), v("2.0"));
-		assertVersionIsGreaterThan(v("2.2"), v("02.00"));
-		assertVersionIsGreaterThan(v("2.2"), v("2.0.0"));
-		assertVersionIsGreaterThan(v("2.2"), v("02.00.00"));
-		assertVersionIsGreaterThan(v("2.2"), v("2.0.0.0"));
-		assertVersionIsGreaterThan(v("2.2"), v("02.00.00.00"));
+		assertVersionIsGreaterThan(version("2.2"), version("2"));
+		assertVersionIsGreaterThan(version("2.2"), version("02"));
+		assertVersionIsGreaterThan(version("2.2"), version("2.0"));
+		assertVersionIsGreaterThan(version("2.2"), version("02.00"));
+		assertVersionIsGreaterThan(version("2.2"), version("2.0.0"));
+		assertVersionIsGreaterThan(version("2.2"), version("02.00.00"));
+		assertVersionIsGreaterThan(version("2.2"), version("2.0.0.0"));
+		assertVersionIsGreaterThan(version("2.2"), version("02.00.00.00"));
 
-		assertVersionIsGreaterThan(v("2.2.2"), v("2"));
-		assertVersionIsGreaterThan(v("2.2.2"), v("02"));
-		assertVersionIsGreaterThan(v("2.2.2"), v("2.0"));
-		assertVersionIsGreaterThan(v("2.2.2"), v("02.00"));
-		assertVersionIsGreaterThan(v("2.2.2"), v("2.0.0"));
-		assertVersionIsGreaterThan(v("2.2.2"), v("02.00.00"));
-		assertVersionIsGreaterThan(v("2.2.2"), v("2.0.0.0"));
-		assertVersionIsGreaterThan(v("2.2.2"), v("02.00.00.00"));
+		assertVersionIsGreaterThan(version("2.2.2"), version("2"));
+		assertVersionIsGreaterThan(version("2.2.2"), version("02"));
+		assertVersionIsGreaterThan(version("2.2.2"), version("2.0"));
+		assertVersionIsGreaterThan(version("2.2.2"), version("02.00"));
+		assertVersionIsGreaterThan(version("2.2.2"), version("2.0.0"));
+		assertVersionIsGreaterThan(version("2.2.2"), version("02.00.00"));
+		assertVersionIsGreaterThan(version("2.2.2"), version("2.0.0.0"));
+		assertVersionIsGreaterThan(version("2.2.2"), version("02.00.00.00"));
 
-		assertVersionIsGreaterThan(v("2.2.2.2"), v("2"));
-		assertVersionIsGreaterThan(v("2.2.2.2"), v("02"));
-		assertVersionIsGreaterThan(v("2.2.2.2"), v("2.0"));
-		assertVersionIsGreaterThan(v("2.2.2.2"), v("02.00"));
-		assertVersionIsGreaterThan(v("2.2.2.2"), v("2.0.0"));
-		assertVersionIsGreaterThan(v("2.2.2.2"), v("02.00.00"));
-		assertVersionIsGreaterThan(v("2.2.2.2"), v("2.0.0.0"));
-		assertVersionIsGreaterThan(v("2.2.2.2"), v("02.00.00.00"));
+		assertVersionIsGreaterThan(version("2.2.2.2"), version("2"));
+		assertVersionIsGreaterThan(version("2.2.2.2"), version("02"));
+		assertVersionIsGreaterThan(version("2.2.2.2"), version("2.0"));
+		assertVersionIsGreaterThan(version("2.2.2.2"), version("02.00"));
+		assertVersionIsGreaterThan(version("2.2.2.2"), version("2.0.0"));
+		assertVersionIsGreaterThan(version("2.2.2.2"), version("02.00.00"));
+		assertVersionIsGreaterThan(version("2.2.2.2"), version("2.0.0.0"));
+		assertVersionIsGreaterThan(version("2.2.2.2"), version("02.00.00.00"));
 	}
 
 	@Test
 	public void testMajor() {
-		assertThat(v("0").getMajor()).isEqualTo(0);
-		assertThat(v("0.1").getMajor()).isEqualTo(0);
-		assertThat(v("0.1.2").getMajor()).isEqualTo(0);
-		assertThat(v("0.1.2.3").getMajor()).isEqualTo(0);
+		assertThat(version("0").getMajor()).isEqualTo(0);
+		assertThat(version("0.1").getMajor()).isEqualTo(0);
+		assertThat(version("0.1.2").getMajor()).isEqualTo(0);
+		assertThat(version("0.1.2.3").getMajor()).isEqualTo(0);
 
-		assertThat(v("1").getMajor()).isEqualTo(1);
-		assertThat(v("1.2").getMajor()).isEqualTo(1);
-		assertThat(v("1.2.3").getMajor()).isEqualTo(1);
-		assertThat(v("1.2.3.4").getMajor()).isEqualTo(1);
+		assertThat(version("1").getMajor()).isEqualTo(1);
+		assertThat(version("1.2").getMajor()).isEqualTo(1);
+		assertThat(version("1.2.3").getMajor()).isEqualTo(1);
+		assertThat(version("1.2.3.4").getMajor()).isEqualTo(1);
+
+		assertEquals("v18", version("v18.3.a3").getMajorString());
+		assertEquals("v18", version("v18.3.a3", true).getMajorString());
+		assertEquals("b3", version("b3.3.9").getMajorString());
+		assertEquals("b3", version("b3.3.9", true).getMajorString());
 	}
 
 	@Test
 	public void testMinor() {
-		assertThat(v("0").getMinor()).isEqualTo(0);
-		assertThat(v("0.1").getMinor()).isEqualTo(1);
-		assertThat(v("0.1.2").getMinor()).isEqualTo(1);
-		assertThat(v("0.1.2.3").getMinor()).isEqualTo(1);
+		assertThat(version("0").getMinor()).isEqualTo(0);
+		assertThat(version("0.1").getMinor()).isEqualTo(1);
+		assertThat(version("0.1.2").getMinor()).isEqualTo(1);
+		assertThat(version("0.1.2.3").getMinor()).isEqualTo(1);
 
-		assertThat(v("1").getMinor()).isEqualTo(0);
-		assertThat(v("1.2").getMinor()).isEqualTo(2);
-		assertThat(v("1.2.3").getMinor()).isEqualTo(2);
-		assertThat(v("1.2.3.4").getMinor()).isEqualTo(2);
+		assertThat(version("1").getMinor()).isEqualTo(0);
+		assertThat(version("1.2").getMinor()).isEqualTo(2);
+		assertThat(version("1.2.3").getMinor()).isEqualTo(2);
+		assertThat(version("1.2.3.4").getMinor()).isEqualTo(2);
+
+		assertNull(version("v18.b3.a3").getMinorString());
+		assertEquals("b3", version("v18.b3.a3", true).getMinorString());
 	}
 
 	@Test
 	public void testRevision() {
-		assertThat(v("0").getRevision()).isEqualTo(0);
-		assertThat(v("0.1").getRevision()).isEqualTo(0);
-		assertThat(v("0.1.2").getRevision()).isEqualTo(2);
-		assertThat(v("0.1.2.3").getRevision()).isEqualTo(2);
+		assertThat(version("0").getRevision()).isEqualTo(0);
+		assertThat(version("0.1").getRevision()).isEqualTo(0);
+		assertThat(version("0.1.2").getRevision()).isEqualTo(2);
+		assertThat(version("0.1.2.3").getRevision()).isEqualTo(2);
 
-		assertThat(v("1").getRevision()).isEqualTo(0);
-		assertThat(v("1.2").getRevision()).isEqualTo(0);
-		assertThat(v("1.2.3").getRevision()).isEqualTo(3);
-		assertThat(v("1.2.3.4").getRevision()).isEqualTo(3);
+		assertThat(version("1").getRevision()).isEqualTo(0);
+		assertThat(version("1.2").getRevision()).isEqualTo(0);
+		assertThat(version("1.2.3").getRevision()).isEqualTo(3);
+		assertThat(version("1.2.3.4").getRevision()).isEqualTo(3);
+
+		assertNull(version("v18.3.a3").getRevisionString());
+		assertEquals("a3", version("v18.3.a3", true).getRevisionString());
 	}
 
 	@Test
 	public void testBuild() {
-		assertThat(v("0").getBuild()).isEqualTo(0);
-		assertThat(v("0.1").getBuild()).isEqualTo(0);
-		assertThat(v("0.1.2").getBuild()).isEqualTo(0);
-		assertThat(v("0.1.2.3").getBuild()).isEqualTo(3);
+		assertThat(version("0").getBuild()).isEqualTo(0);
+		assertThat(version("0.1").getBuild()).isEqualTo(0);
+		assertThat(version("0.1.2").getBuild()).isEqualTo(0);
+		assertThat(version("0.1.2.3").getBuild()).isEqualTo(3);
 
-		assertThat(v("1").getBuild()).isEqualTo(0);
-		assertThat(v("1.2").getBuild()).isEqualTo(0);
-		assertThat(v("1.2.3").getBuild()).isEqualTo(0);
-		assertThat(v("1.2.3.4").getBuild()).isEqualTo(4);
+		assertThat(version("1").getBuild()).isEqualTo(0);
+		assertThat(version("1.2").getBuild()).isEqualTo(0);
+		assertThat(version("1.2.3").getBuild()).isEqualTo(0);
+		assertThat(version("1.2.3.4").getBuild()).isEqualTo(4);
+
+		assertNull(version("v18.3.a3").getBuildString());
 	}
 
 	@Test
-	public void testIsDmsUpdatable() {
-		assertIsDmsUpdatable(v("2"), v("2.0.1"));
-		assertIsDmsUpdatable(v("2"), v("02.00.01"));
-		assertIsDmsUpdatable(v("2"), v("2.0.1.0"));
-		assertIsDmsUpdatable(v("2"), v("02.00.01.00"));
-
-		assertIsDmsUpdatable(v("2.2"), v("2.2.1"));
-		assertIsDmsUpdatable(v("2.2"), v("02.02.01"));
-		assertIsDmsUpdatable(v("2.2"), v("2.2.0.1"));
-		assertIsDmsUpdatable(v("2.2"), v("02.02.00.01"));
-
-		assertIsDmsUpdatable(v("2.2.2"), v("2.2.3"));
-		assertIsDmsUpdatable(v("2.2.2"), v("02.02.03"));
-		assertIsDmsUpdatable(v("2.2.2"), v("2.2.2.1"));
-		assertIsDmsUpdatable(v("2.2.2"), v("02.02.02.01"));
-
-		assertIsDmsUpdatable(v("2.2.2.2"), v("2.2.2.3"));
-		assertIsDmsUpdatable(v("2.2.2.2"), v("02.02.02.03"));
-		assertIsDmsUpdatable(v("2.2.2.2"), v("2.2.3.0"));
-		assertIsDmsUpdatable(v("2.2.2.2"), v("02.02.03.00"));
+	public void testParsing() {
+		// Real version numbers found in Windows registry of miscellaneous formats
+		assertEquals(new Version(2, 6, 0, 0), version("2.6.0 MT"));
+		assertEquals(new Version(2204, 0, 0, 0), version("2204"));
+		assertEquals(new Version(3, 0, 0, 0), version("3.0"));
+		assertEquals(new Version(17, 9, 20044, 0), version("17.009.20044.0"));
+		assertEquals(new Version(9, 0, 0, 2), version("9.0.0.2", true));
+		assertEquals(new Version(9, 64, 108, 3899), version("9.40.6C.F3b", true));
+		assertEquals(new Version(0, 0, 0, 0), version("DC"));
+		assertEquals(new Version(3, 0, 5, 0), version("3.0.5"));
+		assertEquals(new Version(2, 6, 3, 8518), version("2.6.3.8518"));
+		assertEquals(new Version(2, 6, 3, 34072), version("2.6.3.8518", true));
+		assertEquals(new Version(1, 0, 3705, 0), version("v1.0.3705"));
+		assertEquals(1, version("v1.0.3705").getMajor());
+		assertEquals("v1", version("v1.0.3705").getMajorString());
+		assertEquals(new Version(1, 0, 14085, 0), version("v1.0.3705", true));
+		assertEquals(new Version(1, 8, 477, 0), version("001.008.00477"));
+		assertEquals(new Version(1, 8, 1143, 0), version("001.008.00477", true));
+		assertEquals(new Version(1, 8, 0, 131), version("1.8.0_131-b11"));
+		assertEquals("-b11", version("1.8.0_131-b11").getTextSuffix());
+		assertEquals(new Version(13, 0, 0, 206), version("13,0,0,206"));
+		assertEquals(new Version(2012, 12, 14, 11), version("v2012.12.14.11"));
+		assertEquals("v2012", version("v2012.12.14.11").getMajorString());
+		assertEquals(new Version(12, 0, 7601, 23517), version("12,0,7601,23517"));
+		assertEquals(new Version(54, 0, 1, 0), version("54.0.1 (x86 nb-NO)"));
+		assertEquals("(x86 nb-NO)", version("54.0.1 (x86 nb-NO)").getTextSuffix());
+		assertEquals(new Version(23, 169, 192756, 0), version("17.0a9.2f0f4.0-SNAPSHOT", true));
+		assertEquals("-SNAPSHOT", version("17.0a9.2f0f4.0-SNAPSHOT", true).getTextSuffix());
 	}
 
 	@Test
-	public void testIsNotDmsUpdatable() {
-		assertIsNotDmsUpdatable(v("2"), v("1"));
-		assertIsNotDmsUpdatable(v("2"), v("01"));
-		assertIsNotDmsUpdatable(v("2"), v("1.0"));
-		assertIsNotDmsUpdatable(v("2"), v("01.00"));
-		assertIsNotDmsUpdatable(v("2"), v("1.0.0"));
-		assertIsNotDmsUpdatable(v("2"), v("01.00.00"));
-		assertIsNotDmsUpdatable(v("2"), v("1.0.0.0"));
-		assertIsNotDmsUpdatable(v("2"), v("01.00.00.00"));
-
-		assertIsNotDmsUpdatable(v("2.2"), v("1"));
-		assertIsNotDmsUpdatable(v("2.2"), v("01"));
-		assertIsNotDmsUpdatable(v("2.2"), v("1.0"));
-		assertIsNotDmsUpdatable(v("2.2"), v("01.00"));
-		assertIsNotDmsUpdatable(v("2.2"), v("1.0.0"));
-		assertIsNotDmsUpdatable(v("2.2"), v("01.00.00"));
-		assertIsNotDmsUpdatable(v("2.2"), v("1.0.0.0"));
-		assertIsNotDmsUpdatable(v("2.2"), v("01.00.00.00"));
-
-		assertIsNotDmsUpdatable(v("2.2"), v("2.1"));
-		assertIsNotDmsUpdatable(v("2.2"), v("02.01"));
-		assertIsNotDmsUpdatable(v("2.2"), v("2.1.0"));
-		assertIsNotDmsUpdatable(v("2.2"), v("02.01.00"));
-		assertIsNotDmsUpdatable(v("2.2"), v("2.1.0.0"));
-		assertIsNotDmsUpdatable(v("2.2"), v("02.01.00.00"));
-
-		assertIsNotDmsUpdatable(v("2.2.2"), v("1"));
-		assertIsNotDmsUpdatable(v("2.2.2"), v("01"));
-		assertIsNotDmsUpdatable(v("2.2.2"), v("1.0"));
-		assertIsNotDmsUpdatable(v("2.2.2"), v("01.00"));
-		assertIsNotDmsUpdatable(v("2.2.2"), v("1.0.0"));
-		assertIsNotDmsUpdatable(v("2.2.2"), v("01.00.00"));
-		assertIsNotDmsUpdatable(v("2.2.2"), v("1.0.0.0"));
-		assertIsNotDmsUpdatable(v("2.2.2"), v("01.00.00.00"));
-
-		assertIsNotDmsUpdatable(v("2.2.2"), v("2.1.0"));
-		assertIsNotDmsUpdatable(v("2.2.2"), v("02.01.00"));
-		assertIsNotDmsUpdatable(v("2.2.2"), v("2.1.0.0"));
-		assertIsNotDmsUpdatable(v("2.2.2"), v("02.01.00.00"));
-
-		assertIsNotDmsUpdatable(v("2.2.2.2"), v("1"));
-		assertIsNotDmsUpdatable(v("2.2.2.2"), v("01"));
-		assertIsNotDmsUpdatable(v("2.2.2.2"), v("1.0"));
-		assertIsNotDmsUpdatable(v("2.2.2.2"), v("01.00"));
-		assertIsNotDmsUpdatable(v("2.2.2.2"), v("1.0.0"));
-		assertIsNotDmsUpdatable(v("2.2.2.2"), v("01.00.00"));
-		assertIsNotDmsUpdatable(v("2.2.2.2"), v("1.0.0.0"));
-		assertIsNotDmsUpdatable(v("2.2.2.2"), v("01.00.00.00"));
-
-		assertIsNotDmsUpdatable(v("2.2.2.2"), v("2.1"));
-		assertIsNotDmsUpdatable(v("2.2.2.2"), v("02.01"));
-		assertIsNotDmsUpdatable(v("2.2.2.2"), v("2.1.0"));
-		assertIsNotDmsUpdatable(v("2.2.2.2"), v("02.01.00"));
-		assertIsNotDmsUpdatable(v("2.2.2.2"), v("2.1.0.0"));
-		assertIsNotDmsUpdatable(v("2.2.2.2"), v("02.01.00.00"));
+	public void testElements() {
+		assertArrayEquals(new int[] {2, 6, 0}, version("2.6.0 MT").getElementValues());
+		assertArrayEquals(new int[] {2, 6}, version("2.6.0 MT").getCanonicalElements());
+		assertArrayEquals(new String[] {"2", "6", "0"}, version("2.6.0 MT").getElements());
+		assertArrayEquals(new int[] {17, 9, 20044, 0}, version("17.009.20044.0").getElementValues());
+		assertArrayEquals(new int[] {17, 9, 20044}, version("17.009.20044.0").getCanonicalElements());
+		assertArrayEquals(new String[] {"17", "009", "20044", "0"}, version("17.009.20044.0").getElements());
+		assertArrayEquals(new int[] {17, 9, 20044, 0, 5, 9, 17}, version("v17.009.20044.0.5,9,17").getElementValues());
+		assertArrayEquals(new int[] {17, 9, 20044, 0, 5, 9, 17}, version("v17.009.20044.0.5,9,17").getCanonicalElements());
+		assertArrayEquals(new String[] {"v17", "009", "20044", "0", "5", "9", "17"}, version("v17.009.20044.0.5,9,17").getElements());
+		assertArrayEquals(new int[] {9, 64, 108, 3899}, version("9.40.6C.F3b", true).getElementValues());
+		assertArrayEquals(new int[] {9, 64, 108, 3899}, version("9.40.6C.F3b", true).getCanonicalElements());
+		assertArrayEquals(new String[] {"9", "40", "6C", "F3b"}, version("9.40.6C.F3b", true).getElements());
+		assertArrayEquals(new int[] {9, 64}, version("9.40.0.0.0", true).getCanonicalElements());
 	}
 }
