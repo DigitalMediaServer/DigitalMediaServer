@@ -704,21 +704,6 @@ public class PMS {
 			}
 		}
 
-		// Check if VLC is found
-		String vlcVersion = registry.getVlcVersion();
-		String vlcPath = registry.getVlcPath().toString();
-
-		if (vlcVersion != null && vlcPath != null) {
-			LOGGER.info("Found VLC version " + vlcVersion + " at: " + vlcPath);
-
-			Version vlc = new Version(vlcVersion);
-			Version requiredVersion = new Version("2.0.2");
-
-			if (vlc.compareTo(requiredVersion) <= 0) {
-				LOGGER.error("Only VLC versions 2.0.2 and above are supported");
-			}
-		}
-
 		// Check if Kerio is installed
 		if (registry.isKerioFirewall()) {
 			LOGGER.info("Detected Kerio firewall");

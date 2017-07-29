@@ -31,6 +31,7 @@ import java.io.IOException;
 import java.nio.CharBuffer;
 import java.nio.file.Paths;
 import net.pms.io.SimpleProcessWrapper.SimpleProcessWrapperResult;
+import net.pms.util.Version;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -237,7 +238,7 @@ public class WinUtils extends BasicSystemUtils {
 				}
 			}
 			vlcPath = Paths.get(Advapi32Util.registryGetStringValue(WinReg.HKEY_LOCAL_MACHINE, key, ""));
-			vlcVersion = Advapi32Util.registryGetStringValue(WinReg.HKEY_LOCAL_MACHINE, key, "Version");
+			vlcVersion = new Version(Advapi32Util.registryGetStringValue(WinReg.HKEY_LOCAL_MACHINE, key, "Version"));
 		} catch (Win32Exception e) {
 			LOGGER.debug("Could not get VLC information from Windows registry: {}", e.getMessage());
 			LOGGER.trace("", e);

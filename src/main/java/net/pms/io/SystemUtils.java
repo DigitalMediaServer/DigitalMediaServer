@@ -5,6 +5,7 @@ import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.nio.file.Path;
 import net.pms.newgui.LooksFrame;
+import net.pms.util.Version;
 
 public interface SystemUtils {
 
@@ -22,7 +23,7 @@ public interface SystemUtils {
 
 	public abstract Path getVlcPath();
 
-	public abstract String getVlcVersion();
+	public abstract Version getVlcVersion();
 
 	public abstract boolean isAvis();
 

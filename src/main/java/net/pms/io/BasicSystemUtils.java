@@ -33,6 +33,7 @@ import net.pms.Messages;
 import net.pms.PMS;
 import net.pms.newgui.LooksFrame;
 import net.pms.util.PropertiesUtil;
+import net.pms.util.Version;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,7 +46,7 @@ public class BasicSystemUtils implements SystemUtils {
 	private final static Logger LOGGER = LoggerFactory.getLogger(BasicSystemUtils.class);
 
 	protected Path vlcPath;
-	protected String vlcVersion;
+	protected Version vlcVersion;
 	protected boolean avis;
 
 	@Override
@@ -84,7 +85,7 @@ public class BasicSystemUtils implements SystemUtils {
 	}
 
 	@Override
-	public String getVlcVersion() {
+	public Version getVlcVersion() {
 		return vlcVersion;
 	}
 

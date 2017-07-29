@@ -20,6 +20,7 @@
 package net.pms.encoders;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import com.sun.jna.Platform;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -47,6 +48,8 @@ import net.pms.io.SystemUtils;
 import net.pms.util.FilePermissions;
 import net.pms.util.FileUtil;
 import net.pms.util.StringUtil;
+import net.pms.util.Version;
+import net.pms.util.Version.WindowsVersionType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -616,7 +619,7 @@ public final class PlayerFactory {
 
 		for (PlayerTestRecord testRecord : TEST_RECORDS) {
 			if (executable.equals(testRecord.executable)) {
-				player.setAvailable(testRecord.pass, executableType, testRecord.status);
+				player.setAvailable(testRecord.pass, executableType, testRecord.version, testRecord.errorText);
 				return true;
 			}
 		}
@@ -624,64 +627,59 @@ public final class PlayerFactory {
 		// Return true if a test is performed and availability is set
 		if (player instanceof FFMpegVideo || player instanceof FFmpegDVRMSRemux) {
 			final String arg = "-version";
-			String status = null;
+			boolean available;
+			String errorText = null;
+			Version version = null;
 			try {
 				SimpleProcessWrapperResult result = SimpleProcessWrapper.runProcess(executable.toString(), arg);
 				if (result.getExitCode() == 0) {
 					if (result.getOutput() != null && result.getOutput().size() > 0) {
 						Pattern pattern = Pattern.compile("^ffmpeg version\\s+(.*?)\\s+Copyright", Pattern.CASE_INSENSITIVE);
 						Matcher matcher = pattern.matcher(result.getOutput().get(0));
-						if (matcher.find()) {
-							status = matcher.group(1);
-							player.setAvailable(executableType, status);
-						} else {
-							player.setAvailable(executableType, null);
+						if (matcher.find() && isNotBlank(matcher.group(1))) {
+							version = new Version(matcher.group(1));
 						}
-					} else {
-						player.setAvailable(executableType, null);
 					}
+					available = true;
 				} else {
 					if (result.getOutput().size() > 2) {
-						status =
+						errorText =
 							String.format(Messages.getString("Engine.Error"), player) + " \n" +
 							result.getOutput().get(result.getOutput().size() - 2) + " " +
 							result.getOutput().get(result.getOutput().size() - 1);
-						player.setUnavailable(executableType, status);
 					} else if (result.getOutput().size() > 1) {
-						status =
+						errorText =
 							String.format(Messages.getString("Engine.Error"), player) + " \n" +
 							result.getOutput().get(result.getOutput().size() - 1);
-						player.setUnavailable(executableType, status);
 					} else {
-						status = String.format(Messages.getString("Engine.Error"), player) + Messages.getString("General.3");
-						player.setUnavailable(executableType, status);
+						errorText = String.format(Messages.getString("Engine.Error"), player) + Messages.getString("General.3");
 					}
+					available = false;
 				}
 			} catch (IOException e) {
 				LOGGER.debug("\"{} {}\" ({}) failed with error: {}", executable, arg, executableType, e.getMessage());
-				status = String.format(Messages.getString("Engine.Error"), player) + " \n" + e.getMessage();
-				player.setUnavailable(executableType, status);
+				errorText = String.format(Messages.getString("Engine.Error"), player) + " \n" + e.getMessage();
+				available = false;
 			}
-			TEST_RECORDS.add(new PlayerTestRecord(executable, player.isAvailable(executableType) , status));
+			player.setAvailable(available, executableType, version, errorText);
+			TEST_RECORDS.add(new PlayerTestRecord(executable, available, version, errorText));
 			return true;
 		} else if (player instanceof MEncoderVideo || player instanceof MEncoderWebVideo) {
 			final String arg = "-info:help";
-			String status = null;
+			boolean available;
+			String errorText = null;
+			Version version = null;
 			try {
 				SimpleProcessWrapperResult result = SimpleProcessWrapper.runProcess(executable.toString(), arg);
 				if (result.getExitCode() == 0) {
 					if (result.getOutput() != null && result.getOutput().size() > 0) {
 						Pattern pattern = Pattern.compile("^MEncoder\\s+(.*?)\\s+\\(C\\)", Pattern.CASE_INSENSITIVE);
 						Matcher matcher = pattern.matcher(result.getOutput().get(0));
-						if (matcher.find()) {
-							status = matcher.group(1);
-							player.setAvailable(executableType, status);
-						} else {
-							player.setAvailable(executableType, null);
+						if (matcher.find() && isNotBlank(matcher.group(1))) {
+							version = new Version(matcher.group(1));
 						}
-					} else {
-						player.setAvailable(executableType, null);
 					}
+					available = true;
 				} else {
 					if (result.getOutput() != null &&
 						result.getOutput().size() > 3 &&
@@ -689,113 +687,147 @@ public final class PlayerFactory {
 						!StringUtil.hasValue(result.getOutput().get(result.getOutput().size() - 2)) &&
 						StringUtil.hasValue(result.getOutput().get(result.getOutput().size() - 3))
 					) {
-						status =
+						errorText =
 							String.format(Messages.getString("Engine.Error"), player) + " \n" +
 							result.getOutput().get(result.getOutput().size() - 3);
-						player.setUnavailable(executableType, status);
 					} else {
-						status = String.format(Messages.getString("Engine.Error"), player) + Messages.getString("General.3");
-						player.setUnavailable(executableType, status);
+						errorText = String.format(Messages.getString("Engine.Error"), player) + Messages.getString("General.3");
 					}
+					available = false;
 				}
 			} catch (IOException e) {
 				LOGGER.debug("\"{} {}\" ({}) failed with error: {}", executable, arg, executableType, e.getMessage());
-				status = String.format(Messages.getString("Engine.Error"), player) + " \n" + e.getMessage();
-				player.setUnavailable(executableType, status);
+				errorText = String.format(Messages.getString("Engine.Error"), player) + " \n" + e.getMessage();
+				available = false;
 			}
-			TEST_RECORDS.add(new PlayerTestRecord(executable, player.isAvailable(executableType), status));
+			player.setAvailable(available, executableType, version, errorText);
+			TEST_RECORDS.add(new PlayerTestRecord(executable, available, version, errorText));
 			return true;
 		} else if (player instanceof TsMuxeRVideo) {
 			final String arg = "-v";
-			String status = null;
+			boolean available;
+			String errorText = null;
+			Version version = null;
 			try {
 				SimpleProcessWrapperResult result = SimpleProcessWrapper.runProcess(executable.toString(), arg);
 				if (result.getExitCode() == 0) {
 					if (result.getOutput() != null && result.getOutput().size() > 0) {
 						Pattern pattern = Pattern.compile("tsMuxeR\\.\\s+Version\\s(\\S+)\\s+", Pattern.CASE_INSENSITIVE);
 						Matcher matcher = pattern.matcher(result.getOutput().get(0));
-						if (matcher.find()) {
-							status = matcher.group(1);
-							player.setAvailable(executableType, status);
-						} else {
-							player.setAvailable(executableType, null);
+						if (matcher.find() && isNotBlank(matcher.group(1))) {
+							version = new Version(matcher.group(1));
 						}
-					} else {
-						player.setAvailable(executableType, null);
 					}
+					available = true;
 				} else {
-					status = String.format(Messages.getString("Engine.ExitCode"), player, result.getExitCode());
+					errorText = String.format(Messages.getString("Engine.ExitCode"), player, result.getExitCode());
 					if (Platform.isLinux() && Platform.is64Bit()) {
-						status += ". \n" + Messages.getString("Engine.tsMuxerErrorLinux");
+						errorText += ". \n" + Messages.getString("Engine.tsMuxerErrorLinux");
 					}
-					player.setUnavailable(executableType, status);
+					available = false;
 				}
 			} catch (IOException e) {
 				LOGGER.debug("\"{} {}\" ({}) failed with error: {}", executable, arg, executableType, e.getMessage());
-				status = String.format(Messages.getString("Engine.Error"), player) + " \n" + e.getMessage();
-				player.setUnavailable(executableType, status);
+				errorText = String.format(Messages.getString("Engine.Error"), player) + " \n" + e.getMessage();
+				available = false;
 			}
-			TEST_RECORDS.add(new PlayerTestRecord(executable, player.isAvailable(executableType), status));
+			player.setAvailable(available, executableType, version, errorText);
+			TEST_RECORDS.add(new PlayerTestRecord(executable, available, version, errorText));
 			return true;
 		} else if (player instanceof DCRaw) {
-			String status = null;
+			boolean available;
+			String errorText = null;
+			Version version = null;
 			try {
 				SimpleProcessWrapperResult result = SimpleProcessWrapper.runProcess(executable.toString());
 				if (result.getOutput() != null && isBlank(result.getOutput().get(0))) {
 					if (result.getOutput().size() > 1) {
 						Pattern pattern = Pattern.compile("decoder\\s\"dcraw\"\\s(\\S+)", Pattern.CASE_INSENSITIVE);
 						Matcher matcher = pattern.matcher(result.getOutput().get(1));
-						if (matcher.find()) {
-							status = matcher.group(1);
-							player.setAvailable(executableType, status);
-						} else {
-							player.setAvailable(executableType, null);
+						if (matcher.find() && isNotBlank(matcher.group(1))) {
+							version = new Version(matcher.group(1));
 						}
-					} else {
-						player.setAvailable(executableType, null);
 					}
+					available = true;
 				} else if (result.getOutput() != null && result.getOutput().size() > 0) {
-					status =
-						String.format(Messages.getString("Engine.Error"), player) + " \n" +
-						result.getOutput().get(0);
-					player.setUnavailable(executableType, status);
+					errorText = String.format(Messages.getString("Engine.Error"), player) + " \n" + result.getOutput().get(0);
+					available = false;
 				} else {
-					status = String.format(Messages.getString("Engine.Error"), player) + Messages.getString("General.3");
-					player.setUnavailable(executableType, status);
+					errorText = String.format(Messages.getString("Engine.Error"), player) + Messages.getString("General.3");
+					available = false;
 				}
 			} catch (IOException e) {
 				LOGGER.debug("\"{}\" ({}) failed with error: {}", executable, executableType, e.getMessage());
-				status = String.format(Messages.getString("Engine.Error"), player) + " \n" + e.getMessage();
-				player.setUnavailable(executableType, status);
+				errorText = String.format(Messages.getString("Engine.Error"), player) + " \n" + e.getMessage();
+				available = false;
 			}
-			TEST_RECORDS.add(new PlayerTestRecord(executable, player.isAvailable(executableType), status));
+			player.setAvailable(available, executableType, version, errorText);
+			TEST_RECORDS.add(new PlayerTestRecord(executable, available, version, errorText));
+			return true;
+		} else if (player instanceof VLCVideo) {
+			boolean available;
+			String errorText = null;
+			Version version = null;
+			if (Platform.isWindows()) {
+				SystemUtils systemUtils = PMS.get().getRegistry();
+				if (executable.toString().equals(systemUtils.getVlcPath())) {
+					version = systemUtils.getVlcVersion();
+				} else {
+					version = Version.getWindowsFileVersion(executable, WindowsVersionType.PRODUCT_VERSION_FIRST);
+				}
+				available = true;
+			} else {
+				final String arg = "--version";
+				try {
+					SimpleProcessWrapperResult result = SimpleProcessWrapper.runProcess(executable.toString(), arg);
+					if (result.getExitCode() == 0) {
+						if (result.getOutput() != null && result.getOutput().size() > 0) {
+							Pattern pattern = Pattern.compile("VLC version\\s+[^\\(]*\\(([^\\)]*)", Pattern.CASE_INSENSITIVE);
+							Matcher matcher = pattern.matcher(result.getOutput().get(0));
+							if (matcher.find() && isNotBlank(matcher.group(1))) {
+								version = new Version(matcher.group(1));
+							}
+						}
+						available = true;
+					} else {
+						errorText = String.format(Messages.getString("Engine.ExitCode"), player, result.getExitCode());
+						available = false;
+					}
+				} catch (IOException e) {
+					LOGGER.debug("\"{} {}\" ({}) failed with error: {}", executable, arg, executableType, e.getMessage());
+					errorText = String.format(Messages.getString("Engine.Error"), player) + " \n" + e.getMessage();
+					available = false;
+				}
+			}
+			if (version != null) {
+				Version requiredVersion = new Version("2.0.2");
+				if (version.compareTo(requiredVersion) <= 0) {
+					errorText = String.format(Messages.getString("Engine.VersionTooLow"), requiredVersion, player);
+					available = false;
+					LOGGER.warn(String.format(Messages.getRootString("Engine.VersionTooLow"), requiredVersion, player));
+				}
+			} else if (available) {
+				LOGGER.warn("Could not parse VLC version, the version might be too low (< 2.0.2)");
+			}
+			player.setAvailable(available, executableType, version, errorText);
+			TEST_RECORDS.add(new PlayerTestRecord(executable, available, version, errorText));
 			return true;
 		}
-		// No test has been made for VLC, found no way to get feedback on stdout: https://forum.videolan.org/viewtopic.php?t=73665
 
 		return false;
-	}
-
-	/**
-	 * @deprecated Use {@link #getPlayers(DLNAResource)} instead.
-	 *
-	 * @param resource the resource to match
-	 * @return The list of players if a match could be found, null otherwise.
-	 */
-	@Deprecated
-	public static ArrayList<Player> getEnabledPlayers(final DLNAResource resource) {
-		return getPlayers(resource);
 	}
 
 	private static class PlayerTestRecord {
 		public final Path executable;
 		public final boolean pass;
-		public final String status;
+		public final Version version;
+		public final String errorText;
 
-		public PlayerTestRecord(Path executable, boolean pass, String status) {
+		public PlayerTestRecord(Path executable, boolean pass, Version version, String errorText) {
 			this.executable = executable;
 			this.pass = pass;
-			this.status = status;
+			this.version = version;
+			this.errorText = errorText;
 		}
 	}
 }

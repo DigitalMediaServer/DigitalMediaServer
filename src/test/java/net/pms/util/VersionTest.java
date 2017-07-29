@@ -24,11 +24,11 @@ import static org.junit.Assert.assertTrue;
 import org.junit.Test;
 
 public class VersionTest {
-	private final Version v(String version) {
+	private final static Version v(String version) {
 		return new Version(version);
 	}
 
-	private void assertVersionEquals(Version v1, Version v2) {
+	private static void assertVersionEquals(Version v1, Version v2) {
 		// non-nullity
 		assertFalse(v1 == null);
 		assertFalse(v2 == null);
@@ -71,7 +71,7 @@ public class VersionTest {
 		assertTrue(v2.isLessThanOrEqualTo(v1));
 	}
 
-	private void assertVersionIsGreaterThan(Version v1, Version v2) {
+	private static void assertVersionIsGreaterThan(Version v1, Version v2) {
 		assertTrue(v1.isGreaterThan(v2));
 		assertFalse(v2.isGreaterThan(v1));
 
@@ -91,19 +91,7 @@ public class VersionTest {
 		assertThat(v2.hashCode()).isNotEqualTo(v1.hashCode());
 	}
 
-	private void assertIsDmsUpdatable(Version v1, Version v2) {
-		assertVersionIsGreaterThan(v2, v1);
-		assertTrue(Version.isDmsUpdatable(v1, v2));
-		assertFalse(Version.isDmsUpdatable(v2, v1));
-	}
-
-	private void assertIsNotDmsUpdatable(Version v1, Version v2) {
-		assertVersionIsGreaterThan(v1, v2);
-		assertFalse(Version.isDmsUpdatable(v1, v2));
-		assertTrue(Version.isDmsUpdatable(v2, v1));
-	}
-
-	private void assertVersionToStringEquals(Version v, String s) {
+	private static void assertVersionToStringEquals(Version v, String s) {
 		assertThat(v.toString()).isEqualTo(s);
 	}
 
@@ -128,21 +116,8 @@ public class VersionTest {
 
 	@Test
 	public void testToString() {
-		assertVersionToStringEquals(v(""), "0");
-		assertVersionToStringEquals(v("foo"), "0");
-		assertVersionToStringEquals(v("0"), "0");
-		assertVersionToStringEquals(v("0.0"), "0.0");
-		assertVersionToStringEquals(v("1"), "1");
-		assertVersionToStringEquals(v("1.2"), "1.2");
-		assertVersionToStringEquals(v("1.2.3"), "1.2.3");
-		assertVersionToStringEquals(v("1.2.3.4"), "1.2.3.4");
-		assertVersionToStringEquals(v("foo.1"), "0.1");
-		assertVersionToStringEquals(v("1.foo"), "1.0");
-		assertVersionToStringEquals(v("1.2-foo"), "1.0");
-		assertVersionToStringEquals(v("1.foo-2"), "1.0");
-		assertVersionToStringEquals(v("1.2-foo-2"), "1.0");
-		assertVersionToStringEquals(v("foo.42.bar"), "0.42.0");
-		assertVersionToStringEquals(v("foo-1.42.1-bar"), "0.42.0");
+		assertVersionToStringEquals(v(""), "");
+		assertVersionToStringEquals(v("foo"), "foo");
 	}
 
 	@Test
@@ -165,14 +140,14 @@ public class VersionTest {
 		assertVersionEquals(v("foo"), v("0.0.0.0"));
 		assertVersionEquals(v("foo"), v("00.00.00.00"));
 
-		assertVersionEquals(v("1foo2"), v("0"));
-		assertVersionEquals(v("1foo2"), v("00"));
-		assertVersionEquals(v("1foo2"), v("0.0"));
-		assertVersionEquals(v("1foo2"), v("00.00"));
-		assertVersionEquals(v("1foo2"), v("0.0.0"));
-		assertVersionEquals(v("1foo2"), v("00.00.00"));
-		assertVersionEquals(v("1foo2"), v("0.0.0.0"));
-		assertVersionEquals(v("1foo2"), v("00.00.00.00"));
+		assertVersionEquals(v("1foo2"), v("1"));
+		assertVersionEquals(v("1foo2"), v("01"));
+		assertVersionEquals(v("1foo2"), v("1.0"));
+		assertVersionEquals(v("1foo2"), v("01.00"));
+		assertVersionEquals(v("1foo2"), v("1.0.0"));
+		assertVersionEquals(v("1foo2"), v("01.00.00"));
+		assertVersionEquals(v("1foo2"), v("1.0.0.0"));
+		assertVersionEquals(v("1foo2"), v("01.00.00.00"));
 
 		assertVersionEquals(v("2"), v("2"));
 		assertVersionEquals(v("2"), v("02"));
@@ -288,86 +263,5 @@ public class VersionTest {
 		assertThat(v("1.2").getBuild()).isEqualTo(0);
 		assertThat(v("1.2.3").getBuild()).isEqualTo(0);
 		assertThat(v("1.2.3.4").getBuild()).isEqualTo(4);
-	}
-
-	@Test
-	public void testIsDmsUpdatable() {
-		assertIsDmsUpdatable(v("2"), v("2.0.1"));
-		assertIsDmsUpdatable(v("2"), v("02.00.01"));
-		assertIsDmsUpdatable(v("2"), v("2.0.1.0"));
-		assertIsDmsUpdatable(v("2"), v("02.00.01.00"));
-
-		assertIsDmsUpdatable(v("2.2"), v("2.2.1"));
-		assertIsDmsUpdatable(v("2.2"), v("02.02.01"));
-		assertIsDmsUpdatable(v("2.2"), v("2.2.0.1"));
-		assertIsDmsUpdatable(v("2.2"), v("02.02.00.01"));
-
-		assertIsDmsUpdatable(v("2.2.2"), v("2.2.3"));
-		assertIsDmsUpdatable(v("2.2.2"), v("02.02.03"));
-		assertIsDmsUpdatable(v("2.2.2"), v("2.2.2.1"));
-		assertIsDmsUpdatable(v("2.2.2"), v("02.02.02.01"));
-
-		assertIsDmsUpdatable(v("2.2.2.2"), v("2.2.2.3"));
-		assertIsDmsUpdatable(v("2.2.2.2"), v("02.02.02.03"));
-		assertIsDmsUpdatable(v("2.2.2.2"), v("2.2.3.0"));
-		assertIsDmsUpdatable(v("2.2.2.2"), v("02.02.03.00"));
-	}
-
-	@Test
-	public void testIsNotDmsUpdatable() {
-		assertIsNotDmsUpdatable(v("2"), v("1"));
-		assertIsNotDmsUpdatable(v("2"), v("01"));
-		assertIsNotDmsUpdatable(v("2"), v("1.0"));
-		assertIsNotDmsUpdatable(v("2"), v("01.00"));
-		assertIsNotDmsUpdatable(v("2"), v("1.0.0"));
-		assertIsNotDmsUpdatable(v("2"), v("01.00.00"));
-		assertIsNotDmsUpdatable(v("2"), v("1.0.0.0"));
-		assertIsNotDmsUpdatable(v("2"), v("01.00.00.00"));
-
-		assertIsNotDmsUpdatable(v("2.2"), v("1"));
-		assertIsNotDmsUpdatable(v("2.2"), v("01"));
-		assertIsNotDmsUpdatable(v("2.2"), v("1.0"));
-		assertIsNotDmsUpdatable(v("2.2"), v("01.00"));
-		assertIsNotDmsUpdatable(v("2.2"), v("1.0.0"));
-		assertIsNotDmsUpdatable(v("2.2"), v("01.00.00"));
-		assertIsNotDmsUpdatable(v("2.2"), v("1.0.0.0"));
-		assertIsNotDmsUpdatable(v("2.2"), v("01.00.00.00"));
-
-		assertIsNotDmsUpdatable(v("2.2"), v("2.1"));
-		assertIsNotDmsUpdatable(v("2.2"), v("02.01"));
-		assertIsNotDmsUpdatable(v("2.2"), v("2.1.0"));
-		assertIsNotDmsUpdatable(v("2.2"), v("02.01.00"));
-		assertIsNotDmsUpdatable(v("2.2"), v("2.1.0.0"));
-		assertIsNotDmsUpdatable(v("2.2"), v("02.01.00.00"));
-
-		assertIsNotDmsUpdatable(v("2.2.2"), v("1"));
-		assertIsNotDmsUpdatable(v("2.2.2"), v("01"));
-		assertIsNotDmsUpdatable(v("2.2.2"), v("1.0"));
-		assertIsNotDmsUpdatable(v("2.2.2"), v("01.00"));
-		assertIsNotDmsUpdatable(v("2.2.2"), v("1.0.0"));
-		assertIsNotDmsUpdatable(v("2.2.2"), v("01.00.00"));
-		assertIsNotDmsUpdatable(v("2.2.2"), v("1.0.0.0"));
-		assertIsNotDmsUpdatable(v("2.2.2"), v("01.00.00.00"));
-
-		assertIsNotDmsUpdatable(v("2.2.2"), v("2.1.0"));
-		assertIsNotDmsUpdatable(v("2.2.2"), v("02.01.00"));
-		assertIsNotDmsUpdatable(v("2.2.2"), v("2.1.0.0"));
-		assertIsNotDmsUpdatable(v("2.2.2"), v("02.01.00.00"));
-
-		assertIsNotDmsUpdatable(v("2.2.2.2"), v("1"));
-		assertIsNotDmsUpdatable(v("2.2.2.2"), v("01"));
-		assertIsNotDmsUpdatable(v("2.2.2.2"), v("1.0"));
-		assertIsNotDmsUpdatable(v("2.2.2.2"), v("01.00"));
-		assertIsNotDmsUpdatable(v("2.2.2.2"), v("1.0.0"));
-		assertIsNotDmsUpdatable(v("2.2.2.2"), v("01.00.00"));
-		assertIsNotDmsUpdatable(v("2.2.2.2"), v("1.0.0.0"));
-		assertIsNotDmsUpdatable(v("2.2.2.2"), v("01.00.00.00"));
-
-		assertIsNotDmsUpdatable(v("2.2.2.2"), v("2.1"));
-		assertIsNotDmsUpdatable(v("2.2.2.2"), v("02.01"));
-		assertIsNotDmsUpdatable(v("2.2.2.2"), v("2.1.0"));
-		assertIsNotDmsUpdatable(v("2.2.2.2"), v("02.01.00"));
-		assertIsNotDmsUpdatable(v("2.2.2.2"), v("2.1.0.0"));
-		assertIsNotDmsUpdatable(v("2.2.2.2"), v("02.01.00.00"));
 	}
 }

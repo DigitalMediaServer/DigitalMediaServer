@@ -23,9 +23,10 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.HashMap;
-import java.util.Map;
 import java.util.StringTokenizer;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import javax.annotation.concurrent.GuardedBy;
 import javax.annotation.concurrent.ThreadSafe;
 import javax.swing.JComponent;
@@ -46,6 +47,7 @@ import net.pms.util.FileUtil;
 import net.pms.util.Iso639;
 import net.pms.util.OpenSubtitle;
 import net.pms.util.UMSUtils;
+import net.pms.util.Version;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -93,7 +95,7 @@ public abstract class Player {
 	 * be guarded with {@link #availableLock}.
 	 */
 	@GuardedBy("availableLock")
-	private final Map<ProgramExecutableType, Boolean> available = new HashMap<>();
+	private final HashMap<ProgramExecutableType, Boolean> available = new HashMap<>();
 
 	/**
 	 * Used to store a localized error text if the the given
@@ -101,16 +103,16 @@ public abstract class Player {
 	 * access must be guarded with {@link #availableLock}.
 	 */
 	@GuardedBy("availableLock")
-	private final Map<ProgramExecutableType, String> errorText = new HashMap<>();
+	private final HashMap<ProgramExecutableType, String> errorText = new HashMap<>();
 
 	/**
-	 * Used to store the executable version if the given
+	 * Used to store the executable {@link Version} if the given
 	 * {@link ProgramExecutableType} for this {@link Player} is available and
 	 * the information could be parsed. All access must be guarded with
 	 * {@link #availableLock}.
 	 */
 	@GuardedBy("availableLock")
-	protected final Map<ProgramExecutableType, String> versionText = new HashMap<>();
+	protected final HashMap<ProgramExecutableType, Version> version = new HashMap<>();
 
 	/**
 	 * Must be used to control all access to {@link #enabled}
@@ -190,11 +192,13 @@ public abstract class Player {
 	}
 
 	/**
-	 * Used to determine if this {@link Player} can be used, e.g if the binary is
-	 * accessible for the given {@link ProgramExecutableType}.
+	 * Checks whether this {@link Player} can be used, e.g if the binary is
+	 * accessible for the specified {@link ProgramExecutableType}.
 	 *
 	 * @param executableType the {@link ProgramExecutableType} to get the status
-	 *                       text for.
+	 *            text for.
+	 * @return {@code true} if this {@link Player} is both available,
+	 *         {@code false} otherwise.
 	 */
 	public boolean isAvailable(ProgramExecutableType executableType) {
 		if (executableType == null) {
@@ -210,8 +214,11 @@ public abstract class Player {
 	}
 
 	/**
-	 * Used to determine if the player can be used, e.g if the binary is
+	 * Checks whether this {@link Player} can be used, e.g if the binary is
 	 * accessible for the current {@link ProgramExecutableType}.
+	 *
+	 * @return {@code true} if this {@link Player} is both available,
+	 *         {@code false} otherwise.
 	 */
 	public boolean isAvailable() {
 		return isAvailable(currentExecutableType);
@@ -232,8 +239,8 @@ public abstract class Player {
 		availableLock.readLock().lock();
 		try {
 			if (isActive(executableType)) {
-				if (isNotBlank(versionText.get(executableType))) {
-					return String.format(enabledVersionText, name(), versionText.get(executableType));
+				if (version.get(executableType) != null) {
+					return String.format(enabledVersionText, name(), version.get(executableType));
 				}
 				return enabledText;
 			} else if (isAvailable()) {
@@ -257,44 +264,15 @@ public abstract class Player {
 	}
 
 	/**
-	 * Sets the engine available status and a related text. Note that
-	 * {@code statusText} has a "dual function".
-	 *
-	 * @param available whether or not the {@link Player} is available
-	 * @param executableType the {@link ProgramExecutableType} for which to set
-	 *                       availability.
-	 * @param statusText if {@code available} is {@code true}, the executable
-	 *            version or {@code null} the version if unknown. If
-	 *            {@code available} is {@code false}, a localized description of
-	 *            the current error.
-	 */
-	public void setAvailable(boolean available, ProgramExecutableType executableType, String statusText) {
-		if (executableType == null) {
-			throw new IllegalArgumentException("executableType cannot be null or unknown");
-		}
-		availableLock.writeLock().lock();
-		try {
-			this.available.put(executableType, Boolean.valueOf(available));
-			if (available) {
-				versionText.put(executableType, statusText);
-			} else {
-				errorText.put(executableType, statusText);
-			}
-		} finally {
-			availableLock.writeLock().unlock();
-		}
-	}
-
-	/**
 	 * Marks the engine as available for use.
 	 *
 	 * @param executableType the {@link ProgramExecutableType} for which to set
-	 *                       availability.
-	 * @param versionText the parsed version string for the executable, or
+	 *            availability.
+	 * @param version the {@link Version} string for the executable, or
 	 *            {@code null} if the version is unknown.
 	 */
-	public void setAvailable(ProgramExecutableType executableType, String versionText) {
-		setAvailable(true, executableType, versionText);
+	public void setAvailable(@Nonnull ProgramExecutableType executableType, @Nullable Version version) {
+		setAvailable(true, executableType, version, null);
 	}
 
 	/**
@@ -304,8 +282,60 @@ public abstract class Player {
 	 *                       availability.
 	 * @param errorText the localized error description.
 	 */
-	public void setUnavailable(ProgramExecutableType executableType, String errorText) {
-		setAvailable(false, executableType, errorText);
+	public void setUnavailable(@Nonnull ProgramExecutableType executableType, @Nullable String errorText) {
+		setAvailable(false, executableType, null, errorText);
+	}
+
+	/**
+	 * Marks the engine as unavailable for use.
+	 *
+	 * @param executableType the {@link ProgramExecutableType} for which to set
+	 *                       availability.
+	 * @param version the {@link Version} of the executable if known or
+	 *            {@code null} if unknown.
+	 * @param errorText the localized error description.
+	 */
+	public void setUnavailable(
+		@Nonnull ProgramExecutableType executableType,
+		@Nullable Version version,
+		@Nullable String errorText
+	) {
+		setAvailable(false, executableType, version, errorText);
+	}
+
+	/**
+	 * Sets the engine available status and a related text.
+	 *
+	 * @param available whether or not the {@link Player} is available
+	 * @param executableType the {@link ProgramExecutableType} for which to set
+	 *            availability.
+	 * @param version the {@link Version} of the executable if known or
+	 *            {@code null} if unknown.
+	 * @param errorText a localized description of the current error if
+	 *            {@code available} is {@code false}, or {@code null} if the
+	 *            executable is available.
+	 */
+	public void setAvailable(
+		boolean available,
+		@Nonnull ProgramExecutableType executableType,
+		@Nullable Version version,
+		@Nullable String errorText
+	) {
+		if (executableType == null) {
+			throw new IllegalArgumentException("executableType cannot be null or unknown");
+		}
+		availableLock.writeLock().lock();
+		try {
+			this.available.put(executableType, Boolean.valueOf(available));
+			if (isNotBlank(errorText)) {
+				this.errorText.put(executableType, errorText);
+			}
+			if (version != null) {
+				this.version.put(executableType, version);
+			}
+		} finally {
+			availableLock.writeLock().unlock();
+		}
 	}
 
 	/**
@@ -327,6 +357,8 @@ public abstract class Player {
 	 *
 	 * @param enabled {@code true} if this {@link Player} is enabled,
 	 *            {@code false} otherwise.
+	 * @param setConfiguration whether or not the enabled status should also be
+	 *            stored in the current {@link PmsConfiguration}.
 	 */
 	public void setEnabled(boolean enabled, boolean setConfiguration) {
 		enabledLock.writeLock().lock();
@@ -342,6 +374,9 @@ public abstract class Player {
 
 	/**
 	 * Toggles the enabled status for this {@link Player}.
+	 *
+	 * @param setConfiguration whether or not the enabled status should also be
+	 *            stored in the current {@link PmsConfiguration}.
 	 */
 	public void toggleEnabled(boolean setConfiguration) {
 		enabledLock.writeLock().lock();
@@ -357,22 +392,24 @@ public abstract class Player {
 
 	/**
 	 * Convenience method to check if this {@link Player} is both available and
-	 * enabled.
-	 *
-	 * @return {@code true} if this {@link Player} is both available and
-	 *         enabled, {@code false} otherwise.
-	 * for the given {@link ProgramExecutableType}.
+	 * enabled for the specified {@link ProgramExecutableType}.
 	 *
 	 * @param executableType the {@link ProgramExecutableType} for which to
-	 *                       check availability.
+	 *            check availability.
+	 * @return {@code true} if this {@link Player} is both available and
+	 *         enabled, {@code false} otherwise.
+	 *
 	 */
 	public boolean isActive(ProgramExecutableType executableType) {
 		return isAvailable(executableType) && isEnabled();
 	}
 
 	/**
-	 * Convenience method to check that a player is both available and enabled
-	 * for the current {@link ProgramExecutableType}.
+	 * Convenience method to check if this {@link Player} is both available and
+	 * enabled for the current {@link ProgramExecutableType}.
+	 *
+	 * @return {@code true} if this {@link Player} is both available and
+	 *         enabled, {@code false} otherwise.
 	 */
 	public boolean isActive() {
 		return isAvailable(currentExecutableType) && isEnabled();
