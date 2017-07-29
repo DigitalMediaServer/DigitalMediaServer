@@ -50,6 +50,7 @@ import net.pms.io.*;
 import net.pms.network.HTTPResource;
 import net.pms.newgui.GuiUtil;
 import net.pms.util.*;
+import net.pms.util.Version.WindowsVersionType;
 import org.apache.commons.lang3.StringUtils;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
@@ -717,6 +718,8 @@ public class VLCVideo extends Player {
 		if (Platform.isWindows()) {
 			if (executableInfo.getPath().isAbsolute() && executableInfo.getPath().equals(BasicSystemUtils.INSTANCE.getVlcPath())) {
 				result.version(BasicSystemUtils.INSTANCE.getVlcVersion());
+			} else {
+				result.version(Version.getWindowsFileVersion(executableInfo.getPath(), WindowsVersionType.PRODUCT_VERSION_FIRST));
 			}
 			result.available(Boolean.TRUE);
 		} else {
