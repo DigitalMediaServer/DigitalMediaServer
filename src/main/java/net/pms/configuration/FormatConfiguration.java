@@ -72,14 +72,18 @@ public class FormatConfiguration {
 	public static final String FLV = "flv";
 	public static final String G729 = "g729";
 	public static final String GIF = "gif";
+	public static final String H261 = "h261";
 	public static final String H263 = "h263";
 	public static final String H264 = "h264";
 	public static final String H265 = "h265";
 	public static final String HE_AAC = "he-aac";
 	public static final String ICNS = "icns";
 	public static final String ICO = "ico";
+	public static final String INDEO = "indeo";
 	public static final String ISO = "iso";
 	public static final String JPG = "jpg";
+	public static final String JPEG = "jpeg";
+	public static final String JPEG2000 = "jpeg2000";
 	public static final String LPCM = "lpcm";
 	public static final String M4A = "m4a";
 	public static final String MKV = "mkv";
@@ -115,6 +119,8 @@ public class FormatConfiguration {
 	public static final String RAW = "raw";
 	public static final String REALAUDIO_14_4 = "ra14.4";
 	public static final String REALAUDIO_28_8 = "ra28.8";
+	/** Used as a "video codec" when sequences of raw, uncompressed RGB or RGBA is used as a video stream in AVI, MP4 or MOV files */
+	public static final String RGB = "rgb";
 	public static final String RM = "rm";
 	public static final String SHORTEN = "shn";
 	public static final String SIPRO = "sipro";
@@ -143,11 +149,14 @@ public class FormatConfiguration {
 	public static final String WMAPRO = "wmapro";
 	public static final String WMAVOICE = "wmavoice";
 	public static final String WMV = "wmv";
+	/** Used as a "video codec" when sequences of raw, uncompressed YUV is used as a video stream in AVI, MP4 or MOV files */
+	public static final String YUV = "yuv";
 	public static final String MIMETYPE_AUTO = "MIMETYPE_AUTO";
 	public static final String und = "und";
 
 	private static class SupportSpec {
 		private int iMaxBitrate = Integer.MAX_VALUE;
+		private int iMaxFramerate = Integer.MAX_VALUE;
 		private int iMaxFrequency = Integer.MAX_VALUE;
 		private int iMaxNbChannels = Integer.MAX_VALUE;
 		private int iMaxVideoHeight = Integer.MAX_VALUE;
@@ -159,6 +168,7 @@ public class FormatConfiguration {
 		private String audioCodec;
 		private String format;
 		private String maxBitrate;
+		private String maxFramerate;
 		private String maxFrequency;
 		private String maxNbChannels;
 		private String maxVideoHeight;
@@ -214,6 +224,16 @@ public class FormatConfiguration {
 				}
 			}
 
+			if (maxFramerate != null) {
+				try {
+					iMaxFramerate = Integer.parseInt(maxFramerate);
+				} catch (NumberFormatException nfe) {
+					LOGGER.error("Error parsing maximum framerate \"{}\": {}", maxFramerate, nfe.getMessage());
+					LOGGER.trace("", nfe);
+					return false;
+				}
+			}
+
 			if (maxFrequency != null) {
 				try {
 					iMaxFrequency = Integer.parseInt(maxFrequency);
@@ -258,7 +278,7 @@ public class FormatConfiguration {
 		}
 
 		public boolean match(String container, String videoCodec, String audioCodec) {
-			return match(container, videoCodec, audioCodec, 0, 0, 0, 0, 0, null);
+			return match(container, videoCodec, audioCodec, 0, 0, 0, 0, 0, 0, null);
 		}
 
 		/**
@@ -270,9 +290,9 @@ public class FormatConfiguration {
 		 *
 		 * Supported = f:mp4 n:2
 		 *
-		 * match("mp4", null, null, 2, 0, 0, 0, 0, null) = true
-		 * match("mp4", null, null, 6, 0, 0, 0, 0, null) = false
-		 * match("wav", null, null, 2, 0, 0, 0, 0, null) = false
+		 * match("mp4", null, null, 2, 0, 0, 0, 0, 0, null) = true
+		 * match("mp4", null, null, 6, 0, 0, 0, 0, 0, null) = false
+		 * match("wav", null, null, 2, 0, 0, 0, 0, 0, null) = false
 		 *
 		 * @param format
 		 * @param videoCodec
@@ -280,6 +300,7 @@ public class FormatConfiguration {
 		 * @param nbAudioChannels
 		 * @param frequency
 		 * @param bitrate
+		 * @param framerate
 		 * @param videoWidth
 		 * @param videoHeight
 		 * @param extras
@@ -293,6 +314,7 @@ public class FormatConfiguration {
 			int nbAudioChannels,
 			int frequency,
 			int bitrate,
+			int framerate,
 			int videoWidth,
 			int videoHeight,
 			Map<String, String> extras
@@ -326,6 +348,11 @@ public class FormatConfiguration {
 				return false;
 			}
 
+			if (framerate > 0 && iMaxFramerate > 0 && framerate > iMaxFramerate) {
+				LOGGER.trace("Framerate \"{}\" failed to match support line {}", framerate, supportLine);
+				return false;
+			}
+
 			if (frequency > 0 && iMaxFrequency > 0 && frequency > iMaxFrequency) {
 				LOGGER.trace("Frequency \"{}\" failed to match support line {}", frequency, supportLine);
 				return false;
@@ -353,12 +380,12 @@ public class FormatConfiguration {
 					String value = extras.get(key).toLowerCase();
 
 					if (key.equals(MI_QPEL) && miExtras.get(MI_QPEL) != null && !miExtras.get(MI_QPEL).matcher(value).matches()) {
-						LOGGER.trace("Qpel value \"{}\" failed to match support line {}", miExtras.get(MI_QPEL), supportLine);
+						LOGGER.trace("QPel value \"{}\" failed to match support line {}", miExtras.get(MI_QPEL), supportLine);
 						return false;
 					}
 
 					if (key.equals(MI_GMC) && miExtras.get(MI_GMC) != null && !miExtras.get(MI_GMC).matcher(value).matches()) {
-						LOGGER.trace("Gmc value \"{}\" failed to match support line {}", miExtras.get(MI_GMC), supportLine);
+						LOGGER.trace("GMC value \"{}\" failed to match support line {}", miExtras.get(MI_GMC), supportLine);
 						return false;
 					}
 
@@ -457,7 +484,7 @@ public class FormatConfiguration {
 	// XXX Unused
 	@Deprecated
 	public boolean isHiFiMusicFileSupported() {
-		return match(WAV, null, null, 0, 96000, 0, 0, 0, null) != null || match(MP3, null, null, 0, 96000, 0, 0, 0, null) != null;
+		return match(WAV, null, null, 0, 96000, 0, 0, 0, 0, null) != null || match(MP3, null, null, 0, 96000, 0, 0, 0, 0, null) != null;
 	}
 
 	// XXX Unused
@@ -514,6 +541,14 @@ public class FormatConfiguration {
 	public String match(DLNAMediaInfo media) {
 		if (media.getFirstAudioTrack() == null) {
 			// no sound
+			int frameRate = 0;
+			if (StringUtils.isNotBlank(media.getFrameRate())) {
+				try {
+					frameRate = (int) Math.round(Double.parseDouble(media.getFrameRate()));
+				} catch (NumberFormatException e) {
+					LOGGER.debug("Could not parse the framerate: " + e);
+				}
+			}
 			return match(
 				media.getContainer(),
 				media.getCodecV(),
@@ -521,6 +556,7 @@ public class FormatConfiguration {
 				0,
 				0,
 				media.getBitrate(),
+				frameRate,
 				media.getWidth(),
 				media.getHeight(),
 				media.getExtras()
@@ -539,6 +575,14 @@ public class FormatConfiguration {
 			 * track needs to be checked.
 			 */
 			DLNAMediaAudio audio = media.getFirstAudioTrack();
+			int frameRate = 0;
+			if (StringUtils.isNotBlank(media.getFrameRate())) {
+				try {
+					frameRate = (int) Math.round(Double.parseDouble(media.getFrameRate()));
+				} catch (NumberFormatException e) {
+					LOGGER.debug("Could not parse the framerate: " + e);
+				}
+			}
 			return match(
 				media.getContainer(),
 				media.getCodecV(),
@@ -546,6 +590,7 @@ public class FormatConfiguration {
 				audio.getAudioProperties().getNumberOfChannels(),
 				audio.getSampleRate(),
 				audio.getBitRate(),
+				frameRate,
 				media.getWidth(),
 				media.getHeight(),
 				media.getExtras()
@@ -555,6 +600,14 @@ public class FormatConfiguration {
 		String finalMimeType = null;
 
 		for (DLNAMediaAudio audio : media.getAudioTracksList()) {
+			int frameRate = 0;
+			if (StringUtils.isNotBlank(media.getFrameRate())) {
+				try {
+					frameRate = (int) Math.round(Double.parseDouble(media.getFrameRate()));
+				} catch (NumberFormatException e) {
+					LOGGER.debug("Could not parse the framerate: " + e);
+				}
+			}
 			String mimeType = match(
 				media.getContainer(),
 				media.getCodecV(),
@@ -562,6 +615,7 @@ public class FormatConfiguration {
 				audio.getAudioProperties().getNumberOfChannels(),
 				audio.getSampleRate(),
 				media.getBitrate(),
+				frameRate,
 				media.getWidth(),
 				media.getHeight(),
 				media.getExtras()
@@ -587,6 +641,7 @@ public class FormatConfiguration {
 			0,
 			0,
 			0,
+			0,
 			null
 		);
 	}
@@ -598,6 +653,7 @@ public class FormatConfiguration {
 		int nbAudioChannels,
 		int frequency,
 		int bitrate,
+		int framerate,
 		int videoWidth,
 		int videoHeight,
 		Map<String, String> extras
@@ -612,6 +668,7 @@ public class FormatConfiguration {
 				nbAudioChannels,
 				frequency,
 				bitrate,
+				framerate,
 				videoWidth,
 				videoHeight,
 				extras
@@ -651,6 +708,8 @@ public class FormatConfiguration {
 				supportSpec.mimeType = token.substring(2).trim();
 			} else if (token.startsWith("b:")) {
 				supportSpec.maxBitrate = token.substring(2).trim();
+			} else if (token.startsWith("fps:")) {
+				supportSpec.maxFramerate = token.substring(4).trim();
 			} else if (token.contains(":")) {
 				// Extra MediaInfo stuff
 				if (supportSpec.miExtras == null) {
