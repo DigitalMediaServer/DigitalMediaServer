@@ -29,6 +29,7 @@ import org.apache.commons.configuration.ConfigurationException;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.LoggerFactory;
 
@@ -36,6 +37,11 @@ import org.slf4j.LoggerFactory;
  * Test the RendererConfiguration class
  */
 public class RendererConfigurationTest {
+	@BeforeClass
+	public static void SetUPClass() {
+		PMS.configureJNA();
+	}
+	
 	@Before
 	public void setUp() {
 		// Silence all log messages from the DMS code that is being tested
@@ -219,7 +225,7 @@ public class RendererConfigurationTest {
 	 * @param headerLines
 	 *            One or more raw header lines.
 	 */
-	private void testHeaders(String correctRendererName, String... headerLines) {
+	private static void testHeaders(String correctRendererName, String... headerLines) {
 		SortedHeaderMap headers = new SortedHeaderMap();
 		for (String header : headerLines) {
 			headers.put(header);
