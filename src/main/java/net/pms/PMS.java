@@ -19,6 +19,7 @@
 
 package net.pms;
 
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.LoggerContext;
 import com.sun.jna.Platform;
@@ -1129,8 +1130,27 @@ public class PMS {
 		boolean denyHeadless = false;
 		File profilePath = null;
 		CacheLogger.startCaching();
-		// Make sure that no other versions of JNA found on the system is used
-		System.setProperty("jna.nosys", "true");
+
+		// Set the JNA "jnidispatch" resolution
+		try {
+			if (
+				Platform.isWindows() &&
+				isNotBlank(System.getProperty("os.version")) &&
+				Double.parseDouble(System.getProperty("os.version")) < 5.1
+			) {
+				System.setProperty("jna.debug_load", "true");
+				System.setProperty("jna.boot.library.path", "WinXP;src\\main\\external-resources\\lib\\WinXP");
+			} else {
+				System.setProperty("jna.nosys", "true");
+			}
+		} catch (NullPointerException | NumberFormatException e) {
+			System.setProperty("jna.nosys", "true");
+			System.err.println(
+				"Could not determine Windows version from " +
+				System.getProperty("os.version") +
+				". Not applying Windows XP hack"
+			);
+		}
 
 		// Set headless options if given as a system property when launching the JVM
 		if (System.getProperty(CONSOLE, "").equalsIgnoreCase(Boolean.toString(true))) {
