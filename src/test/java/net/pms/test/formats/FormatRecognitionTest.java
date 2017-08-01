@@ -53,11 +53,14 @@ import org.slf4j.LoggerFactory;
  * Test the recognition of formats.
  */
 public class FormatRecognitionTest {
-	private final static boolean mediaInfoParserIsValid = LibMediaInfoParser.isValid();
+	private static boolean mediaInfoParserIsValid;
 	private final static PmsConfiguration configuration = new PmsConfiguration(false);
 
 	@BeforeClass
 	public static void setUpBeforeClass() throws ConfigurationException {
+		PMS.configureJNA();
+		mediaInfoParserIsValid = LibMediaInfoParser.isValid();
+
 		// Silence all log messages from the DMS code that is being tested
 		LoggerContext context = (LoggerContext) LoggerFactory.getILoggerFactory();
 		context.reset();
