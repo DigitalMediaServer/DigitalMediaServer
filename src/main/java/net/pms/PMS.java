@@ -1129,12 +1129,12 @@ public class PMS {
 		boolean displayProfileChooser = false;
 		boolean denyHeadless = false;
 		File profilePath = null;
-		CacheLogger.startCaching();
 
 		// Set the JNA "jnidispatch" resolution
 		try {
 			if (
-				Platform.isWindows() &&
+				System.getProperty("os.name") != null &&
+				System.getProperty("os.name").startsWith("Windows") &&
 				isNotBlank(System.getProperty("os.version")) &&
 				Double.parseDouble(System.getProperty("os.version")) < 5.1
 			) {
@@ -1151,6 +1151,9 @@ public class PMS {
 				". Not applying Windows XP hack"
 			);
 		}
+
+		// Start caching log messages until the logger is configured
+		CacheLogger.startCaching();
 
 		// Set headless options if given as a system property when launching the JVM
 		if (System.getProperty(CONSOLE, "").equalsIgnoreCase(Boolean.toString(true))) {
