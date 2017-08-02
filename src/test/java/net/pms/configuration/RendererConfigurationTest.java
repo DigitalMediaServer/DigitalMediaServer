@@ -29,16 +29,19 @@ import org.apache.commons.configuration.ConfigurationException;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.slf4j.LoggerFactory;
-import testclasses.CustomSuite;
 
 /**
  * Test the RendererConfiguration class
  */
-@RunWith(CustomSuite.class)
 public class RendererConfigurationTest {
+	@BeforeClass
+	public static void SetUPClass() {
+		PMS.configureJNA();
+	}
+	
 	@Before
 	public void setUp() {
 		// Silence all log messages from the DMS code that is being tested

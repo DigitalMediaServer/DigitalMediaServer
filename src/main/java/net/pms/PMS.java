@@ -1946,7 +1946,6 @@ public class PMS {
 				isNotBlank(System.getProperty("os.version")) &&
 				Double.parseDouble(System.getProperty("os.version")) < 5.2
 			) {
-				System.setProperty("jna.debug_load", "true");
 				String developmentPath = "src\\main\\external-resources\\lib\\WinXP";
 				if (new File(developmentPath).exists()) {
 					System.setProperty("jna.boot.library.path", developmentPath);
