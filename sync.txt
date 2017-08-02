@@ -1,4 +1,4 @@
-UMS sync with: 5ee34dfdef3c2ad707bffef491bfe16df3d906be Changed macOS menu name
+UMS sync with: bd4a2ee8f3c483660aa33d7d5bff87bb863d0360 Update the VieraTXLVE.conf
 
 Skipped:
 a4a099c7efcaf6dc8a28402a29eade757a2ce78d
