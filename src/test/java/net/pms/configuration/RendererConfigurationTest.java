@@ -30,11 +30,14 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.slf4j.LoggerFactory;
+import testclasses.CustomSuite;
 
 /**
  * Test the RendererConfiguration class
  */
+@RunWith(CustomSuite.class)
 public class RendererConfigurationTest {
 	@Before
 	public void setUp() {
@@ -219,7 +222,7 @@ public class RendererConfigurationTest {
 	 * @param headerLines
 	 *            One or more raw header lines.
 	 */
-	private void testHeaders(String correctRendererName, String... headerLines) {
+	private static void testHeaders(String correctRendererName, String... headerLines) {
 		SortedHeaderMap headers = new SortedHeaderMap();
 		for (String header : headerLines) {
 			headers.put(header);

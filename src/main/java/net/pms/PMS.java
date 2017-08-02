@@ -1130,27 +1130,8 @@ public class PMS {
 		boolean denyHeadless = false;
 		File profilePath = null;
 
-		// Set the JNA "jnidispatch" resolution
-		try {
-			if (
-				System.getProperty("os.name") != null &&
-				System.getProperty("os.name").startsWith("Windows") &&
-				isNotBlank(System.getProperty("os.version")) &&
-				Double.parseDouble(System.getProperty("os.version")) < 5.2
-			) {
-				System.setProperty("jna.debug_load", "true");
-				System.setProperty("jna.boot.library.path", "WinXP;src\\main\\external-resources\\lib\\WinXP");
-			} else {
-				System.setProperty("jna.nosys", "true");
-			}
-		} catch (NullPointerException | NumberFormatException e) {
-			System.setProperty("jna.nosys", "true");
-			System.err.println(
-				"Could not determine Windows version from " +
-				System.getProperty("os.version") +
-				". Not applying Windows XP hack"
-			);
-		}
+		// This must be called before JNA is used
+		configureJNA();
 
 		// Start caching log messages until the logger is configured
 		CacheLogger.startCaching();
@@ -1950,5 +1931,38 @@ public class PMS {
 
 	public static void setKey(String key, String val) {
 		instance.keysDb.set(key, val);
+	}
+
+	/**
+	 * Configures JNA according to the environment. This must be called before
+	 * JNA is first initialized to have any effect.
+	 */
+	public static void configureJNA() {
+		// Set JNA "jnidispatch" resolution rules
+		try {
+			if (
+				System.getProperty("os.name") != null &&
+				System.getProperty("os.name").startsWith("Windows") &&
+				isNotBlank(System.getProperty("os.version")) &&
+				Double.parseDouble(System.getProperty("os.version")) < 5.2
+			) {
+				System.setProperty("jna.debug_load", "true");
+				String developmentPath = "src\\main\\external-resources\\lib\\WinXP";
+				if (new File(developmentPath).exists()) {
+					System.setProperty("jna.boot.library.path", developmentPath);
+				} else {
+					System.setProperty("jna.boot.library.path", "WinXP");
+				}
+			} else {
+				System.setProperty("jna.nosys", "true");
+			}
+		} catch (NullPointerException | NumberFormatException e) {
+			System.setProperty("jna.nosys", "true");
+			System.err.println(
+				"Could not determine Windows version from " +
+				System.getProperty("os.version") +
+				". Not applying Windows XP hack"
+			);
+		}
 	}
 }
