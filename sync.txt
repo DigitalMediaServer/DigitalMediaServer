@@ -1,1 +1,6 @@
-UMS sync with: b18fb78feebf4228f459fd9bfaf5b24f8f686cfc 6.7.2
+UMS sync with: 5ee34dfdef3c2ad707bffef491bfe16df3d906be Changed macOS menu name
+
+Skipped:
+a4a099c7efcaf6dc8a28402a29eade757a2ce78d
+7fa20163bbe0b9ba30f365490a353639a94e12e6
+d129c7d80839f3399868d061a8855a51bf9982af
