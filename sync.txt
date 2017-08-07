@@ -1,4 +1,4 @@
-UMS sync with: bd4a2ee8f3c483660aa33d7d5bff87bb863d0360 Update the VieraTXLVE.conf
+UMS sync with: 3b82ef501f7da578f8df09e1d6166f71f5dc4c85 Added Fetch TV renderer
 
 Skipped:
 a4a099c7efcaf6dc8a28402a29eade757a2ce78d
