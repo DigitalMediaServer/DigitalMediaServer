@@ -31,11 +31,9 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import javax.swing.*;
-import javax.swing.border.Border;
 import javax.swing.border.EmptyBorder;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
-import javax.swing.plaf.ColorUIResource;
 import javax.swing.plaf.metal.DefaultMetalTheme;
 import javax.swing.plaf.metal.MetalLookAndFeel;
 import net.pms.Messages;
@@ -344,12 +342,6 @@ public class LooksFrame extends JFrame implements IFrame {
 		} else if (screenSize.width < storedWindowSize.width || screenSize.height < storedWindowSize.height) {
 			setSize(screenSize);
 		}
-
-		// Customize the colors used in tooltips
-		UIManager.put("ToolTip.background", new ColorUIResource(PMS.getConfiguration().getToolTipBackgroundColor()));
-		Border border = BorderFactory.createLineBorder(PMS.getConfiguration().getToolTipBackgroundColor(), 4);
-		UIManager.put("ToolTip.border", border);
-		UIManager.put("ToolTip.foreground", new ColorUIResource(PMS.getConfiguration().getToolTipForegroundColor()));
 
 		// Display tooltips immediately and for a long time
 		ToolTipManager.sharedInstance().setInitialDelay(400);
