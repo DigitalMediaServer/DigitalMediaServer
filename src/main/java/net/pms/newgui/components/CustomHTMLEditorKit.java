@@ -31,20 +31,20 @@ import javax.swing.text.html.StyleSheet;
  *
  * @author Nadahar
  */
-public class CustomHTMLEditorKit extends HTMLEditorKit{
+public class CustomHTMLEditorKit extends HTMLEditorKit {
 
 	private static final long serialVersionUID = -4110333075630471497L;
 	private StyleSheet customStyleSheet;
 
-    @Override
-    public void setStyleSheet(StyleSheet styleSheet) {
-        customStyleSheet = styleSheet;
-    }
-    @Override
-    public StyleSheet getStyleSheet() {
-        if (customStyleSheet == null) {
-            customStyleSheet = super.getStyleSheet();
-        }
-        return customStyleSheet;
-    }
+	@Override
+	public void setStyleSheet(StyleSheet styleSheet) {
+		customStyleSheet = styleSheet;
+	}
+	@Override
+	public StyleSheet getStyleSheet() {
+		if (customStyleSheet == null) {
+			customStyleSheet = super.getStyleSheet();
+		}
+		return customStyleSheet;
+	}
 }

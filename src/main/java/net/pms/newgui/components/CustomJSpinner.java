@@ -24,12 +24,12 @@ import java.awt.event.MouseWheelEvent;
 import java.awt.event.MouseWheelListener;
 import java.text.NumberFormat;
 import java.text.ParseException;
+import javax.annotation.Nonnull;
 import javax.swing.FocusManager;
 import javax.swing.JComponent;
 import javax.swing.JFormattedTextField;
 import javax.swing.JSpinner;
 import javax.swing.JTextField;
-import javax.swing.JToolTip;
 import javax.swing.SpinnerDateModel;
 import javax.swing.SpinnerListModel;
 import javax.swing.SpinnerModel;
@@ -49,9 +49,12 @@ import net.pms.PMS;
 public class CustomJSpinner extends javax.swing.JSpinner {
 
 	/**
-	 * Creates a new <code>CustomJSpinner</code> with default instance of
+	 * Creates a new {@link CustomJSpinner} with default instance of
 	 * {@link SpinnerIntModel} (that is, a model with value 0, step size 1, and
 	 * no upper or lower limit).
+	 *
+	 * @param enterMoveFocus if {@code true} the {@code Enter} key will move the
+	 *            focus to the next component.
 	 *
 	 * @see SpinnerIntModel
 	 */
@@ -60,17 +63,16 @@ public class CustomJSpinner extends javax.swing.JSpinner {
 	}
 
 	/**
-	 * Creates a new <code>JSpinner with the specified model.  The
+	 * Creates a new {@link JSpinner} with the specified model. The
 	 * {@link #createEditor(SpinnerModel)} method is used to create an editor
 	 * that is suitable for the model.
 	 *
-	 * @param model
-	 *            the model (<code>null</code> not permitted).
-	 *
-	 * @throws NullPointerException
-	 *             if <code>model</code> is <code>null</code>.
+	 * @param model the model ({@code null} not permitted).
+	 * @param enterMoveFocus if {@code true} the {@code Enter} key will move the
+	 *            focus to the next component.
+	 * @throws NullPointerException if {@code model} is {@code null}.
 	 */
-	public CustomJSpinner(SpinnerModel model, boolean enterMoveFocus) {
+	public CustomJSpinner(@Nonnull SpinnerModel model, boolean enterMoveFocus) {
 		super(model);
 		if (model instanceof SpinnerIntModel) {
 			this.addMouseWheelListener(new MouseWheelRoll(
@@ -85,9 +87,11 @@ public class CustomJSpinner extends javax.swing.JSpinner {
 			if (this.getEditor() instanceof CustomJSpinner.IntegerEditor) {
 				((CustomJSpinner.IntegerEditor) this.getEditor()).getTextField().addKeyListener(new KeyListener() {
 					@Override
-					public void keyTyped(KeyEvent e) {}
+					public void keyTyped(KeyEvent e) {
+					}
 					@Override
-					public void keyReleased(KeyEvent e) {}
+					public void keyReleased(KeyEvent e) {
+					}
 					@Override
 					public void keyPressed(KeyEvent e) {
 						if (e.getKeyCode() == KeyEvent.VK_ENTER) {
@@ -114,13 +118,12 @@ public class CustomJSpinner extends javax.swing.JSpinner {
 		}
 	}
 
-	@Override
-	public JToolTip createToolTip() {
-	    JToolTip tip = new HyperLinkToolTip();
-	    tip.setComponent(this);
-	    return tip;
-	}
-
+	/**
+	 * This {@link MouseWheelListener} makes the spinner increment or decrement
+	 * its value by rolling the mouse wheel.
+	 *
+	 * @author Nadahar
+	 */
 	protected static class MouseWheelRoll implements MouseWheelListener {
 
 		private int minimum, maximum, stepSize;
@@ -138,133 +141,130 @@ public class CustomJSpinner extends javax.swing.JSpinner {
 			if (!spinner.isEnabled()) {
 				return;
 			}
-	        if (e.getScrollType() != MouseWheelEvent.WHEEL_UNIT_SCROLL) {
-	            return;
-	        }
+			if (e.getScrollType() != MouseWheelEvent.WHEEL_UNIT_SCROLL) {
+				return;
+			}
 
-	        int value = (Integer) spinner.getValue();
-	        value -= e.getWheelRotation() * stepSize;
-	        if (e.getWheelRotation() < 0 && value == minimum + stepSize && minimum % stepSize != 0) {
-	        	value = ((minimum / stepSize) * stepSize) + stepSize;
-	        } else if (e.getWheelRotation() > 0 && value == maximum - stepSize && maximum % stepSize != 0) {
-	        	value = (maximum / stepSize) * stepSize;
-	        }
-			value = Math.min(Math.max(value, minimum),maximum);
-	        spinner.setValue(value);
+			int value = (Integer) spinner.getValue();
+			value -= e.getWheelRotation() * stepSize;
+			if (e.getWheelRotation() < 0 && value == minimum + stepSize && minimum % stepSize != 0) {
+				value = ((minimum / stepSize) * stepSize) + stepSize;
+			} else if (e.getWheelRotation() > 0 && value == maximum - stepSize && maximum % stepSize != 0) {
+				value = (maximum / stepSize) * stepSize;
+			}
+			value = Math.min(Math.max(value, minimum), maximum);
+			spinner.setValue(value);
 		}
 	}
 
-    /**
-     * An editor for a <code>JSpinner</code> whose model is a
-     * <code>SpinnerIntModel</code>.  The value of the editor is
-     * displayed with a <code>JFormattedTextField</code> whose format
-     * is defined by a <code>NumberFormatter</code> instance whose
-     * <code>minimum</code> and <code>maximum</code> properties
-     * are mapped to the <code>SpinnerIntModel</code>.
-     */
-    public static class IntegerEditor extends DefaultEditor
-    {
-        /**
-         * Construct a <code>JSpinner</code> editor that supports displaying
-         * and editing the value of a <code>SpinnerIntModel</code>
-         * with a <code>JFormattedTextField</code>.  <code>This</code>
-         * <code>IntegerEditor</code> becomes both a <code>ChangeListener</code>
-         * on the spinner and a <code>PropertyChangeListener</code>
-         * on the new <code>JFormattedTextField</code>.
-         *
-         * @param spinner the spinner whose model <code>this</code> editor will monitor
-         * @exception IllegalArgumentException if the spinners model is not
-         *     an instance of <code>SpinnerIntModel</code>
-         *
-         * @see #getModel
-         * @see #getFormat
-         * @see SpinnerIntModel
-         */
-        public IntegerEditor(JSpinner spinner) {
-            this(spinner, NumberFormat.getIntegerInstance(PMS.getLocale()));
-        }
+	/**
+	 * An editor for a <code>JSpinner</code> whose model is a
+	 * <code>SpinnerIntModel</code>. The value of the editor is displayed with a
+	 * <code>JFormattedTextField</code> whose format is defined by a
+	 * <code>NumberFormatter</code> instance whose <code>minimum</code> and
+	 * <code>maximum</code> properties are mapped to the
+	 * <code>SpinnerIntModel</code>.
+	 */
+	public static class IntegerEditor extends DefaultEditor {
+		/**
+		 * Construct a <code>JSpinner</code> editor that supports displaying
+		 * and editing the value of a <code>SpinnerIntModel</code>
+		 * with a <code>JFormattedTextField</code>.  <code>This</code>
+		 * <code>IntegerEditor</code> becomes both a <code>ChangeListener</code>
+		 * on the spinner and a <code>PropertyChangeListener</code>
+		 * on the new <code>JFormattedTextField</code>.
+		 *
+		 * @param spinner the spinner whose model <code>this</code> editor will monitor
+		 * @exception IllegalArgumentException if the spinners model is not
+		 *     an instance of <code>SpinnerIntModel</code>
+		 *
+		 * @see #getModel
+		 * @see #getFormat
+		 * @see SpinnerIntModel
+		 */
+		public IntegerEditor(JSpinner spinner) {
+			this(spinner, NumberFormat.getIntegerInstance(PMS.getLocale()));
+		}
 
-        /**
-         * Construct a <code>JSpinner</code> editor that supports displaying
-         * and editing the value of a <code>SpinnerIntModel</code>
-         * with a <code>JFormattedTextField</code>.  <code>This</code>
-         * <code>IntegerEditor</code> becomes both a <code>ChangeListener</code>
-         * on the spinner and a <code>PropertyChangeListener</code>
-         * on the new <code>JFormattedTextField</code>.
-         *
-         * @param spinner the spinner whose model <code>this</code> editor will monitor
-         * @param format the <code>NumberFormat</code> object that's used to display
-         *     and parse the value of the text field.
-         * @exception IllegalArgumentException if the spinners model is not
-         *     an instance of <code>SpinnerIntModel</code>
-         *
-         * @see #getTextField
-         * @see SpinnerIntModel
-         * @see java.text.DecimalFormat
-         */
-        private IntegerEditor(JSpinner spinner, NumberFormat format) {
-            super(spinner);
-            if (!(spinner.getModel() instanceof SpinnerIntModel)) {
-                throw new IllegalArgumentException(
-                          "model not a SpinnerIntModel");
-            }
+		/**
+		 * Construct a <code>JSpinner</code> editor that supports displaying and
+		 * editing the value of a <code>SpinnerIntModel</code> with a
+		 * <code>JFormattedTextField</code>. <code>This</code>
+		 * <code>IntegerEditor</code> becomes both a <code>ChangeListener</code>
+		 * on the spinner and a <code>PropertyChangeListener</code> on the new
+		 * <code>JFormattedTextField</code>.
+		 *
+		 * @param spinner the spinner whose model <code>this</code> editor will
+		 *            monitor
+		 * @param format the <code>NumberFormat</code> object that's used to
+		 *            display and parse the value of the text field.
+		 * @exception IllegalArgumentException if the spinners model is not an
+		 *                instance of <code>SpinnerIntModel</code>
+		 *
+		 * @see #getTextField
+		 * @see SpinnerIntModel
+		 * @see java.text.DecimalFormat
+		 */
+		private IntegerEditor(JSpinner spinner, NumberFormat format) {
+			super(spinner);
+			if (!(spinner.getModel() instanceof SpinnerIntModel)) {
+				throw new IllegalArgumentException("model not a SpinnerIntModel");
+			}
 
-            format.setGroupingUsed(false);
-            format.setMaximumFractionDigits(0);
-            SpinnerIntModel model = (SpinnerIntModel)spinner.getModel();
-            NumberFormatter formatter = new IntegerEditorFormatter(model, format);
-            DefaultFormatterFactory factory = new DefaultFormatterFactory(formatter);
-            JFormattedTextField ftf = getTextField();
-            ftf.setEditable(true);
-            ftf.setFormatterFactory(factory);
-            ftf.setHorizontalAlignment(JTextField.RIGHT);
+			format.setGroupingUsed(false);
+			format.setMaximumFractionDigits(0);
+			SpinnerIntModel model = (SpinnerIntModel) spinner.getModel();
+			NumberFormatter formatter = new IntegerEditorFormatter(model, format);
+			DefaultFormatterFactory factory = new DefaultFormatterFactory(formatter);
+			JFormattedTextField ftf = getTextField();
+			ftf.setEditable(true);
+			ftf.setFormatterFactory(factory);
+			ftf.setHorizontalAlignment(JTextField.RIGHT);
 
-            try {
-                String minString = formatter.valueToString(model.getMinimum());
-                String maxString = formatter.valueToString(model.getMaximum());
-                // Trying to approximate the width difference between "m" and "0" by multiplying with 0.7
-                ftf.setColumns((int) Math.round(0.7 * Math.max(maxString.length(),
-                                        minString.length())));
-            }
-            catch (ParseException e) {
-            	// Nothing to do, the component width will simply be the default
-            }
-        }
+			try {
+				String minString = formatter.valueToString(model.getMinimum());
+				String maxString = formatter.valueToString(model.getMaximum());
+				// Trying to approximate the width difference between "m" and "0" by multiplying with 0.7
+				ftf.setColumns((int) Math.round(0.7 * Math.max(maxString.length(), minString.length())));
+			} catch (ParseException e) {
+				// Nothing to do, the component width will simply be the default
+			}
+		}
 
-        /**
-         * This subclass of javax.swing.NumberFormatter maps the minimum/maximum
-         * properties to a SpinnerIntModel and initializes the valueClass
-         * of the NumberFormatter to match the type of the initial models value.
-         */
-        private static class IntegerEditorFormatter extends NumberFormatter {
-            private final SpinnerIntModel model;
+		/**
+		 * This subclass of javax.swing.NumberFormatter maps the minimum/maximum
+		 * properties to a SpinnerIntModel and initializes the valueClass of the
+		 * NumberFormatter to match the type of the initial models value.
+		 */
+		private static class IntegerEditorFormatter extends NumberFormatter {
+			private final SpinnerIntModel model;
 
-            IntegerEditorFormatter(SpinnerIntModel model, NumberFormat format) {
-                super(format);
-                this.model = model;
-                setValueClass(model.getValue().getClass());
-            }
+			IntegerEditorFormatter(SpinnerIntModel model, NumberFormat format) {
+				super(format);
+				this.model = model;
+				setValueClass(model.getValue().getClass());
+			}
 
 			@Override
 			public Comparable getMinimum() {
-                return  model.getMinimum();
-            }
+				return  model.getMinimum();
+			}
 
-            @Override
+			@Override
 			public Comparable getMaximum() {
-                return model.getMaximum();
-            }
-        }
+				return model.getMaximum();
+			}
+		}
 
-        /**
-         * Return our spinner ancestor's <code>SpinnerIntModel</code>.
-         *
-         * @return <code>getSpinner().getModel()</code>
-         * @see #getSpinner
-         * @see #getTextField
-         */
-        public SpinnerIntModel getModel() {
-            return (SpinnerIntModel)(getSpinner().getModel());
-        }
-    }
+		/**
+		 * Return our spinner ancestor's <code>SpinnerIntModel</code>.
+		 *
+		 * @return <code>getSpinner().getModel()</code>
+		 * @see #getSpinner
+		 * @see #getTextField
+		 */
+		public SpinnerIntModel getModel() {
+			return (SpinnerIntModel) (getSpinner().getModel());
+		}
+	}
 }

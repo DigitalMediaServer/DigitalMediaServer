@@ -22,7 +22,6 @@ import javax.swing.BorderFactory;
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
-import javax.swing.JToolTip;
 import javax.swing.UIManager;
 import net.pms.newgui.LooksFrame;
 import net.pms.newgui.components.AnimatedIcon.AnimatedIconStage;
@@ -118,13 +117,6 @@ public class JImageButton extends JButton implements AnimatedIconCallback {
 
 	public void setIconName(String iconName) {
 		setIcons(iconName);
-	}
-
-	@Override
-	public JToolTip createToolTip() {
-		JToolTip tip = new HyperLinkToolTip();
-		tip.setComponent(this);
-		return tip;
 	}
 
 	@Override
