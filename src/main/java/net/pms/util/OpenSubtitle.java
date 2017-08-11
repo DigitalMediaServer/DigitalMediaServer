@@ -20,6 +20,7 @@
 
 package net.pms.util;
 
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -334,7 +335,7 @@ public class OpenSubtitle {
 		String[] res = getInfo(getHash(f), f.length(), null, null, r);
 		if (res == null || res.length == 0) { // no good on hash! try imdb
 			String imdb = ImdbUtil.extractImdb(f);
-			if (StringUtil.hasValue(imdb)) {
+			if (isNotBlank(imdb)) {
 				res = getInfo(null, 0, imdb, null, r);
 			}
 		}

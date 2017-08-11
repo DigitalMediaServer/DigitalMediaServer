@@ -18,6 +18,7 @@
  */
 package net.pms.util;
 
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import fm.last.musicbrainz.coverart.CoverArt;
 import fm.last.musicbrainz.coverart.CoverArtException;
 import fm.last.musicbrainz.coverart.CoverArtImage;
@@ -114,21 +115,21 @@ public class CoverArtArchiveUtil extends CoverUtil {
 
 		public boolean hasInfo() {
 			return
-				StringUtil.hasValue(album) ||
-				StringUtil.hasValue(artist) ||
-				StringUtil.hasValue(title) ||
-				StringUtil.hasValue(year) ||
-				StringUtil.hasValue(artistId) ||
-				StringUtil.hasValue(trackId);
+				isNotBlank(album) ||
+				isNotBlank(artist) ||
+				isNotBlank(title) ||
+				isNotBlank(year) ||
+				isNotBlank(artistId) ||
+				isNotBlank(trackId);
 		}
 
 		@Override
 		public String toString() {
 			StringBuilder result = new StringBuilder();
-			if (StringUtil.hasValue(artist)) {
+			if (isNotBlank(artist)) {
 				result.append(artist);
 			}
-			if (StringUtil.hasValue(artistId)) {
+			if (isNotBlank(artistId)) {
 				if (result.length() > 0) {
 					result.append(" (").append(artistId).append(')');
 				} else {
@@ -138,29 +139,29 @@ public class CoverArtArchiveUtil extends CoverUtil {
 			if (
 				result.length() > 0 &&
 				(
-					StringUtil.hasValue(title) ||
-					StringUtil.hasValue(album) ||
-					StringUtil.hasValue(trackId)
+					isNotBlank(title) ||
+					isNotBlank(album) ||
+					isNotBlank(trackId)
 				)
 
 			) {
 				result.append(" - ");
 			}
-			if (StringUtil.hasValue(album)) {
+			if (isNotBlank(album)) {
 				result.append(album);
-				if (StringUtil.hasValue(title) || StringUtil.hasValue(trackId)) {
+				if (isNotBlank(title) || isNotBlank(trackId)) {
 					result.append(": ");
 				}
 			}
-			if (StringUtil.hasValue(title)) {
+			if (isNotBlank(title)) {
 				result.append(title);
-				if (StringUtil.hasValue(trackId)) {
+				if (isNotBlank(trackId)) {
 					result.append(" (").append(trackId).append(')');
 				}
-			} else if (StringUtil.hasValue(trackId)) {
+			} else if (isNotBlank(trackId)) {
 				result.append(trackId);
 			}
-			if (StringUtil.hasValue(year)) {
+			if (isNotBlank(year)) {
 				if (result.length() > 0) {
 					result.append(" (").append(year).append(')');
 				} else {
@@ -494,9 +495,13 @@ public class CoverArtArchiveUtil extends CoverUtil {
 						LOGGER.debug("Cover for MBID \"{}\" was not found at CoverArtArchive", mBID);
 						TableCoverArtArchive.writeMBID(mBID, null);
 						return null;
-					} else {
-						LOGGER.warn("Got HTTP response {} while trying to download over for MBID \"{}\" from CoverArtArchive: {}", e.getStatusCode(), mBID, e.getMessage());
 					}
+					LOGGER.warn(
+						"Got HTTP response {} while trying to download over for MBID \"{}\" from CoverArtArchive: {}",
+						e.getStatusCode(),
+						mBID,
+						e.getMessage()
+					);
 				} catch (IOException e) {
 					LOGGER.error("An error occurred while downloading cover for MBID \"{}\": {}", mBID, e.getMessage());
 					LOGGER.trace("", e);
@@ -509,7 +514,7 @@ public class CoverArtArchiveUtil extends CoverUtil {
 		return null;
 	}
 
-	private String fuzzString(String s) {
+	private static String fuzzString(String s) {
 		String[] words = s.split(" ");
 		StringBuilder sb = new StringBuilder("(");
 		for (String word : words) {
@@ -524,7 +529,7 @@ public class CoverArtArchiveUtil extends CoverUtil {
 		StringBuilder query = new StringBuilder("release/?query=");
 		boolean added = false;
 
-		if (StringUtil.hasValue(tagInfo.album)) {
+		if (isNotBlank(tagInfo.album)) {
 			if (fuzzy) {
 				query.append(urlEncode(fuzzString(tagInfo.album)));
 			} else {
@@ -533,13 +538,13 @@ public class CoverArtArchiveUtil extends CoverUtil {
 			added = true;
 		}
 
-		if (StringUtil.hasValue(tagInfo.artistId)) {
+		if (isNotBlank(tagInfo.artistId)) {
 			if (added) {
 				query.append(AND);
 			}
 			query.append("arid:").append(tagInfo.artistId);
 			added = true;
-		} else if (StringUtil.hasValue(tagInfo.artist)) {
+		} else if (isNotBlank(tagInfo.artist)) {
 			if (added) {
 				query.append(AND);
 			}
@@ -553,10 +558,10 @@ public class CoverArtArchiveUtil extends CoverUtil {
 		}
 
 		if (
-			StringUtil.hasValue(tagInfo.trackId) && (
-				!StringUtil.hasValue(tagInfo.album) || !(
-					StringUtil.hasValue(tagInfo.artist) ||
-					StringUtil.hasValue(tagInfo.artistId)
+			isNotBlank(tagInfo.trackId) && (
+				!isNotBlank(tagInfo.album) || !(
+					isNotBlank(tagInfo.artist) ||
+					isNotBlank(tagInfo.artistId)
 				)
 			)
 		) {
@@ -566,10 +571,10 @@ public class CoverArtArchiveUtil extends CoverUtil {
 			query.append("tid:").append(tagInfo.trackId);
 			added = true;
 		} else if (
-			StringUtil.hasValue(tagInfo.title) && (
-				!StringUtil.hasValue(tagInfo.album) || !(
-					StringUtil.hasValue(tagInfo.artist) ||
-					StringUtil.hasValue(tagInfo.artistId)
+			isNotBlank(tagInfo.title) && (
+				!isNotBlank(tagInfo.album) || !(
+					isNotBlank(tagInfo.artist) ||
+					isNotBlank(tagInfo.artistId)
 				)
 			)
 		) {
@@ -585,7 +590,7 @@ public class CoverArtArchiveUtil extends CoverUtil {
 			added = true;
 		}
 
-		if (StringUtil.hasValue(tagInfo.year)) {
+		if (isNotBlank(tagInfo.year)) {
 			if (added) {
 				query.append(AND);
 			}
@@ -600,7 +605,7 @@ public class CoverArtArchiveUtil extends CoverUtil {
 		StringBuilder query = new StringBuilder("recording/?query=");
 		boolean added = false;
 
-		if (StringUtil.hasValue(tagInfo.title)) {
+		if (isNotBlank(tagInfo.title)) {
 			if (fuzzy) {
 				query.append(urlEncode(fuzzString(tagInfo.title)));
 			} else {
@@ -609,7 +614,7 @@ public class CoverArtArchiveUtil extends CoverUtil {
 			added = true;
 		}
 
-		if (StringUtil.hasValue(tagInfo.trackId)) {
+		if (isNotBlank(tagInfo.trackId)) {
 			if (added) {
 				query.append(AND);
 			}
@@ -617,13 +622,13 @@ public class CoverArtArchiveUtil extends CoverUtil {
 			added = true;
 		}
 
-		if (StringUtil.hasValue(tagInfo.artistId)) {
+		if (isNotBlank(tagInfo.artistId)) {
 			if (added) {
 				query.append(AND);
 			}
 			query.append("arid:").append(tagInfo.artistId);
 			added = true;
-		} else if (StringUtil.hasValue(tagInfo.artist)) {
+		} else if (isNotBlank(tagInfo.artist)) {
 			if (added) {
 				query.append(AND);
 			}
@@ -635,7 +640,7 @@ public class CoverArtArchiveUtil extends CoverUtil {
 			}
 		}
 
-		if (StringUtil.hasValue(tagInfo.year)) {
+		if (isNotBlank(tagInfo.year)) {
 			if (added) {
 				query.append(AND);
 			}
@@ -654,7 +659,7 @@ public class CoverArtArchiveUtil extends CoverUtil {
 		String mBID = null;
 		if (AudioUtils.tagSupportsFieldKey(tag, FieldKey.MUSICBRAINZ_RELEASEID)) {
 			mBID = tag.getFirst(FieldKey.MUSICBRAINZ_RELEASEID);
-			if (StringUtil.hasValue(mBID)) {
+			if (isNotBlank(mBID)) {
 				return mBID;
 			}
 		}
@@ -685,7 +690,7 @@ public class CoverArtArchiveUtil extends CoverUtil {
 			// Check if it's cached first
 			MusicBrainzReleasesResult result = TableMusicBrainzReleases.findMBID(tagInfo);
 			if (result.found) {
-				if (StringUtil.hasValue(result.mBID)) {
+				if (isNotBlank(result.mBID)) {
 					return result.mBID;
 				} else if (System.currentTimeMillis() - result.modified.getTime() < expireTime) {
 					// If a lookup has been done within expireTime and no result,
@@ -711,13 +716,13 @@ public class CoverArtArchiveUtil extends CoverUtil {
 			 */
 
 			int round;
-			if (StringUtil.hasValue(tagInfo.album) || StringUtil.hasValue(tagInfo.artist) || StringUtil.hasValue(tagInfo.artistId)) {
+			if (isNotBlank(tagInfo.album) || isNotBlank(tagInfo.artist) || isNotBlank(tagInfo.artistId)) {
 				round = 1;
 			} else {
 				round = 3;
 			}
 
-			while (round < 5 && !StringUtil.hasValue(mBID)) {
+			while (round < 5 && !isNotBlank(mBID)) {
 				String query;
 
 				if (round < 3) {
@@ -764,7 +769,7 @@ public class CoverArtArchiveUtil extends CoverUtil {
 							// matching quality turns out to be to low
 							int maxScore = 0;
 							for (ReleaseRecord release : releaseList) {
-								if (StringUtil.hasValue(tagInfo.artist)) {
+								if (isNotBlank(tagInfo.artist)) {
 									boolean found = false;
 									for (String s : release.artists) {
 										if (s.equalsIgnoreCase(tagInfo.artist)) {
@@ -776,19 +781,19 @@ public class CoverArtArchiveUtil extends CoverUtil {
 										release.score += 30;
 									}
 								}
-								if (StringUtil.hasValue(tagInfo.album)) {
+								if (isNotBlank(tagInfo.album)) {
 									if (release.type == ReleaseType.Album) {
 										release.score += 20;
 										if (release.title.equalsIgnoreCase(tagInfo.album)) {
 											release.score += 30;
 										}
 									}
-								} else if (StringUtil.hasValue(tagInfo.title)) {
+								} else if (isNotBlank(tagInfo.title)) {
 									if ((round > 2 || release.type == ReleaseType.Single) && release.title.equalsIgnoreCase(tagInfo.title)) {
 										release.score += 40;
 									}
 								}
-								if (StringUtil.hasValue(tagInfo.year) && StringUtil.hasValue(release.year)) {
+								if (isNotBlank(tagInfo.year) && isNotBlank(release.year)) {
 									if (tagInfo.year.equals(release.year)) {
 										release.score += 20;
 									}
@@ -804,7 +809,7 @@ public class CoverArtArchiveUtil extends CoverUtil {
 							}
 						}
 
-						if (StringUtil.hasValue(mBID)) {
+						if (isNotBlank(mBID)) {
 							LOGGER.trace("Music release \"{}\" found with \"{}\"", mBID, url);
 						} else {
 							LOGGER.trace("No music release found with \"{}\"", url);
@@ -818,15 +823,14 @@ public class CoverArtArchiveUtil extends CoverUtil {
 				}
 				round++;
 			}
-			if (StringUtil.hasValue(mBID)) {
+			if (isNotBlank(mBID)) {
 				LOGGER.debug("MusicBrainz release ID \"{}\" found for \"{}\"", mBID, tagInfo);
 				TableMusicBrainzReleases.writeMBID(mBID, tagInfo);
 				return mBID;
-			} else {
-				LOGGER.debug("No MusicBrainz release found for \"{}\"", tagInfo);
-				TableMusicBrainzReleases.writeMBID(null, tagInfo);
-				return null;
 			}
+			LOGGER.debug("No MusicBrainz release found for \"{}\"", tagInfo);
+			TableMusicBrainzReleases.writeMBID(null, tagInfo);
+			return null;
 		} finally {
 			releaseTagLatch(latch);
 		}
@@ -898,7 +902,7 @@ public class CoverArtArchiveUtil extends CoverUtil {
 						}
 					}
 				}
-				if (StringUtil.hasValue(release.id)) {
+				if (isNotBlank(release.id)) {
 					releaseList.add(release);
 				}
 			}
@@ -985,7 +989,7 @@ public class CoverArtArchiveUtil extends CoverUtil {
 							release.year = null;
 						}
 
-						if (StringUtil.hasValue(release.id)) {
+						if (isNotBlank(release.id)) {
 							releaseList.add(release);
 						}
 					}

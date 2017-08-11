@@ -20,6 +20,7 @@
 
 package net.pms.configuration;
 
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import com.google.gson.Gson;
 import java.io.File;
 import java.net.InetAddress;
@@ -668,7 +669,7 @@ public class WebRender extends DeviceConfiguration implements RendererConfigurat
 			state.mute = "0".equals(data.get("mute")) ? false : true;
 			s = data.get("volume");
 			try {
-				state.volume = StringUtil.hasValue(s) ? Integer.valueOf(s) : 0;
+				state.volume = isNotBlank(s) ? Integer.valueOf(s) : 0;
 			} catch (NumberFormatException e) {
 				LOGGER.debug("Unexpected volume value \"{}\"", data.get("volume"));
 			}

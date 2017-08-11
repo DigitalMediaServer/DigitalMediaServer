@@ -18,6 +18,7 @@
  */
 package net.pms.newgui;
 
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import com.jgoodies.forms.builder.PanelBuilder;
 import com.jgoodies.forms.factories.Borders;
 import com.jgoodies.forms.layout.CellConstraints;
@@ -34,7 +35,6 @@ import javax.swing.JTextArea;
 import javax.swing.tree.DefaultMutableTreeNode;
 import net.pms.Messages;
 import net.pms.encoders.Player;
-import net.pms.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -108,7 +108,7 @@ public class TreeNodeSettings extends DefaultMutableTreeNode {
 			builder.add(warningLabel, cc.xy(4, 2, CellConstraints.LEFT, CellConstraints.CENTER));
 			warningLabel.setFont(warningLabel.getFont().deriveFont(Font.BOLD));
 
-			if (StringUtil.hasValue(player.getStatusTextFull())) {
+			if (isNotBlank(player.getStatusTextFull())) {
 				JTextArea stateText = new JTextArea(player.getStatusTextFull());
 				stateText.setPreferredSize(new Dimension());
 				stateText.setEditable(false);
