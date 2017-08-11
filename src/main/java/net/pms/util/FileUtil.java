@@ -652,7 +652,7 @@ public class FileUtil {
 		if (file != null && (isTVSeriesToLookup || isMovieToLookup)) {
 			InfoDb.InfoDbData info = PMS.get().infoDb().get(file);
 			if (info == null) {
-				PMS.get().infoDbAdd(file, StringUtil.hasValue(searchFormattedName) ?  searchFormattedName : formattedName);
+				PMS.get().infoDbAdd(file, isNotBlank(searchFormattedName) ?  searchFormattedName : formattedName);
 			} else if (isTVSeriesToLookup) {
 				int showNameIndex = indexOf(Pattern.compile("(?i) - \\d\\d\\d.*"), formattedName);
 				if (StringUtils.isNotEmpty(info.title) && showNameIndex != -1) {
