@@ -18,6 +18,7 @@
  */
 package net.pms.formats;
 
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import java.util.Locale;
 import net.pms.configuration.RendererConfiguration;
 import net.pms.dlna.DLNAMediaInfo;
@@ -25,7 +26,6 @@ import net.pms.dlna.InputFile;
 import net.pms.network.HTTPResource;
 import net.pms.util.FileUtil;
 import net.pms.util.GenericIcons;
-import net.pms.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -343,7 +343,7 @@ public abstract class Format implements Cloneable {
 
 			String[] extensionsArray = extensionsString.split(",");
 			for (String extension : extensionsArray) {
-				if (StringUtil.hasValue(extension) && extension.equalsIgnoreCase(matchedExtension)) {
+				if (isNotBlank(extension) && extension.equalsIgnoreCase(matchedExtension)) {
 					return true;
 				}
 			}

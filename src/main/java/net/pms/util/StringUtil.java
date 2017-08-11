@@ -392,17 +392,6 @@ public class StringUtil {
 	}
 
 	/**
-	 * Convenience method to check if a {@link String} is not <code>null</code>
-	 * and contains anything other than whitespace.
-	 *
-	 * @param s the {@link String} to evaluate
-	 * @return The verdict
-	 */
-	public static boolean hasValue(String s) {
-		return s != null && !s.trim().isEmpty();
-	}
-
-	/**
 	 * Replaces a case-insensitive substring with the same substring in its
 	 * provided capitalization. Used to make sure a given part of a
 	 * {@link CharSequence} is capitalized in a defined manner.

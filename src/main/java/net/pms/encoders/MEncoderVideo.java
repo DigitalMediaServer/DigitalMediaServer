@@ -2714,9 +2714,9 @@ public class MEncoderVideo extends Player {
 				} else {
 					if (output.getOutput() != null &&
 						output.getOutput().size() > 3 &&
-						StringUtil.hasValue(output.getOutput().get(output.getOutput().size() - 1)) &&
-						!StringUtil.hasValue(output.getOutput().get(output.getOutput().size() - 2)) &&
-						StringUtil.hasValue(output.getOutput().get(output.getOutput().size() - 3))
+						isNotBlank(output.getOutput().get(output.getOutput().size() - 1)) &&
+						!isNotBlank(output.getOutput().get(output.getOutput().size() - 2)) &&
+						isNotBlank(output.getOutput().get(output.getOutput().size() - 3))
 					) {
 						result.errorType(ExecutableErrorType.GENERAL);
 						result.errorText(
