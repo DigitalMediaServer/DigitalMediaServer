@@ -18,6 +18,7 @@
  */
 package net.pms.database;
 
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -26,7 +27,6 @@ import java.sql.Timestamp;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import net.pms.util.CoverArtArchiveUtil.CoverArtArchiveTagInfo;
-import net.pms.util.StringUtil;
 import org.jaudiotagger.tag.Tag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -92,18 +92,18 @@ public final class TableMusicBrainzReleases extends Tables{
 		final String AND = " AND ";
 		boolean added = false;
 
-		if (includeAll || StringUtil.hasValue(tagInfo.album)) {
+		if (includeAll || isNotBlank(tagInfo.album)) {
 			where.append("ALBUM").append(sqlNullIfBlank(tagInfo.album, true, false));
 			added = true;
 		}
-		if (includeAll || StringUtil.hasValue(tagInfo.artistId)) {
+		if (includeAll || isNotBlank(tagInfo.artistId)) {
 			if (added) {
 				where.append(AND);
 			}
 			where.append("ARTIST_ID").append(sqlNullIfBlank(tagInfo.artistId, true, false));
 			added = true;
 		}
-		if (includeAll || (!StringUtil.hasValue(tagInfo.artistId) && StringUtil.hasValue(tagInfo.artist))) {
+		if (includeAll || (!isNotBlank(tagInfo.artistId) && isNotBlank(tagInfo.artist))) {
 			if (added) {
 				where.append(AND);
 			}
@@ -113,10 +113,10 @@ public final class TableMusicBrainzReleases extends Tables{
 
 		if (
 			includeAll || (
-				StringUtil.hasValue(tagInfo.trackId) && (
-					!StringUtil.hasValue(tagInfo.album) || !(
-						StringUtil.hasValue(tagInfo.artist) ||
-						StringUtil.hasValue(tagInfo.artistId)
+				isNotBlank(tagInfo.trackId) && (
+					!isNotBlank(tagInfo.album) || !(
+						isNotBlank(tagInfo.artist) ||
+						isNotBlank(tagInfo.artistId)
 					)
 				)
 			)
@@ -129,11 +129,11 @@ public final class TableMusicBrainzReleases extends Tables{
 		}
 		if (
 			includeAll || (
-				!StringUtil.hasValue(tagInfo.trackId) && (
-					StringUtil.hasValue(tagInfo.title) && (
-						!StringUtil.hasValue(tagInfo.album) || !(
-							StringUtil.hasValue(tagInfo.artist) ||
-							StringUtil.hasValue(tagInfo.artistId)
+				!isNotBlank(tagInfo.trackId) && (
+					isNotBlank(tagInfo.title) && (
+						!isNotBlank(tagInfo.album) || !(
+							isNotBlank(tagInfo.artist) ||
+							isNotBlank(tagInfo.artistId)
 						)
 					)
 				)
@@ -146,7 +146,7 @@ public final class TableMusicBrainzReleases extends Tables{
 			added = true;
 		}
 
-		if (StringUtil.hasValue(tagInfo.year)) {
+		if (isNotBlank(tagInfo.year)) {
 			if (added) {
 				where.append(AND);
 			}
@@ -178,12 +178,12 @@ public final class TableMusicBrainzReleases extends Tables{
 				connection.setAutoCommit(false);
 				try (ResultSet result = statement.executeQuery(query)){
 					if (result.next()) {
-						if (StringUtil.hasValue(mBID) || !StringUtil.hasValue(result.getString("MBID"))) {
+						if (isNotBlank(mBID) || !isNotBlank(result.getString("MBID"))) {
 							if (trace) {
 								LOGGER.trace("Updating row {} to MBID \"{}\"", result.getInt("ID"), mBID);
 							}
 							result.updateTimestamp("MODIFIED", new Timestamp(System.currentTimeMillis()));
-							if (StringUtil.hasValue(mBID)) {
+							if (isNotBlank(mBID)) {
 								result.updateString("MBID", mBID);
 							} else {
 								result.updateNull("MBID");
@@ -210,25 +210,25 @@ public final class TableMusicBrainzReleases extends Tables{
 
 						result.moveToInsertRow();
 						result.updateTimestamp("MODIFIED", new Timestamp(System.currentTimeMillis()));
-						if (StringUtil.hasValue(mBID)) {
+						if (isNotBlank(mBID)) {
 							result.updateString("MBID", mBID);
 						}
-						if (StringUtil.hasValue(tagInfo.album)) {
+						if (isNotBlank(tagInfo.album)) {
 							result.updateString("ALBUM", tagInfo.album);
 						}
-						if (StringUtil.hasValue(tagInfo.artist)) {
+						if (isNotBlank(tagInfo.artist)) {
 							result.updateString("ARTIST", tagInfo.artist);
 						}
-						if (StringUtil.hasValue(tagInfo.title)) {
+						if (isNotBlank(tagInfo.title)) {
 							result.updateString("TITLE", tagInfo.title);
 						}
-						if (StringUtil.hasValue(tagInfo.year)) {
+						if (isNotBlank(tagInfo.year)) {
 							result.updateString("YEAR", tagInfo.year.substring(0, Math.min(4, tagInfo.year.length())));
 						}
-						if (StringUtil.hasValue(tagInfo.artistId)) {
+						if (isNotBlank(tagInfo.artistId)) {
 							result.updateString("ARTIST_ID", tagInfo.artistId);
 						}
-						if (StringUtil.hasValue(tagInfo.trackId)) {
+						if (isNotBlank(tagInfo.trackId)) {
 							result.updateString("TRACK_ID", tagInfo.trackId);
 						}
 						result.insertRow();
