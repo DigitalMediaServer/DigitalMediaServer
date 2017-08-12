@@ -64,6 +64,7 @@
 			<fileMode>0644</fileMode>
 			<lineEnding>unix</lineEnding>
 			<includes>
+				<include>README.md</include>
 				<include>README.txt</include>
 				<include>CHANGELOG.txt</include>
 				<include>INSTALL.txt</include>

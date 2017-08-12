@@ -48,6 +48,7 @@
 			<outputDirectory>${project.name}.app/Contents/Resources/Java</outputDirectory>
 			<fileMode>0644</fileMode>
 			<includes>
+				<include>README.md</include>
 				<include>README.txt</include>
 				<include>CHANGELOG.txt</include>
 				<include>LICENSE.txt</include>

@@ -1,4 +1,4 @@
-UMS sync with: add54fb955ee75e2e86709316beeaafa8fe79ddd Update README.md
+UMS sync with: 66157b85403ec40907679d725e674b2860d3f20c Reference README.md instead of README.txt
 
 Skipped:
 a4a099c7efcaf6dc8a28402a29eade757a2ce78d
