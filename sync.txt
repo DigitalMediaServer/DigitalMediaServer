@@ -1,7 +1,8 @@
-UMS sync with: 48c1fa5ecaf17243d5da2209933c08b336a5def0 6.7.3
+UMS sync with: aeecbc97c563dc62b8fe623dd704364d7e3df7c6 Added support for HE-AAC audio in MKV and MP4 files on LG BP550 (#1359)
 
 Skipped:
-a4a099c7efcaf6dc8a28402a29eade757a2ce78d
-7fa20163bbe0b9ba30f365490a353639a94e12e6
-d129c7d80839f3399868d061a8855a51bf9982af
-5700875e3a01d205c559b758956941cd9a62d1a7
+a4a099c7efcaf6dc8a28402a29eade757a2ce78d The ugly hack to solve problem when the TotalMatches are changed
+7fa20163bbe0b9ba30f365490a353639a94e12e6 Update the FileTranscodeVirtualFolder check
+d129c7d80839f3399868d061a8855a51bf9982af Add the fix to Reguest.java and update the comment.
+5700875e3a01d205c559b758956941cd9a62d1a7 Delete README.txt
+049fd24b30f66753feb8fa8559b60aaa5e25e8bd Bump version to 6.7.4
