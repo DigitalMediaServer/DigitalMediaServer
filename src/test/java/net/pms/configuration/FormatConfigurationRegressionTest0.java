@@ -721,7 +721,6 @@ public class FormatConfigurationRegressionTest0 {
 
 		// Regression assertion (captures the current behavior of the code)
 		assertTrue("'" + str0 + "' != '" + "wma10"+ "'", str0.equals("wma10"));
-
 	}
 	@Test
 	public void testDFF() throws Throwable {
@@ -737,7 +736,6 @@ public class FormatConfigurationRegressionTest0 {
 
 		// Regression assertion (captures the current behavior of the code)
 		assertTrue("'" + str0 + "' != '" + "h261"+ "'", str0.equals("h261"));
-
 	}
 
 	@Test
@@ -746,7 +744,6 @@ public class FormatConfigurationRegressionTest0 {
 
 		// Regression assertion (captures the current behavior of the code)
 		assertTrue("'" + str0 + "' != '" + "indeo"+ "'", str0.equals("indeo"));
-
 	}
 
 	@Test
@@ -755,7 +752,6 @@ public class FormatConfigurationRegressionTest0 {
 
 		// Regression assertion (captures the current behavior of the code)
 		assertTrue("'" + str0 + "' != '" + "rgb"+ "'", str0.equals("rgb"));
-
 	}
 
 	@Test
@@ -764,7 +760,6 @@ public class FormatConfigurationRegressionTest0 {
 
 		// Regression assertion (captures the current behavior of the code)
 		assertTrue("'" + str0 + "' != '" + "yuv"+ "'", str0.equals("yuv"));
-
 	}
 
 	@Test
@@ -776,12 +771,35 @@ public class FormatConfigurationRegressionTest0 {
 	}
 
 	@Test
+	public void testAAC_LTP() throws Throwable {
+		java.lang.String str0 = net.pms.configuration.FormatConfiguration.AAC_LTP;
+
+		// Regression assertion (captures the current behavior of the code)
+		org.junit.Assert.assertTrue("'" + str0 + "' != '" + "aac-ltp"+ "'", str0.equals("aac-ltp"));
+	}
+
+	@Test
 	public void testRLE() throws Throwable {
 		String str0 = FormatConfiguration.RLE;
 
 		// Regression assertion (captures the current behavior of the code)
 		assertTrue("'" + str0 + "' != '" + "rle"+ "'", str0.equals("rle"));
+	}
 
+	@Test
+	public void testAAC_MAIN() throws Throwable {
+		java.lang.String str0 = net.pms.configuration.FormatConfiguration.AAC_MAIN;
+
+		// Regression assertion (captures the current behavior of the code)
+		org.junit.Assert.assertTrue("'" + str0 + "' != '" + "aac-main"+ "'", str0.equals("aac-main"));
+	}
+
+	@Test
+	public void testAAC_SSR() throws Throwable {
+		java.lang.String str0 = net.pms.configuration.FormatConfiguration.AAC_SSR;
+
+		// Regression assertion (captures the current behavior of the code)
+		org.junit.Assert.assertTrue("'" + str0 + "' != '" + "aac-ssr"+ "'", str0.equals("aac-ssr"));
 	}
 
 	@Test
