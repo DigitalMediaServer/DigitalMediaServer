@@ -766,4 +766,13 @@ public class FormatConfigurationRegressionTest0 {
 
   }
 
+  @Test
+  public void testRLE() throws Throwable {
+    java.lang.String str0 = net.pms.configuration.FormatConfiguration.RLE;
+
+    // Regression assertion (captures the current behavior of the code)
+    org.junit.Assert.assertTrue("'" + str0 + "' != '" + "rle"+ "'", str0.equals("rle"));
+
+  }
+
 }
