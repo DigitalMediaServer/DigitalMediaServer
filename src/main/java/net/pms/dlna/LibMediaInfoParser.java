@@ -484,6 +484,8 @@ public class LibMediaInfoParser {
 			format = FormatConfiguration.MPEGPS;
 		} else if (value.contains("mpeg-ts") || value.equals("bdav")) {
 			format = FormatConfiguration.MPEGTS;
+		} else if (value.equals("caf")) {
+			format = FormatConfiguration.CAF;
 		} else if (value.contains("aiff")) {
 			format = FormatConfiguration.AIFF;
 		} else if (value.startsWith("atmos") || value.equals("131")) {
@@ -549,6 +551,18 @@ public class LibMediaInfoParser {
 			format = FormatConfiguration.RGB;
 		} else if (streamType == StreamType.Video && value.equals("rle")) {
 			format = FormatConfiguration.RLE;
+		} else if (value.equals("mac3")) {
+			format = FormatConfiguration.MACE3;
+		} else if (value.equals("mac6")) {
+			format = FormatConfiguration.MACE6;
+		} else if (streamType == StreamType.Video && value.startsWith("tga")) {
+			format = FormatConfiguration.TGA;
+		} else if (value.equals("ffv1")) {
+			format = FormatConfiguration.FFV1;
+		} else if (value.equals("celp")) {
+			format = FormatConfiguration.CELP;
+		} else if (value.equals("qcelp")) {
+			format = FormatConfiguration.QCELP;
 		} else if (value.matches("(?i)(dv)|(cdv.?)|(dc25)|(dcap)|(dvc.?)|(dvs.?)|(dvrs)|(dv25)|(dv50)|(dvan)|(dvh.?)|(dvis)|(dvl.?)|(dvnm)|(dvp.?)|(mdvf)|(pdvc)|(r411)|(r420)|(sdcc)|(sl25)|(sl50)|(sldv)")) {
 			format = FormatConfiguration.DV;
 		} else if (value.contains("mpeg video")) {
@@ -673,7 +687,7 @@ public class LibMediaInfoParser {
 			} else if (value.equals("wma10")) {
 				format = FormatConfiguration.WMA10;
 			}
-		} else if (value.equals("flac")) {
+		} else if (value.equals("flac") || "19d".equals(value)) { // "19d" due to a flaw in MediaInfo code
 			format = FormatConfiguration.FLAC;
 		} else if (value.equals("monkey's audio")) {
 			format = FormatConfiguration.MONKEYS_AUDIO;
