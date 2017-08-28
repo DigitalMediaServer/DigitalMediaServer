@@ -1,4 +1,4 @@
-UMS sync with: 182c7aa92301e0cdfca369868fbc4336a8daeec9 Test detection of Sony Bravia W TVs
+UMS sync with: 0929729d6c0ea13d4d1377808861af6582e22f49 Formatting
 
 Skipped:
 a4a099c7efcaf6dc8a28402a29eade757a2ce78d The ugly hack to solve problem when the TotalMatches are changed
@@ -6,3 +6,4 @@ a4a099c7efcaf6dc8a28402a29eade757a2ce78d The ugly hack to solve problem when the
 d129c7d80839f3399868d061a8855a51bf9982af Add the fix to Reguest.java and update the comment.
 5700875e3a01d205c559b758956941cd9a62d1a7 Delete README.txt
 049fd24b30f66753feb8fa8559b60aaa5e25e8bd Bump version to 6.7.4
+650e74e464b5c18d808dc7f50a140fdcfc4de71f Remove old renderer on install
