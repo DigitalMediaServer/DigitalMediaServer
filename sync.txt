@@ -1,4 +1,4 @@
-UMS sync with: aeecbc97c563dc62b8fe623dd704364d7e3df7c6 Added support for HE-AAC audio in MKV and MP4 files on LG BP550 (#1359)
+UMS sync with: 182c7aa92301e0cdfca369868fbc4336a8daeec9 Test detection of Sony Bravia W TVs
 
 Skipped:
 a4a099c7efcaf6dc8a28402a29eade757a2ce78d The ugly hack to solve problem when the TotalMatches are changed
