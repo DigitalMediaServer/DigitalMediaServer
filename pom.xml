@@ -92,7 +92,7 @@
 
 		<maven-javadoc-plugin-version>2.10.4</maven-javadoc-plugin-version>
 		<git-commit-id-plugin-version>2.2.2</git-commit-id-plugin-version>
-		<maven-assembly-plugin-version>3.0.0</maven-assembly-plugin-version>
+		<maven-assembly-plugin-version>3.1.0</maven-assembly-plugin-version>
 		<maven-enforcer-plugin-version>1.4.1</maven-enforcer-plugin-version>
 
 		<!--
@@ -765,7 +765,7 @@
 
 			<plugin>
 				<artifactId>maven-compiler-plugin</artifactId>
-				<version>3.6.1</version>
+				<version>3.6.2</version>
 				<configuration>
 					<source>1.7</source>
 					<target>1.7</target>
@@ -945,7 +945,7 @@
 			<plugin>
 				<groupId>org.codehaus.mojo</groupId>
 				<artifactId>findbugs-maven-plugin</artifactId>
-				<version>3.0.4</version>
+				<version>3.0.5</version>
 			</plugin>
 
 			<!-- Checkstyle report -->
