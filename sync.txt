@@ -1,4 +1,4 @@
-UMS sync with: 2172b5bb1f4b1752433326887bf42f39847a6c65 Fixed PlayerUtilTest:
+UMS sync with: c4119907f355050fe87707749116afa43f0544a4 Fixed getContentFeatures bug
 
 Skipped:
 a4a099c7efcaf6dc8a28402a29eade757a2ce78d The ugly hack to solve problem when the TotalMatches are changed
