@@ -1,4 +1,4 @@
-UMS sync with: 0929729d6c0ea13d4d1377808861af6582e22f49 Formatting
+UMS sync with: 72c51853b0bc143c399c946f563a4c47e091c857 Fixed some NPEs in UPNPControl
 
 Skipped:
 a4a099c7efcaf6dc8a28402a29eade757a2ce78d The ugly hack to solve problem when the TotalMatches are changed
@@ -7,3 +7,4 @@ d129c7d80839f3399868d061a8855a51bf9982af Add the fix to Reguest.java and update 
 5700875e3a01d205c559b758956941cd9a62d1a7 Delete README.txt
 049fd24b30f66753feb8fa8559b60aaa5e25e8bd Bump version to 6.7.4
 650e74e464b5c18d808dc7f50a140fdcfc4de71f Remove old renderer on install
+52a69f264a6c062782bdc2b744a91e70a11f67a6 Corrected 3de1bf33c84a15d3030274ac3d24a9190748685c
