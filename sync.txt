@@ -1,4 +1,4 @@
-UMS sync with: 72c51853b0bc143c399c946f563a4c47e091c857 Fixed some NPEs in UPNPControl
+UMS sync with: 2172b5bb1f4b1752433326887bf42f39847a6c65 Fixed PlayerUtilTest:
 
 Skipped:
 a4a099c7efcaf6dc8a28402a29eade757a2ce78d The ugly hack to solve problem when the TotalMatches are changed
