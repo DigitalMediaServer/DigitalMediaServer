@@ -38,6 +38,7 @@ import net.pms.formats.FormatFactory;
 import net.pms.formats.v2.SubtitleType;
 import net.pms.io.BasicSystemUtils;
 import net.pms.util.FilePermissions.FileFlag;
+import net.pms.util.StringUtil.LetterCase;
 import static net.pms.util.Constants.*;
 import static org.apache.commons.lang3.StringUtils.*;
 import org.apache.commons.io.FilenameUtils;
@@ -204,10 +205,6 @@ public class FileUtil {
 		}
 	}
 
-	public static File isFileExists(String f, String ext) {
-		return isFileExists(new File(f), ext);
-	}
-
 	public static boolean isUrl(String filename) {
 		// We're intentionally avoiding stricter URI() methods, which can throw
 		// URISyntaxException for psuedo-urls (e.g. librtmp-style urls containing spaces)
@@ -238,16 +235,66 @@ public class FileUtil {
 		return getExtension(substringBefore(u, "?"));
 	}
 
+	/**
+	 * Returns the file extension from the specified {@link File} or
+	 * {@code null} if it has no extension.
+	 *
+	 * @param file the {@link File} from which to extract the extension.
+	 * @return The extracted extension or {@code null}.
+	 */
 	@Nullable
 	public static String getExtension(@Nullable File file) {
-		if (file == null || isBlank(file.getName())) {
-			return null;
-		}
-		return getExtension(file.getName());
+		return getExtension(file, null, null);
 	}
 
+	/**
+	 * Returns the file extension from the specified {@link File} or
+	 * {@code null} if it has no extension.
+	 *
+	 * @param file the {@link File} from which to extract the extension.
+	 * @param convertTo if {@code null} makes no letter case change to the
+	 *            returned {@link String}, otherwise converts the extracted
+	 *            extension (if any) to the corresponding letter case.
+	 * @param locale the {@link Locale} to use for letter case conversion.
+	 *            Defaults to {@link Locale#ROOT} if {@code null}.
+	 * @return The extracted and potentially letter case converted extension or
+	 *         {@code null}.
+	 */
+	@Nullable
+	public static String getExtension(@Nullable File file, @Nullable LetterCase convertTo, @Nullable Locale locale) {
+		if (file == null || file.getName() == null) {
+			return null;
+		}
+		return getExtension(file.getName(), convertTo, locale);
+	}
+
+	/**
+	 * Returns the file extension from the specified {@link Path} or
+	 * {@code null} if it has no extension.
+	 *
+	 * @param path the {@link Path} from which to extract the extension.
+	 * @return The extracted extension or {@code null}.
+	 */
 	@Nullable
 	public static String getExtension(@Nullable Path path) {
+		return getExtension(path, null, null);
+	}
+
+	/**
+	 * Returns the file extension from the specified {@link Path} or
+	 * {@code null} if it has no extension.
+	 *
+	 * @param path the {@link Path} from which to extract the extension.
+	 * @param convertTo if {@code null} makes no letter case change to the
+	 *            returned {@link String}, otherwise converts the extracted
+	 *            extension (if any) to the corresponding letter case.
+	 * @param locale the {@link Locale} to use for letter case conversion.
+	 *            Defaults to {@link Locale#ROOT} if {@code null}.
+	 * @return The extracted and potentially letter case converted extension or
+	 *         {@code null}.
+	 */
+	@Nullable
+	public static String getExtension(@Nullable Path path, @Nullable LetterCase convertTo, @Nullable Locale locale) {
 		if (path == null) {
 			return null;
 		}
@@ -255,21 +302,55 @@ public class FileUtil {
 		if (fileName == null || isBlank(fileName.toString())) {
 			return null;
 		}
-		return getExtension(fileName.toString());
+		return getExtension(fileName.toString(), convertTo, locale);
 	}
 
-	@Nullable
+	/**
+	 * Returns the file extension from {@code fileName} or {@code null} if
+	 * {@code fileName} has no extension.
+	 *
+	 * @param fileName the file name from which to extract the extension.
+	 * @return The extracted extension or {@code null}.
+	 */
 	public static String getExtension(@Nullable String fileName) {
+		return getExtension(fileName, null, null);
+	}
+
+	/**
+	 * Returns the file extension from {@code fileName} or {@code null} if
+	 * {@code fileName} has no extension.
+	 *
+	 * @param fileName the file name from which to extract the extension.
+	 * @param convertTo if {@code null} makes no letter case change to the
+	 *            returned {@link String}, otherwise converts the extracted
+	 *            extension (if any) to the corresponding letter case.
+	 * @param locale the {@link Locale} to use for letter case conversion.
+	 *            Defaults to {@link Locale#ROOT} if {@code null}.
+	 * @return The extracted and potentially letter case converted extension or
+	 *         {@code null}.
+	 */
+	@Nullable
+	public static String getExtension(@Nullable String fileName, @Nullable LetterCase convertTo, @Nullable Locale locale) {
 		if (isBlank(fileName)) {
 			return null;
 		}
-		int point = fileName.lastIndexOf('.');
 
+		int point = fileName.lastIndexOf('.');
 		if (point == -1) {
 			return null;
 		}
+		if (convertTo != null && locale == null) {
+			locale = Locale.ROOT;
+		}
 
-		return fileName.substring(point + 1);
+		String extension = fileName.substring(point + 1);
+		if (convertTo == LetterCase.UPPER) {
+			return extension.toUpperCase(locale);
+		}
+		if (convertTo == LetterCase.LOWER) {
+			return extension.toLowerCase(locale);
+		}
+		return extension;
 	}
 
 	public static String getFileNameWithoutExtension(String f) {
@@ -750,18 +831,6 @@ public class FileUtil {
 		return matcher.find() ? matcher.start() : -1;
 	}
 
-	public static File getFileNameWithNewExtension(File parent, File file, String ext) {
-		return isFileExists(new File(parent, file.getName()), ext);
-	}
-
-	/**
-	 * @deprecated Use {@link #getFileNameWithNewExtension(File, File, String)}.
-	 */
-	@Deprecated
-	public static File getFileNameWitNewExtension(File parent, File f, String ext) {
-		return getFileNameWithNewExtension(parent, f, ext);
-	}
-
 	public static File getFileNameWithAddedExtension(File parent, File f, String ext) {
 		File ff = new File(parent, f.getName() + ext);
 
@@ -773,31 +842,145 @@ public class FileUtil {
 	}
 
 	/**
-	 * @deprecated Use {@link #getFileNameWithAddedExtension(File, File, String)}.
+	 * Returns a new {@link File} instance where the file extension has been
+	 * replaced.
+	 *
+	 * @param file the {@link File} for which to replace the extension.
+	 * @param extension the new file extension.
+	 * @param nullIfNonExisting whether or not to return {@code null} or a
+	 *            non-existing {@link File} instance if the constructed
+	 *            {@link File} doesn't exist.
+	 * @param adjustExtensionCase whether or not to try upper- and lower-case
+	 *            variants of the extension. If {@code true} and the constructed
+	 *            {@link File} doesn't exist with the given case but does exist
+	 *            with an either upper or lower case version of the extension,
+	 *            the existing {@link File} instance will be returned.
+	 * @return The constructed {@link File} instance or {@code null} if the
+	 *         target file doesn't exist and {@code nullIfNonExisting} is true.
 	 */
-	@Deprecated
-	public static File getFileNameWitAddedExtension(File parent, File file, String ext) {
-		return getFileNameWithAddedExtension(parent, file, ext);
+	@Nullable
+	public static File replaceExtension(
+		@Nullable File file,
+		@Nullable String extension,
+		boolean nullIfNonExisting,
+		boolean adjustExtensionCase
+	) {
+		if (file == null) {
+			return null;
+		}
+		return replaceExtension(
+			file.getParentFile(),
+			file.getName(),
+			extension,
+			nullIfNonExisting,
+			adjustExtensionCase
+		);
 	}
 
-	public static File isFileExists(File f, String ext) {
-		int point = f.getName().lastIndexOf('.');
+	/**
+	 * Returns a new {@link File} instance where the file extension has been
+	 * replaced.
+	 *
+	 * @param folder the {@link File} instance representing the folder for the
+	 *            constructed {@link File}. Use {@code null} or an empty string
+	 *            for the current folder.
+	 * @param file the {@link File} for which to replace the extension. Only the
+	 *            file name will be used, its path will be discarded.
+	 * @param extension the new file extension.
+	 * @param nullIfNonExisting whether or not to return {@code null} or a
+	 *            non-existing {@link File} instance if the constructed
+	 *            {@link File} doesn't exist.
+	 * @param adjustExtensionCase whether or not to try upper- and lower-case
+	 *            variants of the extension. If {@code true} and the constructed
+	 *            {@link File} doesn't exist with the given case but does exist
+	 *            with an either upper or lower case version of the extension,
+	 *            the existing {@link File} instance will be returned.
+	 * @return The constructed {@link File} instance or {@code null} if the
+	 *         target file doesn't exist and {@code nullIfNonExisting} is true.
+	 */
+	@Nullable
+	public static File replaceExtension(
+		@Nullable File folder,
+		@Nullable File file,
+		@Nullable String extension,
+		boolean nullIfNonExisting,
+		boolean adjustExtensionCase
+	) {
+		if (file == null) {
+			return null;
+		}
+		return replaceExtension(
+			folder,
+			file.getName(),
+			extension,
+			nullIfNonExisting,
+			adjustExtensionCase
+		);
+	}
 
+	/**
+	 * Returns a new {@link File} instance where the file extension has been
+	 * replaced.
+	 *
+	 * @param folder the {@link File} instance representing the folder for the
+	 *            constructed {@link File}. Use {@code null} or an empty string
+	 *            for the current folder.
+	 * @param fileName the {@link String} for which to replace the extension.
+	 * @param extension the new file extension.
+	 * @param nullIfNonExisting whether or not to return {@code null} or a
+	 *            non-existing {@link File} instance if the constructed
+	 *            {@link File} doesn't exist.
+	 * @param adjustExtensionCase whether or not to try upper- and lower-case
+	 *            variants of the extension. If {@code true} and the constructed
+	 *            {@link File} doesn't exist with the given case but does exist
+	 *            with an either upper or lower case version of the extension,
+	 *            the existing {@link File} instance will be returned.
+	 * @return The constructed {@link File} instance or {@code null} if the
+	 *         target file doesn't exist and {@code nullIfNonExisting} is true.
+	 */
+	@Nullable
+	public static File replaceExtension(
+		@Nullable File folder,
+		@Nullable String fileName,
+		@Nullable String extension,
+		boolean nullIfNonExisting,
+		boolean adjustExtensionCase
+	) {
+		if (isBlank(fileName)) {
+			return null;
+		}
+
+		int point = fileName.lastIndexOf('.');
+
+		String baseFileName;
 		if (point == -1) {
-			point = f.getName().length();
+			baseFileName = fileName;
+		} else {
+			baseFileName = fileName.substring(0, point);
 		}
 
-		File lowerCasedFile = new File(f.getParentFile(), f.getName().substring(0, point) + "." + ext.toLowerCase());
-		if (lowerCasedFile.exists()) {
-			return lowerCasedFile;
+		if (isBlank(extension)) {
+			File result = new File(folder, baseFileName);
+			return !nullIfNonExisting || result.exists() ? result : null;
 		}
 
-		File upperCasedFile = new File(f.getParentFile(), f.getName().substring(0, point) + "." + ext.toUpperCase());
-		if (upperCasedFile.exists()) {
-			return upperCasedFile;
+		File result = new File(folder, baseFileName + "." + extension);
+		if (result.exists() || !nullIfNonExisting && !adjustExtensionCase) {
+			return result;
 		}
 
-		return null;
+		if (!Platform.isWindows() && adjustExtensionCase) {
+			File adjustedResult = new File(folder, baseFileName + "." + extension.toLowerCase(Locale.ROOT));
+			if (adjustedResult.exists()) {
+				return adjustedResult;
+			}
+			adjustedResult = new File(folder, baseFileName + "." + extension.toUpperCase(Locale.ROOT));
+			if (adjustedResult.exists()) {
+				return adjustedResult;
+			}
+		}
+
+		return nullIfNonExisting ? null : result;
 	}
 
 	/**
@@ -880,7 +1063,7 @@ public class FileUtil {
 							if ("sub".equals(ext)) {
 								// Avoid microdvd/vobsub confusion by ignoring sub+idx pairs here since
 								// they'll come in unambiguously as vobsub via the idx file anyway
-								return isFileExists(new File(dir, name), "idx") == null;
+								return replaceExtension(new File(dir, name), "idx", true, true) == null;
 							}
 							return supported.contains(ext);
 						}

@@ -656,4 +656,16 @@ public class StringUtil {
 		}
 		return String.format(locale, "%.1f %s", (double) bytes / divisor, unit);
 	}
+
+	/**
+	 * An enum representing letter cases.
+	 */
+	public static enum LetterCase {
+
+		/** Upper-case, uppercase, capital or majuscule */
+		UPPER,
+
+		/** Lower-case, lowercase or minuscule */
+		LOWER
+	}
 }

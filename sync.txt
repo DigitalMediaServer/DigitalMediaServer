@@ -1,4 +1,4 @@
-UMS sync with: c4119907f355050fe87707749116afa43f0544a4 Fixed getContentFeatures bug
+UMS sync with: 143807c0e7dcca4f9648fa3f632aa46c56ab0029 Implemented exclusion of cover/album art from media entries
 
 Skipped:
 a4a099c7efcaf6dc8a28402a29eade757a2ce78d The ugly hack to solve problem when the TotalMatches are changed
