@@ -1,4 +1,4 @@
-UMS sync with: c09bba99bda783ba918d8677468a2818a978336f Fixed GenericIcons for OpenJDK
+UMS sync with: 80e74a8db1408eca7a862dc30c7431bb202536db Fixed a bug where thumbnails wouldn't always be generated when MediaInfo isn't used or available
 
 Skipped:
 a4a099c7efcaf6dc8a28402a29eade757a2ce78d The ugly hack to solve problem when the TotalMatches are changed
