@@ -19,6 +19,7 @@
 package net.pms.newgui;
 
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
+import com.jgoodies.forms.factories.DefaultComponentFactory;
 import com.jgoodies.looks.Options;
 import com.jgoodies.looks.plastic.PlasticLookAndFeel;
 import com.jgoodies.looks.windows.WindowsLookAndFeel;
@@ -665,5 +666,12 @@ public class LooksFrame extends JFrame implements IFrame {
 	@Override
 	public String getLog() {
 		return getTt().getList().getText();
+	}
+
+	public static JComponent createStyledSeparator(String text, int style, ComponentOrientation orientation) {
+		JLabel separatorLabel = new JLabel(text);
+		separatorLabel.setFont(separatorLabel.getFont().deriveFont(style));
+		separatorLabel.setHorizontalAlignment(orientation.isLeftToRight() ? SwingConstants.LEFT : SwingConstants.RIGHT);
+		return DefaultComponentFactory.getInstance().createSeparator(separatorLabel);
 	}
 }

@@ -19,8 +19,8 @@
 package net.pms.newgui;
 
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
-import com.jgoodies.forms.builder.PanelBuilder;
-import com.jgoodies.forms.factories.Borders;
+import com.jgoodies.forms.builder.FormBuilder;
+import com.jgoodies.forms.factories.Paddings;
 import com.jgoodies.forms.layout.CellConstraints;
 import com.jgoodies.forms.layout.FormLayout;
 import java.awt.Dimension;
@@ -97,15 +97,13 @@ public class TreeNodeSettings extends DefaultMutableTreeNode {
 				"5dlu, pref, 3dlu, pref:grow, 5dlu"
 			);
 
-			PanelBuilder builder = new PanelBuilder(layout);
-			builder.border(Borders.DIALOG);
-			builder.opaque(false);
+			FormBuilder builder = FormBuilder.create().layout(layout).border(Paddings.DIALOG).opaque(false);
 			CellConstraints cc = new CellConstraints();
 
-			builder.add(iconPanel, cc.xywh(2, 1, 1, 4, CellConstraints.CENTER, CellConstraints.TOP));
+			builder.add(iconPanel).at(cc.xywh(2, 1, 1, 4, CellConstraints.CENTER, CellConstraints.TOP));
 
 			JLabel warningLabel = new JLabel(Messages.getString("TreeNodeSettings.4"));
-			builder.add(warningLabel, cc.xy(4, 2, CellConstraints.LEFT, CellConstraints.CENTER));
+			builder.add(warningLabel).at(cc.xy(4, 2, CellConstraints.LEFT, CellConstraints.CENTER));
 			warningLabel.setFont(warningLabel.getFont().deriveFont(Font.BOLD));
 
 			if (isNotBlank(player.getStatusText())) {
@@ -114,7 +112,7 @@ public class TreeNodeSettings extends DefaultMutableTreeNode {
 				stateText.setEditable(false);
 				stateText.setLineWrap(true);
 				stateText.setWrapStyleWord(true);
-				builder.add(stateText, cc.xy(4, 4, CellConstraints.FILL, CellConstraints.FILL));
+				builder.add(stateText).at(cc.xy(4, 4, CellConstraints.FILL, CellConstraints.FILL));
 			}
 			warningPanel = builder.getPanel();
 		}

@@ -439,8 +439,8 @@ public final class PlayerFactory {
 	}
 
 	/**
-	 * Gets a {@link Player}s currently active executable the registered
-	 * players or {@code null} if the no such {@link Player} is registered.
+	 * Gets the currently active executable for a registered {@link Player} or
+	 * {@code null} if the no such {@link Player} is registered.
 	 *
 	 * @param id the {@link PlayerId} to use for lookup.
 	 * @return the executable {@link String} or {@code null}.
