@@ -624,7 +624,14 @@ public class LibMediaInfoParser {
 			format = FormatConfiguration.TTA;
 		} else if (value.equals("55") || value.equals("a_mpeg/l3")) {
 			format = FormatConfiguration.MP3;
-		} else if (value.equals("lc")) {
+		} else if (
+			value.equals("lc") ||
+			value.equals("00001000-0000-FF00-8000-00AA00389B71") ||
+			(
+				value.equals("aac") &&
+				FormatConfiguration.AVI.equals(media.getContainer())
+			)
+		) {
 			format = FormatConfiguration.AAC_LC;
 		} else if (value.contains("he-aac")) {
 			format = FormatConfiguration.HE_AAC;
@@ -701,6 +708,8 @@ public class LibMediaInfoParser {
 			format = FormatConfiguration.ATRAC;
 		} else if (value.startsWith("atrac")) {
 			format = FormatConfiguration.ATRAC;
+		} else if (value.equals("nellymoser")) {
+			format = FormatConfiguration.NELLYMOSER;
 		} else if (value.equals("jpeg")) {
 			format = FormatConfiguration.JPG;
 		} else if (value.equals("png")) {
