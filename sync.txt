@@ -1,4 +1,4 @@
-UMS sync with: 80e74a8db1408eca7a862dc30c7431bb202536db Fixed a bug where thumbnails wouldn't always be generated when MediaInfo isn't used or available
+UMS sync with: 1a648a0ac25a9b7a41e40c146b9145973742df7a Fixed regression in folder thumbnails on non-Windows platforms.
 
 Skipped:
 a4a099c7efcaf6dc8a28402a29eade757a2ce78d The ugly hack to solve problem when the TotalMatches are changed
