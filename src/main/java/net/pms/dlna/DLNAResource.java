@@ -18,6 +18,7 @@
  */
 package net.pms.dlna;
 
+import java.awt.RenderingHints;
 import java.io.*;
 import java.net.InetAddress;
 import java.net.URLDecoder;
@@ -40,8 +41,10 @@ import net.pms.dlna.virtual.VirtualVideoAction;
 import net.pms.encoders.*;
 import net.pms.formats.Format;
 import net.pms.formats.FormatFactory;
+import net.pms.image.BufferedImageFilterChain;
 import net.pms.image.ImageFormat;
 import net.pms.image.ImageInfo;
+import net.pms.image.ImagesUtil;
 import net.pms.io.OutputParams;
 import net.pms.io.ProcessWrapper;
 import net.pms.io.SizeLimitInputStream;
@@ -78,6 +81,11 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 
 	protected static final int MAX_ARCHIVE_ENTRY_SIZE = 10000000;
 	protected static final int MAX_ARCHIVE_SIZE_SEEK = 800000000;
+
+	public static final RenderingHints THUMBNAIL_HINTS = new RenderingHints(
+		RenderingHints.KEY_RENDERING,
+		RenderingHints.VALUE_RENDER_QUALITY
+	);
 
 	/**
 	 * The name displayed on the renderer. Cached the first time getDisplayName(RendererConfiguration) is called.
@@ -1370,7 +1378,7 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 		return null;
 	}
 
-	private DLNAResource search(String[] searchIds, RendererConfiguration renderer) {
+	private static DLNAResource search(String[] searchIds, RendererConfiguration renderer) {
 		DLNAResource dlna;
 		for (String searchId : searchIds) {
 			if (searchId.equals("0")) {
@@ -3383,29 +3391,95 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 	 * @throws IOException
 	 */
 	protected DLNAThumbnailInputStream getThumbnailInputStream() throws IOException {
-		String languageCode = null;
-		if (media_audio != null) {
-			languageCode = media_audio.getLang();
-		}
-
-		if (media_subtitle != null && media_subtitle.getId() != -1) {
-			languageCode = media_subtitle.getLang();
-		}
-
-		if ((media_subtitle != null || media_audio != null) && StringUtils.isBlank(languageCode)) {
-			languageCode = DLNAMediaLang.UND;
-		}
-
-		if (languageCode != null) {
-			String code = Iso639.getISO639_2Code(languageCode.toLowerCase());
-			return DLNAThumbnailInputStream.toThumbnailInputStream(getResourceInputStream("/images/codes/" + code + ".png"));
-		}
-
 		if (isAvisynth()) {
 			return DLNAThumbnailInputStream.toThumbnailInputStream(getResourceInputStream("/images/logo-avisynth.png"));
 		}
 
 		return getGenericThumbnailInputStream(null);
+	}
+
+	/**
+	 * Adds an audio "flag" filter to the specified
+	 * {@link BufferedImageFilterChain}. If {@code filterChain} is {@code null}
+	 * and a "flag" filter is added, a new {@link BufferedImageFilterChain} is
+	 * created.
+	 *
+	 * @param filterChain the {@link BufferedImageFilterChain} to modify.
+	 * @return The resulting {@link BufferedImageFilterChain} or {@code null}.
+	 */
+	public BufferedImageFilterChain addAudioFlagFilter(BufferedImageFilterChain filterChain) {
+		String audioLanguageCode = media_audio != null ? media_audio.getLang() : null;
+		if (isNotBlank(audioLanguageCode)) {
+			if (filterChain == null) {
+				filterChain = new BufferedImageFilterChain();
+			}
+			filterChain.add(new ImagesUtil.AudioFlagFilter(audioLanguageCode, THUMBNAIL_HINTS));
+		}
+		return filterChain;
+	}
+
+	/**
+	 * Adds a subtitles "flag" filter to the specified
+	 * {@link BufferedImageFilterChain}. If {@code filterChain} is {@code null}
+	 * and a "flag" filter is added, a new {@link BufferedImageFilterChain} is
+	 * created.
+	 *
+	 * @param filterChain the {@link BufferedImageFilterChain} to modify.
+	 * @return The resulting {@link BufferedImageFilterChain} or {@code null}.
+	 */
+	public BufferedImageFilterChain addSubtitlesFlagFilter(BufferedImageFilterChain filterChain) {
+		String subsLanguageCode = media_subtitle != null && media_subtitle.getId() != -1 ? media_subtitle.getLang() : null;
+
+		if (isNotBlank(subsLanguageCode)) {
+			if (filterChain == null) {
+				filterChain = new BufferedImageFilterChain();
+			}
+			filterChain.add(new ImagesUtil.SubtitlesFlagFilter(subsLanguageCode, THUMBNAIL_HINTS));
+		}
+		return filterChain;
+	}
+
+	/**
+	 * Adds audio and subtitles "flag" filters to the specified
+	 * {@link BufferedImageFilterChain} if they should be applied. If
+	 * {@code filterChain} is {@code null} and a "flag" filter is added, a new
+	 * {@link BufferedImageFilterChain} is created.
+	 *
+	 * @param filterChain the {@link BufferedImageFilterChain} to modify.
+	 * @return The resulting {@link BufferedImageFilterChain} or {@code null}.
+	 */
+	public BufferedImageFilterChain addFlagFilters(BufferedImageFilterChain filterChain) {
+		// Show audio and subtitles language flags in the TRANSCODE folder only for video files
+		if (
+				(
+					parent instanceof FileTranscodeVirtualFolder ||
+					parent instanceof SubSelFile
+				) && (
+					media_audio != null ||
+					media_subtitle != null
+				)
+		) {
+			if (
+					(
+						media != null &&
+						media.isVideo()
+					) || (
+						media == null &&
+						format != null &&
+						format.isVideo()
+					)
+			) {
+				filterChain = addAudioFlagFilter(filterChain);
+				filterChain = addSubtitlesFlagFilter(filterChain);
+			}
+		} else if (
+			parent instanceof TranscodeVirtualFolder &&
+			this instanceof FileTranscodeVirtualFolder &&
+			media_subtitle != null
+		) {
+			filterChain = addSubtitlesFlagFilter(filterChain);
+		}
+		return filterChain;
 	}
 
 	public int getType() {
@@ -3442,7 +3516,7 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 		result.append(getName());
 		result.append(", full path=");
 		result.append(getResourceId());
-		result.append(", ext=");
+		result.append(", format=");
 		result.append(format);
 		result.append(", discovered=");
 		result.append(isDiscovered());
@@ -4588,7 +4662,7 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 			type == Format.IMAGE ? new FeedItem(name, uri, null, null, Format.IMAGE) : null
 			:
 			new RealFile(new File(uri));
-		if (format == null && !isweb) {
+		if (resource != null && format == null && !isweb) {
 			resource.setFormat(FormatFactory.getAssociatedFormat(".mpg"));
 		}
 

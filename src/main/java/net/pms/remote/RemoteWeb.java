@@ -25,6 +25,7 @@ import net.pms.dlna.DLNAResource;
 import net.pms.dlna.DLNAThumbnailInputStream;
 import net.pms.dlna.RealFile;
 import net.pms.dlna.RootFolder;
+import net.pms.image.BufferedImageFilterChain;
 import net.pms.image.ImageFormat;
 import net.pms.network.HTTPResource;
 import net.pms.newgui.DbgPacker;
@@ -303,8 +304,13 @@ public class RemoteWeb {
 					r.checkThumbnail();
 					in = r.fetchThumbnailInputStream();
 				}
+				BufferedImageFilterChain filterChain = null;
 				if (r instanceof RealFile && FullyPlayed.isFullyPlayedThumbnail(((RealFile) r).getFile())) {
-					in = FullyPlayed.addFullyPlayedOverlay(in);
+					filterChain = new BufferedImageFilterChain(FullyPlayed.getOverlayFilter());
+				}
+				filterChain = r.addFlagFilters(filterChain);
+				if (filterChain != null) {
+					in = in.transcode(in.getDLNAImageProfile(), false, filterChain);
 				}
 				Headers hdr = t.getResponseHeaders();
 				hdr.add("Content-Type", ImageFormat.PNG.equals(in.getFormat()) ? HTTPResource.PNG_TYPEMIME : HTTPResource.JPEG_TYPEMIME);
