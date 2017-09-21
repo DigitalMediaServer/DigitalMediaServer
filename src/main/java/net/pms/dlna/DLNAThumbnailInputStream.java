@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import javax.imageio.ImageIO;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import net.pms.image.BufferedImageFilterChain;
 import net.pms.image.ColorSpaceType;
 import net.pms.image.ImageFormat;
 import net.pms.image.ImageInfo;
@@ -37,7 +38,7 @@ import net.pms.image.ImagesUtil.ScaleType;
  */
 public class DLNAThumbnailInputStream extends ByteArrayInputStream {
 
-	/** The {@link ImageInfo} for this {@link DLNAThumbnailInputStream} */
+	/** The {@link ImageInfo} instance describing this {@link DLNAThumbnailInputStream} */
 	protected final ImageInfo imageInfo;
 
 	/** The {@link DLNAImageProfile} for this {@link DLNAThumbnailInputStream} */
@@ -198,26 +199,33 @@ public class DLNAThumbnailInputStream extends ByteArrayInputStream {
 	 * @param outputProfile the DLNA media profile to adhere to for the output.
 	 * @param padToSize Whether padding should be used if source aspect doesn't
 	 *                  match target aspect.
+	 * @param filterChain a {@link BufferedImageFilterChain} to apply during the
+	 *            operation or {@code null}.
 	 * @return The scaled and/or converted thumbnail, {@code null} if the
 	 *         source is {@code null}.
 	 * @exception IOException if the operation fails.
 	 */
 	public DLNAThumbnailInputStream transcode(
 		DLNAImageProfile outputProfile,
-		boolean padToSize
+		boolean padToSize,
+		BufferedImageFilterChain filterChain
 	) throws IOException {
 		DLNAThumbnail thumbnail;
 		thumbnail = (DLNAThumbnail) ImagesUtil.transcodeImage(
 			this.getBytes(false),
 			outputProfile,
 			true,
-			padToSize);
+			padToSize,
+			filterChain
+		);
 		return thumbnail != null ? new DLNAThumbnailInputStream(thumbnail) : null;
 	}
 
 	/**
-	 * @param copy {@code true} to return a new array, {@code false} to return
-	 *            the internal array.
+	 * Returns the byte array with the thumbnail image data.
+	 *
+	 * @param copy if {@code true} a copy of the array is returned, if
+	 *            {@code false} a reference to the existing array is returned.
 	 * @return The bytes of this thumbnail.
 	 */
 	@SuppressFBWarnings("EI_EXPOSE_REP")

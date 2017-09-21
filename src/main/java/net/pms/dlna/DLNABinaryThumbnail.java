@@ -231,7 +231,8 @@ public class DLNABinaryThumbnail extends DLNAImage implements DLNAThumbnail {
 			inputImage,
 			outputProfile,
 			true,
-			padToSize
+			padToSize,
+			null
 		);
 	}
 
@@ -268,7 +269,8 @@ public class DLNABinaryThumbnail extends DLNAImage implements DLNAThumbnail {
 			inputStream,
 			outputProfile,
 			true,
-			padToSize
+			padToSize,
+			null
 		);
 	}
 
@@ -302,7 +304,8 @@ public class DLNABinaryThumbnail extends DLNAImage implements DLNAThumbnail {
 			inputByteArray,
 			outputProfile,
 			true,
-			padToSize
+			padToSize,
+			null
 		);
 	}
 
@@ -345,7 +348,8 @@ public class DLNABinaryThumbnail extends DLNAImage implements DLNAThumbnail {
 			outputFormat,
 			true,
 			true,
-			padToSize
+			padToSize,
+			null
 		);
 	}
 
@@ -391,7 +395,8 @@ public class DLNABinaryThumbnail extends DLNAImage implements DLNAThumbnail {
 			outputFormat,
 			true,
 			true,
-			padToSize
+			padToSize,
+			null
 		);
 	}
 
@@ -430,7 +435,8 @@ public class DLNABinaryThumbnail extends DLNAImage implements DLNAThumbnail {
 			outputFormat,
 			true,
 			true,
-			padToSize
+			padToSize,
+			null
 		);
 	}
 
@@ -454,7 +460,9 @@ public class DLNABinaryThumbnail extends DLNAImage implements DLNAThumbnail {
 			this,
 			outputProfile,
 			true,
-			padToSize);
+			padToSize,
+			null
+		);
 	}
 
 	@Override

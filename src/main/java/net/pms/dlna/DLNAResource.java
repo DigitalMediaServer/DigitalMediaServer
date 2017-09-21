@@ -18,6 +18,7 @@
  */
 package net.pms.dlna;
 
+import java.awt.RenderingHints;
 import java.io.*;
 import java.net.InetAddress;
 import java.net.URLDecoder;
@@ -42,8 +43,10 @@ import net.pms.encoders.*;
 import net.pms.formats.Format;
 import net.pms.formats.FormatFactory;
 import net.pms.formats.FormatType;
+import net.pms.image.BufferedImageFilterChain;
 import net.pms.image.ImageFormat;
 import net.pms.image.ImageInfo;
+import net.pms.image.ImagesUtil;
 import net.pms.io.OutputParams;
 import net.pms.io.ProcessWrapper;
 import net.pms.io.SizeLimitInputStream;
@@ -81,6 +84,11 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 	protected static final int MAX_ARCHIVE_ENTRY_SIZE = 10000000;
 	protected static final int MAX_ARCHIVE_SIZE_SEEK = 800000000;
 	protected static final Rational AR_16_9 = Rational.valueOf(16L, 9L);
+
+	public static final RenderingHints THUMBNAIL_HINTS = new RenderingHints(
+		RenderingHints.KEY_RENDERING,
+		RenderingHints.VALUE_RENDER_QUALITY
+	);
 
 	/**
 	 * The name displayed on the renderer. Cached the first time getDisplayName(RendererConfiguration) is called.
@@ -3387,28 +3395,91 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 	 * @throws IOException
 	 */
 	protected DLNAThumbnailInputStream getThumbnailInputStream() throws IOException {
-		ISO639 language = null;
-		if (media_audio != null) {
-			language = media_audio.getLang();
-		}
-
-		if (media_subtitle != null && media_subtitle.getId() != -1) {
-			language = media_subtitle.getLang();
-		}
-
-		if ((media_subtitle != null || media_audio != null) && language == null) {
-			language = ISO639.UND;
-		}
-
-		if (language != null) {
-			return DLNAThumbnailInputStream.toThumbnailInputStream(getResourceInputStream("/images/codes/" + language.getCode() + ".png"));
-		}
-
 		if (isAvisynth()) {
 			return DLNAThumbnailInputStream.toThumbnailInputStream(getResourceInputStream("/images/logo-avisynth.png"));
 		}
 
 		return getGenericThumbnailInputStream(null);
+	}
+
+	/**
+	 * Adds an audio "flag" filter to the specified
+	 * {@link BufferedImageFilterChain}. If {@code filterChain} is {@code null}
+	 * and a "flag" filter is added, a new {@link BufferedImageFilterChain} is
+	 * created.
+	 *
+	 * @param filterChain the {@link BufferedImageFilterChain} to modify.
+	 * @return The resulting {@link BufferedImageFilterChain} or {@code null}.
+	 */
+	@Nullable
+	public BufferedImageFilterChain addAudioFlagFilter(@Nullable BufferedImageFilterChain filterChain) {
+		ISO639 audioLanguage = media_audio != null ? media_audio.getLang() : null;
+		if (audioLanguage != null) {
+			if (filterChain == null) {
+				filterChain = new BufferedImageFilterChain();
+			}
+			filterChain.add(new ImagesUtil.AudioFlagFilter(audioLanguage, THUMBNAIL_HINTS));
+		}
+		return filterChain;
+	}
+
+	/**
+	 * Adds a subtitles "flag" filter to the specified
+	 * {@link BufferedImageFilterChain}. If {@code filterChain} is {@code null}
+	 * and a "flag" filter is added, a new {@link BufferedImageFilterChain} is
+	 * created.
+	 *
+	 * @param filterChain the {@link BufferedImageFilterChain} to modify.
+	 * @return The resulting {@link BufferedImageFilterChain} or {@code null}.
+	 */
+	@Nullable
+	public BufferedImageFilterChain addSubtitlesFlagFilter(@Nullable BufferedImageFilterChain filterChain) {
+		ISO639 subtitlesLanguage = media_subtitle != null && media_subtitle.getId() != -1 ?
+			media_subtitle.getLang() :
+			null;
+
+		if (subtitlesLanguage != null) {
+			if (filterChain == null) {
+				filterChain = new BufferedImageFilterChain();
+			}
+			filterChain.add(new ImagesUtil.SubtitlesFlagFilter(subtitlesLanguage, THUMBNAIL_HINTS));
+		}
+		return filterChain;
+	}
+
+	/**
+	 * Adds audio and subtitles "flag" filters to the specified
+	 * {@link BufferedImageFilterChain} if they should be applied. If
+	 * {@code filterChain} is {@code null} and a "flag" filter is added, a new
+	 * {@link BufferedImageFilterChain} is created.
+	 *
+	 * @param filterChain the {@link BufferedImageFilterChain} to modify.
+	 * @return The resulting {@link BufferedImageFilterChain} or {@code null}.
+	 */
+	@Nullable
+	public BufferedImageFilterChain addFlagFilters(@Nullable BufferedImageFilterChain filterChain) {
+		// Show audio and subtitles language flags in the TRANSCODE folder only for video files
+		if (
+				(
+					parent instanceof FileTranscodeVirtualFolder ||
+					parent instanceof SubSelFile
+				) && (
+					media_audio != null ||
+					media_subtitle != null
+				)
+		) {
+			if (isVideo()) {
+				filterChain = addAudioFlagFilter(filterChain);
+				filterChain = addSubtitlesFlagFilter(filterChain);
+			}
+		} else if (
+			parent instanceof TranscodeVirtualFolder &&
+			this instanceof FileTranscodeVirtualFolder &&
+			media_subtitle != null
+		) {
+			filterChain = addSubtitlesFlagFilter(filterChain);
+		}
+		return filterChain;
 	}
 
 	/**
@@ -3438,7 +3509,7 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 		result.append(getName());
 		result.append(", full path=");
 		result.append(getResourceId());
-		result.append(", ext=");
+		result.append(", format=");
 		result.append(format);
 		result.append(", discovered=");
 		result.append(isDiscovered());
