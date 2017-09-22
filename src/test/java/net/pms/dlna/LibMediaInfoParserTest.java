@@ -86,6 +86,7 @@ public class LibMediaInfoParserTest {
 		assertThat(LibMediaInfoParser.getSpecificID(" 189 -32 ")).isEqualTo(32);
 		assertThat(LibMediaInfoParser.getSpecificID("189")).isEqualTo(189);
 		assertThat(LibMediaInfoParser.getSpecificID("189-")).isEqualTo(189);
+		assertThat(LibMediaInfoParser.getSpecificID("49-3")).isEqualTo(3);
 	}
 
 	@Test
