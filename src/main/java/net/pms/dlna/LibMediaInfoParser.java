@@ -239,9 +239,9 @@ public class LibMediaInfoParser {
 					}
 
 					// Special check for OGM: MediaInfo reports specific Audio/Subs IDs (0xn) while mencoder does not
-					value = MI.Get(StreamType.Audio, i, "ID/String");
+					value = MI.Get(StreamType.Audio, i, "ID");
 					if (isNotBlank(value)) {
-						if (value.contains("(0x") && !FormatConfiguration.OGG.equals(media.getContainer())) {
+						if (!FormatConfiguration.OGG.equals(media.getContainer())) {
 							currentAudioTrack.setId(getSpecificID(value));
 						} else {
 							currentAudioTrack.setId(media.getAudioTracksList().size());
@@ -971,9 +971,11 @@ public class LibMediaInfoParser {
 			}
 		}
 
-		try{
+		try {
 			return Integer.parseInt(value);
 		} catch (NumberFormatException e) {
+			LOGGER.debug("Could not parse the stream ID \"{}\": {}", value, e.getMessage());
+			LOGGER.trace("", e);
 			return -1;
 		}
 	}
