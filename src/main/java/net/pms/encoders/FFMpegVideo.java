@@ -184,11 +184,18 @@ public class FFMpegVideo extends Player {
 			override = or.addSubtitles();
 		}
 
-		if (!isDisableSubtitles(params) && override) {
+		if (!isDisableSubtitles(params) && override && params.sid != null) {
 			boolean isSubsManualTiming = true;
 			DLNAMediaSubtitle convertedSubs = dlna.getMediaSubtitle();
 			StringBuilder subsFilter = new StringBuilder();
-			if (params.sid != null && params.sid.getType().isText()) {
+			if (
+				params.sid.getType().isText() &&
+				!(
+					params.sid.getType() == SubtitleType.EIA608 ||
+					params.sid.getType() == SubtitleType.EIA708 || // https://trac.ffmpeg.org/ticket/1778
+					params.sid.getType() == SubtitleType.TELETEXT // Need a FFmpeg build with LIBZVBI and special command line to decode them, see https://ffmpeg.zeranoe.com/forum/viewtopic.php?t=1390
+				)
+			) {
 				boolean isSubsASS = params.sid.getType() == SubtitleType.ASS;
 				String originalSubsFilename = null;
 				if (is3D) {
@@ -390,6 +397,17 @@ public class FFMpegVideo extends Player {
 					} else {
 						transcodeOptions.add("libx265");
 					}
+					if (
+						configuration.isDisableSubtitles() &&
+						params.sid != null &&
+						(
+							params.sid.getType() == SubtitleType.EIA608 ||
+							params.sid.getType() == SubtitleType.EIA708
+						)
+					) {
+						transcodeOptions.add("-a53cc");
+						transcodeOptions.add("0");
+					}
 					transcodeOptions.add("-tune");
 					transcodeOptions.add("zerolatency");
 				}
@@ -406,6 +424,19 @@ public class FFMpegVideo extends Player {
 			} else if (!dtsRemux) {
 				transcodeOptions.add("-c:v");
 				transcodeOptions.add("mpeg2video");
+			} else if ((renderer.isTranscodeToMPEG2() || dtsRemux) && configuration.isDisableSubtitles()) {
+				if (
+					params.sid != null &&
+					params.sid.isEmbedded() &&
+					(
+						params.sid.getType() == SubtitleType.EIA608 ||
+						params.sid.getType() == SubtitleType.EIA708 // not yet supported by FFmpeg, should be in 2018
+					)
+				) {
+					// Must be ATSC compatible format. Set by default on recent FFmpeg versions except for NVENC
+					transcodeOptions.add("-a53cc");
+					transcodeOptions.add("0");
+				}
 			}
 
 			if (!customFFmpegOptions.contains("-f")) {
