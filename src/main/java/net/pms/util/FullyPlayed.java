@@ -32,6 +32,7 @@ import net.pms.configuration.RendererConfiguration;
 import net.pms.dlna.DLNAMediaInfo;
 import net.pms.dlna.DLNAResource;
 import net.pms.dlna.MediaMonitor;
+import net.pms.dlna.MediaType;
 import net.pms.dlna.RealFile;
 import net.pms.image.BufferedImageFilter;
 import net.pms.image.NonGeometricBufferedImageOp;
@@ -94,8 +95,7 @@ public class FullyPlayed {
 		return
 			resource != null &&
 			configuration.getFullyPlayedAction() == FullyPlayedAction.HIDE_VIDEO &&
-			resource.getMedia() != null &&
-			resource.getMedia().isVideo() &&
+			resource.isVideo() &&
 			MediaMonitor.isFullyPlayed(resource.getSystemName());
 	}
 
@@ -122,13 +122,13 @@ public class FullyPlayed {
 			configuration.getFullyPlayedAction() == FullyPlayedAction.MARK &&
 			MediaMonitor.isFullyPlayed(resource.getFile().getAbsolutePath())
 		) {
-			DLNAMediaInfo media = resource.getMedia();
-			if (media != null) {
-				if (media.isVideo()) {
+			MediaType mediaType = resource.getMediaType();
+			if (mediaType != null) {
+				if (mediaType == MediaType.VIDEO) {
 					displayName = String.format("[%s]%s", Messages.getString("DLNAResource.4"), displayName);
-				} else if (media.isAudio()) {
+				} else if (mediaType == MediaType.AUDIO) {
 					displayName = String.format("[%s]%s", Messages.getString("DLNAResource.5"), displayName);
-				} else if (media.isImage()) {
+				} else if (mediaType == MediaType.IMAGE) {
 					displayName = String.format("[%s]%s", Messages.getString("DLNAResource.6"), displayName);
 				}
 			}

@@ -18,53 +18,64 @@
  */
 package net.pms.formats.v2;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import javax.annotation.Nonnull;
 import static org.apache.commons.lang3.StringUtils.isBlank;
-import static org.apache.commons.lang3.StringUtils.trim;
 
 /**
- * Enum with possible types of subtitle tracks and methods for determining
- * them by file extension or libmediainfo output
- *
- * @since 1.60.0
+ * Enum with possible types of subtitle tracks and methods for determining them
+ * by file extension or libmediainfo output.
  */
 public enum SubtitleType {
-	// MediaInfo database of codec signatures (not comprehensive)
-	// http://mediainfo.svn.sourceforge.net/viewvc/mediainfo/MediaInfoLib/trunk/Source/Resource/Text/DataBase/
+	// MediaInfo database of codec signatures https://github.com/MediaArea/MediaInfoLib/blob/master/Source/Resource/Text/DataBase/Codec.csv
 
-	// SubtitleType(int index, String description, List<String> fileExtensions, List<String> libMediaInfoCodecs, int category)
-	UNKNOWN     (0,  "Generic",                     list(),             list(),                                                           Type.UNDEFINED),
-	SUBRIP      (1,  "SubRip",                      list("srt"),        list("S_TEXT/UTF8", "S_UTF8", "Subrip"),                          Type.TEXT),
-	TEXT        (2,  "Text file",                   list("txt"),        list(),                                                           Type.TEXT),
-	MICRODVD    (3,  "MicroDVD",                    list("sub"),        list(),                                                           Type.TEXT),
-	SAMI        (4,  "SAMI",                        list("smi"),        list(),                                                           Type.TEXT),
-	ASS         (5,  "(Advanced) SubStation Alpha", list("ass", "ssa"), list("S_TEXT/SSA", "S_TEXT/ASS", "S_SSA", "S_ASS", "SSA", "ASS"), Type.TEXT),
-	VOBSUB      (6,  "VobSub",                      list("idx"),        list("S_VOBSUB", "subp", "mp4s", "E0", "RLE"),                    Type.PICTURE), // TODO: "RLE" may also apply to other formats
-	UNSUPPORTED (7,  "Unsupported",                 list(),             list(),                                                           Type.UNDEFINED),
-	USF         (8,  "Universal Subtitle Format",   list(),             list("S_TEXT/USF", "S_USF"),                                      Type.TEXT),
-	BMP         (9,  "BMP",                         list(),             list("S_IMAGE/BMP"),                                              Type.PICTURE),
-	DIVX        (10, "DIVX subtitles",              list(),             list("DXSB"),                                                     Type.PICTURE),
-	TX3G        (11, "Timed text (TX3G)",           list(),             list("tx3g"),                                                     Type.TEXT),
-	PGS         (12, "Blu-ray subtitles",           list(),             list("S_HDMV/PGS", "PGS", "144"),                                 Type.PICTURE),
-	WEBVTT      (13, "WebVTT",                      list("vtt"),        list("WebVTT"),                                                   Type.TEXT);
-//	EIA_608		(14, "CEA-608",						list(),				list("EIA-608"),										  		  type.TEXT),
-//	EIA_708		(14, "CEA-708",						list(),				list("EIA-708"),										  		  type.TEXT);
-
-	public enum Type {
-		TEXT,
-		PICTURE,
-		UNDEFINED
-	}
+	//     int index, String description,        String shortName, List<String> fileExtensions, List<String> libMediaInfoCodecs,                         Category category
+	UNKNOWN     (0,  "Unknown",                     "Unknown",     list(),             list("Unknown"),                                                  SubtitleCategory.UNDEFINED),
+	SUBRIP      (1,  "SubRip",                      "SubRip",      list("srt"),        list("S_TEXT/UTF8", "S_UTF8", "UTF-8", "Subrip"),                 SubtitleCategory.TEXT),
+	TEXT        (2,  "Text",                        "Text",        list("txt"),        list(),                                                           SubtitleCategory.TEXT),
+	MICRODVD    (3,  "MicroDVD",                    "MicroDVD",    list("sub"),        list(),                                                           SubtitleCategory.TEXT),
+	SAMI        (4,  "SAMI",                        "SAMI",        list("smi"),        list(),                                                           SubtitleCategory.TEXT),
+	ASS         (5,  "(Advanced) SubStation Alpha", "ASS/SSA",     list("ass", "ssa"), list("S_TEXT/SSA", "S_TEXT/ASS", "S_SSA", "S_ASS", "SSA", "ASS"), SubtitleCategory.TEXT),
+	VOBSUB      (6,  "VobSub",                      "VobSub",      list("idx"),        list("S_VOBSUB", "subp", "mp4s", "E0", "RLE"),                    SubtitleCategory.PICTURE), // "RLE" may also apply to other formats
+	UNSUPPORTED (7,  "Unsupported",                 "Unsupported", list(),             list(),                                                           SubtitleCategory.UNDEFINED),
+	USF         (8,  "Universal Subtitle Format",   "USF",         list(),             list("S_TEXT/USF", "S_USF", "USF"),                               SubtitleCategory.TEXT),
+	BMP         (9,  "Bitmap",                      "BMP",         list(),             list("S_IMAGE/BMP"),                                              SubtitleCategory.PICTURE),
+	DIVX        (10, "DIVX subtitles",              "XSUB",        list(),             list("DXSB"),                                                     SubtitleCategory.PICTURE),
+	TX3G        (11, "Timed text (TX3G)",           "TX3G",        list(),             list("Timed Text", "tx3g"),                                       SubtitleCategory.TEXT),
+	PGS         (12, "Blu-ray subtitles",           "PGS",         list("sup", "pgs"), list("S_HDMV/PGS", "PGS", "144"),                                 SubtitleCategory.PICTURE),
+	WEBVTT      (13, "WebVTT",                      "WebVTT",      list("vtt"),        list("WebVTT", "S_TEXT/WEBVTT"),                                  SubtitleCategory.TEXT),
+	TEXTST      (14, "HDMV Text",                   "HDMV",        list(),             list("S_HDMV/TEXTST"),                                            SubtitleCategory.TEXT),
+	DVBSUB      (15, "DVB Subtitles",               "DVB",         list(),             list("S_DVBSUB", "DVB Subtitle", "6"),                            SubtitleCategory.PICTURE),
+	EIA608      (16, "EIA-608",                     "EIA-608",     list(),             list("EIA-608", "c608"),                                          SubtitleCategory.TEXT),
+	EIA708      (17, "EIA-708",                     "EIA-708",     list(),             list("EIA-708", "c708"),                                          SubtitleCategory.TEXT),
+	KATE        (18, "Kate",                        "Kate",        list(),             list("Kate"),                                                     SubtitleCategory.TEXT),
+	TELETEXT    (19, "Teletext subtitles",          "Teletext",    list(),             list("Teletext", "Teletext Subtitle"),                            SubtitleCategory.TEXT);
 
 	private final int index;
-	private final String description;
-	private final List<String> fileExtensions;
-	private final List<String> libMediaInfoCodecs;
-	private final Type category;
 
-	private final static Map<Integer, SubtitleType> stableIndexToSubtitleTypeMap;
-	private final static Map<String, SubtitleType> fileExtensionToSubtitleTypeMap;
-	private final static Map<String, SubtitleType> libmediainfoCodecToSubtitleTypeMap;
+	@Nonnull
+	private final String description;
+
+	@Nonnull
+	private final String shortName;
+
+	@Nonnull
+	private final List<String> fileExtensions;
+
+	@Nonnull
+	private final List<String> libMediaInfoCodecs;
+	private final SubtitleCategory category;
+
+	private static final Map<Integer, SubtitleType> stableIndexToSubtitleTypeMap;
+	private static final Map<String, SubtitleType> fileExtensionToSubtitleTypeMap;
+	private static final Map<String, SubtitleType> libmediainfoCodecToSubtitleTypeMap;
 
 	/**
 	 * A constant {@link Set} of lower-case file extensions for supported
@@ -72,62 +83,47 @@ public enum SubtitleType {
 	 */
 	public final static Set<String> SUPPORTED_FILE_EXTENSIONS;
 	private static List<String> list(String... args) {
-		return new ArrayList<>(Arrays.asList(args));
+		return Collections.unmodifiableList(Arrays.asList(args));
 	}
 
 	static {
-		stableIndexToSubtitleTypeMap = new HashMap<>();
-		fileExtensionToSubtitleTypeMap = new HashMap<>();
-		libmediainfoCodecToSubtitleTypeMap = new HashMap<>();
+		Map<Integer, SubtitleType> tempStableIndexToSubtitleTypeMap = new HashMap<>();
+		Map<String, SubtitleType> tempFileExtensionToSubtitleTypeMap = new HashMap<>();
+		Map<String, SubtitleType> tempLibmediainfoCodecToSubtitleTypeMap = new HashMap<>();
 		for (SubtitleType subtitleType : values()) {
-			stableIndexToSubtitleTypeMap.put(subtitleType.getStableIndex(), subtitleType);
+			tempStableIndexToSubtitleTypeMap.put(subtitleType.getStableIndex(), subtitleType);
 			for (String fileExtension : subtitleType.fileExtensions) {
-				fileExtensionToSubtitleTypeMap.put(fileExtension.toLowerCase(Locale.ROOT), subtitleType);
+				tempFileExtensionToSubtitleTypeMap.put(fileExtension.toLowerCase(Locale.ROOT), subtitleType);
 			}
 			for (String codec : subtitleType.libMediaInfoCodecs) {
-				libmediainfoCodecToSubtitleTypeMap.put(codec.toLowerCase(Locale.ROOT), subtitleType);
+				tempLibmediainfoCodecToSubtitleTypeMap.put(codec.toLowerCase(Locale.ROOT), subtitleType);
 			}
 		}
+		stableIndexToSubtitleTypeMap = Collections.unmodifiableMap(tempStableIndexToSubtitleTypeMap);
+		fileExtensionToSubtitleTypeMap = Collections.unmodifiableMap(tempFileExtensionToSubtitleTypeMap);
+		libmediainfoCodecToSubtitleTypeMap = Collections.unmodifiableMap(tempLibmediainfoCodecToSubtitleTypeMap);
+
 		SUPPORTED_FILE_EXTENSIONS = Collections.unmodifiableSet(
 			new LinkedHashSet<>(fileExtensionToSubtitleTypeMap.keySet())
 		);
 	}
 
+	@Nonnull
 	public static SubtitleType valueOfStableIndex(int stableIndex) {
 		SubtitleType subtitleType = stableIndexToSubtitleTypeMap.get(stableIndex);
-		if (subtitleType == null) {
-			subtitleType = UNKNOWN;
-		}
-		return subtitleType;
+		return subtitleType == null ? UNKNOWN : subtitleType;
 	}
 
-	/**
-	 * @deprecated use getSubtitleTypeByFileExtension(String fileExtension) instead
-	 */
-	@Deprecated
-	public static SubtitleType getSubtitleTypeByFileExtension(String fileExtension) {
-		return valueOfFileExtension(fileExtension);
-	}
-
+	@Nonnull
 	public static SubtitleType valueOfFileExtension(String fileExtension) {
 		if (isBlank(fileExtension)) {
 			return UNKNOWN;
 		}
-		SubtitleType subtitleType = fileExtensionToSubtitleTypeMap.get(fileExtension.toLowerCase());
-		if (subtitleType == null) {
-			subtitleType = UNKNOWN;
-		}
-		return subtitleType;
+		SubtitleType subtitleType = fileExtensionToSubtitleTypeMap.get(fileExtension.trim().toLowerCase(Locale.ROOT));
+		return subtitleType == null ? UNKNOWN : subtitleType;
 	}
 
-	/**
-	 * @deprecated use SubtitleType {@link #valueOfMediaInfoValue} instead.
-	 */
-	@Deprecated
-	public static SubtitleType getSubtitleTypeByLibMediaInfoCodec(String codec) {
-		return valueOfMediaInfoValue(codec);
-	}
-
+	@Nonnull
 	public static SubtitleType valueOfMediaInfoValue(String value) {
 		return valueOfMediaInfoValue(value, UNKNOWN);
 	}
@@ -136,37 +132,52 @@ public enum SubtitleType {
 		if (isBlank(value)) {
 			return defaultType;
 		}
-		SubtitleType subtitleType = libmediainfoCodecToSubtitleTypeMap.get(
-			trim(value).toLowerCase(Locale.ROOT)
-		);
-		if (subtitleType == null) {
-			subtitleType = defaultType;
-		}
-		return subtitleType;
+		SubtitleType subtitleType = libmediainfoCodecToSubtitleTypeMap.get(value.trim().toLowerCase(Locale.ROOT));
+		return subtitleType == null ? defaultType : subtitleType;
 	}
 
+	@Nonnull
 	public static Set<String> getSupportedFileExtensions() {
 		return SUPPORTED_FILE_EXTENSIONS;
 	}
 
+	/**
+	 * Creates a new instance with the specified parameters.
+	 *
+	 * @param index the subtitle type index.
+	 * @param description the full description.
+	 * @param shortName the abbreviated description.
+	 * @param fileExtensions a {@link List} of possible file extensions.
+	 * @param libMediaInfoCodecs a {@link List} of MediaInfo codec names.
+	 * @param category the {@link SubtitleCategory} for the subtitle type.
+	 */
 	private SubtitleType(
 		int index,
-		String description,
-		List<String> fileExtensions,
-		List<String> libMediaInfoCodecs,
-		Type category
+		@Nonnull String description,
+		@Nonnull String shortName,
+		@Nonnull List<String> fileExtensions,
+		@Nonnull List<String> libMediaInfoCodecs,
+		@Nonnull SubtitleCategory category
 	) {
 		this.index = index;
 		this.description = description;
+		this.shortName = shortName;
 		this.fileExtensions = fileExtensions;
 		this.libMediaInfoCodecs = libMediaInfoCodecs;
 		this.category = category;
 	}
 
+	@Nonnull
 	public String getDescription() {
 		return description;
 	}
 
+	@Nonnull
+	public String getShortName() {
+		return shortName;
+	}
+
+	@Nonnull
 	public String getExtension() {
 		if (fileExtensions.isEmpty()) {
 			return "";
@@ -174,15 +185,40 @@ public enum SubtitleType {
 		return fileExtensions.get(0);
 	}
 
+	@Nonnull
+	public List<String> getExtensions() {
+		return fileExtensions;
+	}
+
 	public int getStableIndex() {
 		return index;
 	}
 
 	public boolean isText() {
-		return category == Type.TEXT;
+		return category == SubtitleCategory.TEXT;
 	}
 
 	public boolean isPicture() {
-		return category == Type.PICTURE;
+		return category == SubtitleCategory.PICTURE;
+	}
+
+	@Nonnull
+	public SubtitleCategory getCategory() {
+		return category;
+	}
+
+	/**
+	 * An {@code enum} describing the basic type a {@link SubtitleType} is.
+	 */
+	public static enum SubtitleCategory {
+
+		/** Text based subtitles */
+		TEXT,
+
+		/** Bitmap/image based subtitles */
+		PICTURE,
+
+		/** Undefined type of subtitles */
+		UNDEFINED
 	}
 }

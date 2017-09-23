@@ -26,9 +26,13 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import net.pms.PMS;
 import net.pms.configuration.FormatConfiguration;
+import net.pms.configuration.PmsConfiguration;
+import net.pms.configuration.RendererConfiguration;
 import net.pms.formats.FormatFactory;
 import net.pms.formats.FormatType;
 import net.pms.io.BasicSystemUtils;
+import net.pms.util.FileUtil;
+import net.pms.util.FullyPlayed;
 import net.pms.util.ProcessUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -230,7 +234,7 @@ public class RealFile extends MapFile {
 							 * they are resolved before insertion into the
 							 * database
 							 */
-							if (getMedia() != null && getMedia().isVideo()) {
+							if (isVideo()) {
 								registerExternalSubtitles(false);
 							}
 							database.insertOrUpdateData(fileName, file.lastModified(), getFormat() == null ? null : getFormat().getType(), getMedia());
@@ -343,5 +347,29 @@ public class RealFile extends MapFile {
 
 	public void ignoreThumbHandling() {
 		useSuperThumb = true;
+	}
+
+	@SuppressWarnings("deprecation")
+	@Override
+	protected String getDisplayNameBase(RendererConfiguration renderer, PmsConfiguration configuration) {
+		String displayName = super.getDisplayNameBase(renderer, configuration);
+		if (isFolder()) {
+			return displayName;
+		}
+		if (isAudio()) {
+			DLNAMediaAudio firstAudioTrack = media != null ? media.getFirstAudioTrack() : null;
+			if (firstAudioTrack != null && isNotBlank(firstAudioTrack.getSongname())) {
+				return firstAudioTrack.getSongname();
+			}
+		}
+
+		if (configuration.isPrettifyFilenames() && isVideo()) {
+			displayName = FileUtil.getFileNamePrettified(displayName, getFile());
+		} else if (configuration.isHideExtensions()) {
+			displayName = FileUtil.getFileNameWithoutExtension(displayName);
+		}
+		displayName = FullyPlayed.prefixDisplayName(displayName, this, renderer);
+
+		return displayName;
 	}
 }

@@ -23,8 +23,9 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import net.pms.Messages;
+import net.pms.configuration.PmsConfiguration;
 import net.pms.configuration.RendererConfiguration;
-import net.pms.dlna.virtual.VirtualFolder;
+import net.pms.dlna.virtual.TranscodeVirtualFolder;
 import net.pms.encoders.Player;
 import net.pms.encoders.PlayerFactory;
 import net.pms.util.ISO639;
@@ -34,7 +35,7 @@ import org.slf4j.LoggerFactory;
 /**
  * This class populates the file-specific transcode folder with content.
  */
-public class FileTranscodeVirtualFolder extends VirtualFolder {
+public class FileTranscodeVirtualFolder extends TranscodeVirtualFolder {
 	private static final Logger LOGGER = LoggerFactory.getLogger(FileTranscodeVirtualFolder.class);
 
 	public FileTranscodeVirtualFolder(String name, String thumbnailIcon) { // XXX thumbnailIcon is always null
@@ -280,5 +281,10 @@ public class FileTranscodeVirtualFolder extends VirtualFolder {
 				addChapterFolder(dlna);
 			}
 		}
+	}
+
+	@Override
+	protected String getDisplayNameEngine(PmsConfiguration configuration) {
+		return null;
 	}
 }
