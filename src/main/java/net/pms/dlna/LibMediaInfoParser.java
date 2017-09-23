@@ -308,8 +308,9 @@ public class LibMediaInfoParser {
 			if (subTracks > 0) {
 				for (int i = 0; i < subTracks; i++) {
 					currentSubTrack = new DLNAMediaSubtitle();
-					if (isNotBlank(MI.Get(StreamType.Text, i, "CodecID"))) {
-						currentSubTrack.setType(SubtitleType.valueOfLibMediaInfoCodec(MI.Get(StreamType.Text, i, "CodecID")));
+					value = MI.Get(StreamType.Text, i, "CodecID");
+					if (isNotBlank(value)) {
+						currentSubTrack.setType(SubtitleType.valueOfLibMediaInfoCodec(value));
 					} else {
 						currentSubTrack.setType(SubtitleType.valueOfLibMediaInfoCodec(MI.Get(StreamType.Text, i, "Format")));
 					}
@@ -325,20 +326,28 @@ public class LibMediaInfoParser {
 
 					addSub(currentSubTrack, media);
 					if (parseLogger != null) {
-						parseLogger.logSubtitleTrackColumns(i, false);
+						parseLogger.logSubtitleTrackColumns(i, false); //TODO: (Nad) Parselogger new stuff
 					}
 				}
 			}
 
-			// Teletext
-			int teletextTracks = MI.Count_Get(StreamType.Other);
-			if (teletextTracks > 0) {
-				for (int i = 0; i < teletextTracks; i++) {
-					currentSubTrack = new DLNAMediaSubtitle();
-					if (isNotBlank(MI.Get(StreamType.Other, i, "Format"))) {
-						currentSubTrack.setType(SubtitleType.valueOfLibMediaInfoCodec(MI.Get(StreamType.Other, i, "Format")));
+			// Set Teletext subtitles
+			subTracks = MI.Count_Get(StreamType.Other);
+			if (subTracks > 0) { //TODO: (Nad) Handle if not supported...
+				for (int i = 0; i < subTracks; i++) {
+					value = MI.Get(StreamType.Other, i, "Format");
+					if (value != null && value.startsWith("Teletext")) {
+						currentSubTrack = new DLNAMediaSubtitle();
+						currentSubTrack.setType(SubtitleType.TELETEXT);
+						currentSubTrack.setLang(getLang(MI.Get(StreamType.Other, i, "Language")));
+						value = MI.Get(StreamType.Other, i, "ID");
+						if (isNotBlank(value) && value.contains("-")) { //TODO: (Nad) Why?
+							currentSubTrack.setId(getSpecificID(value));
+						} else {
+							currentSubTrack.setId(media.getSubtitleTracksList().size());
+						}
+						addSub(currentSubTrack, media);
 					}
-					addSub(currentSubTrack, media);
 				}
 			}
 
