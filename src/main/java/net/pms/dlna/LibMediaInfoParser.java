@@ -284,8 +284,19 @@ public class LibMediaInfoParser {
 					if (isNotBlank(value) && value.startsWith("Windows Media Audio 10")) {
 						currentAudioTrack.setCodecA(FormatConfiguration.WMA10);
 					}
-					currentAudioTrack.setLang(ISO639.get(MI.Get(StreamType.Audio, i, "Language/String")));
-					currentAudioTrack.setAudioTrackTitleFromMetadata(MI.Get(StreamType.Audio, i, "Title").trim());
+
+					value = MI.Get(StreamType.Audio, i, "Title").trim();
+					currentAudioTrack.setAudioTrackTitleFromMetadata(value);
+					ISO639 language = ISO639.get(MI.Get(StreamType.Audio, i, "Language"));
+					// If language code is null try to recognize the language from Title
+					if (language == null && isNotBlank(value)) {
+						language = ISO639.get(value, true);
+					}
+					if (language == null) {
+						language = ISO639.UND;
+					}
+					currentAudioTrack.setLang(language);
+
 					currentAudioTrack.setNumberOfChannels(parseNumberOfChannels(MI.Get(StreamType.Audio, i, "Channel(s)_Original")));
 					if (currentAudioTrack.isNumberOfChannelsUnknown()) {
 						currentAudioTrack.setNumberOfChannels(parseNumberOfChannels(MI.Get(StreamType.Audio, i, "Channel(s)")));
@@ -393,8 +404,19 @@ public class LibMediaInfoParser {
 						MI.Get(StreamType.Text, i, "CodecID"),
 						SubtitleType.valueOfMediaInfoValue(MI.Get(StreamType.Text, i, "Format"))
 					));
-					currentSubTrack.setLang(ISO639.get(MI.Get(StreamType.Text, i, "Language/String")));
-					currentSubTrack.setSubtitlesTrackTitleFromMetadata((MI.Get(StreamType.Text, i, "Title")).trim());
+
+					value = MI.Get(StreamType.Text, i, "Title").trim();
+					currentSubTrack.setSubtitlesTrackTitleFromMetadata(value);
+					ISO639 language = ISO639.get(MI.Get(StreamType.Text, i, "Language"));
+					// If language code is null try to recognize the language from Title
+					if (language == null && isNotBlank(value)) {
+						language = ISO639.get(value, true);
+					}
+					if (language == null) {
+						language = ISO639.UND;
+					}
+					currentSubTrack.setLang(language);
+
 					// Special check for OGM: MediaInfo reports specific Audio/Subs IDs (0xn) while MEncoder/FFmpeg does not
 					value = MI.Get(StreamType.Text, i, "ID/String");
 					if (isNotBlank(value)) {
