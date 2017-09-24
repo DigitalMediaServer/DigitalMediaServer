@@ -22,7 +22,6 @@ package net.pms.configuration;
 import java.io.FileNotFoundException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang3.StringUtils;
 import com.sun.jna.Platform;
 import net.pms.util.FilePermissions;
@@ -36,9 +35,9 @@ import net.pms.util.PropertiesUtil;
 public abstract class PlatformProgramPaths {
 
 	/**
-	 * @return The {@link ExternalProgramInfo} for FFmpeg.
+	 * @return The {@link FFmpegProgramInfo} for FFmpeg.
 	 */
-	public abstract ExternalProgramInfo getFFmpeg();
+	public abstract FFmpegProgramInfo getFFmpeg();
 
 	/**
 	 * @return The {@link ExternalProgramInfo} for MPlayer.
@@ -58,12 +57,12 @@ public abstract class PlatformProgramPaths {
 	/**
 	 * @return The {@link ExternalProgramInfo} for tsMuxeR.
 	 */
-	public abstract ExternalProgramInfo gettsMuxeR();
+	public abstract ExternalProgramInfo getTsMuxeR();
 
 	/**
 	 * @return The {@link ExternalProgramInfo} for tsMuxeRNew.
 	 */
-	public abstract ExternalProgramInfo gettsMuxeRNew();
+	public abstract ExternalProgramInfo getTsMuxeRNew();
 
 	/**
 	 * @return The {@link ExternalProgramInfo} for FLAC.
@@ -79,6 +78,23 @@ public abstract class PlatformProgramPaths {
 	 * @return The {@link ExternalProgramInfo} for InterFrame.
 	 */
 	public abstract ExternalProgramInfo getInterFrame();
+
+	/**
+	 * @return The {@link Path} for {@code ctrlsender.exe} for Windows.
+	 */
+	public Path getCtrlSender() {
+		return null;
+	}
+
+	/**
+	 * @return The {@link Path} for {@code taskkill.exe} for Windows.
+	 */
+	public Path getTaskKill() {
+		return null;
+	}
+
+	/** Singleton {@link PlatformProgramPaths} instance */
+	private static final PlatformProgramPaths INSTANCE;
 
 	/** The {@link Path} to {@code project.binaries.dir}. */
 	protected static final Path BINARIES_FOLDER = getBinariesFolder();
@@ -111,24 +127,27 @@ public abstract class PlatformProgramPaths {
 			developmentBinaryFolder = null;
 		}
 		PLATFORM_DEVELOPMENT_BINARIES_FOLDER = developmentBinaryFolder;
-	}
 
-	/**
-	 * Not to be instantiated.
-	 */
-	protected PlatformProgramPaths() {
+		if (Platform.isWindows()) {
+			INSTANCE = new WindowsProgramPaths();
+		} else if (Platform.isMac()) {
+			INSTANCE = new OSXProgramPaths();
+		} else {
+			INSTANCE = new LinuxProgramPaths();
+		}
 	}
 
 	/**
 	 * Returns a platform dependent {@link PlatformProgramPaths} instance.
+	 * <p>
+	 * <b>Note:</b> The returned instance does not support customizable program
+	 * paths. Use {@link PmsConfiguration} to retrieve customizable
+	 * {@link ExternalProgramInfo} instances.
 	 *
-	 * @param configuration the {@link Configuration} to use for loading custom paths
-	 * @return The platform dependent {@link PlatformProgramPaths} instance
-	 *
-	 * @throws InterruptedException If the operation is interrupted.
+	 * @return The platform dependent {@link PlatformProgramPaths} instance.
 	 */
-	public static final PlatformProgramPaths get(Configuration configuration) throws InterruptedException {
-		return new ConfigurableProgramPaths(configuration);
+	public static final PlatformProgramPaths get() { //TODO: (Nad) Was bug
+		return INSTANCE;
 	}
 
 	/**

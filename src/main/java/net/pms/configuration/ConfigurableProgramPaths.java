@@ -30,12 +30,11 @@ import javax.annotation.concurrent.ThreadSafe;
 import org.apache.commons.configuration.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import com.sun.jna.Platform;
 import net.pms.util.FileUtil;
 
 
 /**
- * This class keeps track of configurable/custom paths to external programs.
+ * This class adds configurable/custom paths to {@link PlatformProgramPaths}.
  *
  * @author Nadahar
  */
@@ -43,52 +42,81 @@ import net.pms.util.FileUtil;
 public class ConfigurableProgramPaths extends PlatformProgramPaths {
 	private static final Logger LOGGER = LoggerFactory.getLogger(ConfigurableProgramPaths.class);
 
-	/** The {@link Configuration} key for a custom VLC path. */
+	/** The {@link Configuration} key for the custom VLC path. */
 	public static final String KEY_VLC_PATH         = "vlc_path";
 
-	/** The {@link Configuration} key for a custom MEncoder path. */
+	/** The {@link Configuration} key for the custom MEncoder path. */
 	public static final String KEY_MENCODER_PATH    = "mencoder_path";
 
-	/** The {@link Configuration} key for a custom FFmpeg path. */
+	/** The {@link Configuration} key for the custom FFmpeg path. */
 	public static final String KEY_FFMPEG_PATH      = "ffmpeg_path";
 
-	/** The {@link Configuration} key for a custom MPlayer path. */
+	/** The {@link Configuration} key for the custom MPlayer path. */
 	public static final String KEY_MPLAYER_PATH     = "mplayer_path";
 
-	/** The {@link Configuration} key for a custom tsMuxeR path. */
+	/** The {@link Configuration} key for the custom tsMuxeR path. */
 	public static final String KEY_TSMUXER_PATH     = "tsmuxer_path";
 
-	/** The {@link Configuration} key for a custom tsMuxeRNew path. */
+	/** The {@link Configuration} key for the custom tsMuxeRNew path. */
 	public static final String KEY_TSMUXER_NEW_PATH = "tsmuxer_new_path";
 
-	/** The {@link Configuration} key for a custom FLAC path. */
+	/** The {@link Configuration} key for the custom FLAC path. */
 	public static final String KEY_FLAC_PATH        = "flac_path";
 
-	/** The {@link Configuration} key for a custom DCRaw path. */
+	/** The {@link Configuration} key for the custom DCRaw path. */
 	public static final String KEY_DCRAW_PATH       = "dcraw_path";
 
-	/** The {@link Configuration} key for a custom InterFrame path. */
+	/** The {@link Configuration} key for the custom InterFrame path. */
 	public static final String KEY_INTERFRAME_PATH  = "interframe_path";
+
+	public static final String KEY_DCRAW_EXECUTABLE_TYPE = "dcraw_executable_type"; //TODO: (Nad) JavaDocs
+	public static final String KEY_FFMPEG_EXECUTABLE_TYPE = "ffmpeg_executable_type";
+	public static final String KEY_MENCODER_EXECUTABLE_TYPE = "mencoder_executable_type";
+	public static final String KEY_TSMUXER_EXECUTABLE_TYPE = "tsmuxer_executable_type";
+	public static final String KEY_TSMUXER_NEW_EXECUTABLE_TYPE = "tsmuxer-new_executable_type";
+	public static final String KEY_VLC_EXECUTABLE_TYPE = "vlc_executable_type";
+
+	private final FFmpegProgramInfo ffmpegInfo;
+	private final ExternalProgramInfo mPlayerInfo;
+	private final ExternalProgramInfo vlcInfo;
+	private final ExternalProgramInfo mEncoderInfo;
+	private final ExternalProgramInfo tsMuxeRInfo;
+	private final ExternalProgramInfo tsMuxeRNewInfo;
+	private final ExternalProgramInfo flacInfo;
+	private final ExternalProgramInfo dcRawInfo;
+	private final ExternalProgramInfo interFrameInfo;
 
 	private final Configuration configuration;
 
-	private final PlatformProgramPaths platformInstance;
-
 	/**
-	 * Not to be instantiated, call {@link PlatformProgramPaths#get()} instead.
+	 * Not to be instantiated, get the {@link ExternalProgramInfo} instances
+	 * from {@link PmsConfiguration} instead.
 	 *
-	 * @param configuration the {@link Configuration} to use.
-	 * @throws InterruptedException If the operation is interrupted.
+	 * @param configuration the {@link Configuration} to use for custom paths.
 	 */
-	protected ConfigurableProgramPaths(Configuration configuration) throws InterruptedException {
+	protected ConfigurableProgramPaths(@Nullable Configuration configuration) {
 		this.configuration = configuration;
 
-		if (Platform.isWindows()) {
-			platformInstance = new WindowsProgramPaths();
-		} else if (Platform.isMac()) {
-			platformInstance = new OSXProgramPaths();
-		} else {
-			platformInstance = new LinuxProgramPaths();
+		PlatformProgramPaths platformPaths = PlatformProgramPaths.get();
+		ffmpegInfo = platformPaths.getFFmpeg().copy();
+		mPlayerInfo = platformPaths.getMPlayer().copy();
+		vlcInfo = platformPaths.getVLC().copy();
+		mEncoderInfo = platformPaths.getMEncoder().copy();
+		tsMuxeRInfo = platformPaths.getTsMuxeR().copy();
+		tsMuxeRNewInfo = platformPaths.getTsMuxeRNew().copy();
+		flacInfo = platformPaths.getFLAC().copy();
+		dcRawInfo = platformPaths.getDCRaw().copy();
+		interFrameInfo = platformPaths.getInterFrame().copy();
+		if (configuration != null) {
+			setCustomPathFromConfiguration(ffmpegInfo, KEY_FFMPEG_PATH);
+			setCustomPathFromConfiguration(mPlayerInfo, KEY_MPLAYER_PATH);
+			setCustomPathFromConfiguration(vlcInfo, KEY_VLC_PATH);
+			setCustomPathFromConfiguration(mEncoderInfo, KEY_MENCODER_PATH);
+			setCustomPathFromConfiguration(tsMuxeRInfo, KEY_TSMUXER_PATH);
+			setCustomPathFromConfiguration(tsMuxeRNewInfo, KEY_TSMUXER_NEW_PATH);
+			setCustomPathFromConfiguration(flacInfo, KEY_FLAC_PATH);
+			setCustomPathFromConfiguration(dcRawInfo, KEY_DCRAW_PATH);
+			setCustomPathFromConfiguration(interFrameInfo, KEY_INTERFRAME_PATH);
 		}
 	}
 
@@ -98,25 +126,44 @@ public class ConfigurableProgramPaths extends PlatformProgramPaths {
 	 * {@link #configuration}.
 	 *
 	 * @param programInfo the {@link ExternalProgramInfo} for which to set
-	 *            the {@link ProgramExecutableType#CUSTOM} type.
+	 *            the {@link ProgramExecutableType#CUSTOM} {@link Path}.
 	 * @param customPathKey the {@link Configuration} key to read.
 	 */
-	protected void setCustomPath(@Nonnull ExternalProgramInfo programInfo, @Nullable String customPathKey) {
-		if (programInfo == null) {
-			throw new IllegalArgumentException("programInfo cannot be null");
+	protected void setCustomPathFromConfiguration(
+		@Nullable ExternalProgramInfo programInfo,
+		@Nullable String customPathKey
+	) {
+		if (programInfo == null || configuration == null) {
+			return;
 		}
-		String customPath = configuration.getString(customPathKey);
-		if (isNotBlank(customPath)) {
-			Path custom = Paths.get(customPath);
-			if (!Files.exists(custom) && !custom.isAbsolute()) {
-				custom = FileUtil.findExecutableInOSPath(custom);
+		if (customPathKey == null) {
+			ReentrantReadWriteLock lock = programInfo.getLock();
+			lock.writeLock().lock();
+			try {
+				programInfo.remove(ProgramExecutableType.CUSTOM);
+				programInfo.setOriginalDefault();
+			} finally {
+				lock.writeLock().unlock();
+			}
+			LOGGER.debug("Removed custom {} path", programInfo.getName());
+		} else {
+			Path custom = null;
+			String customPath = configuration.getString(customPathKey);
+			if (isNotBlank(customPath)) {
+				custom = Paths.get(customPath);
+				if (!Files.exists(custom) && !custom.isAbsolute()) {
+					Path osPathCustom = FileUtil.findExecutableInOSPath(custom);
+					if (osPathCustom != null) {
+						custom = osPathCustom;
+					}
+				}
 			}
 			ReentrantReadWriteLock lock = programInfo.getLock();
 			lock.writeLock().lock();
 			try {
 				if (custom == null) {
-					programInfo.remove(ProgramExecutableType.CUSTOM);
-					programInfo.setDefault(programInfo.getOriginalDefailt());
+					programInfo.setExecutableInfo(ProgramExecutableType.CUSTOM, null);
+					programInfo.setOriginalDefault();
 				} else {
 					programInfo.setPath(ProgramExecutableType.CUSTOM, Paths.get(customPath));
 					programInfo.setDefault(ProgramExecutableType.CUSTOM);
@@ -125,7 +172,7 @@ public class ConfigurableProgramPaths extends PlatformProgramPaths {
 				lock.writeLock().unlock();
 			}
 			if (custom == null) {
-				LOGGER.debug("Cleared custom {} path");
+				LOGGER.debug("Cleared custom {} path", programInfo.getName());
 			} else {
 				LOGGER.debug("Set custom {} path \"{}\"", programInfo.getName(), customPath);
 			}
@@ -133,101 +180,170 @@ public class ConfigurableProgramPaths extends PlatformProgramPaths {
 	}
 
 	@Override
-	public ExternalProgramInfo getFFmpeg() {
-		ExternalProgramInfo ffmpeg = platformInstance.getFFmpeg();
-		if (ffmpeg != null && configuration != null) {
-			setCustomPath(ffmpeg, KEY_FFMPEG_PATH);
-		}
-		return ffmpeg;
+	public FFmpegProgramInfo getFFmpeg() {
+		return ffmpegInfo;
 	}
 
 	@Override
 	public ExternalProgramInfo getMPlayer() {
-		ExternalProgramInfo mPlayer = platformInstance.getMPlayer();
-		if (mPlayer != null && configuration != null) {
-			setCustomPath(mPlayer, KEY_MPLAYER_PATH);
-		}
-		return mPlayer;
+		return mPlayerInfo;
 	}
 
 	@Override
 	public ExternalProgramInfo getVLC() {
-		ExternalProgramInfo vlc = platformInstance.getVLC();
-		if (vlc != null && configuration != null) {
-			setCustomPath(vlc, KEY_VLC_PATH);
-		}
-		return vlc;
+		return vlcInfo;
 	}
 
 	@Override
 	public ExternalProgramInfo getMEncoder() {
-		ExternalProgramInfo mEncoder = platformInstance.getMEncoder();
-		if (mEncoder != null && configuration != null) {
-			setCustomPath(mEncoder, KEY_MENCODER_PATH);
-		}
-		return mEncoder;
+		return mEncoderInfo;
 	}
 
 	@Override
-	public ExternalProgramInfo gettsMuxeR() {
-		ExternalProgramInfo tsMuxeR = platformInstance.gettsMuxeR();
-		if (tsMuxeR != null && configuration != null) {
-			setCustomPath(tsMuxeR, KEY_TSMUXER_PATH);
-		}
-		return tsMuxeR;
+	public ExternalProgramInfo getTsMuxeR() {
+		return tsMuxeRInfo;
 	}
 
 	@Override
-	public ExternalProgramInfo gettsMuxeRNew() {
-		ExternalProgramInfo tsMuxeRNew = platformInstance.gettsMuxeRNew();
-		if (tsMuxeRNew != null && configuration != null) {
-			setCustomPath(tsMuxeRNew, KEY_TSMUXER_NEW_PATH);
-		}
-		return tsMuxeRNew;
+	public ExternalProgramInfo getTsMuxeRNew() {
+		return tsMuxeRNewInfo;
 	}
 
 	@Override
 	public ExternalProgramInfo getFLAC() {
-		ExternalProgramInfo flac = platformInstance.getFLAC();
-		if (flac != null && configuration != null) {
-			setCustomPath(flac, KEY_FLAC_PATH);
-		}
-		return flac;
+		return flacInfo;
 	}
 
 	@Override
 	public ExternalProgramInfo getDCRaw() {
-		ExternalProgramInfo dcRaw = platformInstance.getDCRaw();
-		if (dcRaw != null && configuration != null) {
-			setCustomPath(dcRaw, KEY_DCRAW_PATH);
-		}
-		return dcRaw;
+		return dcRawInfo;
 	}
 
 	@Override
 	public ExternalProgramInfo getInterFrame() {
-		ExternalProgramInfo interFrame = platformInstance.getInterFrame();
-		if (interFrame != null && configuration != null) {
-			setCustomPath(interFrame, KEY_INTERFRAME_PATH);
+		return interFrameInfo;
+	}
+
+	/**
+	 * Sets a new {@link ProgramExecutableType#CUSTOM} {@link Path} for FFmpeg
+	 * both in {@link #configuration} and {@link #ffmpegInfo}.
+	 *
+	 * @param path the new {@link Path} or {@code null} to clear it.
+	 */
+	public void setCustomFFmpegPath(@Nullable Path path) {
+		setCustomProgramPath(path, KEY_FFMPEG_PATH, ffmpegInfo);
+	}
+
+	/**
+	 * Sets a new {@link ProgramExecutableType#CUSTOM} {@link Path} for MPlayer
+	 * both in {@link #configuration} and {@link #mPlayerInfo}.
+	 *
+	 * @param path the new {@link Path} or {@code null} to clear it.
+	 */
+	public void setCustomMPlayerPath(@Nullable Path path) {
+		setCustomProgramPath(path, KEY_MPLAYER_PATH, mPlayerInfo);
+	}
+
+	/**
+	 * Sets a new {@link ProgramExecutableType#CUSTOM} {@link Path} for VLC both
+	 * in {@link #configuration} and {@link #vlcInfo}.
+	 *
+	 * @param path the new {@link Path} or {@code null} to clear it.
+	 */
+	public void setCustomVLCPath(@Nullable Path path) {
+		setCustomProgramPath(path, KEY_VLC_PATH, vlcInfo);
+	}
+
+	/**
+	 * Sets a new {@link ProgramExecutableType#CUSTOM} {@link Path} for MEncoder
+	 * both in {@link #configuration} and {@link #mEncoderInfo}.
+	 *
+	 * @param path the new {@link Path} or {@code null} to clear it.
+	 */
+	public void setCustomMEncoderPath(@Nullable Path path) {
+		setCustomProgramPath(path, KEY_MENCODER_PATH, mEncoderInfo);
+	}
+
+	/**
+	 * Sets a new {@link ProgramExecutableType#CUSTOM} {@link Path} for tsMuxeR
+	 * both in {@link #configuration} and {@link #tsMuxeRInfo}.
+	 *
+	 * @param path the new {@link Path} or {@code null} to clear it.
+	 */
+	public void setCustomTsMuxeRPath(@Nullable Path path) {
+		setCustomProgramPath(path, KEY_TSMUXER_PATH, tsMuxeRInfo);
+	}
+
+	/**
+	 * Sets a new {@link ProgramExecutableType#CUSTOM} {@link Path} for
+	 * "tsMuxeR new" both in {@link #configuration} and {@link #tsMuxeRNewInfo}.
+	 *
+	 * @param path the new {@link Path} or {@code null} to clear it.
+	 */
+	public void setCustomTsMuxeRNewPath(@Nullable Path path) {
+		setCustomProgramPath(path, KEY_TSMUXER_NEW_PATH, tsMuxeRNewInfo);
+	}
+
+	/**
+	 * Sets a new {@link ProgramExecutableType#CUSTOM} {@link Path} for FLAC
+	 * both in {@link #configuration} and {@link #flacInfo}.
+	 *
+	 * @param path the new {@link Path} or {@code null} to clear it.
+	 */
+	public void setCustomFlacPath(@Nullable Path path) {
+		setCustomProgramPath(path, KEY_FLAC_PATH, flacInfo);
+	}
+
+	/**
+	 * Sets a new {@link ProgramExecutableType#CUSTOM} {@link Path} for DCRaw
+	 * both in {@link #configuration} and {@link #dcRawInfo}.
+	 *
+	 * @param path the new {@link Path} or {@code null} to clear it.
+	 */
+	public void setCustomDCRawPath(@Nullable Path path) {
+		setCustomProgramPath(path, KEY_DCRAW_PATH, dcRawInfo);
+	}
+
+	/**
+	 * Sets a new {@link ProgramExecutableType#CUSTOM} {@link Path} for Interframe
+	 * both in {@link #configuration} and {@link #interFrameInfo}.
+	 *
+	 * @param path the new {@link Path} or {@code null} to clear it.
+	 */
+	public void setCustomInterFramePath(@Nullable Path path) {
+		setCustomProgramPath(path, KEY_INTERFRAME_PATH, interFrameInfo);
+	}
+
+	/**
+	 * Sets a new {@link ProgramExecutableType#CUSTOM} {@link Path} for the
+	 * specified {@link ExternalProgramInfo} using the specified
+	 * {@link Configuration} key. The {@link Path} is first written to
+	 * {@link #configuration} before being set in the specified
+	 * {@link ExternalProgramInfo} instance.
+	 *
+	 * @param path the new {@link Path} or {@code null} to clear it.
+	 * @param configurationKey the {@link Configuration} key under which to
+	 *            store the {@code path}.
+	 * @param programInfo the {@link ExternalProgramInfo} in which to set
+	 *            {@code path}.
+	 */
+	protected void setCustomProgramPath(@Nullable Path path, @Nonnull String configurationKey, @Nonnull ExternalProgramInfo programInfo) {
+		if (configurationKey == null) {
+			throw new IllegalArgumentException("configurationKey cannot be null");
 		}
-		return interFrame;
+		if (programInfo == null) {
+			throw new IllegalArgumentException("programInfo cannot be null");
+		}
+		if (configuration == null) {
+			return;
+		}
+		if (path == null) {
+			configuration.clearProperty(configurationKey);
+		} else {
+			path = path.toAbsolutePath();
+			configuration.setProperty(configurationKey, path.toString());
+		}
+		setCustomPathFromConfiguration(programInfo, configurationKey);
 	}
 
-	/**
-	 * @return The {@link Path} for {@code ctrlsender.exe} for Windows.
-	 */
-	public Path getCtrlSender() {
-		return platformInstance instanceof WindowsProgramPaths ?
-			((WindowsProgramPaths) platformInstance).getCtrlSender() :
-			null;
-	}
-
-	/**
-	 * @return The {@link Path} for {@code taskkill.exe} for Windows.
-	 */
-	public Path getTaskKill() {
-		return platformInstance instanceof WindowsProgramPaths ?
-			((WindowsProgramPaths) platformInstance).getTaskKill() :
-			null;
-	}
 }

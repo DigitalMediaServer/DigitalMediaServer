@@ -38,6 +38,7 @@ import javax.annotation.Nullable;
 import javax.swing.JCheckBox;
 import javax.swing.JComponent;
 import net.pms.Messages;
+import net.pms.configuration.ConfigurableProgramPaths;
 import net.pms.configuration.DeviceConfiguration;
 import net.pms.configuration.ExecutableInfo;
 import net.pms.configuration.ExecutableInfo.ExecutableInfoBuilder;
@@ -639,6 +640,11 @@ public class FFMpegVideo extends Player {
 	@Override
 	public PlayerId id() {
 		return ID;
+	}
+
+	@Override
+	public String getExecutableTypeKey() {
+		return ConfigurableProgramPaths.KEY_FFMPEG_EXECUTABLE_TYPE;
 	}
 
 	@Override

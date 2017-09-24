@@ -48,11 +48,11 @@ public class ExternalProgramInfo {
 	/** The lock protecting all mutable class fields */
 	protected final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
-	/** The default executable type for this external program. */
+	/** The default {@link ProgramExecutableType} for this external program. */
 	@GuardedBy("lock")
 	protected ProgramExecutableType defaultType;
 
-	/** The default executable type set by the constructor. */
+	/** The default {@link ProgramExecutableType} set by the constructor. */
 	protected final ProgramExecutableType originalDefaultType;
 
 	/**
@@ -97,11 +97,38 @@ public class ExternalProgramInfo {
 	public ExternalProgramInfo(
 		String programName,
 		ProgramExecutableType defaultType,
-		Map<ProgramExecutableType, ExecutableInfo> executablesInfo
+		Map<ProgramExecutableType, ? extends ExecutableInfo> executablesInfo
 	) {
 		this.programName = programName;
 		this.defaultType = defaultType;
 		this.originalDefaultType = defaultType;
+		this.executablesInfo = new HashMap<>(executablesInfo);
+	}
+
+	/**
+	 * Copy constructor, creates a "deep-clone" in that {@link #executablesInfo}
+	 * and {@link #lock} are new instances.
+	 *
+	 * @param programName the human readable name for the program to which the
+	 *            new {@link ExternalProgramInfo} applies, this is not the
+	 *            filename of a particular executable, but the general name of
+	 *            the program.
+	 * @param defaultType the default {@link ProgramExecutableType} for this
+	 *            external program.
+	 * @param originalDefaultType the default {@link ProgramExecutableType} set
+	 *            by the original constructor.
+	 * @param executablesInfo a {@link Map} of {@link ProgramExecutableType}s
+	 *            with their corresponding {@link ExecutableInfo}s.
+	 */
+	protected ExternalProgramInfo(
+		String programName,
+		ProgramExecutableType defaultType,
+		ProgramExecutableType originalDefaultType,
+		Map<ProgramExecutableType, ? extends ExecutableInfo> executablesInfo
+	) {
+		this.programName = programName;
+		this.defaultType = defaultType;
+		this.originalDefaultType = originalDefaultType;
 		this.executablesInfo = new HashMap<>(executablesInfo);
 	}
 
@@ -164,6 +191,19 @@ public class ExternalProgramInfo {
 	}
 
 	/**
+	 * Sets the default {@link ProgramExecutableType} to the original value set
+	 * by the constructor.,
+	 */
+	public void setOriginalDefault() {
+		lock.writeLock().lock();
+		try {
+			defaultType = originalDefaultType;
+		} finally {
+			lock.writeLock().unlock();
+		}
+	}
+
+	/**
 	 * @return The {@link ExecutableInfo} for the default
 	 *         {@link ProgramExecutableType}.
 	 */
@@ -216,7 +256,13 @@ public class ExternalProgramInfo {
 	 * @param executableType the {@link ProgramExecutableType} for which to set.
 	 * @param executableInfo the {@link ExecutableInfo} to set.
 	 */
-	public void setExecutableInfo(ProgramExecutableType executableType, ExecutableInfo executableInfo) {
+	public void setExecutableInfo(
+		@Nonnull ProgramExecutableType executableType,
+		@Nullable ExecutableInfo executableInfo
+	) {
+		if (executableType == null) {
+			throw new IllegalArgumentException("executableType cannot be null");
+		}
 		lock.writeLock().lock();
 		try {
 			executablesInfo.put(executableType, executableInfo);
@@ -232,7 +278,7 @@ public class ExternalProgramInfo {
 	 * @return The executable {@link Path}.
 	 */
 	@Nullable
-	public Path getPath(ProgramExecutableType executableType) {
+	public Path getPath(@Nullable ProgramExecutableType executableType) {
 		lock.readLock().lock();
 		try {
 			ExecutableInfo executableInfo = executablesInfo.get(executableType);
@@ -252,20 +298,30 @@ public class ExternalProgramInfo {
 	 *            set.
 	 * @param path the executable {@link Path} to set.
 	 */
-	public void setPath(@Nonnull ProgramExecutableType executableType, @Nonnull Path path) {
+	public void setPath(@Nonnull ProgramExecutableType executableType, @Nullable Path path) {
 		if (executableType == null) {
 			throw new IllegalArgumentException("executableType cannot be null");
-		}
-		if (path == null) {
-			throw new IllegalArgumentException("path cannot be null");
 		}
 		lock.writeLock().lock();
 		try {
 			ExecutableInfo executableInfo = executablesInfo.get(executableType);
-			if (executableInfo != null && path.equals(executableInfo.getPath())) {
+			if (
+				(
+					path == null &&
+					executableInfo == null
+				) || (
+					path != null &&
+					executableInfo != null &&
+					path.equals(executableInfo.getPath())
+				)
+			) {
 				return;
 			}
-			executableInfo = createExecutableInfo(path);
+			if (path == null) {
+				executableInfo = null;
+			} else {
+				executableInfo = createExecutableInfo(path);
+			}
 			executablesInfo.put(executableType, executableInfo);
 		} finally {
 			lock.writeLock().unlock();
@@ -274,7 +330,7 @@ public class ExternalProgramInfo {
 
 	/**
 	 * Removes the specified {@link ProgramExecutableType} executable
-	 * {@link Path}.
+	 * {@link Path} if present.
 	 *
 	 * @param executableType the {@link ProgramExecutableType} to remove.
 	 */
@@ -313,17 +369,25 @@ public class ExternalProgramInfo {
 	}
 
 	/**
-	 * Checks whether an executable path for the given
-	 * {@link ProgramExecutableType} is registered.
+	 * Checks whether an entry for the given {@link ProgramExecutableType} is
+	 * registered.
 	 *
 	 * @param executableType the {@link ProgramExecutableType} to check.
-	 * @return {@code true} if a path is registered for {@code executableType},
-	 *         false otherwise.
+	 * @param includeNull whether or not to return {@code true} if
+	 *            {@code executableType} is registered but the corresponding
+	 *            {@link ExecutableInfo} is {@code null}.
+	 * @return {@code true} if an {@link ExecutableInfo} is registered for
+	 *         {@code executableType}, {@code false} otherwise.
 	 */
-	public boolean containsType(ProgramExecutableType executableType) {
+	public boolean containsType(ProgramExecutableType executableType, boolean includeNull) {
 		lock.readLock().lock();
 		try {
-			return executablesInfo.containsKey(executableType) && executablesInfo.get(executableType) != null;
+			return
+				executablesInfo.containsKey(executableType) &&
+				(
+					includeNull ||
+					executablesInfo.get(executableType) != null
+				);
 		} finally {
 			lock.readLock().unlock();
 		}
@@ -555,5 +619,14 @@ public class ExternalProgramInfo {
 	 */
 	protected ExecutableInfo createExecutableInfo(@Nonnull Path executablePath) {
 		return ExecutableInfo.build(executablePath).build();
+	}
+
+	/**
+	 * Returns a "deep-clone" of this instance where mutable objects are copied.
+	 *
+	 * @return The new {@link ExternalProgramInfo}.
+	 */
+	public ExternalProgramInfo copy() {
+		return new ExternalProgramInfo(programName, defaultType, originalDefaultType, executablesInfo);
 	}
 }

@@ -45,22 +45,65 @@ public class FFmpegProgramInfo extends ExternalProgramInfo {
 	public FFmpegProgramInfo(
 		String programName,
 		ProgramExecutableType defaultType,
-		Map<ProgramExecutableType, ExecutableInfo> executablesInfo
+		Map<ProgramExecutableType, FFmpegExecutableInfo> executablesInfo
 	) {
 		super(programName, defaultType, executablesInfo);
 	}
 
-	public void setExecutableInfo(ProgramExecutableType executableType, FFmpegExecutableInfo executableInfo) {
-		lock.writeLock().lock();
-		try {
-			executablesInfo.put(executableType, executableInfo);
-		} finally {
-			lock.writeLock().unlock();
+	/**
+	 * Copy constructor, creates a "deep-clone" in that {@link #executablesInfo}
+	 * and {@link #lock} are new instances.
+	 *
+	 * @param programName the human readable name for the program to which the
+	 *            new {@link ExternalProgramInfo} applies, this is not the
+	 *            filename of a particular executable, but the general name of
+	 *            the program.
+	 * @param defaultType the default {@link ProgramExecutableType} for this
+	 *            external program.
+	 * @param originalDefaultType the default {@link ProgramExecutableType} set
+	 *            by the original constructor.
+	 * @param executablesInfo a {@link Map} of {@link ProgramExecutableType}s
+	 *            with their corresponding {@link ExecutableInfo}s.
+	 */
+	protected FFmpegProgramInfo(
+		String programName,
+		ProgramExecutableType defaultType,
+		ProgramExecutableType originalDefaultType,
+		Map<ProgramExecutableType, ? extends ExecutableInfo> executablesInfo
+	) {
+		super(programName, defaultType, originalDefaultType, executablesInfo);
+	}
+
+	/**
+	 * Sets the {@link FFmpegExecutableInfo} for the specified
+	 * {@link ProgramExecutableType}.
+	 *
+	 * @param executableType the {@link ProgramExecutableType} for which to set.
+	 * @param executableInfo the {@link FFmpegExecutableInfo} to set.
+	 * @throws IllegalArgumentException If {@code executableInfo} is not
+	 *             {@code null} and is not an instance of
+	 *             {@link FFmpegExecutableInfo}.
+	 */
+	@Override
+	public void setExecutableInfo(ProgramExecutableType executableType, ExecutableInfo executableInfo) {
+		if (executableInfo == null || executableInfo instanceof FFmpegExecutableInfo) {
+			super.setExecutableInfo(executableType, executableInfo);
+		} else {
+			throw new IllegalArgumentException("executableInfo must be an instance of FFmpegExecutableInfo");
 		}
 	}
 
 	@Override
 	protected FFmpegExecutableInfo createExecutableInfo(@Nonnull Path executablePath) {
 		return FFmpegExecutableInfo.build(executablePath).build();
+	}
+	/**
+	 * Returns a "deep-clone" of this instance where mutable objects are copied.
+	 *
+	 * @return The new {@link FFmpegProgramInfo}.
+	 */
+	@Override
+	public FFmpegProgramInfo copy() {
+		return new FFmpegProgramInfo(programName, defaultType, originalDefaultType, executablesInfo);
 	}
 }

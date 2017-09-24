@@ -20,6 +20,7 @@ package net.pms.newgui;
 
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import com.jgoodies.forms.factories.DefaultComponentFactory;
+import com.jgoodies.forms.layout.Sizes;
 import com.jgoodies.looks.Options;
 import com.jgoodies.looks.plastic.PlasticLookAndFeel;
 import com.jgoodies.looks.windows.WindowsLookAndFeel;
@@ -96,8 +97,10 @@ public class LooksFrame extends JFrame implements IFrame {
 	private AnimatedIcon restartIcon;
 	private AbstractButton webinterface;
 	private JLabel status;
-	private static Object lookAndFeelInitializedLock = new Object();
-	private static boolean lookAndFeelInitialized = false;
+	private final static Object lookAndFeelInitializedLock = new Object();
+	private volatile static boolean lookAndFeelInitialized = false;
+	private static int dlu100x = 167; // Default, will be set properly after LAF
+	private static int dlu100y = 163; // Default, will be set properly after LAF
 	private ViewLevel viewLevel = ViewLevel.UNKNOWN;
 
 	public ViewLevel getViewLevel() {
@@ -128,6 +131,10 @@ public class LooksFrame extends JFrame implements IFrame {
 	}
 
 	public static void initializeLookAndFeel() {
+
+		if (lookAndFeelInitialized) {
+			return;
+		}
 
 		synchronized (lookAndFeelInitializedLock) {
 			if (lookAndFeelInitialized) {
@@ -189,8 +196,33 @@ public class LooksFrame extends JFrame implements IFrame {
 				}
 			}
 
+			JLabel tempLabel = new JLabel();
+			dlu100x = Sizes.getUnitConverter().dialogUnitXAsPixel(100, tempLabel);
+			dlu100y = Sizes.getUnitConverter().dialogUnitYAsPixel(100, tempLabel);
+
 			lookAndFeelInitialized = true;
 		}
+	}
+
+	/**
+	 * Returns the the number of pixels represented by 100 horizontal dialog
+	 * units for the default {@link JLabel} font using the current
+	 * {@code LookAndFeel}.
+	 *
+	 * @return The size in pixels of 100 horizontal DLU units.
+	 */
+	public static int getDLU100x() {
+		return dlu100x;
+	}
+
+	/**
+	 * Returns the the number of pixels represented by 100 vertical dialog units
+	 * for the default {@link JLabel} font using the current {@code LookAndFeel}.
+	 *
+	 * @return The size in pixels of 100 vertical DLU units.
+	 */
+	public static int getDLU100y() {
+		return dlu100y;
 	}
 
 	/**

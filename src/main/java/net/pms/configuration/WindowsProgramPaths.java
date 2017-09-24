@@ -57,8 +57,6 @@ public class WindowsProgramPaths extends PlatformProgramPaths {
 
 	/**
 	 * Not to be instantiated, call {@link PlatformProgramPaths#get()} instead.
-	 *
-	 * @throws InterruptedException If the operation is interrupted.
 	 */
 	protected WindowsProgramPaths() {
 		// FFmpeg
@@ -241,7 +239,7 @@ public class WindowsProgramPaths extends PlatformProgramPaths {
 	}
 
 	@Override
-	public ExternalProgramInfo getFFmpeg() {
+	public FFmpegProgramInfo getFFmpeg() {
 		return ffmpegInfo;
 	}
 
@@ -261,12 +259,12 @@ public class WindowsProgramPaths extends PlatformProgramPaths {
 	}
 
 	@Override
-	public ExternalProgramInfo gettsMuxeR() {
+	public ExternalProgramInfo getTsMuxeR() {
 		return tsMuxeRInfo;
 	}
 
 	@Override
-	public ExternalProgramInfo gettsMuxeRNew() {
+	public ExternalProgramInfo getTsMuxeRNew() {
 		return tsMuxeRNewInfo;
 	}
 
@@ -288,6 +286,7 @@ public class WindowsProgramPaths extends PlatformProgramPaths {
 	/**
 	 * @return The {@link Path} for {@code ctrlsender.exe}.
 	 */
+	@Override
 	public Path getCtrlSender() {
 		return ctrlSender;
 	}
@@ -295,6 +294,7 @@ public class WindowsProgramPaths extends PlatformProgramPaths {
 	/**
 	 * @return The {@link Path} for {@code taskkill.exe}.
 	 */
+	@Override
 	public Path getTaskKill() {
 		return taskKill;
 	}

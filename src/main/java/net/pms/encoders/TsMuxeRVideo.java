@@ -40,6 +40,7 @@ import javax.swing.JComponent;
 import javax.swing.JPanel;
 import net.pms.Messages;
 import net.pms.PMS;
+import net.pms.configuration.ConfigurableProgramPaths;
 import net.pms.configuration.DeviceConfiguration;
 import net.pms.configuration.ExecutableInfo;
 import net.pms.configuration.ExecutableInfo.ExecutableInfoBuilder;
@@ -97,6 +98,11 @@ public class TsMuxeRVideo extends Player {
 	@Override
 	public PlayerId id() {
 		return ID;
+	}
+
+	@Override
+	public String getExecutableTypeKey() {
+		return ConfigurableProgramPaths.KEY_TSMUXER_EXECUTABLE_TYPE;
 	}
 
 	@Override

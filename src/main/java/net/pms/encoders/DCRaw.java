@@ -22,6 +22,7 @@ import com.sun.jna.Platform;
 import net.coobird.thumbnailator.Thumbnails;
 import net.pms.Messages;
 import net.pms.PMS;
+import net.pms.configuration.ConfigurableProgramPaths;
 import net.pms.configuration.ExecutableInfo;
 import net.pms.configuration.ExecutableInfo.ExecutableInfoBuilder;
 import net.pms.configuration.ExternalProgramInfo;
@@ -73,6 +74,11 @@ public class DCRaw extends ImagePlayer {
 	@Override
 	public PlayerId id() {
 		return ID;
+	}
+
+	@Override
+	public String getExecutableTypeKey() {
+		return ConfigurableProgramPaths.KEY_DCRAW_EXECUTABLE_TYPE;
 	}
 
 	@Override

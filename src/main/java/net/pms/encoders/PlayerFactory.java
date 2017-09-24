@@ -173,7 +173,7 @@ public final class PlayerFactory {
 						);
 					}
 				}
-				player.determineCurrentExecutableType(false);
+				player.determineCurrentExecutableType();
 
 			} finally {
 				programInfoLock.writeLock().unlock();

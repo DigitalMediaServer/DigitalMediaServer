@@ -238,5 +238,4 @@ public class FFmpegExecutableInfo extends ExecutableInfo {
 			return this;
 		}
 	}
-
 }

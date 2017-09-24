@@ -145,7 +145,6 @@ public class PmsConfiguration extends RendererConfiguration {
 	protected static final String KEY_CODE_THUMBS = "code_show_thumbs_no_code";
 	protected static final String KEY_CODE_TMO = "code_valid_timeout";
 	protected static final String KEY_CODE_USE = "code_enable";
-	protected static final String KEY_DCRAW_EXECUTABLE_TYPE = "dcraw_executable_type";
 	protected static final String KEY_DISABLE_FAKESIZE = "disable_fakesize";
 	public    static final String KEY_DISABLE_SUBTITLES = "disable_subtitles";
 	protected static final String KEY_DISABLE_TRANSCODE_FOR_EXTENSIONS = "disable_transcode_for_extensions";
@@ -162,7 +161,6 @@ public class PmsConfiguration extends RendererConfiguration {
 	protected static final String KEY_FFMPEG_AVISYNTH_INTERFRAME = "ffmpeg_avisynth_interframe";
 	protected static final String KEY_FFMPEG_AVISYNTH_INTERFRAME_GPU = "ffmpeg_avisynth_interframegpu";
 	protected static final String KEY_FFMPEG_AVISYNTH_MULTITHREADING = "ffmpeg_avisynth_multithreading";
-	protected static final String KEY_FFMPEG_EXECUTABLE_TYPE = "ffmpeg_executable_type";
 	protected static final String KEY_FFMPEG_FONTCONFIG = "ffmpeg_fontconfig";
 	protected static final String KEY_FFMPEG_MENCODER_PROBLEMATIC_SUBTITLES = "ffmpeg_mencoder_problematic_subtitles";
 	protected static final String KEY_FFMPEG_MULTITHREADING = "ffmpeg_multithreading";
@@ -221,7 +219,6 @@ public class PmsConfiguration extends RendererConfiguration {
 	protected static final String KEY_MENCODER_AC3_FIXED = "mencoder_ac3_fixed";
 	protected static final String KEY_MENCODER_CODEC_SPECIFIC_SCRIPT = "mencoder_codec_specific_script";
 	protected static final String KEY_MENCODER_CUSTOM_OPTIONS = "mencoder_custom_options";
-	protected static final String KEY_MENCODER_EXECUTABLE_TYPE = "mencoder_executable_type";
 	protected static final String KEY_MENCODER_FONT_CONFIG = "mencoder_fontconfig";
 	protected static final String KEY_MENCODER_FORCE_FPS = "mencoder_forcefps";
 	protected static final String KEY_MENCODER_INTELLIGENT_SYNC = "mencoder_intelligent_sync";
@@ -311,8 +308,6 @@ public class PmsConfiguration extends RendererConfiguration {
 	protected static final String KEY_TRANSCODE_BLOCKS_MULTIPLE_CONNECTIONS = "transcode_block_multiple_connections";
 	protected static final String KEY_TRANSCODE_FOLDER_NAME = "transcode_folder_name";
 	protected static final String KEY_TRANSCODE_KEEP_FIRST_CONNECTION = "transcode_keep_first_connection";
-	protected static final String KEY_TSMUXER_EXECUTABLE_TYPE = "tsmuxer_executable_type";
-	protected static final String KEY_TSMUXER_NEW_EXECUTABLE_TYPE = "tsmuxer-new_executable_type";
 	protected static final String KEY_TSMUXER_FORCEFPS = "tsmuxer_forcefps";
 	protected static final String KEY_UPNP_ENABLED = "upnp_enable";
 	protected static final String KEY_UPNP_PORT = "upnp_port";
@@ -325,7 +320,6 @@ public class PmsConfiguration extends RendererConfiguration {
 	protected static final String KEY_VIRTUAL_FOLDERS = "virtual_folders";
 	protected static final String KEY_VIRTUAL_FOLDERS_FILE = "virtual_folders_file";
 	protected static final String KEY_VLC_AUDIO_SYNC_ENABLED = "vlc_audio_sync_enabled";
-	protected static final String KEY_VLC_EXECUTABLE_TYPE = "vlc_executable_type";
 	protected static final String KEY_VLC_SAMPLE_RATE = "vlc_sample_rate";
 	protected static final String KEY_VLC_SAMPLE_RATE_OVERRIDE = "vlc_sample_rate_override";
 	protected static final String KEY_VLC_SCALE = "vlc_scale";
@@ -600,7 +594,7 @@ public class PmsConfiguration extends RendererConfiguration {
 		((PropertiesConfiguration)configuration).setPath(PROFILE_PATH);
 
 		tempFolder = new TempFolder(getString(KEY_TEMP_FOLDER_PATH, null));
-		programPaths = PlatformProgramPaths.get(configuration);
+		programPaths = new ConfigurableProgramPaths(configuration);
 		filter = new IpFilter();
 		PMS.setLocale(getLanguageLocale(true));
 		//TODO: The line below should be removed once all calls to Locale.getDefault() is replaced with PMS.getLocale()
@@ -619,21 +613,20 @@ public class PmsConfiguration extends RendererConfiguration {
 	 * The following 2 constructors are for minimal instantiation in the context of subclasses
 	 * (i.e. DeviceConfiguration) that use our getters and setters on another Configuration object.
 	 * Here our main purpose is to initialize RendererConfiguration as required.
-	 * @throws InterruptedException
 	 */
-	protected PmsConfiguration(int ignored) throws InterruptedException {
+	protected PmsConfiguration(int ignored) {
 		// Just instantiate
 		super(0);
 		tempFolder = null;
-		programPaths = PlatformProgramPaths.get(configuration);
+		programPaths = new ConfigurableProgramPaths(configuration);
 		filter = null;
 	}
 
-	protected PmsConfiguration(File f, String uuid) throws ConfigurationException, InterruptedException {
+	protected PmsConfiguration(File f, String uuid) throws ConfigurationException {
 		// Just initialize super
 		super(f, uuid);
 		tempFolder = null;
-		programPaths = PlatformProgramPaths.get(configuration);
+		programPaths = new ConfigurableProgramPaths(configuration);
 		filter = null;
 	}
 
@@ -749,10 +742,36 @@ public class PmsConfiguration extends RendererConfiguration {
 		return programPaths.getVLC();
 	}
 
-	public String getExecutableTypeKey(PlayerId id) {
-		if (id == null) {
-			return null;
+	@Nullable
+	public ProgramExecutableType getConfiguredExecutableType(@Nonnull Player player) {
+		if (player == null) {
+			throw new IllegalArgumentException("player cannot be null");
 		}
+		return ProgramExecutableType.toProgramExecutableType(
+			getString(player.getExecutableTypeKey(), null),
+			player.getProgramInfo().getDefault()
+		);
+	}
+
+	public void setPlayerExecutableType(@Nonnull Player player, @Nonnull ProgramExecutableType executableType) {
+		if (player == null) {
+			throw new IllegalArgumentException("player cannot be null");
+		}
+		if (executableType == null) {
+			throw new IllegalArgumentException("executableType cannot be null");
+		}
+		if (player.getExecutableTypeKey() != null) {
+			configuration.setProperty(player.getExecutableTypeKey(), executableType.toString());
+			player.determineCurrentExecutableType(executableType);
+		}
+	}
+
+	public void setCustomPlayerPath(@Nonnull Player player, @Nullable Path path) {
+		if (player == null) {
+			throw new IllegalArgumentException("player cannot be null");
+		}
+		if (player.get)
+		PlayerId id = player.id(); //TODO: (Nad) Move to Player?
 		if (
 			id == StandardPlayerId.AVI_SYNTH_FFMPEG ||
 			id == StandardPlayerId.FFMPEG_AUDIO ||
@@ -786,56 +805,8 @@ public class PmsConfiguration extends RendererConfiguration {
 			return KEY_VLC_EXECUTABLE_TYPE;
 		}
 		return null; // XXX: If plugins are reimplemented, a custom lookup is needed here.
-	}
 
-	@Nullable
-	public ProgramExecutableType getExecutableType(PlayerId id) {
-		if (id == null) {
-			return null;
-		}
-		if (
-			id == StandardPlayerId.AVI_SYNTH_FFMPEG ||
-			id == StandardPlayerId.FFMPEG_AUDIO ||
-			id == StandardPlayerId.FFMPEG_VIDEO ||
-			id == StandardPlayerId.FFMPEG_WEB_VIDEO
-		) {
-			return ProgramExecutableType.toProgramExecutableType(getString(KEY_FFMPEG_EXECUTABLE_TYPE, null), programPaths.getFFmpeg().getDefault());
-		}
-		if (
-			id == StandardPlayerId.AVI_SYNTH_MENCODER ||
-			id == StandardPlayerId.MENCODER_VIDEO ||
-			id == StandardPlayerId.MENCODER_WEB_VIDEO
-		) {
-			return ProgramExecutableType.toProgramExecutableType(getString(KEY_MENCODER_EXECUTABLE_TYPE, null), programPaths.getMEncoder().getDefault());
-		}
-		if (id == StandardPlayerId.DCRAW) {
-			return ProgramExecutableType.toProgramExecutableType(getString(KEY_DCRAW_EXECUTABLE_TYPE, null), programPaths.getDCRaw().getDefault());
-		}
-		if (
-			id == StandardPlayerId.TSMUXER_AUDIO ||
-			id == StandardPlayerId.TSMUXER_VIDEO
-		) {
-			return ProgramExecutableType.toProgramExecutableType(getString(KEY_TSMUXER_EXECUTABLE_TYPE, null), programPaths.gettsMuxeR().getDefault());
-		}
-		if (
-			id == StandardPlayerId.VLC_AUDIO_STREAMING ||
-			id == StandardPlayerId.VLC_VIDEO ||
-			id == StandardPlayerId.VLC_VIDEO_STREAMING ||
-			id == StandardPlayerId.VLC_WEB_VIDEO
-		) {
-			return ProgramExecutableType.toProgramExecutableType(getString(KEY_VLC_EXECUTABLE_TYPE, null), programPaths.getVLC().getDefault());
-		}
-		return null; // XXX: If plugins are reimplemented, a custom lookup is needed here.
-	}
 
-	public void setExecutableType(PlayerId id, ProgramExecutableType executableType) {
-		if (id == null) {
-			throw new IllegalArgumentException("id cannot be null");
-		}
-		if (executableType == null) {
-			throw new IllegalArgumentException("executableType cannot be null or unknown");
-		}
-		configuration.setProperty(getExecutableTypeKey(id), executableType.toString());
 	}
 
 	public ExternalProgramInfo getMEncoderPaths() {
@@ -871,15 +842,18 @@ public class PmsConfiguration extends RendererConfiguration {
 	}
 
 	public ExternalProgramInfo gettsMuxeRPaths() {
-		return programPaths.gettsMuxeR();
+		return programPaths.getTsMuxeR();
 	}
 
 	public ExternalProgramInfo gettsMuxeRNewPaths() {
-		return programPaths.gettsMuxeRNew();
+		return programPaths.getTsMuxeRNew();
 	}
 
-	public String gettsMuxeRNewPath() {
-		ProgramExecutableType executableType = getExecutableType(StandardPlayerId.TSMUXER_VIDEO);
+	public String gettsMuxeRNewPath() { //TODO: (Nad) tsMuxeRNew
+		ProgramExecutableType executableType = ProgramExecutableType.toProgramExecutableType(
+			ConfigurableProgramPaths.KEY_TSMUXER_NEW_EXECUTABLE_TYPE,
+			gettsMuxeRNewPaths().getDefault()
+		);
 		Path executable;
 		if (executableType != null) {
 			executable = gettsMuxeRNewPaths().getPath(executableType);
@@ -905,26 +879,6 @@ public class PmsConfiguration extends RendererConfiguration {
 	public String getInterFrameDefaultPath() {
 		Path executable = getInterFramePaths().getDefaultPath();
 		return executable == null ? null : executable.toString();
-	}
-
-	public Path getCtrlSenderPath() {
-		if (programPaths instanceof ConfigurableProgramPaths) {
-			return ((ConfigurableProgramPaths) programPaths).getCtrlSender();
-		}
-		if (programPaths instanceof WindowsProgramPaths) {
-			return ((WindowsProgramPaths) programPaths).getCtrlSender();
-		}
-		return null;
-	}
-
-	public Path getTaskKillPath() {
-		if (programPaths instanceof ConfigurableProgramPaths) {
-			return ((ConfigurableProgramPaths) programPaths).getTaskKill();
-		}
-		if (programPaths instanceof WindowsProgramPaths) {
-			return ((WindowsProgramPaths) programPaths).getTaskKill();
-		}
-		return null;
 	}
 
 	/**

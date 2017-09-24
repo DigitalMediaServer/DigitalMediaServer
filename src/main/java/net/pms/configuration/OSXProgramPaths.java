@@ -43,8 +43,6 @@ public class OSXProgramPaths extends PlatformProgramPaths {
 
 	/**
 	 * Not to be instantiated, call {@link PlatformProgramPaths#get()} instead.
-	 *
-	 * @throws InterruptedException If the operation is interrupted.
 	 */
 	@SuppressFBWarnings("DMI_HARDCODED_ABSOLUTE_FILENAME")
 	protected OSXProgramPaths() {
@@ -161,7 +159,7 @@ public class OSXProgramPaths extends PlatformProgramPaths {
 	}
 
 	@Override
-	public ExternalProgramInfo getFFmpeg() {
+	public FFmpegProgramInfo getFFmpeg() {
 		return ffmpegInfo;
 	}
 
@@ -181,12 +179,12 @@ public class OSXProgramPaths extends PlatformProgramPaths {
 	}
 
 	@Override
-	public ExternalProgramInfo gettsMuxeR() {
+	public ExternalProgramInfo getTsMuxeR() {
 		return tsMuxeRInfo;
 	}
 
 	@Override
-	public ExternalProgramInfo gettsMuxeRNew() {
+	public ExternalProgramInfo getTsMuxeRNew() {
 		return tsMuxeRNewInfo;
 	}
 

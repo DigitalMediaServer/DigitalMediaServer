@@ -48,10 +48,8 @@ public class LinuxProgramPaths extends PlatformProgramPaths {
 
 	/**
 	 * Not to be instantiated, call {@link PlatformProgramPaths#get()} instead.
-	 *
-	 * @throws InterruptedException If the operation is interrupted.
 	 */
-	protected LinuxProgramPaths() throws InterruptedException {
+	protected LinuxProgramPaths() {
 		// FFmpeg
 		Path ffmpeg = null;
 		if (Platform.is64Bit()) {
@@ -176,7 +174,7 @@ public class LinuxProgramPaths extends PlatformProgramPaths {
 	}
 
 	@Override
-	public ExternalProgramInfo getFFmpeg() {
+	public FFmpegProgramInfo getFFmpeg() {
 		return ffmpegInfo;
 	}
 
@@ -196,12 +194,12 @@ public class LinuxProgramPaths extends PlatformProgramPaths {
 	}
 
 	@Override
-	public ExternalProgramInfo gettsMuxeR() {
+	public ExternalProgramInfo getTsMuxeR() {
 		return tsMuxeRInfo;
 	}
 
 	@Override
-	public ExternalProgramInfo gettsMuxeRNew() {
+	public ExternalProgramInfo getTsMuxeRNew() {
 		return tsMuxeRNewInfo;
 	}
 

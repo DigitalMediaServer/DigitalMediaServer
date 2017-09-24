@@ -55,6 +55,7 @@ import net.pms.util.OpenSubtitle;
 import net.pms.util.UMSUtils;
 import net.pms.util.Version;
 import net.pms.util.FilePermissions.FileFlag;
+import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -91,6 +92,13 @@ public abstract class Player {
 	public abstract PlayerId id();
 	public abstract String name();
 	public abstract int type();
+
+	/**
+	 * @return The {@link Configuration} key under which to store this
+	 *         {@link Player}'s {@link ProgramExecutableType}.
+	 */
+	public abstract String getExecutableTypeKey();
+
 	/**
 	 * Must be used to control all access to {@link #specificErrors}
 	 */
@@ -100,7 +108,7 @@ public abstract class Player {
 	 * The <i>current</i> {@link ProgramExecutableType} is the one that is
 	 * actually being used at the time. It isn't necessarily the same as the
 	 * <i>configured</i> {@link ProgramExecutableType} that can be read with
-	 * {@link PmsConfiguration#getExecutableType(PlayerId)}. The
+	 * {@link PmsConfiguration#getConfiguredExecutableType}. The
 	 * <i>configured</i> {@link ProgramExecutableType} is controlled by the
 	 * user. The {@code currentExecutableType} is initialized in
 	 * {@link PlayerFactory#registerPlayer(Player)} and starts out being equal
@@ -174,54 +182,44 @@ public abstract class Player {
 	}
 
 	/**
-	 * Sets the current {@link ProgramExecutableType} for this {@link Player}
-	 * and optionally also sets the same value in the configuration. For an
-	 * explanation of the concept, see {@link #currentExecutableType}.
+	 * Sets the current {@link ProgramExecutableType} for this {@link Player}.
+	 * For an explanation of the concept, see {@link #currentExecutableType}.
 	 *
 	 * @param executableType the new {@link ProgramExecutableType}.
-	 * @param setConfiguration whether to set the configuration value.
 	 */
-	public void setCurrentExecutableType(ProgramExecutableType executableType, boolean setConfiguration) {
+	public void setCurrentExecutableType(ProgramExecutableType executableType) {
 		currentExecutableType = executableType;
-		if (setConfiguration) {
-			_configuration.setExecutableType(id(), executableType);
-		}
 	}
 
 	/**
 	 * Determines and sets the current {@link ProgramExecutableType} for this
-	 * {@link Player} and optionally also sets the same value in the
-	 * configuration. The determination starts out with the configured
+	 * {@link Player}. The determination starts out with the configured
 	 * {@link ProgramExecutableType}.
 	 * <p>
 	 * For an explanation of the concept, see {@link #currentExecutableType}.
-	 *
-	 * @param setConfiguration whether to set the configuration value.
 	 */
-	public void determineCurrentExecutableType(boolean setConfiguration) {
-		determineCurrentExecutableType(configuration.getExecutableType(id()), setConfiguration);
+	public void determineCurrentExecutableType() {
+		determineCurrentExecutableType(configuration.getConfiguredExecutableType(this));
 	}
 
 	/**
 	 * Determines and sets the current {@link ProgramExecutableType} for this
-	 * {@link Player} and optionally also sets the same value in the
-	 * configuration. The determination starts out with the specified
+	 * {@link Player}. The determination starts out with the specified
 	 * {@link ProgramExecutableType}.
 	 * <p>
 	 * For an explanation of the concept, see {@link #currentExecutableType}.
 	 *
-	 * @param setConfiguration whether to set the configuration value.
+	 * @param configuredExecutableType the preferred
+	 *            {@link ProgramExecutableType}.
 	 */
-	public void determineCurrentExecutableType(
-		@Nullable ProgramExecutableType configuredExecutableType,
-		boolean setConfiguration
-	) {
+	public void determineCurrentExecutableType(@Nullable ProgramExecutableType configuredExecutableType) {
 		// Find the best executable type to use, first try the configured type
 		ProgramExecutableType newExecutableType = configuredExecutableType;
 		if (!isAvailable(newExecutableType)) {
 			// Set the platform default if that's available
-			if (isAvailable(programInfo.getDefault())) {
-				newExecutableType = programInfo.getDefault();
+			ProgramExecutableType tmpExecutableType = programInfo.getDefault();
+			if (isAvailable(tmpExecutableType)) {
+				newExecutableType = tmpExecutableType;
 			} else {
 				// Set the first one that is available, if any
 				for (ProgramExecutableType executableType : programInfo.getExecutablesTypes()) {
@@ -234,9 +232,6 @@ public abstract class Player {
 			// Leave it to the configured type if none other is available
 		}
 		currentExecutableType = newExecutableType;
-		if (setConfiguration) {
-			_configuration.setExecutableType(id(), newExecutableType);
-		}
 	}
 
 	// FIXME this is an implementation detail (and not a very good one).
