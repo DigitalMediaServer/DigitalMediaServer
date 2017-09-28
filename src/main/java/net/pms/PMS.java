@@ -365,9 +365,6 @@ public class PMS {
 		dbgPack = new DbgPacker();
 		tfm = new TempFileMgr();
 
-		// This should be removed soon
-		OpenSubtitle.convert();
-
 		// Start this here to let the conversion work
 		tfm.schedule();
 
@@ -2054,6 +2051,9 @@ public class PMS {
 	private CredMgr credMgr;
 
 	public static CredMgr.Cred getCred(String owner) {
+		if (instance == null || instance.credMgr == null) {
+			return null;
+		}
 		return instance.credMgr.getCred(owner);
 	}
 

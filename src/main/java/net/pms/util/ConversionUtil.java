@@ -1145,6 +1145,216 @@ public class ConversionUtil {
 	}
 
 	/**
+	 * Parses the specified {@code float} to a {@code boolean} value.
+	 * <p>
+	 * The following is considered {@code false}: {@code 0}<br>
+	 * The following is considered {@code true}: {@code 1}<br>
+	 *
+	 * @param value the value to parse to a {@code boolean}.
+	 * @param unknownTrue if {@code true} all values that isn't defined as
+	 *            either {@code true} or {@code false} are considered to be
+	 *            {@code true}, otherwise they are considered to be
+	 *            {@code false}.
+	 * @return The parsed {@code boolean} value.
+	 */
+	public static boolean parseBoolean(float value, boolean unknownTrue) {
+		return unknownTrue ? Float.compare(value, 0f) != 0 : Float.compare(value, 1f) == 0;
+	}
+
+	/**
+	 * Parses the specified {@code double} to a {@code boolean} value.
+	 * <p>
+	 * The following is considered {@code false}: {@code 0}<br>
+	 * The following is considered {@code true}: {@code 1}<br>
+	 *
+	 * @param value the value to parse to a {@code boolean}.
+	 * @param unknownTrue if {@code true} all values that isn't defined as
+	 *            either {@code true} or {@code false} are considered to be
+	 *            {@code true}, otherwise they are considered to be
+	 *            {@code false}.
+	 * @return The parsed {@code boolean} value.
+	 */
+	public static boolean parseBoolean(double value, boolean unknownTrue) {
+		return unknownTrue ? Double.compare(value, 0d) != 0 : Double.compare(value, 1d) == 0;
+	}
+
+	/**
+	 * Parses the specified {@code long} to a {@code boolean} value.
+	 * <p>
+	 * The following is considered {@code false}: {@code 0}<br>
+	 * The following is considered {@code true}: {@code 1}<br>
+	 *
+	 * @param value the value to parse to a {@code boolean}.
+	 * @param unknownTrue if {@code true} all values that isn't defined as
+	 *            either {@code true} or {@code false} are considered to be
+	 *            {@code true}, otherwise they are considered to be
+	 *            {@code false}.
+	 * @return The parsed {@code boolean} value.
+	 */
+	public static boolean parseBoolean(long value, boolean unknownTrue) {
+		return unknownTrue ? value != 0 : value == 1;
+	}
+
+	/**
+	 * Parses the specified {@code int} to a {@code boolean} value.
+	 * <p>
+	 * The following is considered {@code false}: {@code 0}<br>
+	 * The following is considered {@code true}: {@code 1}<br>
+	 *
+	 * @param value the value to parse to a {@code boolean}.
+	 * @param unknownTrue if {@code true} all values that isn't defined as
+	 *            either {@code true} or {@code false} are considered to be
+	 *            {@code true}, otherwise they are considered to be
+	 *            {@code false}.
+	 * @return The parsed {@code boolean} value.
+	 */
+	public static boolean parseBoolean(int value, boolean unknownTrue) {
+		return unknownTrue ? value != 0 : value == 1;
+	}
+
+	/**
+	 * Parses the specified {@code short} to a {@code boolean} value.
+	 * <p>
+	 * The following is considered {@code false}: {@code 0}<br>
+	 * The following is considered {@code true}: {@code 1}<br>
+	 *
+	 * @param value the value to parse to a {@code boolean}.
+	 * @param unknownTrue if {@code true} all values that isn't defined as
+	 *            either {@code true} or {@code false} are considered to be
+	 *            {@code true}, otherwise they are considered to be
+	 *            {@code false}.
+	 * @return The parsed {@code boolean} value.
+	 */
+	public static boolean parseBoolean(short value, boolean unknownTrue) {
+		return unknownTrue ? value != (short) 0 : value == (short) 1;
+	}
+
+	/**
+	 * Parses the specified {@code byte} to a {@code boolean} value.
+	 * <p>
+	 * The following is considered {@code false}: {@code 0}<br>
+	 * The following is considered {@code true}: {@code 1}<br>
+	 *
+	 * @param value the value to parse to a {@code boolean}.
+	 * @param unknownTrue if {@code true} all values that isn't defined as
+	 *            either {@code true} or {@code false} are considered to be
+	 *            {@code true}, otherwise they are considered to be
+	 *            {@code false}.
+	 * @return The parsed {@code boolean} value.
+	 */
+	public static boolean parseBoolean(byte value, boolean unknownTrue) {
+		return unknownTrue ? value != (byte) 0 : value == (byte) 1;
+	}
+
+	/**
+	 * Parses the specified {@link Object} to a {@code boolean} value.
+	 * <p>
+	 * The following is considered {@code false}: {@code null}, {@code 0}, an
+	 * empty string, {@code "0"}, {@code "false"} and {@code "no"}<br>
+	 * The following is considered {@code true}: {@code 1}, {@code "1"},
+	 * {@code "true"} and {@code "yes"}<br>
+	 * <p>
+	 * If {@code value} isn't a {@link Boolean} or a {@link Number}, the
+	 * {@link String} representation of {@code value} is used for evaluation.
+	 * The evaluation is case-insensitive.
+	 *
+	 * @param value the value to parse to a {@code boolean}.
+	 * @param unknownTrue if {@code true} all values that isn't defined as
+	 *            either {@code true} or {@code false} are considered to be
+	 *            {@code true}, otherwise they are considered to be
+	 *            {@code false}.
+	 * @return The parsed {@code boolean} value.
+	 *
+	 * @see #parseBoolean(Object)
+	 */
+	public static boolean parseBoolean(@Nullable Object value, boolean unknownTrue) {
+		if (value == null) {
+			return false;
+		}
+		if (value instanceof Boolean) {
+			return ((Boolean) value).booleanValue();
+		}
+		if (value instanceof Number) {
+			return unknownTrue ? ((Number) value).intValue() != 0 : ((Number) value).intValue() == 1;
+		}
+		String stringValue = value.toString();
+		if (isBlank(stringValue)) {
+			return false;
+		}
+		stringValue = stringValue.trim().toLowerCase(Locale.ROOT);
+		switch (stringValue) {
+			case "0":
+			case "false":
+			case "no":
+				return false;
+			case "1":
+			case "true":
+			case "yes":
+				return true;
+			default:
+				return unknownTrue;
+		}
+	}
+
+	/**
+	 * Parses the specified {@link Object} to a {@link Boolean}.
+	 * <p>
+	 * The following is considered {@code false}: {@code 0}, {@code "0"},
+	 * {@code "false"} and {@code "no"}<br>
+	 * The following is considered {@code true}: {@code 1}, {@code "1"},
+	 * {@code "true"} and {@code "yes"}<br>
+	 * <p>
+	 * If {@code value} isn't a {@link Boolean} or a {@link Number}, the
+	 * {@link String} representation of {@code value} is used for evaluation.
+	 * The evaluation is case-insensitive.
+	 * <p>
+	 * <b>Note:</b> This method returns {@code null} if the parsing fails. To
+	 * always get a {@code boolean} result, use
+	 * {@link #parseBoolean(Object, boolean)} instead.
+	 *
+	 * @param value the {@link Object} to parse.
+	 * @return The parsed {@link Boolean} or {@code null} if the parsing failed.
+	 *
+	 * @see #parseBoolean(Object, boolean)
+	 */
+	@Nullable
+	public static Boolean parseBoolean(@Nullable Object value) {
+		if (value == null) {
+			return null;
+		}
+		if (value instanceof Boolean) {
+			return (Boolean) value;
+		}
+		if (value instanceof Number) {
+			switch (((Number) value).intValue()) {
+				case 0:
+					return Boolean.FALSE;
+				case 1:
+					return Boolean.TRUE;
+				default:
+					return null;
+			}
+		}
+		String stringValue = value.toString();
+		if (isBlank(stringValue)) {
+			return null;
+		}
+		stringValue = stringValue.trim().toLowerCase(Locale.ROOT);
+		switch (stringValue) {
+			case "0":
+			case "false":
+			case "no":
+				return Boolean.FALSE;
+			case "1":
+			case "true":
+			case "yes":
+				return Boolean.TRUE;
+			default:
+				return null;
+		}
+	}
+
+	/**
 	 * Checks if {@link BigDecimal#doubleValue()} is an exact representation of
 	 * the specified {@link BigDecimal}.
 	 *

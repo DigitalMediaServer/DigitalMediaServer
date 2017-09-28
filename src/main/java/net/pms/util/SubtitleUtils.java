@@ -42,6 +42,7 @@ import net.pms.configuration.RendererConfiguration;
 import net.pms.dlna.DLNAMediaInfo;
 import net.pms.dlna.DLNAMediaInfo.Mode3D;
 import net.pms.dlna.DLNAMediaLang;
+import net.pms.dlna.DLNAMediaOnDemandSubtitle;
 import net.pms.dlna.DLNAMediaSubtitle;
 import net.pms.dlna.DLNAResource;
 import net.pms.encoders.PlayerFactory;
@@ -1006,7 +1007,7 @@ public class SubtitleUtils {
 		// Find already parsed subtitles
 		HashSet<File> existingSubtitles = new HashSet<>();
 		for (DLNAMediaSubtitle subtitle : media.getSubtitleTracksList()) {
-			if (subtitle.getExternalFile() != null) {
+			if (!(subtitle instanceof DLNAMediaOnDemandSubtitle) && subtitle.getExternalFile() != null) {
 				existingSubtitles.add(subtitle.getExternalFile());
 			}
 		}
@@ -1044,6 +1045,7 @@ public class SubtitleUtils {
 			DLNAMediaSubtitle subtitles = iterator.next();
 			if (
 				subtitles.isExternal() &&
+				!(subtitles instanceof DLNAMediaOnDemandSubtitle) &&
 				!folderSubtitles.contains(subtitles.getExternalFile())) {
 					iterator.remove();
 			}

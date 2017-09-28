@@ -38,7 +38,7 @@ public class InfoDb implements DbHandler {
 	private void askAndInsert(File f, String formattedName) {
 		synchronized (db) {
 			try {
-				String[] tmp = OpenSubtitle.getInfo(f, formattedName);
+				String[] tmp = OpenSubtitles.getInfo(f, formattedName);
 				Object obj = db.nullObj();
 				if (tmp != null) {
 					obj = create(tmp, 0);
@@ -170,7 +170,7 @@ public class InfoDb implements DbHandler {
 						File f = new File(key);
 						String name = f.getName();
 						try {
-							String[] tmp = OpenSubtitle.getInfo(f, name);
+							String[] tmp = OpenSubtitles.getInfo(f, name);
 							// if we still get nothing from opensubs
 							// we don't fiddle with the db
 							if (tmp != null) {
