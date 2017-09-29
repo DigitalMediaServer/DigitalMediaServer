@@ -20,9 +20,12 @@ package net.pms.dlna;
 
 import java.io.*;
 import java.nio.file.Files;
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import javax.annotation.Nullable;
 import net.pms.PMS;
 import net.pms.configuration.FormatConfiguration;
 import net.pms.configuration.PmsConfiguration;
@@ -46,6 +49,7 @@ import net.pms.util.CoverUtil;
 import net.pms.util.FileUtil;
 import net.pms.util.MpegUtil;
 import net.pms.util.ProcessUtil;
+import net.pms.util.Rational;
 import net.pms.util.StringUtil;
 import net.pms.util.UnknownFormatException;
 import static net.pms.util.StringUtil.*;
@@ -160,34 +164,18 @@ public class DLNAMediaInfo implements Cloneable {
 	public String frameRate;
 
 	private String frameRateMode;
-
-	/**
-	 * @deprecated Use standard getter and setter to access this variable.
-	 */
-	@Deprecated
-	public String pixelAspectRatio;
-	public String interlaced;
-
-	/**
-	 * @deprecated Use standard getter and setter to access this variable.
-	 */
-	@Deprecated
+	private Rational pixelAspectRatio;
+	private ScanType scanType;
+	private ScanOrder scanOrder;
 
 	/**
 	 * The frame rate mode as read from the parser
 	 */
 	private String frameRateModeRaw;
 	private String frameRateOriginal;
-
-	/**
-	 * @deprecated Use standard getter and setter to access this variable.
-	 */
-	@Deprecated
-	public String aspect;
-
-	public String aspectRatioDvdIso;
-	public String aspectRatioContainer;
-	public String aspectRatioVideoTrack;
+	private Rational aspectRatioDvdIso;
+	private Rational aspectRatioContainer;
+	private Rational aspectRatioVideoTrack;
 	private int videoBitDepth = 8;
 
 	private volatile DLNAThumbnail thumb = null;
@@ -1093,7 +1081,7 @@ public class DLNAMediaInfo implements Cloneable {
 					}
 				}
 
-				if (type == Format.VIDEO && pw != null && thumb == null) {
+				if (type == Format.VIDEO && pw != null && thumb == null && pw.getOutputByteArray() != null) {
 					byte[] bytes = pw.getOutputByteArray().toByteArray();
 					if (bytes != null && bytes.length > 0) {
 						try {
@@ -1785,12 +1773,25 @@ public class DLNAMediaInfo implements Cloneable {
 			result.append(", Video Codec: ").append(getCodecV());
 			result.append(", Duration: ").append(getDurationString());
 			result.append(", Video Resolution: ").append(getWidth()).append(" x ").append(getHeight());
-			result.append(", DAR: ").append(getAspectRatioContainer());
-			if (!"1.000".equals(getPixelAspectRatio())) {
-				result.append(", PAR: ").append(getPixelAspectRatio());
+			if (aspectRatioContainer != null) {
+				result.append(", Display Aspect Ratio: ").append(aspectRatioContainer.toAspectRatio());
 			}
-			if (isNotBlank(getInterlaced())) {
-				result.append(", Interlaced Mode: ").append(getInterlaced());
+			if (pixelAspectRatio != null && !Rational.ONE.equals(pixelAspectRatio)) {
+				result.append(", Pixel Aspect Ratio: ");
+				if (pixelAspectRatio.isInteger()) {
+					result.append(pixelAspectRatio.toDebugString());
+				} else {
+					result.append(pixelAspectRatio.toDecimalString(
+						new DecimalFormat("#0.##", DecimalFormatSymbols.getInstance(Locale.ROOT))
+					));
+					result.append(" (").append(pixelAspectRatio.toString()).append(")");
+				}
+			}
+			if (scanType != null) {
+				result.append(", Scan Type: ").append(getScanType());
+			}
+			if (scanOrder != null) {
+				result.append(", Scan Order: ").append(getScanOrder());
 			}
 			if (isNotBlank(getFrameRate())) {
 				result.append(", Frame Rate: ").append(getFrameRate());
@@ -1804,7 +1805,8 @@ public class DLNAMediaInfo implements Cloneable {
 				if (isNotBlank(getFrameRateModeRaw())) {
 					result.append(" (").append(getFrameRateModeRaw()).append(")");
 				}
-			} else if (isNotBlank(getFrameRateModeRaw())) {
+			}
+			if (isNotBlank(getFrameRateModeRaw())) {
 				result.append(", Frame Rate Mode Raw: ");
 				result.append(getFrameRateModeRaw());
 			}
@@ -1956,13 +1958,13 @@ public class DLNAMediaInfo implements Cloneable {
 		String a = null;
 
 		if (aspectRatioDvdIso != null) {
-			double ar = Double.parseDouble(aspectRatioDvdIso);
+			double aspectRatio = aspectRatioDvdIso.doubleValue();
 
-			if (ar > 1.7 && ar < 1.8) {
+			if (aspectRatio > 1.7 && aspectRatio < 1.8) {
 				a = ratios ? "16/9" : "1.777777777777777";
 			}
 
-			if (ar > 1.3 && ar < 1.4) {
+			if (aspectRatio > 1.3 && aspectRatio < 1.4) {
 				a = ratios ? "4/3" : "1.333333333333333";
 			}
 		}
@@ -2243,7 +2245,7 @@ public class DLNAMediaInfo implements Cloneable {
 	}
 
 	/**
-	 * @return the video bit depth.
+	 * @return The video bit depth.
 	 */
 	public int getVideoBitDepth() {
 		return videoBitDepth;
@@ -2259,29 +2261,84 @@ public class DLNAMediaInfo implements Cloneable {
 	/**
 	 * @return The pixel aspect ratio.
 	 */
-	public String getPixelAspectRatio() {
+	public Rational getPixelAspectRatio() {
 		return pixelAspectRatio;
 	}
 
 	/**
-	 * @param value The pixel aspect ratio to set.
+	 * Sets the pixel aspect ratio by parsing the specified {@link String}.
+	 *
+	 * @param pixelAspectRatio the pixel aspect ratio to set.
+	 * @throws NumberFormatException If {@code pixelAspectRatio} cannot be
+	 *             parsed.
 	 */
 	public void setPixelAspectRatio(String pixelAspectRatio) {
-		this.pixelAspectRatio = pixelAspectRatio;
+		setPixelAspectRatio(Rational.valueOf(pixelAspectRatio));
 	}
 
 	/**
-	 * @return The interlacement mode.
+	 * Sets the pixel aspect ratio.
+	 *
+	 * @param pixelAspectRatio the pixel aspect ratio to set.
 	 */
-	public String getInterlaced() {
-		return interlaced;
+	public void setPixelAspectRatio(Rational pixelAspectRatio) {
+		if (Rational.isNotBlank(pixelAspectRatio)) {
+			this.pixelAspectRatio = pixelAspectRatio;
+		} else {
+			this.pixelAspectRatio = null;
+		}
 	}
 
 	/**
-	 * @param value The interlacement mode to set.
+	 * @return the {@link ScanType}.
 	 */
-	public void setInterlaced(String interlaced) {
-		this.interlaced = interlaced;
+	@Nullable
+	public ScanType getScanType() {
+		return scanType;
+	}
+
+	/**
+	 * Sets the {@link ScanType}.
+	 *
+	 * @param scanType the {@link ScanType} to set.
+	 */
+	public void setScanType(@Nullable ScanType scanType) {
+		this.scanType = scanType;
+	}
+
+	/**
+	 * Sets the {@link ScanType} by parsing the specified {@link String}.
+	 *
+	 * @param scanType the {@link String} to parse.
+	 */
+	public void setScanType(@Nullable String scanType) {
+		this.scanType = ScanType.typeOf(scanType);
+	}
+
+	/**
+	 * @return the {@link ScanOrder}.
+	 */
+	@Nullable
+	public ScanOrder getScanOrder() {
+		return scanOrder;
+	}
+
+	/**
+	 * Sets the {@link ScanOrder}.
+	 *
+	 * @param scanType the {@link ScanOrder} to set.
+	 */
+	public void setScanOrder(@Nullable ScanOrder scanOrder) {
+		this.scanOrder = scanOrder;
+	}
+
+	/**
+	 * Sets the {@link ScanOrder} by parsing the specified {@link String}.
+	 *
+	 * @param scanOrder the {@link String} to parse.
+	 */
+	public void setScanOrder(@Nullable String scanOrder) {
+		this.scanOrder = ScanOrder.typeOf(scanOrder);
 	}
 
 	/**
@@ -2291,116 +2348,112 @@ public class DLNAMediaInfo implements Cloneable {
 	 */
 	@Deprecated
 	public String getAspect() {
-		return getAspectRatioDvdIso();
+		return getAspectRatioDvdIso().toAspectRatio();
 	}
 
 	/**
-	 * The aspect ratio for a DVD ISO video track
+	 * The aspect ratio for a DVD ISO video track.
 	 *
-	 * @return the aspect
+	 * @return the aspect ratio.
 	 * @since 1.50.0
 	 */
-	public String getAspectRatioDvdIso() {
+	public Rational getAspectRatioDvdIso() {
 		return aspectRatioDvdIso;
 	}
 
 	/**
-	 * @deprecated use setAspectRatioDvdIso() for the original
-	 * functionality of this method, or use setAspectRatioContainer() for a
-	 * better default method to set aspect ratios.
+	 * Sets the aspect ratio for a DVD ISO video track by parsing the specified
+	 * {@link String}.
+	 *
+	 * @param aspectRatio the aspect ratio to set.
+	 * @throws NumberFormatException If {@code aspectRatio} cannot be parsed.
 	 */
-	@Deprecated
-	public void setAspect(String aspect) {
-		setAspectRatioDvdIso(aspect);
+	public void setAspectRatioDvdIso(String aspectRatio) {
+		setAspectRatioDvdIso(Rational.valueOf(aspectRatio));
 	}
 
 	/**
-	 * @param aspect the aspect to set
+	 * Sets the aspect ratio for a DVD ISO video track.
+	 *
+	 * @param aspectRatio the aspect ratio to set.
 	 * @since 1.50.0
 	 */
-	public void setAspectRatioDvdIso(String aspect) {
-		this.aspectRatioDvdIso = aspect;
+	public void setAspectRatioDvdIso(Rational aspectRatio) {
+		if (Rational.isNotBlank(aspectRatio)) {
+			aspectRatioDvdIso = aspectRatio;
+		} else {
+			aspectRatioDvdIso = null;
+		}
 	}
 
 	/**
-	 * Get the aspect ratio reported by the file/container.
-	 * This is the aspect ratio that the renderer should display the video
-	 * at, and is usually the same as the video track aspect ratio.
+	 * Get the aspect ratio reported by the file/container. This is the aspect
+	 * ratio that the renderer should display the video at, and is usually the
+	 * same as the video track aspect ratio.
 	 *
 	 * @return the aspect ratio reported by the file/container
 	 */
-	public String getAspectRatioContainer() {
+	public Rational getAspectRatioContainer() {
 		return aspectRatioContainer;
 	}
 
 	/**
-	 * Set the aspect ratio reported by the file/container.
+	 * Sets the aspect ratio reported by the file/container by parsing the
+	 * specified {@link String}.
 	 *
-	 * @see #getAspectRatioContainer()
-	 * @param aspect the aspect ratio to set
+	 * @param aspectRatio the aspect ratio to set.
+	 * @throws NumberFormatException If {@code aspectRatio} cannot be parsed.
 	 */
-	public void setAspectRatioContainer(String aspect) {
-		this.aspectRatioContainer = getFormattedAspectRatio(aspect);
+	public void setAspectRatioContainer(String aspectRatio) {
+		setAspectRatioContainer(Rational.valueOf(aspectRatio));
 	}
 
 	/**
-	 * Get the aspect ratio of the video track.
-	 * This is the actual aspect ratio of the pixels, which is not
-	 * always the aspect ratio that the renderer should display or that we
-	 * should output; that is {@link #getAspectRatioContainer()}
+	 * Sets the aspect ratio reported by the file/container.
+	 *
+	 * @param aspectRatio the aspect ratio to set.
+	 */
+	public void setAspectRatioContainer(Rational aspectRatio) {
+		if (Rational.isNotBlank(aspectRatio)) {
+			aspectRatioContainer = aspectRatio;
+		} else {
+			aspectRatioContainer = null;
+		}
+	}
+
+	/**
+	 * Get the aspect ratio of the video track. This is the actual aspect ratio
+	 * of the pixels, which is not always the aspect ratio that the renderer
+	 * should display or that we should output; that is
+	 * {@link #getAspectRatioContainer()}
 	 *
 	 * @return the aspect ratio of the video track
 	 */
-	public String getAspectRatioVideoTrack() {
+	public Rational getAspectRatioVideoTrack() {
 		return aspectRatioVideoTrack;
 	}
 
 	/**
-	 * @param aspect the aspect ratio to set
+	 * Sets the aspect ratio reported by the video track by parsing the
+	 * specified {@link String}.
+	 *
+	 * @param aspectRatio the aspect ratio to set.
+	 * @throws NumberFormatException If {@code aspectRatio} cannot be parsed.
 	 */
-	public void setAspectRatioVideoTrack(String aspect) {
-		this.aspectRatioVideoTrack = getFormattedAspectRatio(aspect);
+	public void setAspectRatioVideoTrack(String aspectRatio) {
+		setAspectRatioVideoTrack(Rational.valueOf(aspectRatio));
 	}
 
 	/**
-	 * Make sure the aspect ratio is formatted, e.g. 16:9 not 1.78
+	 * Sets the aspect ratio reported by the video track.
 	 *
-	 * @param aspect the possibly-unformatted aspect ratio
-	 *
-	 * @return the formatted aspect ratio or null
+	 * @param aspectRatio the aspect ratio to set
 	 */
-	public String getFormattedAspectRatio(String aspect) {
-		if (isBlank(aspect)) {
-			return null;
-		}
-		if (aspect.contains(":")) {
-			return aspect;
-		}
-		double exactAspectRatio = Double.parseDouble(aspect);
-		if (exactAspectRatio > 2.39 && exactAspectRatio <= 2.41) {
-			return "2.39:1";
-		} else if (exactAspectRatio > 2.35 && exactAspectRatio <= 2.36) {
-			return "21:9";
-		} else if (exactAspectRatio > 2.33 && exactAspectRatio <= 2.34) {
-			return "2.35:1";
-		} else if (exactAspectRatio > 1.7 && exactAspectRatio <= 1.8) {
-			return "16:9";
-		} else if (exactAspectRatio > 1.66 && exactAspectRatio <= 1.67) {
-			return "5:3";
-		} else if (exactAspectRatio > 1.59 && exactAspectRatio <= 1.61) {
-			return "16:10";
-		} else if (exactAspectRatio > 1.55 && exactAspectRatio <= 1.56) {
-			return "14:9";
-		} else if (exactAspectRatio > 1.49 && exactAspectRatio <= 1.51) {
-			return "3:2";
-		} else if (exactAspectRatio > 1.3 && exactAspectRatio < 1.4) {
-			return "4:3";
-		} else if (exactAspectRatio > 1.2 && exactAspectRatio < 1.3) {
-			return "5:4";
-		} else if (exactAspectRatio > 0.99 && exactAspectRatio < 1.1) {
-			return "1:1";
+	public void setAspectRatioVideoTrack(Rational aspectRatio) {
+		if (Rational.isNotBlank(aspectRatio)) {
+			aspectRatioVideoTrack = aspectRatio;
 		} else {
-			return aspect;
+			aspectRatioVideoTrack = null;
 		}
 	}
 
@@ -3157,6 +3210,135 @@ public class DLNAMediaInfo implements Cloneable {
 		 */
 		public String getFormatConfiguration() {
 			return formatConfiguration;
+		}
+	}
+
+	/**
+	 * This {@code enum} represents the different video "scan types".
+	 */
+	public static enum ScanType {
+
+		/** Interlaced scan, any sub-type */
+		INTERLACED,
+
+		/** Mixed scan */
+		MIXED,
+
+		/** Progressive scan */
+		PROGRESSIVE;
+
+		@Override
+		public String toString() {
+			switch (this) {
+				case INTERLACED:
+					return "Interlaced";
+				case MIXED:
+					return "Mixed";
+				case PROGRESSIVE:
+					return "Progressive";
+				default:
+					return name();
+			}
+		};
+
+		public static ScanType typeOf(String scanType) {
+			if (isBlank(scanType)) {
+				return null;
+			}
+			scanType = scanType.trim().toLowerCase(Locale.ROOT);
+			switch (scanType) {
+				case "interlaced" :
+					return INTERLACED;
+				case "mixed" :
+					return MIXED;
+				case "progressive" :
+					return PROGRESSIVE;
+				default:
+					LOGGER.debug("Warning: Unrecognized ScanType \"{}\"", scanType);
+					return null;
+			}
+		}
+	}
+
+	/**
+	 * This {@code enum} represents the video scan order.
+	 */
+	public static enum ScanOrder {
+
+		/** Bottom Field First */
+		BFF,
+
+		/** Bottom Field Only */
+		BFO,
+
+		/** Pulldown */
+		PULLDOWN,
+
+		/** 2:2:2:2:2:2:2:2:2:2:2:3 Pulldown */
+		PULLDOWN_2_2_2_2_2_2_2_2_2_2_2_3,
+
+		/** 2:3 Pulldown */
+		PULLDOWN_2_3,
+
+		/** Top Field First */
+		TFF,
+
+		/** Top Field Only */
+		TFO;
+
+		@Override
+		public String toString() {
+			switch (this) {
+				case BFF:
+					return "Bottom Field First";
+				case BFO:
+					return "Bottom Field Only";
+				case PULLDOWN:
+					return "Pulldown";
+				case PULLDOWN_2_2_2_2_2_2_2_2_2_2_2_3:
+					return "2:2:2:2:2:2:2:2:2:2:2:3 Pulldown";
+				case PULLDOWN_2_3:
+					return "2:3 Pulldown";
+				case TFF:
+					return "Top Field First";
+				case TFO:
+					return "Top Field Only";
+				default:
+					return name();
+			}
+		};
+
+		public static ScanOrder typeOf(String scanOrder) {
+			if (isBlank(scanOrder)) {
+				return null;
+			}
+			scanOrder = scanOrder.trim().toLowerCase(Locale.ROOT);
+			switch (scanOrder) {
+				case "bff" :
+				case "bottom field first":
+					return BFF;
+				case "bfo":
+				case "bottom field only":
+					return BFO;
+				case "pulldown":
+					return PULLDOWN;
+				case "2:2:2:2:2:2:2:2:2:2:2:3 pulldown":
+					return PULLDOWN_2_2_2_2_2_2_2_2_2_2_2_3;
+				case "2:3 pulldown":
+					return PULLDOWN_2_3;
+				case "tff":
+				case "top field first":
+					return TFF;
+				case "tfo":
+				case "top field only":
+					return TFO;
+				default:
+					LOGGER.debug("Warning: Unrecognized ScanOrder \"{}\"", scanOrder);
+					if (scanOrder.contains("pulldown")) {
+						return PULLDOWN;
+					}
+					return null;
+			}
 		}
 	}
 }
