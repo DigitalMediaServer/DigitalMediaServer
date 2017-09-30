@@ -344,7 +344,8 @@ public class LibMediaInfoParser {
 								!audioTrack.getCodecA().equals(FormatConfiguration.WMAPRO) &&
 								!audioTrack.getCodecA().equals(FormatConfiguration.WMALOSSLESS) &&
 								!audioTrack.getCodecA().equals(FormatConfiguration.WMAVOICE) &&
-								!audioTrack.getCodecA().equals(FormatConfiguration.WMA10)
+								!audioTrack.getCodecA().equals(FormatConfiguration.WMA10) &&
+								!audioTrack.getCodecA().equals(FormatConfiguration.MP3) // up to 128 kbit/s only
 							) {
 								media.setContainer(FormatConfiguration.ASF);
 								break;
