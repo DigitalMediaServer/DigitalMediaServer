@@ -1,4 +1,4 @@
-UMS sync with: 1a648a0ac25a9b7a41e40c146b9145973742df7a Fixed regression in folder thumbnails on non-Windows platforms.
+UMS sync with: 42edafb04477d7922d1845d6ed12596f784c9d35 Do not fail totally, when the web interface's port is occupied, and do not fail restarting the server, if the server hasn't created yet.
 
 Skipped:
 a4a099c7efcaf6dc8a28402a29eade757a2ce78d The ugly hack to solve problem when the TotalMatches are changed
