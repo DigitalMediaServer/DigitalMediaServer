@@ -1,4 +1,4 @@
-UMS sync with: 11ce3478d54121ba98e435fe674a82c6203c1732 Improve LG WebOS detection and file support (#1395)
+UMS sync with: 8127d981ec91adc1478a425103860b5dc5c61824 Updated changelog
 
 Skipped:
 a4a099c7efcaf6dc8a28402a29eade757a2ce78d The ugly hack to solve problem when the TotalMatches are changed
