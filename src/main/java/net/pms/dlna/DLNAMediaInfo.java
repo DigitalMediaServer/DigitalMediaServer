@@ -1389,7 +1389,16 @@ public class DLNAMediaInfo implements Cloneable {
 	 * @return {boolean}
 	 */
 	public boolean isH264() {
-		return codecV != null && codecV.startsWith("h264");
+		return codecV != null && codecV.equals("h264");
+	}
+
+	/**
+	 * Whether the file contains MPEG-4 video.
+	 *
+	 * @return {boolean}
+	 */
+	public boolean isMPEG4() {
+		return FormatConfiguration.MPEG4ASP.equals(codecV) || FormatConfiguration.MPEG4SP.equals(codecV);
 	}
 
 	/**

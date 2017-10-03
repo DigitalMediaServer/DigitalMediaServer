@@ -857,4 +857,20 @@ public class FormatConfigurationRegressionTest0 {
 		// Regression assertion (captures the current behavior of the code)
 		assertTrue("'" + str0 + "' != '" + "qcelp"+ "'", str0.equals("qcelp"));
 	}
+
+	@Test
+	public void testMPEG4ASP() throws Throwable {
+		String str0 = FormatConfiguration.MPEG4ASP;
+
+		// Regression assertion (captures the current behavior of the code)
+		assertTrue("'" + str0 + "' != '" + "mpeg4asp"+ "'", str0.equals("mpeg4asp"));
+	}
+
+	@Test
+	public void testMPEG4SP() throws Throwable {
+		String str0 = net.pms.configuration.FormatConfiguration.MPEG4SP;
+
+		// Regression assertion (captures the current behavior of the code)
+		assertTrue("'" + str0 + "' != '" + "mpeg4sp"+ "'", str0.equals("mpeg4sp"));
+	}
 }
