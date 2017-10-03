@@ -69,12 +69,12 @@ public class FormatRecognitionTest {
 		RendererConfiguration.loadRendererConfigurations(configuration);
 	}
 
-    /**
-     * Test some basic functionality of {@link RendererConfiguration#isCompatible(DLNAMediaInfo, Format)}
-     */
-    @Test
+	/**
+	 * Test some basic functionality of {@link RendererConfiguration#isCompatible(DLNAMediaInfo, Format)}
+	 */
+	@Test
 	public void testRendererConfigurationBasics() {
-    	// This test is only useful if the MediaInfo library is available
+		// This test is only useful if the MediaInfo library is available
 		assumeTrue(mediaInfoParserIsValid);
 		RendererConfiguration conf = RendererConfiguration.getRendererConfigurationByName("Playstation 3");
 		assertNotNull("Renderer named \"Playstation 3\" found.", conf);
@@ -87,7 +87,7 @@ public class FormatRecognitionTest {
 	 */
 	@Test
 	public void testPlaystationAudioMp3Compatibility() {
-    	// This test is only useful if the MediaInfo library is available
+		// This test is only useful if the MediaInfo library is available
 		assumeTrue(mediaInfoParserIsValid);
 
 		RendererConfiguration conf = RendererConfiguration.getRendererConfigurationByName("Playstation 3");
@@ -118,7 +118,7 @@ public class FormatRecognitionTest {
 	 */
 	@Test
 	public void testPlaystationVideoMpgCompatibility() {
-    	// This test is only useful if the MediaInfo library is available
+		// This test is only useful if the MediaInfo library is available
 		assumeTrue(mediaInfoParserIsValid);
 
 		RendererConfiguration conf = RendererConfiguration.getRendererConfigurationByName("Playstation 3");
@@ -133,7 +133,7 @@ public class FormatRecognitionTest {
 		List<DLNAMediaAudio> audioCodes = new ArrayList<>();
 		audioCodes.add(audio);
 		info.setAudioTracksList(audioCodes);
-		info.setCodecV("mp4");
+		info.setCodecV("mpeg4sp");
 		Format format = new MPG();
 		format.match("test.avi");
 		assertEquals("PS3 is compatible with MPG", true,
@@ -150,7 +150,7 @@ public class FormatRecognitionTest {
 	 */
 	@Test
 	public void testPlaystationVideoMkvCompatibility() {
-    	// This test is only useful if the MediaInfo library is available
+		// This test is only useful if the MediaInfo library is available
 		assumeTrue(mediaInfoParserIsValid);
 
 		RendererConfiguration conf = RendererConfiguration.getRendererConfigurationByName("Playstation 3");
@@ -179,7 +179,7 @@ public class FormatRecognitionTest {
 	 */
 	@Test
 	public void testPS3Compatibility() {
-    	// This test is only useful if the MediaInfo library is available
+		// This test is only useful if the MediaInfo library is available
 		assumeTrue(mediaInfoParserIsValid);
 
 		RendererConfiguration conf = RendererConfiguration.getRendererConfigurationByName("Playstation 3");

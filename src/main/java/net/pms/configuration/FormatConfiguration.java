@@ -113,6 +113,8 @@ public class FormatConfiguration {
 	public static final String MPC = "mpc";
 	public static final String MPEG1 = "mpeg1";
 	public static final String MPEG2 = "mpeg2";
+	public static final String MPEG4ASP = "mpeg4asp";
+	public static final String MPEG4SP = "mpeg4sp";
 	public static final String MPEGPS = "mpegps";
 	public static final String MPEGTS = "mpegts";
 	public static final String NELLYMOSER = "nellymoser";
