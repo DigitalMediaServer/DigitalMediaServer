@@ -1,4 +1,4 @@
-UMS sync with: 8127d981ec91adc1478a425103860b5dc5c61824 Updated changelog
+UMS sync with: ab132e4ab4e0e78748eb788b8fa8b97749817819 6.7.4
 
 Skipped:
 a4a099c7efcaf6dc8a28402a29eade757a2ce78d The ugly hack to solve problem when the TotalMatches are changed
