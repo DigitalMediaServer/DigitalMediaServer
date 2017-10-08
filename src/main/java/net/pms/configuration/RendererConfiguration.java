@@ -1301,8 +1301,8 @@ public class RendererConfiguration extends UPNPHelper.Renderer {
 					matchedMimeType = getFormatConfiguration().match(FormatConfiguration.WAV, null, null);
 				} else if (isTranscodeToMP3()) {
 					matchedMimeType = getFormatConfiguration().match(FormatConfiguration.MP3, null, null);
-//				} else if (params.mediaRenderer.isAudio24BitSupported()) {) {
-//					matchedMimeType = getFormatConfiguration().match(FormatConfiguration.LPCM24, null, null);
+				} else if (isAudio24BitSupported()) {
+					matchedMimeType = getFormatConfiguration().match(FormatConfiguration.LPCM24, null, null);
 				} else {
 					// Default audio transcoding mime type
 					matchedMimeType = getFormatConfiguration().match(FormatConfiguration.LPCM, null, null);
