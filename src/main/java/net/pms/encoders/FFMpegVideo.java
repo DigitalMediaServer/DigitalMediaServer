@@ -38,7 +38,6 @@ import javax.annotation.Nullable;
 import javax.swing.JCheckBox;
 import javax.swing.JComponent;
 import net.pms.Messages;
-import net.pms.configuration.ConfigurableProgramPaths;
 import net.pms.configuration.DeviceConfiguration;
 import net.pms.configuration.ExecutableInfo;
 import net.pms.configuration.ExecutableInfo.ExecutableInfoBuilder;
@@ -94,6 +93,12 @@ import platform.windows.NTStatus;
 public class FFMpegVideo extends Player {
 	private static final Logger LOGGER = LoggerFactory.getLogger(FFMpegVideo.class);
 	public static final PlayerId ID = StandardPlayerId.FFMPEG_VIDEO;
+
+	/** The {@link Configuration} key for the custom FFmpeg path. */
+	public static final String KEY_FFMPEG_PATH = "ffmpeg_path";
+
+	/** The {@link Configuration} key for the FFmpeg executable type. */
+	public static final String KEY_FFMPEG_EXECUTABLE_TYPE = "ffmpeg_executable_type";
 	public static final String NAME = "FFmpeg Video";
 	private static final String DEFAULT_QSCALE = "3";
 
@@ -643,8 +648,13 @@ public class FFMpegVideo extends Player {
 	}
 
 	@Override
+	public String getConfigurablePathKey() {
+		return KEY_FFMPEG_PATH;
+	}
+
+	@Override
 	public String getExecutableTypeKey() {
-		return ConfigurableProgramPaths.KEY_FFMPEG_EXECUTABLE_TYPE;
+		return KEY_FFMPEG_EXECUTABLE_TYPE;
 	}
 
 	@Override

@@ -738,12 +738,27 @@ public class PmsConfiguration extends RendererConfiguration {
 		return tempFolder.getTempFolder();
 	}
 
-	public ExternalProgramInfo getVLCPaths() {
-		return programPaths.getVLC();
+	public LogSystemInformationMode getLogSystemInformation() {
+		LogSystemInformationMode defaultValue = LogSystemInformationMode.TRACE_ONLY;
+		String value = getString(KEY_LOG_SYSTEM_INFO, defaultValue.toString());
+		LogSystemInformationMode result = LogSystemInformationMode.typeOf(value);
+		return result != null ? result : defaultValue;
+	}
+
+	public int getMencoderMaxThreads() {
+		return Math.min(getInt(KEY_MENCODER_MAX_THREADS, getNumberOfCpuCores()), MENCODER_MAX_THREADS);
+	}
+
+	/**
+	 * @return {@code true} if custom program paths are supported, {@code false}
+	 *         otherwise.
+	 */
+	public boolean isCustomProgramPathsSupported() {
+		return programPaths instanceof ConfigurableProgramPaths;
 	}
 
 	@Nullable
-	public ProgramExecutableType getConfiguredExecutableType(@Nonnull Player player) {
+	public ProgramExecutableType getPlayerExecutableType(@Nonnull Player player) {
 		if (player == null) {
 			throw new IllegalArgumentException("player cannot be null");
 		}
@@ -761,60 +776,100 @@ public class PmsConfiguration extends RendererConfiguration {
 			throw new IllegalArgumentException("executableType cannot be null");
 		}
 		if (player.getExecutableTypeKey() != null) {
-			configuration.setProperty(player.getExecutableTypeKey(), executableType.toString());
+			configuration.setProperty(player.getExecutableTypeKey(), executableType.toRootString());
 			player.determineCurrentExecutableType(executableType);
 		}
 	}
 
-	public void setCustomPlayerPath(@Nonnull Player player, @Nullable Path path) {
+	/**
+	 * Gets the configured {@link Path} for the specified {@link PlayerId}. The
+	 * {@link Player} must be registered. No check for existence or search in
+	 * the OS path is performed.
+	 *
+	 * @param playerId the {@link PlayerId} for the registered {@link Player}
+	 *            whose configured {@link Path} to get.
+	 * @return The configured {@link Path} or {@code null} if missing, blank or
+	 *         invalid.
+	 */
+	@Nullable
+	public Path getPlayerCustomPath(@Nullable PlayerId playerId) {
+		if (playerId == null) {
+			return null;
+		}
+		return getPlayerCustomPath(PlayerFactory.getPlayer(playerId, false, false));
+	}
+
+	/**
+	 * Gets the configured {@link Path} for the specified {@link Player}. No
+	 * check for existence or search in the OS path is performed.
+	 *
+	 * @param player the {@link Player} whose configured {@link Path} to get.
+	 * @return The configured {@link Path} or {@code null} if missing, blank or
+	 *         invalid.
+	 */
+	@Nullable
+	public Path getPlayerCustomPath(@Nullable Player player) {
+		if (
+			player == null ||
+			isBlank(player.getConfigurablePathKey()) ||
+			!(programPaths instanceof ConfigurableProgramPaths)
+		) {
+			return null;
+		}
+
+		try {
+			return ((ConfigurableProgramPaths) programPaths).getCustomProgramPath(player.getConfigurablePathKey());
+		} catch (ConfigurationException e) {
+			LOGGER.warn(
+				"An invalid executable path is configured for transcoding engine {}. The path is being ignored: {}",
+				player,
+				e.getMessage()
+			);
+			LOGGER.trace("", e);
+			return null;
+		}
+	}
+
+	/**
+	 * Sets the custom executable {@link Path} for the specified {@link Player}
+	 * in the configuration.
+	 * <p>
+	 * <b>Note:</b> This isn't normally what you'd want. To change the
+	 * {@link Path} <b>for the {@link Player} instance</b> in the same
+	 * operation, use {@link Player#setCustomPath(Path)} instead.
+	 *
+	 * @param player the {@link Player} whose custom executable {@link Path} to
+	 *            set.
+	 * @param path the {@link Path} to set or {@code null} to clear.
+	 * @return {@code true} if a change was made to the configuration,
+	 *         {@code false} otherwise.
+	 * @throws IllegalStateException If {@code player} has no configurable path
+	 *             key or custom program paths aren't supported.
+	 */
+	public boolean setPlayerCustomPath(@Nonnull Player player, @Nullable Path path) {
 		if (player == null) {
 			throw new IllegalArgumentException("player cannot be null");
 		}
-		if (player.get)
-		PlayerId id = player.id(); //TODO: (Nad) Move to Player?
-		if (
-			id == StandardPlayerId.AVI_SYNTH_FFMPEG ||
-			id == StandardPlayerId.FFMPEG_AUDIO ||
-			id == StandardPlayerId.FFMPEG_VIDEO ||
-			id == StandardPlayerId.FFMPEG_WEB_VIDEO
-		) {
-			return KEY_FFMPEG_EXECUTABLE_TYPE;
+		if (isBlank(player.getConfigurablePathKey())) {
+			throw new IllegalStateException(
+				"Can't set custom executable path for player " + player + "because it has no configurable path key"
+			);
 		}
-		if (
-			id == StandardPlayerId.AVI_SYNTH_MENCODER ||
-			id == StandardPlayerId.MENCODER_VIDEO ||
-			id == StandardPlayerId.MENCODER_WEB_VIDEO
-		) {
-			return KEY_MENCODER_EXECUTABLE_TYPE;
+		if (!isCustomProgramPathsSupported()) {
+			throw new IllegalStateException("The program paths aren't configurable");
 		}
-		if (id == StandardPlayerId.DCRAW) {
-			return KEY_DCRAW_EXECUTABLE_TYPE;
-		}
-		if (
-			id == StandardPlayerId.TSMUXER_AUDIO ||
-			id == StandardPlayerId.TSMUXER_VIDEO
-		) {
-			return KEY_TSMUXER_EXECUTABLE_TYPE;
-		}
-		if (
-			id == StandardPlayerId.VLC_AUDIO_STREAMING ||
-			id == StandardPlayerId.VLC_VIDEO ||
-			id == StandardPlayerId.VLC_VIDEO_STREAMING ||
-			id == StandardPlayerId.VLC_WEB_VIDEO
-		) {
-			return KEY_VLC_EXECUTABLE_TYPE;
-		}
-		return null; // XXX: If plugins are reimplemented, a custom lookup is needed here.
+		return ((ConfigurableProgramPaths) programPaths).setCustomProgramPath(
+			path,
+			player.getConfigurablePathKey()
+		);
+	}
 
-
+	public ExternalProgramInfo getVLCPaths() {
+		return programPaths.getVLC();
 	}
 
 	public ExternalProgramInfo getMEncoderPaths() {
 		return programPaths.getMEncoder();
-	}
-
-	public int getMencoderMaxThreads() {
-		return Math.min(getInt(KEY_MENCODER_MAX_THREADS, getNumberOfCpuCores()), MENCODER_MAX_THREADS);
 	}
 
 	public ExternalProgramInfo getDCRawPaths() {
@@ -829,16 +884,32 @@ public class PmsConfiguration extends RendererConfiguration {
 		return programPaths.getMPlayer();
 	}
 
-	public LogSystemInformationMode getLogSystemInformation() {
-		LogSystemInformationMode defaultValue = LogSystemInformationMode.TRACE_ONLY;
-		String value = getString(KEY_LOG_SYSTEM_INFO, defaultValue.toString());
-		LogSystemInformationMode result = LogSystemInformationMode.typeOf(value);
-		return result != null ? result : defaultValue;
+	public String getMPlayerPath() {
+		ProgramExecutableType executableType = ProgramExecutableType.toProgramExecutableType(
+			ConfigurableProgramPaths.KEY_MPLAYER_EXECUTABLE_TYPE,
+			getMPlayerPaths().getDefault()
+		);
+		Path executable = null;
+		if (executableType != null) {
+			executable = getMPlayerPaths().getPath(executableType);
+		}
+		if (executable == null) {
+			executable = getMPlayerPaths().getDefaultPath();
+		}
+		return executable == null ? null : executable.toString();
 	}
 
-	public String getMPlayerDefaultPath() {
-		Path executable = getMPlayerPaths().getDefaultPath();
-		return executable == null ? null : executable.toString();
+	/**
+	 * Sets a new {@link ProgramExecutableType#CUSTOM} {@link Path} for MPlayer
+	 * both in {@link PmsConfiguration} and the {@link ExternalProgramInfo}.
+	 *
+	 * @param customPath the new {@link Path} or {@code null} to clear it.
+	 */
+	public void setCustomMPlayerPath(@Nullable Path customPath) {
+		if (!isCustomProgramPathsSupported()) {
+			throw new IllegalStateException("The program paths aren't configurable");
+		}
+		((ConfigurableProgramPaths) programPaths).setCustomMPlayerPath(customPath);
 	}
 
 	public ExternalProgramInfo gettsMuxeRPaths() {
@@ -849,36 +920,98 @@ public class PmsConfiguration extends RendererConfiguration {
 		return programPaths.getTsMuxeRNew();
 	}
 
-	public String gettsMuxeRNewPath() { //TODO: (Nad) tsMuxeRNew
+	public String gettsMuxeRNewPath() { //TODO: (Nad) JavaDocs
 		ProgramExecutableType executableType = ProgramExecutableType.toProgramExecutableType(
 			ConfigurableProgramPaths.KEY_TSMUXER_NEW_EXECUTABLE_TYPE,
 			gettsMuxeRNewPaths().getDefault()
 		);
-		Path executable;
+		Path executable = null;
 		if (executableType != null) {
 			executable = gettsMuxeRNewPaths().getPath(executableType);
-			return executable == null ? null : executable.toString();
 		}
-		executable = gettsMuxeRNewPaths().getDefaultPath();
+		if (executable == null) {
+			executable = gettsMuxeRNewPaths().getDefaultPath();
+		}
 		return executable == null ? null : executable.toString();
+	}
+
+	/**
+	 * Sets a new {@link ProgramExecutableType#CUSTOM} {@link Path} for
+	 * "tsMuxeR new" both in {@link PmsConfiguration} and the
+	 * {@link ExternalProgramInfo}.
+	 *
+	 * @param customPath the new {@link Path} or {@code null} to clear it.
+	 */
+	public void setCustomTsMuxeRNewPath(@Nullable Path customPath) {
+		if (!isCustomProgramPathsSupported()) {
+			throw new IllegalStateException("The program paths aren't configurable");
+		}
+		((ConfigurableProgramPaths) programPaths).setCustomTsMuxeRNewPath(customPath);
 	}
 
 	public ExternalProgramInfo getFLACPaths() {
 		return programPaths.getFLAC();
 	}
 
-	public String getFLACDefaultPath() {
-		Path executable = getFLACPaths().getDefaultPath();
+	public String getFLACPath() {
+		ProgramExecutableType executableType = ProgramExecutableType.toProgramExecutableType(
+			ConfigurableProgramPaths.KEY_FLAC_EXECUTABLE_TYPE,
+			getFLACPaths().getDefault()
+		);
+		Path executable = null;
+		if (executableType != null) {
+			executable = getFLACPaths().getPath(executableType);
+		}
+		if (executable == null) {
+			executable = getFLACPaths().getDefaultPath();
+		}
 		return executable == null ? null : executable.toString();
+	}
+
+	/**
+	 * Sets a new {@link ProgramExecutableType#CUSTOM} {@link Path} for FLAC
+	 * both in {@link PmsConfiguration} and the {@link ExternalProgramInfo}.
+	 *
+	 * @param customPath the new {@link Path} or {@code null} to clear it.
+	 */
+	public void setCustomFlacPath(@Nullable Path customPath) {
+		if (!isCustomProgramPathsSupported()) {
+			throw new IllegalStateException("The program paths aren't configurable");
+		}
+		((ConfigurableProgramPaths) programPaths).setCustomFlacPath(customPath);
 	}
 
 	public ExternalProgramInfo getInterFramePaths() {
 		return programPaths.getInterFrame();
 	}
 
-	public String getInterFrameDefaultPath() {
-		Path executable = getInterFramePaths().getDefaultPath();
+	public String getInterFramePath() {
+		ProgramExecutableType executableType = ProgramExecutableType.toProgramExecutableType(
+			ConfigurableProgramPaths.KEY_INTERFRAME_EXECUTABLE_TYPE,
+			getInterFramePaths().getDefault()
+		);
+		Path executable = null;
+		if (executableType != null) {
+			executable = getInterFramePaths().getPath(executableType);
+		}
+		if (executable == null) {
+			executable = getInterFramePaths().getDefaultPath();
+		}
 		return executable == null ? null : executable.toString();
+	}
+
+	/**
+	 * Sets a new {@link ProgramExecutableType#CUSTOM} {@link Path} for
+	 * Interframe both in {@link PmsConfiguration} and the
+	 * {@link ExternalProgramInfo}.
+	 *
+	 * @param customPath the new {@link Path} or {@code null} to clear it.
+	 */
+	public void setCustomInterFramePath(@Nullable Path customPath) {
+		if (!isCustomProgramPathsSupported()) {
+			throw new IllegalStateException("The program paths aren't configurable");
+		}
+		((ConfigurableProgramPaths) programPaths).setCustomInterFramePath(customPath);
 	}
 
 	/**

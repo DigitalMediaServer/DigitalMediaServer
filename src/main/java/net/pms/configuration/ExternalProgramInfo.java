@@ -160,7 +160,7 @@ public class ExternalProgramInfo {
 	 *
 	 * @return The original default {@link ProgramExecutableType}.
 	 */
-	public ProgramExecutableType getOriginalDefailt() {
+	public ProgramExecutableType getOriginalDefault() {
 		return originalDefaultType;
 	}
 
@@ -240,7 +240,10 @@ public class ExternalProgramInfo {
 	 *         {@link ProgramExecutableType}.
 	 */
 	@Nullable
-	public ExecutableInfo getExecutableInfo(ProgramExecutableType executableType) {
+	public ExecutableInfo getExecutableInfo(@Nullable ProgramExecutableType executableType) {
+		if (executableType == null) {
+			return null;
+		}
 		lock.readLock().lock();
 		try {
 			return executablesInfo.get(executableType);
@@ -297,8 +300,9 @@ public class ExternalProgramInfo {
 	 * @param executableType the {@link ProgramExecutableType} whose path to
 	 *            set.
 	 * @param path the executable {@link Path} to set.
+	 * @return {@code true} if a change was made, {@code false} otherwise.
 	 */
-	public void setPath(@Nonnull ProgramExecutableType executableType, @Nullable Path path) {
+	public boolean setPath(@Nonnull ProgramExecutableType executableType, @Nullable Path path) {
 		if (executableType == null) {
 			throw new IllegalArgumentException("executableType cannot be null");
 		}
@@ -308,24 +312,31 @@ public class ExternalProgramInfo {
 			if (
 				(
 					path == null &&
-					executableInfo == null
+					executableInfo == null &&
+					executablesInfo.containsKey(executableType)
 				) || (
 					path != null &&
 					executableInfo != null &&
 					path.equals(executableInfo.getPath())
 				)
 			) {
-				return;
+				return false;
 			}
+			ExecutableInfo newExecutableInfo;
 			if (path == null) {
-				executableInfo = null;
+				newExecutableInfo = null;
 			} else {
-				executableInfo = createExecutableInfo(path);
+				newExecutableInfo = createExecutableInfo(path);
 			}
-			executablesInfo.put(executableType, executableInfo);
+			executablesInfo.put(executableType, newExecutableInfo);
+			if (path == null && executableInfo == null) {
+				// No actual change was made to the path, but a null entry for the ProgramExecutableType was inserted
+				return false;
+			}
 		} finally {
 			lock.writeLock().unlock();
 		}
+		return true;
 	}
 
 	/**

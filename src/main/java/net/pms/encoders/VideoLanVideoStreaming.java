@@ -31,7 +31,6 @@ import javax.swing.JComponent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import net.pms.Messages;
-import net.pms.configuration.ConfigurableProgramPaths;
 import net.pms.configuration.DeviceConfiguration;
 import net.pms.configuration.ExecutableInfo;
 import net.pms.configuration.ExecutableInfo.ExecutableInfoBuilder;
@@ -56,6 +55,12 @@ import net.pms.util.Version.WindowsVersionType;
 public class VideoLanVideoStreaming extends Player {
 	private static final Logger LOGGER = LoggerFactory.getLogger(VideoLanVideoStreaming.class);
 	public static final PlayerId ID = StandardPlayerId.VLC_VIDEO_STREAMING;
+
+	/** The {@link Configuration} key for the custom VLC path. */
+	public static final String KEY_VLC_PATH = "vlc_path";
+
+	/** The {@link Configuration} key for the VLC Legacy Web executable type. */
+	public static final String KEY_VLC_LEGACY_EXECUTABLE_TYPE = "vlc_legacy_executable_type";
 	public static final String NAME = "VLC Web Video (Legacy)";
 
 	// Not to be instantiated by anything but PlayerFactory
@@ -73,8 +78,13 @@ public class VideoLanVideoStreaming extends Player {
 	}
 
 	@Override
+	public String getConfigurablePathKey() {
+		return KEY_VLC_PATH;
+	}
+
+	@Override
 	public String getExecutableTypeKey() {
-		return ConfigurableProgramPaths.KEY_VLC_EXECUTABLE_TYPE;
+		return KEY_VLC_LEGACY_EXECUTABLE_TYPE;
 	}
 
 	@Override

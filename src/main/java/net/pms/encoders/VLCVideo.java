@@ -37,7 +37,6 @@ import javax.annotation.Nullable;
 import javax.swing.*;
 import net.pms.Messages;
 import net.pms.PMS;
-import net.pms.configuration.ConfigurableProgramPaths;
 import net.pms.configuration.DeviceConfiguration;
 import net.pms.configuration.ExecutableInfo;
 import net.pms.configuration.ExecutableInfo.ExecutableInfoBuilder;
@@ -71,6 +70,12 @@ import org.slf4j.LoggerFactory;
 public class VLCVideo extends Player {
 	private static final Logger LOGGER = LoggerFactory.getLogger(VLCVideo.class);
 	public static final PlayerId ID = StandardPlayerId.VLC_VIDEO;
+
+	/** The {@link Configuration} key for the custom VLC path. */
+	public static final String KEY_VLC_PATH = "vlc_path";
+
+	/** The {@link Configuration} key for the VLC executable type. */
+	public static final String KEY_VLC_EXECUTABLE_TYPE = "vlc_executable_type";
 	public static final String NAME = "VLC Video";
 
 	private static final String COL_SPEC = "left:pref, 3dlu, p, 3dlu, 0:grow";
@@ -98,8 +103,13 @@ public class VLCVideo extends Player {
 	}
 
 	@Override
+	public String getConfigurablePathKey() {
+		return KEY_VLC_PATH;
+	}
+
+	@Override
 	public String getExecutableTypeKey() {
-		return ConfigurableProgramPaths.KEY_VLC_EXECUTABLE_TYPE;
+		return KEY_VLC_EXECUTABLE_TYPE;
 	}
 
 	@Override

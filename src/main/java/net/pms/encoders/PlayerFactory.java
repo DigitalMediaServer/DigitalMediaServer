@@ -21,18 +21,24 @@ package net.pms.encoders;
 
 import com.sun.jna.Platform;
 import java.io.Serializable;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import net.pms.Messages;
 import net.pms.PMS;
 import net.pms.configuration.ExecutableInfo;
 import net.pms.configuration.ExternalProgramInfo;
 import net.pms.configuration.PmsConfiguration;
 import net.pms.configuration.ProgramExecutableType;
+import net.pms.configuration.ProgramExecutableType.DefaultExecutableType;
 import net.pms.dlna.DLNAResource;
 import net.pms.formats.FormatFactory;
 import org.slf4j.Logger;
@@ -144,34 +150,23 @@ public final class PlayerFactory {
 				return;
 			}
 
-			LOGGER.info("Checking transcoding engine: {}", player);
+			LOGGER.info("Checking transcoding engine {}", player);
 			PLAYERS.add(player);
 			player.setEnabled(configuration.isEngineEnabled(player), false);
 
 			ExternalProgramInfo programInfo = player.getProgramInfo();
 			ReentrantReadWriteLock programInfoLock = programInfo.getLock();
-			// Lock it for consistency during tests, need write in case setAvailabe() needs to modify
+			// Lock it for consistency during tests, need write in case setAvailabe() needs to modify or a custom path is set
 			programInfoLock.writeLock().lock();
 			try {
-				for (Entry<ProgramExecutableType, ExecutableInfo> entry : programInfo.getExecutablesInfo().entrySet()) {
+				if (configuration.isCustomProgramPathsSupported()) {
+					LOGGER.trace("Registering custom executable path for transcoding engine {}", player);
+					Path customPath = configuration.getPlayerCustomPath(player);
+					player.initCustomExecutablePath(customPath);
+				}
 
-					if (entry.getValue() == null) {
-						// This shouldn't happen, so if it does let's assume there's something wrong with the player instance.
-						player.setUnavailable(
-							entry.getKey(),
-							ExecutableErrorType.SPECIFIC,
-							String.format(Messages.getString("Engine.ExecutableNotDefined"), entry.getKey(), player)
-						);
-						LOGGER.warn("{} executable for transcoding engine {} is undefined", entry.getKey(), player);
-						continue;
-					}
-					if (!player.testPlayer(entry.getKey())) {
-						player.setUnavailable(
-							entry.getKey(),
-							ExecutableErrorType.GENERAL,
-							String.format(Messages.getString("Engine.NotTested"), player)
-						);
-					}
+				for (Entry<ProgramExecutableType, ExecutableInfo> entry : programInfo.getExecutablesInfo().entrySet()) {
+					testPlayerExecutableType(player, entry.getKey(), entry.getValue());
 				}
 				player.determineCurrentExecutableType();
 
@@ -192,6 +187,36 @@ public final class PlayerFactory {
 
 		} finally {
 			PLAYERS_LOCK.writeLock().unlock();
+		}
+	}
+
+	//TODO: (Nad) JavaDocs
+	protected static void testPlayerExecutableType(
+		@Nullable Player player,
+		@Nullable ProgramExecutableType executableType
+	) {
+		if (player == null || executableType == null || !player.getProgramInfo().containsType(executableType, true)) {
+			return;
+		}
+		ExecutableInfo executableInfo = player.getProgramInfo().getExecutableInfo(executableType);
+		testPlayerExecutableType(player, executableType, executableInfo);
+	}
+
+	//TODO: (Nad) JavaDocs
+	protected static void testPlayerExecutableType(
+		@Nonnull Player player,
+		@Nonnull ProgramExecutableType executableType,
+		@Nullable ExecutableInfo executableInfo
+	) {
+		if (executableInfo == null) {
+			return;
+		}
+		if (!player.testPlayer(executableType)) {
+			player.setUnavailable(
+				executableType,
+				ExecutableErrorType.GENERAL,
+				String.format(Messages.getString("Engine.NotTested"), player)
+			);
 		}
 	}
 
@@ -361,10 +386,12 @@ public final class PlayerFactory {
 	 *
 	 * @param id the {@link PlayerId} to look for.
 	 * @param onlyEnabled whether or not to filter on enabled {@link Player}s.
-	 * @param onlyAvailable whether or not to filter on available {@link Player}s.
+	 * @param onlyAvailable whether or not to filter on available {@link Player}
+	 *            s.
 	 * @return The {@link Player} if found or {@code null}.
 	 */
-	public static Player getPlayer(PlayerId id, boolean onlyEnabled, boolean onlyAvailable) {
+	@Nullable
+	public static Player getPlayer(@Nullable PlayerId id, boolean onlyEnabled, boolean onlyAvailable) {
 		if (id == null) {
 			return null;
 		}
@@ -492,5 +519,81 @@ public final class PlayerFactory {
 			PLAYERS_LOCK.readLock().unlock();
 		}
 		return compatiblePlayers;
+	}
+
+	/**
+	 * {@link ExternalProgramInfo} instances can be shared among several
+	 * {@link Player} instances, typically when they use the same executable.
+	 * <p>
+	 * When a {@link ProgramExecutableType#CUSTOM} {@link Path} is changed, it
+	 * affects all {@link Player} instance that shares that
+	 * {@link ExternalProgramInfo} instance. As a result, tests must be rerun
+	 * and the current/effective {@link ProgramExecutableType} must be
+	 * reevaluated for all affected {@link Player} instances.
+	 * <p>
+	 * This method uses the specified {@link Player} instance that
+	 * triggered/initiated the change as a starting point and finds all affected
+	 * {@link Player} instances. It then sets the new default
+	 * {@link ProgramExecutableType}, rerun the appropriate tests and
+	 * reevaluates the current/effective {@link ProgramExecutableType} for all
+	 * affected {@link Player} instances.
+	 *
+	 * @param triggeringPlayer the {@link Player} that is the source of the
+	 *            change.
+	 * @param changedType the {@link ProgramExecutableType} that was changed
+	 *            triggering this reevaluation. This will decide which tests
+	 *            will be rerun. {@code null} will cause all tests to be rerun.
+	 * @param defaultType the {@link DefaultExecutableType} that determines what
+	 *            value to set for the {@link ExternalProgramInfo}'s default
+	 *            {@link ProgramExecutableType}.
+	 */
+	public static void reEvaluateExecutable(
+		@Nonnull Player triggeringPlayer,
+		@Nullable ProgramExecutableType changedType,
+		@Nullable DefaultExecutableType defaultType
+	) {
+		if (triggeringPlayer == null) {
+			throw new IllegalArgumentException("triggeringPlayer cannot be null");
+		}
+		ExternalProgramInfo programInfo = triggeringPlayer.getProgramInfo();
+		ArrayList<Player> affectedPlayers = new ArrayList<>();
+		PLAYERS_LOCK.readLock().lock();
+		try {
+			for (Player player : PLAYERS) {
+				if (player.getProgramInfo() == programInfo) {
+					affectedPlayers.add(player);
+				}
+			}
+		} finally {
+			PLAYERS_LOCK.readLock().unlock();
+		}
+		if (defaultType != null) {
+			switch (defaultType) {
+				case CUSTOM:
+					programInfo.setDefault(ProgramExecutableType.CUSTOM);
+					break;
+				case ORIGINAL:
+					programInfo.setOriginalDefault();
+					break;
+				case NONE:
+				default:
+					break;
+			}
+		}
+
+		Set<ProgramExecutableType> retestTypes;
+		if (changedType == null) {
+			retestTypes = EnumSet.allOf(ProgramExecutableType.class);
+		} else {
+			retestTypes = Collections.singleton(changedType);
+		}
+
+		for (Player player : affectedPlayers) {
+			for (ProgramExecutableType executableType : retestTypes) {
+				player.clearSpecificErrors(executableType);
+				testPlayerExecutableType(player, executableType);
+			}
+			player.determineCurrentExecutableType();
+		}
 	}
 }

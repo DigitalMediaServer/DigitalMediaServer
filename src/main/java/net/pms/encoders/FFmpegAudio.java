@@ -47,6 +47,9 @@ import org.slf4j.LoggerFactory;
 public class FFmpegAudio extends FFMpegVideo {
 	private static final Logger LOGGER = LoggerFactory.getLogger(FFmpegAudio.class);
 	public static final PlayerId ID = StandardPlayerId.FFMPEG_AUDIO;
+
+	/** The {@link Configuration} key for the FFmpeg Audio executable type. */
+	public static final String KEY_FFMPEG_AUDIO_EXECUTABLE_TYPE = "ffmpeg_audio_executable_type";
 	public static final String NAME = "FFmpeg Audio";
 
 	private JCheckBox noresample;
@@ -92,6 +95,11 @@ public class FFmpegAudio extends FFMpegVideo {
 	@Override
 	public PlayerId id() {
 		return ID;
+	}
+
+	@Override
+	public String getExecutableTypeKey() {
+		return KEY_FFMPEG_AUDIO_EXECUTABLE_TYPE;
 	}
 
 	@Override

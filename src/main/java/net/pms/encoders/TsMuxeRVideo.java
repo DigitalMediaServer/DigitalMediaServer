@@ -40,7 +40,6 @@ import javax.swing.JComponent;
 import javax.swing.JPanel;
 import net.pms.Messages;
 import net.pms.PMS;
-import net.pms.configuration.ConfigurableProgramPaths;
 import net.pms.configuration.DeviceConfiguration;
 import net.pms.configuration.ExecutableInfo;
 import net.pms.configuration.ExecutableInfo.ExecutableInfoBuilder;
@@ -62,6 +61,12 @@ import platform.windows.NTStatus;
 public class TsMuxeRVideo extends Player {
 	private static final Logger LOGGER = LoggerFactory.getLogger(TsMuxeRVideo.class);
 	public static final PlayerId ID = StandardPlayerId.TSMUXER_VIDEO;
+
+	/** The {@link Configuration} key for the custom tsMuxeR path. */
+	public static final String KEY_TSMUXER_PATH     = "tsmuxer_path";
+
+	/** The {@link Configuration} key for the tsMuxeR executable type. */
+	public static final String KEY_TSMUXER_EXECUTABLE_TYPE = "tsmuxer_executable_type";
 	public static final String NAME = "tsMuxeR Video";
 
 	private static final String COL_SPEC = "left:pref, 0:grow";
@@ -101,8 +106,13 @@ public class TsMuxeRVideo extends Player {
 	}
 
 	@Override
+	public String getConfigurablePathKey() {
+		return KEY_TSMUXER_PATH;
+	}
+
+	@Override
 	public String getExecutableTypeKey() {
-		return ConfigurableProgramPaths.KEY_TSMUXER_EXECUTABLE_TYPE;
+		return KEY_TSMUXER_EXECUTABLE_TYPE;
 	}
 
 	@Override
@@ -195,7 +205,7 @@ public class TsMuxeRVideo extends Player {
 				ffAudioPipe[0] = new PipeIPCProcess(System.currentTimeMillis() + "flacaudio", System.currentTimeMillis() + "audioout", false, true);
 
 				String[] flacCmd = new String[] {
-					configuration.getFLACDefaultPath(),
+					configuration.getFLACPath(),
 					"--output-name=" + ffAudioPipe[0].getInputPipe(),
 					"-d",
 					"-f",

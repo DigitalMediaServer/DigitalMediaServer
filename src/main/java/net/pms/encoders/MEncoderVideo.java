@@ -39,7 +39,6 @@ import javax.annotation.Nullable;
 import javax.swing.*;
 import net.pms.Messages;
 import net.pms.PMS;
-import net.pms.configuration.ConfigurableProgramPaths;
 import net.pms.configuration.DeviceConfiguration;
 import net.pms.configuration.ExecutableInfo;
 import net.pms.configuration.ExecutableInfo.ExecutableInfoBuilder;
@@ -69,6 +68,12 @@ import platform.windows.NTStatus;
 public class MEncoderVideo extends Player {
 	private static final Logger LOGGER = LoggerFactory.getLogger(MEncoderVideo.class);
 	public static final PlayerId ID = StandardPlayerId.MENCODER_VIDEO;
+
+	/** The {@link Configuration} key for the custom MEncoder path. */
+	public static final String KEY_MENCODER_PATH = "mencoder_path";
+
+	/** The {@link Configuration} key for the MEncoder executable type. */
+	public static final String KEY_MENCODER_EXECUTABLE_TYPE = "mencoder_executable_type";
 	public static final String NAME = "MEncoder Video";
 
 	private static final String COL_SPEC = "left:pref, 3dlu, p:grow, 3dlu, right:p:grow, 3dlu, p:grow, 3dlu, right:p:grow,3dlu, p:grow, 3dlu, right:p:grow,3dlu, pref:grow";
@@ -526,8 +531,13 @@ public class MEncoderVideo extends Player {
 	}
 
 	@Override
+	public String getConfigurablePathKey() {
+		return KEY_MENCODER_PATH;
+	}
+
+	@Override
 	public String getExecutableTypeKey() {
-		return ConfigurableProgramPaths.KEY_MENCODER_EXECUTABLE_TYPE;
+		return KEY_MENCODER_EXECUTABLE_TYPE;
 	}
 
 	@Override

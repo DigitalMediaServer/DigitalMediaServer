@@ -50,6 +50,9 @@ import org.slf4j.LoggerFactory;
 public class FFmpegWebVideo extends FFMpegVideo {
 	private static final Logger LOGGER = LoggerFactory.getLogger(FFmpegWebVideo.class);
 	public static final PlayerId ID = StandardPlayerId.FFMPEG_WEB_VIDEO;
+
+	/** The {@link Configuration} key for the FFmpeg Audio executable type. */
+	public static final String KEY_FFMPEG_WEB_EXECUTABLE_TYPE = "ffmpeg_web_executable_type";
 	public static final String NAME = "FFmpeg Web Video";
 
 	// Not to be instantiated by anything but PlayerFactory
@@ -135,6 +138,11 @@ public class FFmpegWebVideo extends FFMpegVideo {
 	@Override
 	public PlayerId id() {
 		return ID;
+	}
+
+	@Override
+	public String getExecutableTypeKey() {
+		return KEY_FFMPEG_WEB_EXECUTABLE_TYPE;
 	}
 
 	@Override

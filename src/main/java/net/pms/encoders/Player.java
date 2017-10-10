@@ -34,10 +34,12 @@ import javax.annotation.concurrent.ThreadSafe;
 import javax.swing.JComponent;
 import net.pms.Messages;
 import net.pms.PMS;
+import net.pms.configuration.ConfigurableProgramPaths;
 import net.pms.configuration.ExecutableInfo;
 import net.pms.configuration.ExternalProgramInfo;
 import net.pms.configuration.PmsConfiguration;
 import net.pms.configuration.ProgramExecutableType;
+import net.pms.configuration.ProgramExecutableType.DefaultExecutableType;
 import net.pms.configuration.RendererConfiguration;
 import net.pms.configuration.ExecutableInfo.ExecutableInfoBuilder;
 import net.pms.dlna.DLNAMediaAudio;
@@ -90,6 +92,12 @@ public abstract class Player {
 	public abstract int purpose();
 	public abstract JComponent config();
 	public abstract PlayerId id();
+
+	/**
+	 * @return The {@link Configuration} key for this {@link Player}'s custom
+	 *         executable path.
+	 */
+	public abstract String getConfigurablePathKey();
 	public abstract String name();
 	public abstract int type();
 
@@ -177,6 +185,7 @@ public abstract class Player {
 	 *
 	 * @return The current {@link ProgramExecutableType}
 	 */
+	@Nullable
 	public ProgramExecutableType getCurrentExecutableType() {
 		return currentExecutableType;
 	}
@@ -199,7 +208,7 @@ public abstract class Player {
 	 * For an explanation of the concept, see {@link #currentExecutableType}.
 	 */
 	public void determineCurrentExecutableType() {
-		determineCurrentExecutableType(configuration.getConfiguredExecutableType(this));
+		determineCurrentExecutableType(configuration.getPlayerExecutableType(this));
 	}
 
 	/**
@@ -253,6 +262,7 @@ public abstract class Player {
 	/**
 	 * @return The {@link ExternalProgramInfo} instance.
 	 */
+	@Nonnull
 	public ExternalProgramInfo getProgramInfo() {
 		return programInfo;
 	}
@@ -490,6 +500,80 @@ public abstract class Player {
 				builder.errorType(errorType).errorText(errorText);
 			}
 			programInfo.setExecutableInfo(executableType, builder.build());
+		}
+	}
+
+	/**
+	 * This will set the custom executable {@link Path} and the default
+	 * {@link ProgramExecutableType} type, but won't run tests or perform other
+	 * tasks normally needed after such a change. This should normally only be
+	 * called from {@link PlayerFactory#registerPlayer(Player)} to set the
+	 * configured {@link Path} before other registration tasks are performed.
+	 */
+	public void initCustomExecutablePath(@Nullable Path customPath) {
+		customPath = ConfigurableProgramPaths.resolveCustomProgramPath(customPath);
+		programInfo.setPath(ProgramExecutableType.CUSTOM, customPath);
+		if (customPath == null) {
+			programInfo.setOriginalDefault();
+		} else {
+			programInfo.setDefault(ProgramExecutableType.CUSTOM);
+			LOGGER.debug("Custom executable path for {} was initialized to \"{}\"", programInfo, customPath);
+		}
+	}
+
+	/**
+	 *
+	 * @param customPath //TODO: (Nad) JavaDocs
+	 * @param setConfiguration whether or not the {@link Path} should also be
+	 *            stored in the current {@link Configuration}.
+	 * @param runTests run tests and determine current executable type....
+	 */
+	public void setCustomExecutablePath(@Nullable Path customPath, boolean setConfiguration) {
+		boolean changed = !setConfiguration;
+		if (setConfiguration) {
+			try {
+				changed = configuration.setPlayerCustomPath(this, customPath);
+			} catch (IllegalStateException e) {
+				changed = false;
+				LOGGER.warn("Failed to set custom executable path for {}: {}", name(), e.getMessage());
+				LOGGER.trace("", e);
+			}
+		}
+
+		if (changed) {
+			customPath = ConfigurableProgramPaths.resolveCustomProgramPath(customPath);
+			changed = programInfo.setPath(ProgramExecutableType.CUSTOM, customPath);
+			if (changed) {
+				DefaultExecutableType defaultType;
+				if (customPath == null) {
+					defaultType = DefaultExecutableType.ORIGINAL;
+					if (setConfiguration && LOGGER.isDebugEnabled()) {
+						LOGGER.debug("Custom executable path for {} was cleared", programInfo);
+					}
+				} else {
+					defaultType = DefaultExecutableType.CUSTOM;
+					if (setConfiguration && LOGGER.isDebugEnabled()) {
+						LOGGER.debug("Custom executable path for {} was set to \"{}\"", programInfo, customPath);
+					}
+				}
+				PlayerFactory.reEvaluateExecutable(this, ProgramExecutableType.CUSTOM, defaultType);
+			}
+		}
+	}
+
+	/**
+	 * Clears any registered {@link ExecutableErrorType#SPECIFIC} for the
+	 * specified {@link ProgramExecutableType}.
+	 */
+	public void clearSpecificErrors(@Nullable ProgramExecutableType executableType) {
+		if (executableType == null && !isSpecificTest()) {
+			return;
+		}
+		specificErrorsLock.writeLock().lock();
+		try {
+			specificErrors.remove(executableType);
+		} finally {
+			specificErrorsLock.writeLock().unlock();
 		}
 	}
 

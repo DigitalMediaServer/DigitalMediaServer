@@ -32,6 +32,9 @@ import net.pms.util.PlayerUtil;
 
 public class MEncoderWebVideo extends MEncoderVideo {
 	public static final PlayerId ID = StandardPlayerId.MENCODER_WEB_VIDEO;
+
+	/** The {@link Configuration} key for the DCRaw executable type. */
+	public static final String KEY_MENCODER_WEB_EXECUTABLE_TYPE = "mencoder_web_executable_type";
 	public static final String NAME = "MEncoder Web Video";
 
 	// Not to be instantiated by anything but PlayerFactory
@@ -46,6 +49,11 @@ public class MEncoderWebVideo extends MEncoderVideo {
 	@Override
 	public PlayerId id() {
 		return ID;
+	}
+
+	@Override
+	public String getExecutableTypeKey() {
+		return KEY_MENCODER_WEB_EXECUTABLE_TYPE;
 	}
 
 	@Override

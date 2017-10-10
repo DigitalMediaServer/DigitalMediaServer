@@ -151,7 +151,7 @@ public class AviSynthFFmpeg extends FFMpegVideo {
 			String mtLine1         = "";
 			String mtLine2         = "";
 			String interframeLines = null;
-			String interframePath  = configuration.getInterFrameDefaultPath();
+			String interframePath  = configuration.getInterFramePath();
 
 			int Cores = 1;
 			if (configuration.isFfmpegAviSynthMultithreading()) {

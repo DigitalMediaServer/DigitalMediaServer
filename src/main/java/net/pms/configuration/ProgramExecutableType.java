@@ -43,7 +43,8 @@ public enum ProgramExecutableType {
 	CUSTOM;
 
 	/**
-	 * Returns the string representation of this {@link ProgramExecutableType}.
+	 * @return The localized string representation of this
+	 * {@link ProgramExecutableType}.
 	 */
 	@Override
 	public String toString() {
@@ -54,6 +55,23 @@ public enum ProgramExecutableType {
 				return Messages.getString("ProgramExecutableType.Custom");
 			case INSTALLED:
 				return Messages.getString("ProgramExecutableType.Installed");
+			default:
+				throw new IllegalStateException("ProgramExecutableType " + super.toString() + "isn't implemented");
+		}
+	}
+
+	/**
+	 * @return The unlocalized string representation of this
+	 *         {@link ProgramExecutableType}.
+	 */
+	public String toRootString() {
+		switch (this) {
+			case BUNDLED:
+				return Messages.getRootString("ProgramExecutableType.Bundled");
+			case CUSTOM:
+				return Messages.getRootString("ProgramExecutableType.Custom");
+			case INSTALLED:
+				return Messages.getRootString("ProgramExecutableType.Installed");
 			default:
 				throw new IllegalStateException("ProgramExecutableType " + super.toString() + "isn't implemented");
 		}
@@ -104,5 +122,21 @@ public enum ProgramExecutableType {
 			default:
 				return null;
 		}
+	}
+
+	/**
+	 * An {@code enum} that indicates what to set the default
+	 * {@link ProgramExecutableType} to.
+	 */
+	public static enum DefaultExecutableType {
+
+		/** Set the default {@link ProgramExecutableType} to {@link ProgramExecutableType#CUSTOM} */
+		CUSTOM,
+
+		/** Set the default {@link ProgramExecutableType} to the (constructor) original value */
+		ORIGINAL,
+
+		/** Don't change the default {@link ProgramExecutableType} */
+		NONE
 	}
 }

@@ -29,6 +29,9 @@ import net.pms.util.PlayerUtil;
 
 public class TsMuxeRAudio extends TsMuxeRVideo {
 	public static final PlayerId ID = StandardPlayerId.TSMUXER_AUDIO;
+
+	/** The {@link Configuration} key for the tsMuxeR Audio executable type. */
+	public static final String KEY_TSMUXER_AUDIO_EXECUTABLE_TYPE = "tsmuxer_audio_executable_type";
 	public static final String NAME = "tsMuxeR Audio";
 
 	// Not to be instantiated by anything but PlayerFactory
@@ -43,6 +46,11 @@ public class TsMuxeRAudio extends TsMuxeRVideo {
 	@Override
 	public PlayerId id() {
 		return ID;
+	}
+
+	@Override
+	public String getExecutableTypeKey() {
+		return KEY_TSMUXER_AUDIO_EXECUTABLE_TYPE;
 	}
 
 	@Override

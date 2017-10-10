@@ -22,7 +22,6 @@ import com.sun.jna.Platform;
 import net.coobird.thumbnailator.Thumbnails;
 import net.pms.Messages;
 import net.pms.PMS;
-import net.pms.configuration.ConfigurableProgramPaths;
 import net.pms.configuration.ExecutableInfo;
 import net.pms.configuration.ExecutableInfo.ExecutableInfoBuilder;
 import net.pms.configuration.ExternalProgramInfo;
@@ -46,6 +45,12 @@ import net.pms.util.Version;
 public class DCRaw extends ImagePlayer {
 	private static final Logger LOGGER = LoggerFactory.getLogger(DCRaw.class);
 	public final static PlayerId ID = StandardPlayerId.DCRAW;
+
+	/** The {@link Configuration} key for the custom DCRaw path. */
+	public static final String KEY_DCRAW_PATH = "dcraw_path";
+
+	/** The {@link Configuration} key for the DCRaw executable type. */
+	public static final String KEY_DCRAW_EXECUTABLE_TYPE = "dcraw_executable_type";
 	public static final String NAME = "DCRaw";
 
 	// Not to be instantiated by anything but PlayerFactory
@@ -77,8 +82,13 @@ public class DCRaw extends ImagePlayer {
 	}
 
 	@Override
+	public String getConfigurablePathKey() {
+		return KEY_DCRAW_PATH;
+	}
+
+	@Override
 	public String getExecutableTypeKey() {
-		return ConfigurableProgramPaths.KEY_DCRAW_EXECUTABLE_TYPE;
+		return KEY_DCRAW_EXECUTABLE_TYPE;
 	}
 
 	@Override

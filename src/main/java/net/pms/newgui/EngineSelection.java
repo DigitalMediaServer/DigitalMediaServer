@@ -48,6 +48,7 @@ import com.jgoodies.forms.layout.FormSpecs;
 import com.sun.jna.Platform;
 import net.pms.Messages;
 import net.pms.PMS;
+import net.pms.configuration.ExecutableInfo;
 import net.pms.configuration.ProgramExecutableType;
 import net.pms.configuration.WindowsProgramPaths;
 import net.pms.encoders.Player;
@@ -107,7 +108,7 @@ public class EngineSelection extends JPanel {
 		selection.add(engineTypeLabel, cc.xy(1, 1));
 
 		JComboBox<ProgramExecutableType> test = new JComboBox<ProgramExecutableType>(player.getProgramInfo().getExecutablesTypes().toArray(new ProgramExecutableType[player.getProgramInfo().getExecutablesTypes().size()]));
-		test.setSelectedItem(PMS.getConfiguration().getConfiguredExecutableType(player));
+		test.setSelectedItem(PMS.getConfiguration().getPlayerExecutableType(player));
 		selection.add(test, cc.xy(3, 1));
 
 		JLabel enginePathLabel = new JLabel("Engine executable path:");
@@ -155,14 +156,25 @@ public class EngineSelection extends JPanel {
 		));
 
 		status.add(new JLabel("Effective executable type:"), cc.xy(1, 1));
-		status.add(new JLabel(player.getCurrentExecutableType().toString()), cc.xy(3, 1));
+		ProgramExecutableType currentExecutableType = player.getCurrentExecutableType();
 
-		Version version = player.getProgramInfo().getExecutableInfo(player.getCurrentExecutableType()).getVersion();
-		if (version != null) {
-			status.add(new JLabel("Version:"), cc.xy(5, 1));
-			status.add(new JLabel(version.getVersionString()), cc.xy(7, 1));
+		status.add(new JLabel(
+			currentExecutableType == null ? Messages.getString("Generic.None") : currentExecutableType.toString()),
+			cc.xy(3, 1)
+		);
+
+		status.add(new JLabel("Version:"), cc.xy(5, 1));
+		if (currentExecutableType != null) {
+			ExecutableInfo currentExecutableInfo = player.getProgramInfo().getExecutableInfo(currentExecutableType);
+			Version version = currentExecutableInfo == null ? null : currentExecutableInfo.getVersion();
+			if (version != null) {
+				status.add(new JLabel(version.getVersionString()), cc.xy(7, 1));
+			} else {
+				status.add(new JLabel(Messages.getString("Generic.Unknown")), cc.xy(7, 1));
+			}
+		} else {
+			status.add(new JLabel(Messages.getString("Generic.NA")), cc.xy(7, 1));
 		}
-
 		add(status);
 	}
 

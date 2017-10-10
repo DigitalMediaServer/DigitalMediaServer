@@ -265,7 +265,7 @@ public class AviSynthMEncoder extends MEncoderVideo {
 			String mtLine2         = "";
 			String mtLine3         = "";
 			String interframeLines = null;
-			String interframePath  = configuration.getInterFrameDefaultPath();
+			String interframePath  = configuration.getInterFramePath();
 
 			int Cores = 1;
 			if (configuration.getAvisynthMultiThreading()) {

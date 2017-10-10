@@ -23,6 +23,9 @@ import net.pms.util.PlayerUtil;
 
 public class VLCWebVideo extends VLCVideo {
 	public static final PlayerId ID = StandardPlayerId.VLC_WEB_VIDEO;
+
+	/** The {@link Configuration} key for the VLC Web executable type. */
+	public static final String KEY_VLC_WEB_EXECUTABLE_TYPE = "vlc_web_executable_type";
 	public static final String NAME = "VLC Web Video";
 
 	// Not to be instantiated by anything but PlayerFactory
@@ -37,6 +40,11 @@ public class VLCWebVideo extends VLCVideo {
 	@Override
 	public PlayerId id() {
 		return ID;
+	}
+
+	@Override
+	public String getExecutableTypeKey() {
+		return KEY_VLC_WEB_EXECUTABLE_TYPE;
 	}
 
 	@Override
