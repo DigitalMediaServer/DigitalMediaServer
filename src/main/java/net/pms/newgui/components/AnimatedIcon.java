@@ -439,7 +439,7 @@ public class AnimatedIcon implements Icon, ActionListener {
 	public void paintIcon(Component c, Graphics g, int x, int y) {
 
 		// If the previous icon was an AnimatedIcon, stop the animation
-		if (c instanceof JAnimatedButton) {
+		if (c instanceof JAnimatedButton) { //TODO: (Nad) instanceof
 			if (((JAnimatedButton) c).getCurrentIcon() != this) {
 				if (((JAnimatedButton) c).getCurrentIcon() != null) {
 					((JAnimatedButton) c).getCurrentIcon().pause();
@@ -496,7 +496,7 @@ public class AnimatedIcon implements Icon, ActionListener {
 		if (nextFrameIndex < 0 || nextFrameIndex == currentFrameIndex) {
 			pause();
 			if (nextStage != null) {
-				if (component instanceof AnimatedIconCallback) {
+				if (component instanceof AnimatedIconCallback) { //TODO: (Nad) Callback
 					((AnimatedIconCallback) component).setNextIcon(nextStage);
 				}
 				nextStage = permanentStage;

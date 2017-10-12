@@ -26,12 +26,16 @@ import javax.swing.JTree;
 import javax.swing.border.Border;
 import javax.swing.tree.DefaultTreeCellRenderer;
 import net.pms.encoders.Player;
+import net.pms.newgui.components.AnimatedIcon;
 
 public class TreeRenderer extends DefaultTreeCellRenderer {
 	private static final long serialVersionUID = 8830634234336247114L;
 
-	public TreeRenderer() {
-	}
+	private final AnimatedIcon scanBusyIcon = new AnimatedIcon(
+		this, true, AnimatedIcon.buildAnimation(
+			"symbol-light-treemenu-amber-F%d.png", 0, 7, true, 35, 35, 35
+		)
+	);
 
 	/**
 	 * Sets the color to use for the background if node is selected.
@@ -63,12 +67,14 @@ public class TreeRenderer extends DefaultTreeCellRenderer {
 			} else {
 				if (player.isEnabled()) {
 					if (player.isAvailable()) {
-						setIcon(LooksFrame.readImageIcon("icon-treemenu-engineenabled.png"));
+						setIcon(LooksFrame.readImageIcon("symbol-light-treemenu-green-on.png")); //TODO: (Nad) Treemenu
 					} else {
 						setIcon(LooksFrame.readImageIcon("icon-treemenu-enginewarning.png"));
 					}
 				} else {
-					setIcon(LooksFrame.readImageIcon("icon-treemenu-enginedisabled.png"));
+//					setIcon(LooksFrame.readImageIcon("symbol-light-treemenu-red-on.png"));
+					setIcon(scanBusyIcon);
+					scanBusyIcon.restart();
 				}
 				setToolTipText(player.getStatusText());
 			}

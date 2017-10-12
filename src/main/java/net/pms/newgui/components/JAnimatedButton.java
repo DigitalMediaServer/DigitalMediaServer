@@ -19,10 +19,12 @@
 package net.pms.newgui.components;
 
 import java.net.URL;
+import javax.annotation.concurrent.NotThreadSafe;
 import javax.swing.UIManager;
 import net.pms.newgui.LooksFrame;
 
 
+@NotThreadSafe
 public class JAnimatedButton extends JImageButton {
 
 	private static final long serialVersionUID = -8316312033513554308L;
@@ -31,9 +33,9 @@ public class JAnimatedButton extends JImageButton {
 
 	/**
 	 * Helps {@link AnimatedIcon} instances to stop other instances when the
-	 * icon is changed. This is NOT thread safe.
+	 * icon is changed.
 	 *
-	 * @return the previously painted {@link AnimatedIcon} or <code>null</code>
+	 * @return the previously painted {@link AnimatedIcon} or {@code null}.
 	 */
 	public AnimatedIcon getCurrentIcon() {
 		return currentIcon;
