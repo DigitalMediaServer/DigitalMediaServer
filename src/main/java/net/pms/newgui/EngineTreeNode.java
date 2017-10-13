@@ -1,21 +1,3 @@
-/*
- * PS3 Media Server, for streaming any medias to your PS3.
- * Copyright (C) 2008  A.Brochard
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; version 2
- * of the License only.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
- */
 package net.pms.newgui;
 
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
@@ -27,6 +9,9 @@ import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+import javax.annotation.concurrent.NotThreadSafe;
 import javax.imageio.ImageIO;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
@@ -35,28 +20,29 @@ import javax.swing.JTextArea;
 import javax.swing.tree.DefaultMutableTreeNode;
 import net.pms.Messages;
 import net.pms.encoders.Player;
+import net.pms.newgui.components.AnimatedIcon;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class TreeNodeSettings extends DefaultMutableTreeNode { //TODO: (Nad) Delete
-	private static final Logger LOGGER = LoggerFactory.getLogger(TreeNodeSettings.class);
-	private static final long serialVersionUID = -337606760204027449L;
-	private Player player;
-	private JComponent otherConfigPanel;
-	private JPanel warningPanel;
+@NotThreadSafe
+public class EngineTreeNode extends DefaultMutableTreeNode {
+	private static final long serialVersionUID = 1L;
+	private static final Logger LOGGER = LoggerFactory.getLogger(EngineTreeNode.class);
 
-	public Player getPlayer() {
-		return player;
-	}
+	protected final Player player;
+	protected final JComponent otherConfigPanel; //TODO: (Nad) Remove?
+	protected JPanel warningPanel; //TODO: (Nad) Rename
+	protected AnimatedIcon warningIcon;
 
-	public TreeNodeSettings(String name, Player p, JComponent otherConfigPanel) {
-		super(name);
-		this.player = p;
+	public EngineTreeNode(@Nullable String nodeName, @Nullable Player player, @Nullable JComponent otherConfigPanel) {
+		super(nodeName);
+		this.player = player;
 		this.otherConfigPanel = otherConfigPanel;
 
 	}
 
-	public String id() {
+	@Nullable
+	public String id() { //TODO: (Nad) PlayerID?
 		if (player != null) {
 			return player.id().toString();
 		} else if (otherConfigPanel != null) {
@@ -66,6 +52,21 @@ public class TreeNodeSettings extends DefaultMutableTreeNode { //TODO: (Nad) Del
 		}
 	}
 
+	@Nullable
+	public Player getPlayer() {
+		return player;
+	}
+
+	@Nullable
+	public AnimatedIcon getWarningIcon() {
+		return warningIcon;
+	}
+
+	public void setWarningIcon(AnimatedIcon icon) {
+		warningIcon = icon;
+	}
+
+	@Nonnull
 	public JComponent getConfigPanel() {
 		if (player != null) {
 			if (player.isAvailable()) {
@@ -79,6 +80,7 @@ public class TreeNodeSettings extends DefaultMutableTreeNode { //TODO: (Nad) Del
 		}
 	}
 
+	@Nonnull
 	private JPanel getWarningPanel() {
 		if (warningPanel == null) {
 			BufferedImage warningIcon = null;

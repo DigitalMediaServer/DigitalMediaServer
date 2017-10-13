@@ -20,14 +20,16 @@ package net.pms.newgui.components;
 
 import java.net.URL;
 import javax.annotation.concurrent.NotThreadSafe;
+import javax.swing.Icon;
 import javax.swing.UIManager;
 import net.pms.newgui.LooksFrame;
+import net.pms.newgui.components.AnimatedIcon.AnimatedIconStage;
 
 
 @NotThreadSafe
-public class JAnimatedButton extends JImageButton {
+public class AnimatedButton extends ImageButton implements AnimatedComponent {
 
-	private static final long serialVersionUID = -8316312033513554308L;
+	private static final long serialVersionUID = 1L;
 
 	private AnimatedIcon currentIcon = null;
 
@@ -37,37 +39,39 @@ public class JAnimatedButton extends JImageButton {
 	 *
 	 * @return the previously painted {@link AnimatedIcon} or {@code null}.
 	 */
+	@Override
 	public AnimatedIcon getCurrentIcon() {
 		return currentIcon;
 	}
 
 	/**
-	 * Sets the currently painted {@link AnimatedIcon}. This is NOT thread safe.
+	 * Sets the currently painted {@link AnimatedIcon}.
 	 *
 	 * @param icon the {@link AnimatedIcon} to set.
 	 */
+	@Override
 	public void setCurrentIcon(AnimatedIcon icon) {
 		currentIcon = icon;
 	}
 
 
-	public JAnimatedButton(String text, AnimatedIcon icon) {
+	public AnimatedButton(String text, AnimatedIcon icon) {
 		super(text, icon);
 	}
 
-	public JAnimatedButton(AnimatedIcon icon) {
+	public AnimatedButton(AnimatedIcon icon) {
 		super(icon);
 	}
 
-	public JAnimatedButton(String text, String iconName) {
+	public AnimatedButton(String text, String iconName) {
 		super(text, iconName);
 	}
 
-	public JAnimatedButton(String iconName) {
+	public AnimatedButton(String iconName) {
 		super(iconName);
 	}
 
-	public JAnimatedButton() {
+	public AnimatedButton() {
 		super();
 	}
 
@@ -76,17 +80,21 @@ public class JAnimatedButton extends JImageButton {
 		return url == null ? null : new AnimatedIcon(this, filename);
 	}
 
+	@Override
+	public void setIcon(Icon defaultIcon) { //TODO: (Nad) Figure out
+		// TODO Auto-generated method stub
+		super.setIcon(defaultIcon);
+	}
+
 	/**
 	 * Set static icons from standard naming convention that is of type
-	 * {@link AnimatedIcon}. While this can seem unnecessary it means
-	 * that they can handle transitions to and from other (animated)
-	 * {@link AnimatedIcon}s and thus be used on a {@link JAnimatedButton}.
+	 * {@link AnimatedIcon}. While this can seem unnecessary it means that they
+	 * can handle transitions to and from other (animated) {@link AnimatedIcon}s
+	 * and thus be used on a {@link AnimatedButton}.
 	 *
-	 * @param defaultIconName the base image resource name used when the
-	 *                        button is in the normal state and which
-	 *                        the other state names are derived from.
-	 *
-	 * @see JImageButton#setIcons(String)
+	 * @param defaultIconName the base image resource name used when the button
+	 *            is in the normal state and which the other state names are
+	 *            derived from.
 	 */
 	@Override
 	protected void setIcons(String defaultIconName) {
@@ -116,4 +124,31 @@ public class JAnimatedButton extends JImageButton {
 			setRolloverIcon(icon);
 		}
 	}
+
+	@Override
+	public void setNextIcon(AnimatedIconStage stage) {
+		switch (stage.iconType) {
+			case PRESSEDICON:
+				setPressedIcon(stage.icon);
+				break;
+			case DISABLEDICON:
+				setDisabledIcon(stage.icon);
+				break;
+			case SELECTEDICON:
+				setSelectedIcon(stage.icon);
+				break;
+			case DISABLEDSELECTEDICON:
+				setDisabledSelectedIcon(stage.icon);
+				break;
+			case ROLLOVERICON:
+				setRolloverIcon(stage.icon);
+				break;
+			case ROLLOVERSELECTEDICON:
+				setRolloverSelectedIcon(stage.icon);
+				break;
+			default:
+				setIcon(stage.icon);
+		}
+	}
+
 }

@@ -42,8 +42,8 @@ import net.pms.dlna.DLNAMediaDatabase;
 import net.pms.newgui.components.AnimatedIcon;
 import net.pms.newgui.components.AnimatedIcon.AnimatedIconFrame;
 import net.pms.newgui.components.CustomJButton;
-import net.pms.newgui.components.JAnimatedButton;
-import net.pms.newgui.components.JImageButton;
+import net.pms.newgui.components.AnimatedButton;
+import net.pms.newgui.components.ImageButton;
 import net.pms.util.CoverSupplier;
 import net.pms.util.FormLayoutUtil;
 import net.pms.util.FullyPlayedAction;
@@ -90,7 +90,7 @@ public class NavigationShareTab {
 	private JComboBox<String> fullyPlayedAction;
 	private JTextField fullyPlayedOutputDirectory;
 	private CustomJButton selectFullyPlayedOutputDirectory;
-	private final JAnimatedButton scanButton = new JAnimatedButton("button-scan.png");
+	private final AnimatedButton scanButton = new AnimatedButton("button-scan.png");
 	private final AnimatedIcon scanNormalIcon = (AnimatedIcon) scanButton.getIcon();
 	private final AnimatedIcon scanRolloverIcon = (AnimatedIcon) scanButton.getRolloverIcon();
 	private final AnimatedIcon scanPressedIcon = (AnimatedIcon) scanButton.getPressedIcon();
@@ -783,7 +783,7 @@ public class NavigationShareTab {
 		FList.setRowHeight(metrics.getLeading() + metrics.getMaxAscent() + metrics.getMaxDescent() + 4);
 		FList.setIntercellSpacing(new Dimension(8, 2));
 
-		JImageButton but = new JImageButton("button-add-folder.png");
+		ImageButton but = new ImageButton("button-add-folder.png");
 		but.setToolTipText(Messages.getString("FoldTab.9"));
 		but.addActionListener(new ActionListener() {
 			@Override
@@ -807,7 +807,7 @@ public class NavigationShareTab {
 		});
 		builderFolder.add(but, FormLayoutUtil.flip(cc.xy(1, 3), colSpec, orientation));
 
-		JImageButton but2 = new JImageButton("button-remove-folder.png");
+		ImageButton but2 = new ImageButton("button-remove-folder.png");
 		but2.setToolTipText(Messages.getString("FoldTab.36"));
 		but2.addActionListener(new ActionListener() {
 			@Override
@@ -823,7 +823,7 @@ public class NavigationShareTab {
 		});
 		builderFolder.add(but2, FormLayoutUtil.flip(cc.xy(2, 3), colSpec, orientation));
 
-		JImageButton but3 = new JImageButton("button-arrow-down.png");
+		ImageButton but3 = new ImageButton("button-arrow-down.png");
 		but3.setToolTipText(Messages.getString("FoldTab.12"));
 		but3.addActionListener(new ActionListener() {
 			@Override
@@ -846,7 +846,7 @@ public class NavigationShareTab {
 		});
 		builderFolder.add(but3, FormLayoutUtil.flip(cc.xy(3, 3), colSpec, orientation));
 
-		JImageButton but4 = new JImageButton("button-arrow-up.png");
+		ImageButton but4 = new ImageButton("button-arrow-up.png");
 		but4.setToolTipText(Messages.getString("FoldTab.12"));
 		but4.addActionListener(new ActionListener() {
 			@Override

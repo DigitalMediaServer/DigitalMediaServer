@@ -44,7 +44,7 @@ import net.pms.configuration.PmsConfiguration;
 import net.pms.encoders.Player;
 import net.pms.encoders.PlayerFactory;
 import net.pms.newgui.components.CustomJButton;
-import net.pms.newgui.components.JImageButton;
+import net.pms.newgui.components.ImageButton;
 import net.pms.util.FormLayoutUtil;
 import net.pms.util.KeyedComboBoxModel;
 import net.pms.util.KeyedStringComboBoxModel;
@@ -123,9 +123,9 @@ public class TranscodingTab {
 	 * Revisions before that allowed only 8.
 	 */
 	private static final int MAX_CORES = 16;
-	private JImageButton arrowDownButton;
-	private JImageButton arrowUpButton;
-	private JImageButton toggleButton;
+	private ImageButton arrowDownButton;
+	private ImageButton arrowUpButton;
+	private ImageButton toggleButton;
 	private static enum ToggleButtonState {
 		Unknown ("button-toggle-on_disabled.png"),
 		On ("button-toggle-on.png"),
@@ -177,15 +177,15 @@ public class TranscodingTab {
 		}
 		if (
 			path == null ||
-			!(path.getLastPathComponent() instanceof TreeNodeSettings) ||
-			((TreeNodeSettings) path.getLastPathComponent()).getPlayer() == null)
+			!(path.getLastPathComponent() instanceof EngineTreeNode) ||
+			((EngineTreeNode) path.getLastPathComponent()).getPlayer() == null)
 		{
 			arrowDownButton.setEnabled(false);
 			arrowUpButton.setEnabled(false);
 			toggleButton.setIconName(ToggleButtonState.Unknown.getIconName());
 			toggleButton.setEnabled(false);
 		} else {
-			TreeNodeSettings node = (TreeNodeSettings) path.getLastPathComponent();
+			EngineTreeNode node = (EngineTreeNode) path.getLastPathComponent();
 			DefaultTreeModel treeModel = (DefaultTreeModel) tree.getModel();
 			int index = treeModel.getIndexOfChild(node.getParent(), node);
 			if (index == 0) {
@@ -216,14 +216,14 @@ public class TranscodingTab {
 
 		CellConstraints cc = new CellConstraints();
 
-		arrowDownButton = new JImageButton("button-arrow-down.png");
+		arrowDownButton = new ImageButton("button-arrow-down.png");
 		arrowDownButton.setToolTipText(Messages.getString("TrTab2.6"));
 		arrowDownButton.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				TreePath path = tree.getSelectionModel().getSelectionPath();
-				if (path != null && path.getLastPathComponent() instanceof TreeNodeSettings) {
-					TreeNodeSettings node = (TreeNodeSettings) path.getLastPathComponent();
+				if (path != null && path.getLastPathComponent() instanceof EngineTreeNode) {
+					EngineTreeNode node = (EngineTreeNode) path.getLastPathComponent();
 					if (node.getPlayer() != null) {
 						DefaultTreeModel treeModel = (DefaultTreeModel) tree.getModel();   // get the tree model
 						//now get the index of the selected node in the DefaultTreeModel
@@ -236,8 +236,8 @@ public class TranscodingTab {
 								tree.expandRow(i);
 							}
 							tree.getSelectionModel().setSelectionPath(new TreePath(node.getPath()));
-							((TreeNodeSettings) treeModel.getChild(node.getParent(), index)).getPlayer();
-							configuration.setEnginePriorityBelow(node.getPlayer(), ((TreeNodeSettings) treeModel.getChild(node.getParent(), index)).getPlayer());
+							((EngineTreeNode) treeModel.getChild(node.getParent(), index)).getPlayer();
+							configuration.setEnginePriorityBelow(node.getPlayer(), ((EngineTreeNode) treeModel.getChild(node.getParent(), index)).getPlayer());
 						}
 					}
 				}
@@ -245,14 +245,14 @@ public class TranscodingTab {
 		});
 		builder.add(arrowDownButton).at(FormLayoutUtil.flip(cc.xy(2, 3), colSpec, orientation));
 
-		arrowUpButton = new JImageButton("button-arrow-up.png");
+		arrowUpButton = new ImageButton("button-arrow-up.png");
 		arrowUpButton.setToolTipText(Messages.getString("TrTab2.6"));
 		arrowUpButton.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				TreePath path = tree.getSelectionModel().getSelectionPath();
-				if (path != null && path.getLastPathComponent() instanceof TreeNodeSettings) {
-					TreeNodeSettings node = (TreeNodeSettings) path.getLastPathComponent();
+				if (path != null && path.getLastPathComponent() instanceof EngineTreeNode) {
+					EngineTreeNode node = (EngineTreeNode) path.getLastPathComponent();
 					if (node.getPlayer() != null) {
 						DefaultTreeModel treeModel = (DefaultTreeModel) tree.getModel();   // get the tree model
 						//now get the index of the selected node in the DefaultTreeModel
@@ -265,7 +265,7 @@ public class TranscodingTab {
 								tree.expandRow(i);
 							}
 							tree.getSelectionModel().setSelectionPath(new TreePath(node.getPath()));
-							configuration.setEnginePriorityAbove(node.getPlayer(), ((TreeNodeSettings) treeModel.getChild(node.getParent(), index)).getPlayer());
+							configuration.setEnginePriorityAbove(node.getPlayer(), ((EngineTreeNode) treeModel.getChild(node.getParent(), index)).getPlayer());
 						}
 					}
 				}
@@ -273,7 +273,7 @@ public class TranscodingTab {
 		});
 		builder.add(arrowUpButton).at(FormLayoutUtil.flip(cc.xy(3, 3), colSpec, orientation));
 
-		toggleButton = new JImageButton();
+		toggleButton = new ImageButton();
 		toggleButton.setToolTipText(Messages.getString("TrTab2.0"));
 		setButtonsState();
 		toggleButton.addActionListener(new ActionListener() {
@@ -282,10 +282,10 @@ public class TranscodingTab {
 				TreePath path = tree.getSelectionModel().getSelectionPath();
 				if (
 					path != null &&
-					path.getLastPathComponent() instanceof TreeNodeSettings &&
-					((TreeNodeSettings) path.getLastPathComponent()).getPlayer() != null)
+					path.getLastPathComponent() instanceof EngineTreeNode &&
+					((EngineTreeNode) path.getLastPathComponent()).getPlayer() != null)
 				{
-					((TreeNodeSettings) path.getLastPathComponent()).getPlayer().toggleEnabled(true);
+					((EngineTreeNode) path.getLastPathComponent()).getPlayer().toggleEnabled(true);
 					tree.updateUI();
 					setButtonsState();
 				}
@@ -294,7 +294,7 @@ public class TranscodingTab {
 		builder.add(toggleButton).at(FormLayoutUtil.flip(cc.xy(4, 3), colSpec, orientation));
 
 		DefaultMutableTreeNode root = new DefaultMutableTreeNode(Messages.getString("TrTab2.11"));
-		TreeNodeSettings commonEnc = new TreeNodeSettings(Messages.getString("TrTab2.5"), null, buildCommon());
+		EngineTreeNode commonEnc = new EngineTreeNode(Messages.getString("TrTab2.5"), null, buildCommon());
 		tabbedPanel.add(commonEnc.id(), commonEnc.getConfigPanel());
 		root.add(commonEnc);
 
@@ -312,9 +312,7 @@ public class TranscodingTab {
 
 		tabbedPanel.add(EMPTY_PANEL, new JPanel());
 
-		tree = new JTree(new DefaultTreeModel(root)) {
-			private static final long serialVersionUID = -6703434752606636290L;
-		};
+		tree = new JTree(new DefaultTreeModel(root));
 		ToolTipManager.sharedInstance().registerComponent(tree);
 		tree.setRootVisible(false);
 		tree.getSelectionModel().setSelectionMode(TreeSelectionModel.SINGLE_TREE_SELECTION);
@@ -322,8 +320,8 @@ public class TranscodingTab {
 			@Override
 			public void valueChanged(TreeSelectionEvent e) {
 				setButtonsState();
-				if (e.getNewLeadSelectionPath() != null && e.getNewLeadSelectionPath().getLastPathComponent() instanceof TreeNodeSettings) {
-					TreeNodeSettings tns = (TreeNodeSettings) e.getNewLeadSelectionPath().getLastPathComponent();
+				if (e.getNewLeadSelectionPath() != null && e.getNewLeadSelectionPath().getLastPathComponent() instanceof EngineTreeNode) {
+					EngineTreeNode tns = (EngineTreeNode) e.getNewLeadSelectionPath().getLastPathComponent();
 					cardLayout.show(tabbedPanel, tns.id());
 				} else {
 					cardLayout.show(tabbedPanel, EMPTY_PANEL);
@@ -332,7 +330,7 @@ public class TranscodingTab {
 		});
 
 		tree.setRequestFocusEnabled(false);
-		tree.setCellRenderer(new TreeRenderer());
+		tree.setCellRenderer(new TranscodingEngineCellRenderer(tree));
 		tree.addMouseListener(new MouseAdapter() {
 			@Override
 			public void mousePressed(MouseEvent e) {
@@ -340,8 +338,8 @@ public class TranscodingTab {
 				if(selRow != -1) {
 					if(e.getClickCount() == 2) {
 						Object node = tree.getPathForLocation(e.getX(), e.getY()).getLastPathComponent();
-						if (node instanceof TreeNodeSettings && ((TreeNodeSettings)node).getPlayer() != null) {
-							((TreeNodeSettings)node).getPlayer().toggleEnabled(true);
+						if (node instanceof EngineTreeNode && ((EngineTreeNode)node).getPlayer() != null) {
+							((EngineTreeNode)node).getPlayer().toggleEnabled(true);
 							tree.updateUI();
 							setButtonsState();
 						}
@@ -374,7 +372,7 @@ public class TranscodingTab {
 		}
 
 		for (Player player : PlayerFactory.getAllPlayers()) {
-			TreeNodeSettings engine = new TreeNodeSettings(player.name(), player, null);
+			EngineTreeNode engine = new EngineTreeNode(player.name(), player, null);
 
 			JComponent engineSettings = engine.getConfigPanel();
 //			if (configPanel == null) {

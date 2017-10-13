@@ -24,32 +24,31 @@ import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.UIManager;
 import net.pms.newgui.LooksFrame;
-import net.pms.newgui.components.AnimatedIcon.AnimatedIconStage;
 
-public class JImageButton extends JButton implements AnimatedIconCallback {
+public class ImageButton extends JButton {
 
 	private static final long serialVersionUID = 8120596501408171329L;
 
-	public JImageButton(String text, String iconName) {
+	public ImageButton(String text, String iconName) {
 		super(text, null);
 		setProperites();
 		setIcons(iconName);
 	}
 
-	public JImageButton(String iconName) {
+	public ImageButton(String iconName) {
 		this(null, iconName);
 	}
 
-	public JImageButton() {
+	public ImageButton() {
 		this(null, (String) null);
 	}
 
-	public JImageButton(String text, Icon icon) {
+	public ImageButton(String text, Icon icon) {
 		super(text, icon);
 		setProperites();
 	}
 
-	public JImageButton(Icon icon) {
+	public ImageButton(Icon icon) {
 		super(icon);
 		setProperites();
 	}
@@ -72,11 +71,10 @@ public class JImageButton extends JButton implements AnimatedIconCallback {
 
 	/**
 	 * Set icons from standard naming convention based on a base image name.
-	 * @param defaultIconName the base image resource name used when the
-	 *                        button is in the normal state and which
-	 *                        the other state names are derived from.
 	 *
-	 * @see JAnimatedButton#setIcons(String)
+	 * @param defaultIconName the base image resource name used when the button
+	 *            is in the normal state and which the other state names are
+	 *            derived from.
 	 */
 	protected void setIcons(String defaultIconName) {
 		if (defaultIconName == null) {
@@ -106,7 +104,6 @@ public class JImageButton extends JButton implements AnimatedIconCallback {
 		}
 	}
 
-
 	 /**
 	 * Set icons based on standard naming convention from a base image name.
 	 *
@@ -117,31 +114,5 @@ public class JImageButton extends JButton implements AnimatedIconCallback {
 
 	public void setIconName(String iconName) {
 		setIcons(iconName);
-	}
-
-	@Override
-	public void setNextIcon(AnimatedIconStage stage) {
-		switch (stage.iconType) {
-			case PRESSEDICON:
-				setPressedIcon(stage.icon);
-				break;
-			case DISABLEDICON:
-				setDisabledIcon(stage.icon);
-				break;
-			case SELECTEDICON:
-				setSelectedIcon(stage.icon);
-				break;
-			case DISABLEDSELECTEDICON:
-				setDisabledSelectedIcon(stage.icon);
-				break;
-			case ROLLOVERICON:
-				setRolloverIcon(stage.icon);
-				break;
-			case ROLLOVERSELECTEDICON:
-				setRolloverSelectedIcon(stage.icon);
-				break;
-			default:
-				setIcon(stage.icon);
-		}
 	}
 }

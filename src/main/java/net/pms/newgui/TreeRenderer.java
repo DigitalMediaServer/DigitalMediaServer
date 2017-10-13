@@ -26,9 +26,11 @@ import javax.swing.JTree;
 import javax.swing.border.Border;
 import javax.swing.tree.DefaultTreeCellRenderer;
 import net.pms.encoders.Player;
+import net.pms.newgui.components.AnimatedComponent;
 import net.pms.newgui.components.AnimatedIcon;
+import net.pms.newgui.components.AnimatedIcon.AnimatedIconStage;
 
-public class TreeRenderer extends DefaultTreeCellRenderer {
+public class TreeRenderer extends DefaultTreeCellRenderer implements AnimatedComponent { //TODO: (Nad) Delete
 	private static final long serialVersionUID = 8830634234336247114L;
 
 	private final AnimatedIcon scanBusyIcon = new AnimatedIcon(
@@ -74,7 +76,7 @@ public class TreeRenderer extends DefaultTreeCellRenderer {
 				} else {
 //					setIcon(LooksFrame.readImageIcon("symbol-light-treemenu-red-on.png"));
 					setIcon(scanBusyIcon);
-					scanBusyIcon.restart();
+					scanBusyIcon.start();
 				}
 				setToolTipText(player.getStatusText());
 			}
@@ -91,5 +93,28 @@ public class TreeRenderer extends DefaultTreeCellRenderer {
 		setBorder(border);
 
 		return this;
+	}
+
+	private AnimatedIcon currentIcon = null;
+
+	@Override
+	public void setNextIcon(AnimatedIconStage stage) {
+		switch (stage.iconType) {
+			case DISABLEDICON:
+				setDisabledIcon(stage.icon);
+				break;
+			default:
+				setIcon(stage.icon);
+		}
+	}
+
+	@Override
+	public AnimatedIcon getCurrentIcon() {
+		return currentIcon;
+	}
+
+	@Override
+	public void setCurrentIcon(AnimatedIcon icon) {
+		currentIcon = icon;
 	}
 }

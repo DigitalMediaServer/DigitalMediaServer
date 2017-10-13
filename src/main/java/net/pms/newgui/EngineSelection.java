@@ -36,6 +36,7 @@ import javax.swing.JComboBox;
 import javax.swing.JFileChooser;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JTree;
 import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.EtchedBorder;
@@ -51,8 +52,13 @@ import net.pms.PMS;
 import net.pms.configuration.ExecutableInfo;
 import net.pms.configuration.ProgramExecutableType;
 import net.pms.configuration.WindowsProgramPaths;
+import net.pms.encoders.FFMpegVideo;
 import net.pms.encoders.Player;
+import net.pms.encoders.PlayerFactory;
 import net.pms.encoders.PlayerId;
+import net.pms.newgui.components.AnimatedButton;
+import net.pms.newgui.components.AnimatedIcon;
+import net.pms.newgui.components.AnimatedTreeCellRenderer;
 import net.pms.newgui.components.DefaultTextField;
 import net.pms.util.FileUtil;
 import net.pms.util.FormLayoutUtil;
@@ -175,7 +181,20 @@ public class EngineSelection extends JPanel {
 		} else {
 			status.add(new JLabel(Messages.getString("Generic.NA")), cc.xy(7, 1));
 		}
-		add(status);
+
+		AnimatedButton test2 = new AnimatedButton();
+		AnimatedIcon scanBusyIcon = new AnimatedIcon(
+			test2, true, AnimatedIcon.buildAnimation(
+				"symbol-light-treemenu-amber-F%d.png", 0, 7, true, 35, 35, 35
+			)
+		);
+		test2.setIcon(scanBusyIcon);
+		scanBusyIcon.start();
+		status.add(test2, cc.xy(1, 3));
+
+
+		add(status); //TODO: (Nad) Engine Layout
+
 	}
 
 	@Nonnull
