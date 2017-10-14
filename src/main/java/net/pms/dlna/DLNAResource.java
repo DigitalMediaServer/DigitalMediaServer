@@ -2625,7 +2625,21 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 				if (player != null && media != null) {
 					// Note: Can't use instanceof below because the audio classes inherit the corresponding video class
 					if (media.isVideo()) {
-						if (mediaRenderer.getCustomFFmpegOptions().contains("-f avi")) {
+						if (
+							mediaRenderer.getCustomFFmpegOptions().contains("-f avi") &&
+							(
+								mediaRenderer.getCustomFFmpegOptions().contains("DIVX") ||
+								mediaRenderer.getCustomFFmpegOptions().contains("divx")
+							)
+						) {
+							transcodedExtension = "_transcoded_to.divx";
+						} else if (
+								mediaRenderer.getCustomFFmpegOptions().contains("-f mjpeg") ||
+								mediaRenderer.getCustomFFmpegOptions().contains("-f avi") &&
+								// Using -vtag leave the possibility to get .avi or .divx extension for such DIVX files
+								!mediaRenderer.getCustomFFmpegOptions().contains("-tag:v DIVX") &&
+								!mediaRenderer.getCustomFFmpegOptions().contains("-tag:v divx")
+							) {
 							transcodedExtension = "_transcoded_to.avi";
 						} else if (mediaRenderer.getCustomFFmpegOptions().contains("-f flv")) {
 							transcodedExtension = "_transcoded_to.flv";
@@ -2633,12 +2647,43 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 							transcodedExtension = "_transcoded_to.mkv";
 						} else if (mediaRenderer.getCustomFFmpegOptions().contains("-f mov")) {
 							transcodedExtension = "_transcoded_to.mov";
+						} else if (mediaRenderer.getCustomFFmpegOptions().contains("-f ogv")) {
+							transcodedExtension = "_transcoded_to.ogv";
+						} else if (mediaRenderer.getCustomFFmpegOptions().contains("-f rm")) {
+							transcodedExtension = "_transcoded_to.rmvb";
 						} else if (mediaRenderer.getCustomFFmpegOptions().contains("-f webm")) {
 							transcodedExtension = "_transcoded_to.webm";
-						} else if (mediaRenderer.isTranscodeToMPEGTS()) {
+						} else if (
+								mediaRenderer.isTranscodeToMPEGTS() &&
+								!mediaRenderer.getCustomFFmpegOptions().contains("-mpegts_m2ts_mode  1") &&
+								!mediaRenderer.getCustomFFmpegOptions().contains("bluray-compat=1")
+							) {
 							transcodedExtension = "_transcoded_to.ts";
-						} else if (mediaRenderer.isTranscodeToWMV() && !xbox360) {
+						} else if (
+								mediaRenderer.isTranscodeToMPEGTS() &&
+								(
+									mediaRenderer.getCustomFFmpegOptions().contains("-mpegts_m2ts_mode  1") ||
+									mediaRenderer.getCustomFFmpegOptions().contains("bluray-compat=1")
+								)
+							) {
+							transcodedExtension = "_transcoded_to.m2ts";
+						} else if (
+//								mediaRenderer.isTranscodeToMP4() ||
+								mediaRenderer.getCustomFFmpegOptions().contains("-f ismv") ||
+								mediaRenderer.getCustomFFmpegOptions().contains("-f m4v") ||
+								mediaRenderer.getCustomFFmpegOptions().contains("-f mp4") ||
+								mediaRenderer.getCustomFFmpegOptions().contains("-f psp") ||
+								mediaRenderer.getCustomFFmpegOptions().contains("-f ipod")
+						) {
+							transcodedExtension = "_transcoded_to.mp4";
+						} else if (
+								mediaRenderer.isTranscodeToWMV() && !xbox360 ||
+								mediaRenderer.getCustomFFmpegOptions().contains("-f asf") ||
+								mediaRenderer.getCustomFFmpegOptions().contains("-f vc1")
+							) {
 							transcodedExtension = "_transcoded_to.wmv";
+						} else if (mediaRenderer.getCustomFFmpegOptions().contains("-f vob")) {
+							transcodedExtension = "_transcoded_to.vob";
 						} else {
 							transcodedExtension = "_transcoded_to.mpg";
 						}
@@ -3330,7 +3375,7 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 				return wrap(fis, high, low);
 			}
 
-			 InputStream fis = getInputStream();
+			InputStream fis = getInputStream();
 
 			if (fis != null) {
 				if (low > 0) {
@@ -3614,7 +3659,8 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 			// A URL
 			try {
 				return DLNAThumbnailInputStream.toThumbnailInputStream(downloadAndSend(thumb, true));
-			} catch (Exception e) {}
+			} catch (Exception e) {
+			}
 		}
 
 		// Or none of the above
