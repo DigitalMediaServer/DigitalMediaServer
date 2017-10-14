@@ -1242,9 +1242,9 @@ public class LibMediaInfoParser {
 			}
 			sb.append(label).append(": ");
 			if (isBlank(value)) {
-				sb.append(booleanValues ? "False" : "No");
+				sb.append("Yes");
 			} else {
-				sb.append(booleanValues ? "True" : "Yes");
+				sb.append("No");
 			}
 			return true;
 		}
