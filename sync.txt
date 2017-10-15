@@ -1,4 +1,4 @@
-UMS sync with: 0c1e8f7f3294baffca05b6e99dbe867c4f3106be Fixed charset handling during subtitle conversions
+UMS sync with: 1d85f364d3891481b600c3b7f32e4a3143f88e90 Reverted "Files compatible with the renderer do not stream if they need to use encoded audio passthrough"
 
 Skipped:
 a4a099c7efcaf6dc8a28402a29eade757a2ce78d The ugly hack to solve problem when the TotalMatches are changed
