@@ -4,7 +4,10 @@ import java.awt.Graphics;
 import java.awt.Image;
 import java.awt.Rectangle;
 import java.awt.image.ImageObserver;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import javax.swing.JTree;
+import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreeModel;
 import javax.swing.tree.TreeNode;
@@ -128,31 +131,41 @@ public class AnimatedTreeCellRenderer extends RepaintableTreeCellRenderer implem
 
 	}
 
-	public static class NodeImageObserver implements ImageObserver {
+	public JTree getTree() { //TODO: (Nad) Keep?
+		return tree;
+	}
 
-		JTree tree;
-
-		TreeModel model;
-
-		TreeNode node;
-
-		NodeImageObserver(JTree tree, TreeNode node) {
-			this.tree = tree;
-			this.model = tree.getModel();
-			this.node = node;
-		}
-
-		@Override
-		public boolean imageUpdate(Image img, int flags, int x, int y, int w, int h) {
-			if ((flags & (FRAMEBITS | ALLBITS)) != 0) {
-				TreePath path = new TreePath(((DefaultTreeModel) model).getPathToRoot(node));
-				Rectangle rect = tree.getPathBounds(path);
-				if (rect != null) {
-					tree.repaint(rect);
+	protected void repaintNode(@Nonnull TreeNode node, @Nonnull AnimatedIcon icon) {
+		if (node instanceof AnimatedTreeNode) {
+			AnimatedTreeNode animatedNode = (AnimatedTreeNode) node;
+			if (animatedNode.getIcon() == icon) {
+				TreeNode[] nodes = animatedNode.getPath();
+				if (nodes != null && nodes.length > 0) {
+					TreePath nodePath = new TreePath(nodes);
+					Rectangle nodeRectangle = tree.getPathBounds(nodePath);
+					if (nodeRectangle != null) {
+						tree.repaint(nodeRectangle);
+					}
 				}
 			}
-			return (flags & (ALLBITS | ABORT)) == 0;
+
+		}
+		int childCount = node.getChildCount();
+		for (int i = 0; i < childCount; i++) {
+			TreeNode childNode = node.getChildAt(i);
+			if (childNode != null) {
+				repaintNode(childNode, icon);
+			}
 		}
 	}
 
+	public void repaintAffectedNodes(@Nullable AnimatedIcon icon) {
+		if (icon == null || tree == null) {
+			return;
+		}
+
+		if (tree.getModel() != null && tree.getModel().getRoot() instanceof TreeNode) {
+			repaintNode((TreeNode) tree.getModel().getRoot(), icon);
+		}
+	}
 }

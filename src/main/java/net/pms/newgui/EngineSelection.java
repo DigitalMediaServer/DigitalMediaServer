@@ -182,15 +182,15 @@ public class EngineSelection extends JPanel {
 			status.add(new JLabel(Messages.getString("Generic.NA")), cc.xy(7, 1));
 		}
 
-		AnimatedButton test2 = new AnimatedButton();
-		AnimatedIcon scanBusyIcon = new AnimatedIcon(
-			test2, true, AnimatedIcon.buildAnimation(
-				"symbol-light-treemenu-amber-F%d.png", 0, 7, true, 35, 35, 35
-			)
-		);
-		test2.setIcon(scanBusyIcon);
-		scanBusyIcon.start();
-		status.add(test2, cc.xy(1, 3));
+//		AnimatedButton test2 = new AnimatedButton();
+//		AnimatedIcon scanBusyIcon = new AnimatedIcon(
+//			test2, true, AnimatedIcon.buildAnimation(
+//				"symbol-light-treemenu-amber-F%d.png", 0, 7, true, 35, 35, 35
+//			)
+//		);
+//		test2.setIcon(scanBusyIcon);
+//		scanBusyIcon.start();
+//		status.add(test2, cc.xy(1, 3));
 
 
 		add(status); //TODO: (Nad) Engine Layout

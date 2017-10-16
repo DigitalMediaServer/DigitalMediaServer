@@ -376,7 +376,7 @@ public class TranscodingTab {
 
 			JComponent engineSettings = engine.getConfigPanel();
 //			if (configPanel == null) {
-//				configPanel = buildEmpty();
+//				configPanel = buildEmpty(); //TODO: (Nad) Cleanup
 //			}
 
 			tabbedPanel.add(engine.id(), buildEnginePanel(player, engineSettings));

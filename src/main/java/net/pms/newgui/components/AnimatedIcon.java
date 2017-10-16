@@ -371,6 +371,10 @@ public class AnimatedIcon implements Icon, ActionListener {
 		}
 		if (paint) {
 			component.repaint(iconX, iconY, maxIconWidth, maxIconHeight);
+			if (component instanceof AnimatedTreeCellRenderer) {
+				// JTree needs some special treatment as nodes aren't automatically repainted
+				((AnimatedTreeCellRenderer) component).repaintAffectedNodes(this);
+			}
 		}
 	}
 
@@ -490,7 +494,12 @@ public class AnimatedIcon implements Icon, ActionListener {
 		// If the previous icon was an AnimatedIcon, stop the animation
 		if (c instanceof AnimatedComponent) { //TODO: (Nad) instanceof
 			AnimatedComponent animatedComponent = (AnimatedComponent) c;
-			if (animatedComponent.getCurrentIcon() != this) {
+			if (animatedComponent instanceof AnimatedTreeCellRenderer) {
+				// AnimatedIconCallBack / Sequences of animated icons isn't supported for
+				// AnimatedTreeCellRenderer because the renderer/component is shared between
+				// all nodes.
+				resume();
+			} else if (animatedComponent.getCurrentIcon() != this) {
 				if (animatedComponent.getCurrentIcon() != null) {
 					animatedComponent.getCurrentIcon().pause();
 				}

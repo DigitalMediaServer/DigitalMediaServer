@@ -5,11 +5,15 @@ import java.awt.Component;
 import java.awt.Font;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import javax.swing.BorderFactory;
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
 import javax.swing.JTree;
+import javax.swing.tree.TreePath;
 import net.pms.encoders.Player;
 import net.pms.newgui.components.AnimatedIcon;
 import net.pms.newgui.components.AnimatedIcon.AnimatedIconFrame;
@@ -22,30 +26,29 @@ public class TranscodingEngineCellRenderer extends AnimatedTreeCellRenderer {
 	private static final long serialVersionUID = 1L;
 
 	private static final AnimatedIconFrame[] AMBER_FLASHING_FRAMES;
-	private static final AnimatedIconFrame[] AMBER_OFF_FRAME;
-	private static final AnimatedIconFrame[] RED_ON_FRAME;
-	private static final AnimatedIconFrame[] GREEN_ON_FRAME;
+	private static final ImageIcon CATEGORY_ICON = LooksFrame.readImageIcon("icon-treemenu-category.png");
+	private static final ImageIcon ENGINE_OFF_ICON = LooksFrame.readImageIcon("symbol-light-treemenu-red-on.png");
+	private static final ImageIcon ENGINE_ON_ICON = LooksFrame.readImageIcon("symbol-light-treemenu-green-on.png");
+	private static final ImageIcon ENGINE_OFF_WARNING_ICON;
 
 	static {
-		ArrayList<AnimatedIconFrame> tempFrames = new ArrayList<>(Arrays.asList(AnimatedIcon.buildAnimation("symbol-light-treemenu-amber-F%d.png", 0, 7, true, 15, 15, 15)));
+		ArrayList<AnimatedIconFrame> tempFrames = new ArrayList<>(Arrays.asList(AnimatedIcon.buildAnimation(
+			"symbol-light-treemenu-amber-F%d.png", 0, 7, true, 15, 15, 15))
+		);
 		Icon amberOff = LooksFrame.readImageIcon("symbol-light-treemenu-amber-off.png");
-		tempFrames.add(0, new AnimatedIconFrame(amberOff, 170, 530)); //TODO: (Nad) Adjust
+		tempFrames.add(0, new AnimatedIconFrame(amberOff, 470, 530)); //TODO: (Nad) Adjust
 		tempFrames.set(8, new AnimatedIconFrame(tempFrames.get(8).getIcon(), 800));
+		ENGINE_OFF_WARNING_ICON = (ImageIcon) tempFrames.get(2).getIcon();
 		tempFrames.remove(7);
 		tempFrames.remove(5);
 		tempFrames.remove(3);
 		tempFrames.remove(1);
 		AMBER_FLASHING_FRAMES = tempFrames.toArray(new AnimatedIconFrame[tempFrames.size()]);
-		AMBER_OFF_FRAME = AnimatedIcon.buildAnimation(amberOff);
-		RED_ON_FRAME = AnimatedIcon.buildAnimation("symbol-light-treemenu-red-on.png");
-		GREEN_ON_FRAME = AnimatedIcon.buildAnimation("symbol-light-treemenu-green-on.png");
 	}
 
 	private final AnimatedIcon amberFlash;
-	private final AnimatedIcon amberOff;
-	private final AnimatedIcon redOn;
-	private final AnimatedIcon greenOn;
 	private AnimatedIcon testFlash;
+	private final HashMap<EngineTreeNode, AnimatedIcon> warningIcons = new HashMap<>();
 
 	public TranscodingEngineCellRenderer(JTree tree) {
 		if (tree == null) {
@@ -53,10 +56,33 @@ public class TranscodingEngineCellRenderer extends AnimatedTreeCellRenderer {
 		}
 		setBackgroundSelectionColor(new Color(57, 114, 147));
 		setBorder(BorderFactory.createEmptyBorder(0, 3, 0, 3));
-		amberFlash = new AnimatedIcon(tree, true, AMBER_FLASHING_FRAMES);
-		amberOff = new AnimatedIcon(tree, false, AMBER_OFF_FRAME);
-		redOn = new AnimatedIcon(tree, false, RED_ON_FRAME);
-		greenOn = new AnimatedIcon(tree, false, GREEN_ON_FRAME);
+		amberFlash = new AnimatedIcon(this, true, AMBER_FLASHING_FRAMES);
+	}
+
+	protected void setWarningIcon(@Nonnull EngineTreeNode engineNode) {
+		AnimatedIcon icon;
+		if (warningIcons.containsKey(engineNode)) {
+			icon = warningIcons.get(engineNode);
+		} else {
+			icon = new AnimatedIcon(this, true, AMBER_FLASHING_FRAMES);
+			warningIcons.put(engineNode, icon);
+		}
+		setIcon(engineNode, icon);
+	}
+
+	protected void setIcon(@Nonnull EngineTreeNode engineNode, @Nullable Icon icon) {
+		Icon oldIcon = engineNode.getIcon();
+		if (icon != oldIcon) {
+			if (oldIcon instanceof AnimatedIcon) {
+				((AnimatedIcon) oldIcon).stop();
+				warningIcons.remove(engineNode);
+			}
+			if (icon instanceof AnimatedIcon) {
+				((AnimatedIcon) icon).start();
+			}
+		}
+		setIcon(icon);
+		engineNode.setIcon(icon);
 	}
 
 	@Override
@@ -75,57 +101,36 @@ public class TranscodingEngineCellRenderer extends AnimatedTreeCellRenderer {
 			testFlash.start();
 		}
 
-//		if (leaf && value instanceof TreeNodeSettings) {
-//			((ImageIcon) testFlash).setImageObserver(new NodeImageObserver(tree, value));
-//		}
-
-
 		if (leaf && value instanceof EngineTreeNode) {
 			EngineTreeNode engineNode = (EngineTreeNode) value;
 			Player player = engineNode.getPlayer();
 			if (player == null) {
-				setIcon(LooksFrame.readImageIcon("icon-treemenu-category.png"));
+				setIcon(engineNode, CATEGORY_ICON);
 				setToolTipText(null);
 			} else {
 				if (player.isEnabled()) {
 					if (player.isAvailable()) {
-//						currentIcon = amberFlash;
-//						amberFlash.start();
-//						setIcon(amberFlash); //TODO: (Nad) Treemenu
-//						setIcon(testFlash);
-						AnimatedIcon warningIcon = engineNode.getWarningIcon();
-						if (engineNode.getWarningIcon() == null) {
-							warningIcon = new AnimatedIcon(this, true, AMBER_FLASHING_FRAMES);
-							engineNode.setWarningIcon(warningIcon);
-						}
-						setIcon(warningIcon);
+						setIcon(engineNode, ENGINE_ON_ICON);
 					} else {
-//						currentIcon = amberFlash;
-//						amberFlash.start();
-//						setIcon(amberFlash);
+						setWarningIcon(engineNode);
 					}
 				} else {
-//					if (currentIcon == amberFlash) {
-//						amberFlash.stop();
-//					}
 					if (player.isAvailable()) {
-//						currentIcon = amberOff;
-						setIcon(amberOff);
+						setIcon(engineNode, ENGINE_OFF_ICON);
 					} else {
-//						currentIcon = amberOff;
-						setIcon(amberOff);
+						setIcon(engineNode, ENGINE_OFF_WARNING_ICON);
 					}
 				}
 				setToolTipText(player.getStatusText());
 			}
 
-//			if (player != null && ((TreeNodeSettings) value).getParent().getIndex((TreeNodeSettings) value) == 0) { //TODO: (Nad) Temp
-//				setFont(getFont().deriveFont(Font.BOLD));
-//			} else {
-//				setFont(getFont().deriveFont(Font.PLAIN));
-//			}
+			if (player != null && ((EngineTreeNode) value).getParent().getIndex((EngineTreeNode) value) == 0) {
+				setFont(getFont().deriveFont(Font.BOLD));
+			} else {
+				setFont(getFont().deriveFont(Font.PLAIN));
+			}
 		} else {
-			setIcon(LooksFrame.readImageIcon("icon-treemenu-category.png"));
+			setIcon(CATEGORY_ICON);
 		}
 //		setIcon(testFlash);
 

@@ -13,6 +13,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.NotThreadSafe;
 import javax.imageio.ImageIO;
+import javax.swing.Icon;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -21,18 +22,19 @@ import javax.swing.tree.DefaultMutableTreeNode;
 import net.pms.Messages;
 import net.pms.encoders.Player;
 import net.pms.newgui.components.AnimatedIcon;
+import net.pms.newgui.components.AnimatedTreeNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @NotThreadSafe
-public class EngineTreeNode extends DefaultMutableTreeNode {
+public class EngineTreeNode extends DefaultMutableTreeNode implements AnimatedTreeNode {
 	private static final long serialVersionUID = 1L;
 	private static final Logger LOGGER = LoggerFactory.getLogger(EngineTreeNode.class);
 
 	protected final Player player;
 	protected final JComponent otherConfigPanel; //TODO: (Nad) Remove?
 	protected JPanel warningPanel; //TODO: (Nad) Rename
-	protected AnimatedIcon warningIcon;
+	protected Icon icon;
 
 	public EngineTreeNode(@Nullable String nodeName, @Nullable Player player, @Nullable JComponent otherConfigPanel) {
 		super(nodeName);
@@ -55,15 +57,6 @@ public class EngineTreeNode extends DefaultMutableTreeNode {
 	@Nullable
 	public Player getPlayer() {
 		return player;
-	}
-
-	@Nullable
-	public AnimatedIcon getWarningIcon() {
-		return warningIcon;
-	}
-
-	public void setWarningIcon(AnimatedIcon icon) {
-		warningIcon = icon;
 	}
 
 	@Nonnull
@@ -121,4 +114,16 @@ public class EngineTreeNode extends DefaultMutableTreeNode {
 
 		return warningPanel;
 	}
+
+	@Override
+	public Icon getIcon() {
+		return icon;
+	}
+
+	@Override
+	public void setIcon(Icon icon) {
+		this.icon = icon;
+	}
+
+
 }
