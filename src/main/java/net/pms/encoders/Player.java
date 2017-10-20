@@ -231,7 +231,7 @@ public abstract class Player {
 				newExecutableType = tmpExecutableType;
 			} else {
 				// Set the first one that is available, if any
-				for (ProgramExecutableType executableType : programInfo.getExecutablesTypes()) {
+				for (ProgramExecutableType executableType : programInfo.getExecutableTypes()) {
 					if (isAvailable(executableType)) {
 						newExecutableType = executableType;
 						break;

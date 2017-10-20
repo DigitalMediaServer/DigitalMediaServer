@@ -46,8 +46,12 @@ import net.pms.Messages;
 import net.pms.PMS;
 import net.pms.configuration.PmsConfiguration;
 import net.pms.configuration.RendererConfiguration;
+import net.pms.newgui.LooksFrame.LooksFrameTab;
+import net.pms.newgui.LooksFrame.MinimizeListenerRegistrar;
 import net.pms.newgui.components.AnimatedIcon;
+import net.pms.newgui.components.ListenerAction;
 import net.pms.newgui.components.AnimatedIcon.AnimatedIconFrame;
+import net.pms.newgui.components.AnimatedIcon.AnimatedIconListenerRegistrar;
 import net.pms.newgui.components.AnimatedIcon.AnimatedIconStage;
 import net.pms.newgui.components.AnimatedIcon.AnimatedIconType;
 import net.pms.newgui.components.AnimatedButton;
@@ -177,10 +181,14 @@ public class StatusTab {
 	private final AnimatedIcon disconnectedIcon;
 	private final AnimatedIcon blockedIcon;
 
-	StatusTab(PmsConfiguration configuration) {
+	StatusTab(PmsConfiguration configuration, final LooksFrame looksFrame) {
+
 		// Build Animations
 		searchingIcon = new AnimatedIcon(
-			connectionStatus, true, AnimatedIcon.buildAnimation("icon-status-connecting_%02d.png", 0, 50, false, 40, 40, 40)
+			connectionStatus,
+			true,
+			null,
+			AnimatedIcon.buildAnimation("icon-status-connecting_%02d.png", 0, 50, false, 40, 40, 40)
 		);
 
 		final Icon connectedLeft = LooksFrame.readImageIcon("icon-status-connected_89.png");
@@ -196,7 +204,19 @@ public class StatusTab {
 		));
 		connectedIntroFrames.add(new AnimatedIconFrame(connectedNone, 200));
 
-		connectedIcon = new AnimatedIcon(connectionStatus, true,
+		new MinimizeListenerRegistrar() {
+
+			@Override
+			public void register(AnimatedIcon animatedIcon) {
+				this.looksFrameInstance = looksFrame;
+				super.register(animatedIcon);
+			}
+		};
+
+		connectedIcon = new AnimatedIcon(
+			connectionStatus,
+			true,
+			new StatusTabListenerRegistrar(looksFrame),
 			new AnimatedIconFrame(connectedLeft, 500, 800),
 			new AnimatedIconFrame(connectedBoth, 80),
 			new AnimatedIconFrame(connectedLeft, 80, 600),
@@ -215,9 +235,17 @@ public class StatusTab {
 			new AnimatedIconFrame(connectedBoth, 80)
 		);
 
-		connectedIntroIcon = new AnimatedIcon(connectionStatus, new AnimatedIconStage(AnimatedIconType.DEFAULTICON, connectedIcon, true), connectedIntroFrames);
+		connectedIntroIcon = new AnimatedIcon(
+			connectionStatus,
+			new AnimatedIconStage(AnimatedIconType.DEFAULTICON, connectedIcon, true),
+			connectedIntroFrames,
+			null
+		);
 
-		disconnectedIcon = new AnimatedIcon(connectionStatus, true,
+		disconnectedIcon = new AnimatedIcon(
+			connectionStatus,
+			true,
+			new StatusTabListenerRegistrar(looksFrame),
 			new AnimatedIconFrame(disconnectedNone, 200, 800),
 			new AnimatedIconFrame(disconnectedLeft, 300),
 			new AnimatedIconFrame(disconnectedRight, 300),
@@ -232,7 +260,7 @@ public class StatusTab {
 			new AnimatedIconFrame(disconnectedLeft, 150)
 		);
 
-		blockedIcon = new AnimatedIcon(connectionStatus, "icon-status-warning.png");
+		blockedIcon = new AnimatedIcon(connectionStatus, "icon-status-warning.png", null);
 
 		bufferSize = configuration.getMaxMemoryBufferSize();
 	}
@@ -601,5 +629,40 @@ public class StatusTab {
 			}
 		};
 		new Thread(r).start();
+	}
+
+	/**
+	 * Creates a new {@link AnimatedIconListenerRegistrar} that registers tab
+	 * change events and application minimized events.
+	 *
+	 * @author Nadahar
+	 */
+	private static class StatusTabListenerRegistrar extends MinimizeListenerRegistrar {
+
+		public StatusTabListenerRegistrar(LooksFrame looksFrame) {
+			super(looksFrame);
+		}
+
+		@Override
+		public void register(final AnimatedIcon animatedIcon) {
+			looksFrameInstance.registerTabModelListener(new ListenerAction<LooksFrame.LooksFrameTab>() {
+
+				private boolean suspended = false;
+
+				@Override
+				public void performAction(LooksFrameTab result) {
+					if (result == LooksFrameTab.STATUS_TAB) {
+						if (suspended) {
+							animatedIcon.unsuspend();
+							suspended = false;
+						}
+					} else if (!suspended) {
+						animatedIcon.suspend();
+						suspended = true;
+					}
+				}
+			});
+			super.register(animatedIcon);
+		}
 	}
 }

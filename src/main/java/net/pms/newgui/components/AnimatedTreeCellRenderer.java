@@ -1,22 +1,27 @@
 package net.pms.newgui.components;
 
-import java.awt.Graphics;
-import java.awt.Image;
 import java.awt.Rectangle;
-import java.awt.image.ImageObserver;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.swing.JTree;
-import javax.swing.tree.DefaultMutableTreeNode;
-import javax.swing.tree.DefaultTreeModel;
-import javax.swing.tree.TreeModel;
 import javax.swing.tree.TreeNode;
 import javax.swing.tree.TreePath;
 import net.pms.newgui.components.AnimatedIcon.AnimatedIconStage;
 
+/**
+ * This is a {@link RepaintableTreeCellRenderer} that implements
+ * {@link AnimatedComponent} and thus the use of {@link AnimatedIcon}s.
+ *
+ * @author Nadahar
+ */
 public class AnimatedTreeCellRenderer extends RepaintableTreeCellRenderer implements AnimatedComponent {
 
 	private static final long serialVersionUID = 1L;
+
+	/**
+	 * This isn't actually used but is needed for the {@link AnimatedComponent}
+	 * implementation
+	 */
 	protected AnimatedIcon currentIcon = null;
 
 	/**
@@ -47,94 +52,45 @@ public class AnimatedTreeCellRenderer extends RepaintableTreeCellRenderer implem
 		currentIcon = icon;
 	}
 
-	/**
-	 * @return {@code true} if painting and validation should work as normal,
-	 *         {@code false} if it should be skipped.
-	 */
-	protected boolean isRefreshNeeded() {
-		return true; //TODO: (Nad) Temp
-//		if (isEnabled()) {
-//			return getIcon() instanceof AnimatedIcon;
-//		}
-//		return getDisabledIcon() instanceof AnimatedIcon;
-	}
-
 	@Override
 	public void invalidate() {
-		if (isRefreshNeeded()) {
-			super.invalidate();
-		}
 	}
 
 	@Override
 	public void validate() {
-		if (isRefreshNeeded()) {
-			super.validate();
-		}
 	}
 
 	@Override
 	public void revalidate() {
-		if (isRefreshNeeded()) {
-			super.revalidate();
-		}
 	}
 
 	@Override
 	public void repaint() {
-		if (isRefreshNeeded()) {
-			super.repaint();
-		}
 	}
 
 	@Override
 	public void repaint(int x, int y, int width, int height) {
-		if (isRefreshNeeded()) {
-			super.repaint(x, y, width, height);
-		}
 	}
 
 	@Override
 	public void repaint(long tm) {
-		if (isRefreshNeeded()) {
-			super.repaint(tm);
-		}
 	}
 
 	@Override
 	public void repaint(long tm, int x, int y, int width, int height) {
-		if (isRefreshNeeded()) {
-			super.repaint(tm, x, y, width, height);
-		}
 	}
 
 	@Override
 	public void repaint(Rectangle r) {
-		if (isRefreshNeeded()) {
-			super.repaint(r);
-		}
 	}
 
-	@Override
-	public void paint(Graphics g) {
-		// TODO Auto-generated method stub //TODO: (Nad) Cleanup
-		super.paint(g);
-//		if (tree != null) {
-//			System.err.println(getBounds());
-//			tree.repaint(getBounds());
-//		}
-//		if (getIcon() instanceof AnimatedIcon && tree != null && tree.getModel() instanceof DefaultTreeModel) {
-//			g.get
-//			new TreePath(((DefaultTreeModel) tree.getModel()).getPathToRoot(node))
-//
-//		}
-
-	}
-
-	public JTree getTree() { //TODO: (Nad) Keep?
-		return tree;
-	}
-
+	/**
+	 * Repaints all instances of the specified {@link AnimatedIcon} in the
+	 * specified {@link TreeNode} and child nodes recursively.
+	 *
+	 * @param node the start {@link TreeNode}.
+	 * @param icon the {@link AnimatedIcon} to repaint.
+	 */
 	protected void repaintNode(@Nonnull TreeNode node, @Nonnull AnimatedIcon icon) {
 		if (node instanceof AnimatedTreeNode) {
 			AnimatedTreeNode animatedNode = (AnimatedTreeNode) node;
@@ -159,6 +115,12 @@ public class AnimatedTreeCellRenderer extends RepaintableTreeCellRenderer implem
 		}
 	}
 
+	/**
+	 * Traverses {@link RepaintableTreeCellRenderer#tree} and repaints all nodes
+	 * using the specified {@link AnimatedIcon}.
+	 *
+	 * @param icon the {@link AnimatedIcon} to repaint across the {@link JTree}.
+	 */
 	public void repaintAffectedNodes(@Nullable AnimatedIcon icon) {
 		if (icon == null || tree == null) {
 			return;

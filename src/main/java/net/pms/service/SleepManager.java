@@ -261,7 +261,7 @@ public class SleepManager {
 	 * For internal use only, detaches the worker thread.
 	 */
 	protected synchronized void clearWorker() {
-		worker = null;
+		worker = null; //TODO: (Nad) Hang/Deadlock
 	}
 
 	/**

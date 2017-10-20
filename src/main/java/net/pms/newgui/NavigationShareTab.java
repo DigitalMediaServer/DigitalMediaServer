@@ -39,11 +39,15 @@ import net.pms.Messages;
 import net.pms.PMS;
 import net.pms.configuration.PmsConfiguration;
 import net.pms.dlna.DLNAMediaDatabase;
+import net.pms.newgui.LooksFrame.LooksFrameTab;
+import net.pms.newgui.LooksFrame.MinimizeListenerRegistrar;
 import net.pms.newgui.components.AnimatedIcon;
 import net.pms.newgui.components.AnimatedIcon.AnimatedIconFrame;
+import net.pms.newgui.components.AnimatedIcon.AnimatedIconListenerRegistrar;
 import net.pms.newgui.components.CustomJButton;
 import net.pms.newgui.components.AnimatedButton;
 import net.pms.newgui.components.ImageButton;
+import net.pms.newgui.components.ListenerAction;
 import net.pms.util.CoverSupplier;
 import net.pms.util.FormLayoutUtil;
 import net.pms.util.FullyPlayedAction;
@@ -90,27 +94,15 @@ public class NavigationShareTab {
 	private JComboBox<String> fullyPlayedAction;
 	private JTextField fullyPlayedOutputDirectory;
 	private CustomJButton selectFullyPlayedOutputDirectory;
-	private final AnimatedButton scanButton = new AnimatedButton("button-scan.png");
+	private final AnimatedButton scanButton = new AnimatedButton("button-scan.png", (AnimatedIconListenerRegistrar) null);
 	private final AnimatedIcon scanNormalIcon = (AnimatedIcon) scanButton.getIcon();
 	private final AnimatedIcon scanRolloverIcon = (AnimatedIcon) scanButton.getRolloverIcon();
 	private final AnimatedIcon scanPressedIcon = (AnimatedIcon) scanButton.getPressedIcon();
 	private final AnimatedIcon scanDisabledIcon = (AnimatedIcon) scanButton.getDisabledIcon();
-	private final AnimatedIcon scanBusyIcon = new AnimatedIcon(
-		scanButton, true, AnimatedIcon.buildAnimation(
-			"button-scan-busyF%d.png", 0, 14, false, 35, 35, 35
-		)
-	);
-	private final AnimatedIcon scanBusyRolloverIcon = new AnimatedIcon(
-		scanButton, false, new AnimatedIconFrame(LooksFrame.readImageIcon("button-cancel.png"), 0)
-	);
-	private final AnimatedIcon scanBusyPressedIcon = new AnimatedIcon(
-		scanButton, false, new AnimatedIconFrame(LooksFrame.readImageIcon("button-cancel_pressed.png"), 0)
-	);
-	private final AnimatedIcon scanBusyDisabledIcon = new AnimatedIcon(
-		scanButton, true, AnimatedIcon.buildAnimation(
-			"button-scan-busyF%d_disabled.png", 0, 14, false, 35, 35, 35
-		)
-	);
+	private final AnimatedIcon scanBusyIcon;
+	private final AnimatedIcon scanBusyRolloverIcon;
+	private final AnimatedIcon scanBusyPressedIcon;
+	private final AnimatedIcon scanBusyDisabledIcon;
 
 	public SharedFoldersTableModel getDf() {
 		return folderTableModel;
@@ -122,6 +114,30 @@ public class NavigationShareTab {
 	NavigationShareTab(PmsConfiguration configuration, LooksFrame looksFrame) {
 		this.configuration = configuration;
 		this.looksFrame = looksFrame;
+		scanBusyIcon = new AnimatedIcon(
+			scanButton,
+			true,
+			new NavigationTabListenerRegistrar(looksFrame),
+			AnimatedIcon.buildAnimation("button-scan-busyF%d.png", 0, 14, false, 35, 35, 35)
+		);
+		scanBusyRolloverIcon = new AnimatedIcon(
+			scanButton,
+			false,
+			null,
+			new AnimatedIconFrame(LooksFrame.readImageIcon("button-cancel.png"), 0)
+		);
+		scanBusyPressedIcon = new AnimatedIcon(
+			scanButton,
+			false,
+			null,
+			new AnimatedIconFrame(LooksFrame.readImageIcon("button-cancel_pressed.png"), 0)
+		);
+		scanBusyDisabledIcon = new AnimatedIcon(
+			scanButton,
+			true,
+			new NavigationTabListenerRegistrar(looksFrame),
+			AnimatedIcon.buildAnimation("button-scan-busyF%d_disabled.png", 0, 14, false, 35, 35, 35)
+		);
 	}
 
 	private void updateModel() {
@@ -985,6 +1001,41 @@ public class NavigationShareTab {
 			}
 			fireTableCellUpdated(row, column);
 			updateModel();
+		}
+	}
+
+	/**
+	 * Creates a new {@link AnimatedIconListenerRegistrar} that registers tab
+	 * change events and application minimized events.
+	 *
+	 * @author Nadahar
+	 */
+	private static class NavigationTabListenerRegistrar extends MinimizeListenerRegistrar {
+
+		public NavigationTabListenerRegistrar(LooksFrame looksFrame) {
+			super(looksFrame);
+		}
+
+		@Override
+		public void register(final AnimatedIcon animatedIcon) {
+			looksFrameInstance.registerTabModelListener(new ListenerAction<LooksFrame.LooksFrameTab>() {
+
+				private boolean suspended = false;
+
+				@Override
+				public void performAction(LooksFrameTab result) {
+					if (result == LooksFrameTab.NAVIGATION_TAB) {
+						if (suspended) {
+							animatedIcon.unsuspend();
+							suspended = false;
+						}
+					} else if (!suspended) {
+						animatedIcon.suspend();
+						suspended = true;
+					}
+				}
+			});
+			super.register(animatedIcon);
 		}
 	}
 }

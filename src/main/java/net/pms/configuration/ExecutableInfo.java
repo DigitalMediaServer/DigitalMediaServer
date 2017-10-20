@@ -1,5 +1,6 @@
 package net.pms.configuration;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -20,6 +21,9 @@ public class ExecutableInfo {
 	/** The {@link Path} to this executable */
 	@Nonnull
 	protected final Path executablePath;
+
+	/** Whether or not {@link #executablePath} exists */
+	protected final boolean pathExists;
 
 	/** The availability of this executable */
 	@Nullable
@@ -69,6 +73,7 @@ public class ExecutableInfo {
 		this.version = version;
 		this.errorType = errorType;
 		this.errorText = errorText;
+		this.pathExists = Files.exists(path);
 	}
 
 	/**
@@ -77,6 +82,14 @@ public class ExecutableInfo {
 	@Nonnull
 	public Path getPath() {
 		return executablePath;
+	}
+
+	/**
+	 * @return {@code true} if the executable existed at the time of this
+	 *         {@link ExecutableInfo}'s creation, {@code false} otherwise.
+	 */
+	public boolean isPathExisting() {
+		return pathExists;
 	}
 
 	/**

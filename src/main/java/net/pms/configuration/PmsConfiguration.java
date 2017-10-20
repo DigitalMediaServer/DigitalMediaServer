@@ -836,7 +836,7 @@ public class PmsConfiguration extends RendererConfiguration {
 	 * <p>
 	 * <b>Note:</b> This isn't normally what you'd want. To change the
 	 * {@link Path} <b>for the {@link Player} instance</b> in the same
-	 * operation, use {@link Player#setCustomPath(Path)} instead.
+	 * operation, use {@link Player#setCustomExecutablePath} instead.
 	 *
 	 * @param player the {@link Player} whose custom executable {@link Path} to
 	 *            set.

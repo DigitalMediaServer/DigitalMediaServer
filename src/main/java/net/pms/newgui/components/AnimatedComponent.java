@@ -21,6 +21,11 @@ package net.pms.newgui.components;
 import javax.annotation.Nullable;
 
 
+/**
+ * An interface for animated components supporting {@link AnimatedIcon}.
+ *
+ * @author Nadahar
+ */
 public interface AnimatedComponent extends AnimatedIconCallback {
 
 	/**

@@ -23,7 +23,8 @@ import javax.swing.tree.TreeCellRenderer;
 /**
  * This is a copy of {@link javax.swing.tree.DefaultTreeCellRenderer} that does
  * not override {@link #invalidate()}, {@link #validate()},
- * {@link #revalidate()}, {@link #repaint()} and {@link #firePropertyChange}.
+ * {@link #revalidate()}, {@link #repaint()} and {@link #firePropertyChange}. It
+ * also exposes {@link #tree} to subclasses.
  *
  * @see javax.swing.tree.DefaultTreeCellRenderer
  *

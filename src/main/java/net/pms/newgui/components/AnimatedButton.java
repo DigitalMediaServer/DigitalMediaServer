@@ -19,13 +19,20 @@
 package net.pms.newgui.components;
 
 import java.net.URL;
+import javax.annotation.Nullable;
 import javax.annotation.concurrent.NotThreadSafe;
 import javax.swing.Icon;
 import javax.swing.UIManager;
 import net.pms.newgui.LooksFrame;
+import net.pms.newgui.components.AnimatedIcon.AnimatedIconListenerRegistrar;
 import net.pms.newgui.components.AnimatedIcon.AnimatedIconStage;
 
-
+/**
+ * An {@link ImageButton} that implements {@link AnimatedComponent} so that it
+ * can handle {@link AnimatedIcon}s.
+ *
+ * @author Nadahar
+ */
 @NotThreadSafe
 public class AnimatedButton extends ImageButton implements AnimatedComponent {
 
@@ -34,56 +41,69 @@ public class AnimatedButton extends ImageButton implements AnimatedComponent {
 	private AnimatedIcon currentIcon = null;
 
 	/**
-	 * Helps {@link AnimatedIcon} instances to stop other instances when the
-	 * icon is changed.
+	 * Creates a new instance with the specified {@link AnimatedIcon} and text.
 	 *
-	 * @return the previously painted {@link AnimatedIcon} or {@code null}.
+	 * @param text the text to use.
+	 * @param icon the {@link AnimatedIcon} to use.
 	 */
-	@Override
-	public AnimatedIcon getCurrentIcon() {
-		return currentIcon;
-	}
-
-	/**
-	 * Sets the currently painted {@link AnimatedIcon}.
-	 *
-	 * @param icon the {@link AnimatedIcon} to set.
-	 */
-	@Override
-	public void setCurrentIcon(AnimatedIcon icon) {
-		currentIcon = icon;
-	}
-
-
 	public AnimatedButton(String text, AnimatedIcon icon) {
 		super(text, icon);
 	}
 
+	/**
+	 * Creates a new instance with the specified {@link AnimatedIcon}.
+	 *
+	 * @param icon the {@link AnimatedIcon} to use.
+	 */
 	public AnimatedButton(AnimatedIcon icon) {
 		super(icon);
 	}
 
-	public AnimatedButton(String text, String iconName) {
-		super(text, iconName);
+	/**
+	 * Creates a new instance with the specified text and icon(s).
+	 *
+	 * @param text the text to use.
+	 * @param defaultIconName the base image resource name used when the button
+	 *            is in the normal state and from which the other state names
+	 *            are derived from. See {@link ImageButton} for name convention
+	 *            description.
+	 */
+	public AnimatedButton(
+		@Nullable String text,
+		@Nullable String defaultIconName,
+		@Nullable AnimatedIconListenerRegistrar listenerRegistrar
+	) {
+		super(text, (Icon) null);
+		setProperites();
+		setIcons(defaultIconName, listenerRegistrar);
 	}
 
-	public AnimatedButton(String iconName) {
-		super(iconName);
+	/**
+	 * Creates a new instance with the specified icon(s).
+	 *
+	 * @param defaultIconName the base image resource name used when the button
+	 *            is in the normal state and from which the other state names
+	 *            are derived from. See {@link ImageButton} for name convention
+	 *            description.
+	 */
+	public AnimatedButton(
+		@Nullable String defaultIconName,
+		@Nullable AnimatedIconListenerRegistrar listenerRegistrar
+	) {
+		setProperites();
+		setIcons(defaultIconName, listenerRegistrar);
 	}
 
+	/**
+	 * Creates a new instance with no icons or text set.
+	 */
 	public AnimatedButton() {
 		super();
 	}
 
-	private AnimatedIcon readAnimatedIcon(String filename) {
+	private AnimatedIcon readAnimatedIcon(String filename, AnimatedIconListenerRegistrar listenerRegistrar) {
 		URL url = LooksFrame.class.getResource("/resources/images/" + filename);
-		return url == null ? null : new AnimatedIcon(this, filename);
-	}
-
-	@Override
-	public void setIcon(Icon defaultIcon) { //TODO: (Nad) Figure out
-		// TODO Auto-generated method stub
-		super.setIcon(defaultIcon);
+		return url == null ? null : new AnimatedIcon(this, filename, listenerRegistrar);
 	}
 
 	/**
@@ -97,32 +117,59 @@ public class AnimatedButton extends ImageButton implements AnimatedComponent {
 	 *            derived from.
 	 */
 	@Override
-	protected void setIcons(String defaultIconName) {
+	public void setIcons(@Nullable String defaultIconName) {
+		setIcons(defaultIconName, null);
+	}
+
+	/**
+	 * Set static icons from standard naming convention that is of type
+	 * {@link AnimatedIcon}. While this can seem unnecessary it means that they
+	 * can handle transitions to and from other (animated) {@link AnimatedIcon}s
+	 * and thus be used on a {@link AnimatedButton}.
+	 *
+	 * @param defaultIconName the base image resource name used when the button
+	 *            is in the normal state and which the other state names are
+	 *            derived from.
+	 */
+	public void setIcons(
+		@Nullable String defaultIconName,
+		@Nullable AnimatedIconListenerRegistrar listenerRegistrar
+	) {
 		if (defaultIconName == null) {
 			return;
 		}
 
-		AnimatedIcon icon = readAnimatedIcon(defaultIconName);
+		AnimatedIcon icon = readAnimatedIcon(defaultIconName, listenerRegistrar);
 		if (icon == null) {
 			setIcon(UIManager.getIcon("OptionPane.warningIcon"));
 			return;
 		}
 		setIcon(icon);
 
-		icon = readAnimatedIcon(appendToFileName(defaultIconName, "_pressed"));
+		icon = readAnimatedIcon(appendToFileName(defaultIconName, "_pressed"), listenerRegistrar);
 		if (icon != null) {
 			setPressedIcon(icon);
 		}
 
-		icon = readAnimatedIcon(appendToFileName(defaultIconName, "_disabled"));
+		icon = readAnimatedIcon(appendToFileName(defaultIconName, "_disabled"), listenerRegistrar);
 		if (icon != null) {
 			setDisabledIcon(icon);
 		}
 
-		icon = readAnimatedIcon(appendToFileName(defaultIconName, "_mouseover"));
+		icon = readAnimatedIcon(appendToFileName(defaultIconName, "_mouseover"), listenerRegistrar);
 		if (icon != null) {
 			setRolloverIcon(icon);
 		}
+	}
+
+	@Override
+	public AnimatedIcon getCurrentIcon() {
+		return currentIcon;
+	}
+
+	@Override
+	public void setCurrentIcon(AnimatedIcon icon) {
+		currentIcon = icon;
 	}
 
 	@Override

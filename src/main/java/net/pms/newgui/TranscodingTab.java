@@ -28,10 +28,6 @@ import java.awt.event.*;
 import java.util.HashMap;
 import java.util.Locale;
 import javax.swing.*;
-import javax.swing.border.CompoundBorder;
-import javax.swing.border.EmptyBorder;
-import javax.swing.border.EtchedBorder;
-import javax.swing.border.TitledBorder;
 import javax.swing.event.TreeSelectionEvent;
 import javax.swing.event.TreeSelectionListener;
 import javax.swing.tree.DefaultMutableTreeNode;
@@ -116,7 +112,7 @@ public class TranscodingTab {
 	private JCheckBox forceExternalSubtitles;
 	private JCheckBox useEmbeddedSubtitlesStyle;
 	private JComboBox<Integer> depth3D;
-	private HashMap<Player, JPanel> engineSelectionPanels = new HashMap<>();
+	private HashMap<EngineTreeNode, JComponent> engineSelectionPanels = new HashMap<>();
 
 	/*
 	 * 16 cores is the maximum allowed by MEncoder as of MPlayer r34863.
@@ -182,7 +178,7 @@ public class TranscodingTab {
 		{
 			arrowDownButton.setEnabled(false);
 			arrowUpButton.setEnabled(false);
-			toggleButton.setIconName(ToggleButtonState.Unknown.getIconName());
+			toggleButton.setIcons(ToggleButtonState.Unknown.getIconName());
 			toggleButton.setEnabled(false);
 		} else {
 			EngineTreeNode node = (EngineTreeNode) path.getLastPathComponent();
@@ -200,11 +196,11 @@ public class TranscodingTab {
 			}
 			Player player = node.getPlayer();
 			if (player.isEnabled()) {
-				toggleButton.setIconName(ToggleButtonState.On.getIconName());
+				toggleButton.setIcons(ToggleButtonState.On.getIconName());
 				toggleButton.setEnabled(true);
 			} else {
-				toggleButton.setIconName(ToggleButtonState.Off.getIconName());
-				toggleButton.setEnabled(player.isAvailable());
+				toggleButton.setIcons(ToggleButtonState.Off.getIconName());
+				toggleButton.setEnabled(true);
 			}
 		}
 	}
@@ -236,8 +232,10 @@ public class TranscodingTab {
 								tree.expandRow(i);
 							}
 							tree.getSelectionModel().setSelectionPath(new TreePath(node.getPath()));
-							((EngineTreeNode) treeModel.getChild(node.getParent(), index)).getPlayer();
-							configuration.setEnginePriorityBelow(node.getPlayer(), ((EngineTreeNode) treeModel.getChild(node.getParent(), index)).getPlayer());
+							configuration.setEnginePriorityBelow(
+								node.getPlayer(),
+								((EngineTreeNode) treeModel.getChild(node.getParent(), index)).getPlayer()
+							);
 						}
 					}
 				}
@@ -280,14 +278,18 @@ public class TranscodingTab {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				TreePath path = tree.getSelectionModel().getSelectionPath();
-				if (
-					path != null &&
-					path.getLastPathComponent() instanceof EngineTreeNode &&
-					((EngineTreeNode) path.getLastPathComponent()).getPlayer() != null)
-				{
-					((EngineTreeNode) path.getLastPathComponent()).getPlayer().toggleEnabled(true);
+				EngineTreeNode node = null;
+				if (path.getLastPathComponent() instanceof EngineTreeNode) {
+					node = (EngineTreeNode) path.getLastPathComponent();
+				}
+				if (node != null && node.getPlayer() != null) {
+					node.getPlayer().toggleEnabled(true);
 					tree.updateUI();
 					setButtonsState();
+					JComponent component = engineSelectionPanels.get(node);
+					if (component instanceof EnginePanel) {
+						((EnginePanel) component).updatePanel();
+					}
 				}
 			}
 		});
@@ -295,7 +297,7 @@ public class TranscodingTab {
 
 		DefaultMutableTreeNode root = new DefaultMutableTreeNode(Messages.getString("TrTab2.11"));
 		EngineTreeNode commonEnc = new EngineTreeNode(Messages.getString("TrTab2.5"), null, buildCommon());
-		tabbedPanel.add(commonEnc.id(), commonEnc.getConfigPanel());
+		tabbedPanel.add(commonEnc.getConfigPanel(), commonEnc.id());
 		root.add(commonEnc);
 
 		parent = new DefaultMutableTreeNode[5];
@@ -321,8 +323,8 @@ public class TranscodingTab {
 			public void valueChanged(TreeSelectionEvent e) {
 				setButtonsState();
 				if (e.getNewLeadSelectionPath() != null && e.getNewLeadSelectionPath().getLastPathComponent() instanceof EngineTreeNode) {
-					EngineTreeNode tns = (EngineTreeNode) e.getNewLeadSelectionPath().getLastPathComponent();
-					cardLayout.show(tabbedPanel, tns.id());
+					EngineTreeNode engine = (EngineTreeNode) e.getNewLeadSelectionPath().getLastPathComponent();
+					cardLayout.show(tabbedPanel, engine.id());
 				} else {
 					cardLayout.show(tabbedPanel, EMPTY_PANEL);
 				}
@@ -330,7 +332,7 @@ public class TranscodingTab {
 		});
 
 		tree.setRequestFocusEnabled(false);
-		tree.setCellRenderer(new TranscodingEngineCellRenderer(tree));
+		tree.setCellRenderer(new TranscodingEngineCellRenderer(looksFrame));
 		tree.addMouseListener(new MouseAdapter() {
 			@Override
 			public void mousePressed(MouseEvent e) {
@@ -342,6 +344,10 @@ public class TranscodingTab {
 							((EngineTreeNode)node).getPlayer().toggleEnabled(true);
 							tree.updateUI();
 							setButtonsState();
+							JComponent component = engineSelectionPanels.get(node);
+							if (component instanceof EnginePanel) {
+								((EnginePanel) component).updatePanel();
+							}
 						}
 					}
 				}
@@ -379,7 +385,9 @@ public class TranscodingTab {
 //				configPanel = buildEmpty(); //TODO: (Nad) Cleanup
 //			}
 
-			tabbedPanel.add(engine.id(), buildEnginePanel(player, engineSettings));
+			JComponent enginePanel = new EnginePanel(player, orientation, engineSettings, configuration);
+			engineSelectionPanels.put(engine, enginePanel);
+			tabbedPanel.add(enginePanel, engine.id());
 			//tabbedPanel.add(engine.id(), configPanel);
 			parent[player.purpose()].add(engine);
 		}
@@ -390,24 +398,6 @@ public class TranscodingTab {
 
 		tree.setSelectionRow(0);
 		tree.updateUI();
-	}
-
-	public JComponent buildEnginePanel(Player player, JComponent engineSettings) {
-		JPanel panel = new JPanel();
-		panel.setLayout(new BoxLayout(panel, BoxLayout.PAGE_AXIS));
-		panel.setBorder(new EmptyBorder(5, 5, 5, 5));
-		EngineSelection selection = new EngineSelection(player, orientation);
-		panel.add(selection);
-		if (engineSettings != null) {
-			JPanel engine = new JPanel(new BorderLayout());
-			engine.setBorder(new CompoundBorder(new TitledBorder(new EtchedBorder(EtchedBorder.LOWERED), Messages.getString("Engine.Settings")), new EmptyBorder(15, 15, 15, 15)));
-			engine.add(engineSettings, BorderLayout.CENTER);
-			panel.add(engine);
-		}
-
-		JScrollPane scrollPane = new JScrollPane(panel, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
-		scrollPane.setBorder(new EmptyBorder(5, 5, 5, 5));
-		return scrollPane;
 	}
 
 	private JComponent buildEmpty() { //TODO: (Nad) Remove

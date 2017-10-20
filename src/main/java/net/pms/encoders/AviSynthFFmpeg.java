@@ -23,7 +23,6 @@ import com.jgoodies.forms.factories.Borders;
 import com.jgoodies.forms.layout.CellConstraints;
 import com.jgoodies.forms.layout.FormLayout;
 import java.awt.Component;
-import java.awt.Font;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ItemEvent;
@@ -87,11 +86,6 @@ public class AviSynthFFmpeg extends FFMpegVideo {
 			threads = " -threads " + configuration.getNumberOfCpuCores();
 		}
 		return configuration.getMPEG2MainSettingsFFmpeg() + " -ab " + configuration.getAudioBitrate() + "k" + threads;
-	}
-
-	@Override
-	public JComponent config() {
-		return config("NetworkTab.5");
 	}
 
 	@Override
@@ -243,7 +237,7 @@ public class AviSynthFFmpeg extends FFMpegVideo {
 	private JCheckBox convertfps;
 
 	@Override
-	protected JComponent config(String languageLabel) {
+	public JComponent config() {
 		FormLayout layout = new FormLayout(
 			"left:pref, 0:grow",
 			"p, 3dlu, p, 3dlu, p, 3dlu, p, 3dlu, p, 3dlu");
@@ -252,10 +246,6 @@ public class AviSynthFFmpeg extends FFMpegVideo {
 		builder.opaque(false);
 
 		CellConstraints cc = new CellConstraints();
-
-		JComponent cmp = builder.addSeparator(Messages.getString(languageLabel), cc.xyw(2, 1, 1));
-		cmp = (JComponent) cmp.getComponent(0);
-		cmp.setFont(cmp.getFont().deriveFont(Font.BOLD));
 
 		multithreading = new JCheckBox(Messages.getString("MEncoderVideo.35"), configuration.isFfmpegAviSynthMultithreading());
 		multithreading.setContentAreaFilled(false);

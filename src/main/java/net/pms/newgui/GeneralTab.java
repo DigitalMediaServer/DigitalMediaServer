@@ -349,7 +349,7 @@ public class GeneralTab {
 				@Override
 				public void itemStateChanged(ItemEvent e) {
 					if (e.getStateChange() == ItemEvent.SELECTED) {
-						configuration.setNetworkInterface((String) networkInterfaces.getSelectedKey());
+						configuration.setNetworkInterface(networkInterfaces.getSelectedKey());
 					}
 				}
 			});
@@ -579,7 +579,7 @@ public class GeneralTab {
 		}
 	}
 
-	private KeyedComboBoxModel<String, String> createNetworkInterfacesModel() {
+	private static KeyedComboBoxModel<String, String> createNetworkInterfacesModel() {
 		List<String> keys = NetworkConfiguration.getInstance().getKeys();
 		List<String> names = NetworkConfiguration.getInstance().getDisplayNames();
 		keys.add(0, "");
@@ -590,7 +590,7 @@ public class GeneralTab {
 		);
 	}
 
-	private KeyedComboBoxModel<PreventSleepMode, String> createPreventSleepModel() {
+	private static KeyedComboBoxModel<PreventSleepMode, String> createPreventSleepModel() {
 		PreventSleepMode[] modes = PreventSleepMode.values();
 		String[] descriptions = new String[modes.length];
 		for (int i = 0; i < modes.length; i++) {

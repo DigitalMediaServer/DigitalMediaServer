@@ -460,10 +460,23 @@ public class ExternalProgramInfo {
 	 * @return A {@link Set} of all registered {@link ProgramExecutableType}s.
 	 */
 	@Nonnull
-	public Set<ProgramExecutableType> getExecutablesTypes() {
+	public Set<ProgramExecutableType> getExecutableTypes() {
 		lock.readLock().lock();
 		try {
 			return new HashSet<>(executablesInfo.keySet());
+		} finally {
+			lock.readLock().unlock();
+		}
+	}
+
+	/**
+	 * @return An array of all registered {@link ProgramExecutableType}s.
+	 */
+	@Nonnull
+	public ProgramExecutableType[] getExecutableTypesArray() {
+		lock.readLock().lock();
+		try {
+			return executablesInfo.keySet().toArray(new ProgramExecutableType[executablesInfo.size()]);
 		} finally {
 			lock.readLock().unlock();
 		}

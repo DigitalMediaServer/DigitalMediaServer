@@ -25,7 +25,6 @@ import com.jgoodies.forms.layout.FormLayout;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
-import java.awt.Font;
 import java.awt.event.*;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -75,10 +74,6 @@ public class AviSynthMEncoder extends MEncoderVideo {
 		builder.opaque(false);
 
 		CellConstraints cc = new CellConstraints();
-
-		JComponent cmp = builder.addSeparator(Messages.getString("NetworkTab.5"), cc.xyw(2, 1, 1));
-		cmp = (JComponent) cmp.getComponent(0);
-		cmp.setFont(cmp.getFont().deriveFont(Font.BOLD));
 
 		multithreading = new JCheckBox(Messages.getString("MEncoderVideo.35"), configuration.getAvisynthMultiThreading());
 		multithreading.setContentAreaFilled(false);

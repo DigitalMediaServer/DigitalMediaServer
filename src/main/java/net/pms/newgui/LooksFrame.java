@@ -28,10 +28,13 @@ import com.sun.jna.Platform;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import javax.annotation.Nonnull;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.event.ChangeEvent;
@@ -46,10 +49,12 @@ import net.pms.io.BasicSystemUtils;
 import net.pms.io.WindowsNamedPipe;
 import net.pms.newgui.StatusTab.ConnectionState;
 import net.pms.newgui.components.AnimatedIcon;
+import net.pms.newgui.components.AnimatedIcon.AnimatedIconListenerRegistrar;
 import net.pms.newgui.components.AnimatedIcon.AnimatedIconStage;
 import net.pms.newgui.components.AnimatedIcon.AnimatedIconType;
 import net.pms.newgui.components.AnimatedButton;
 import net.pms.newgui.components.ImageButton;
+import net.pms.newgui.components.ListenerAction;
 import net.pms.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -90,9 +95,13 @@ public class LooksFrame extends JFrame implements IFrame {
 	private TranscodingTab tr;
 	private GeneralTab gt;
 	private HelpTab ht;
+	private final JTabbedPane mainTabbedPane = new JTabbedPane(SwingConstants.TOP);
 	private final AnimatedButton reload = createAnimatedToolBarButton(Messages.getString("LooksFrame.12"), "button-restart.png");;
 	private final AnimatedIcon restartRequredIcon = new AnimatedIcon(
-		reload, true, AnimatedIcon.buildAnimation("button-restart-requiredF%d.png", 0, 24, true, 800, 300, 15)
+		reload,
+		true,
+		new MinimizeListenerRegistrar(this),
+		AnimatedIcon.buildAnimation("button-restart-requiredF%d.png", 0, 24, true, 800, 300, 15)
 	);
 	private AnimatedIcon restartIcon;
 	private AbstractButton webinterface;
@@ -499,33 +508,32 @@ public class LooksFrame extends JFrame implements IFrame {
 	}
 
 	public JComponent buildMain() {
-		final JTabbedPane tabbedPane = new JTabbedPane(SwingConstants.TOP);
 
-		tabbedPane.setUI(new CustomTabbedPaneUI());
+		mainTabbedPane.setUI(new CustomTabbedPaneUI());
 
-		st = new StatusTab(configuration);
+		st = new StatusTab(configuration, this);
 		tt = new TracesTab(configuration, this);
 		gt = new GeneralTab(configuration, this);
 		nt = new NavigationShareTab(configuration, this);
 		tr = new TranscodingTab(configuration, this);
 		ht = new HelpTab();
 
-		tabbedPane.addTab(Messages.getString("LooksFrame.18"), st.build());
-		tabbedPane.addTab(Messages.getString("LooksFrame.19"), tt.build());
-		tabbedPane.addTab(Messages.getString("LooksFrame.20"), gt.build());
-		tabbedPane.addTab(Messages.getString("LooksFrame.22"), nt.build());
+		mainTabbedPane.addTab(Messages.getString("LooksFrame.18"), st.build());
+		mainTabbedPane.addTab(Messages.getString("LooksFrame.19"), tt.build());
+		mainTabbedPane.addTab(Messages.getString("LooksFrame.20"), gt.build());
+		mainTabbedPane.addTab(Messages.getString("LooksFrame.22"), nt.build());
 		if (!configuration.isDisableTranscoding()) {
-			tabbedPane.addTab(Messages.getString("LooksFrame.21"), tr.build());
+			mainTabbedPane.addTab(Messages.getString("LooksFrame.21"), tr.build());
 		} else {
 			tr.build();
 		}
-		tabbedPane.addTab(Messages.getString("LooksFrame.24"), new HelpTab().build());
-		tabbedPane.addTab(Messages.getString("LooksFrame.25"), new AboutTab().build());
+		mainTabbedPane.addTab(Messages.getString("LooksFrame.24"), new HelpTab().build());
+		mainTabbedPane.addTab(Messages.getString("LooksFrame.25"), new AboutTab().build());
 
-		tabbedPane.addChangeListener(new ChangeListener() {
+		mainTabbedPane.addChangeListener(new ChangeListener() {
 			@Override
 			public void stateChanged(ChangeEvent e) {
-				int selectedIndex = tabbedPane.getSelectedIndex();
+				int selectedIndex = mainTabbedPane.getSelectedIndex();
 
 				if (HELP_PAGES[selectedIndex] != null) {
 					PMS.setHelpPage(HELP_PAGES[selectedIndex]);
@@ -536,7 +544,7 @@ public class LooksFrame extends JFrame implements IFrame {
 			}
 		});
 
-		tabbedPane.setBorder(new EmptyBorder(5, 5, 5, 5));
+		mainTabbedPane.setBorder(new EmptyBorder(5, 5, 5, 5));
 
 		/*
 		 * Set the orientation of the tabbedPane.
@@ -544,9 +552,9 @@ public class LooksFrame extends JFrame implements IFrame {
 		 * messes with the layout of several tabs.
 		 */
 		ComponentOrientation orientation = ComponentOrientation.getOrientation(PMS.getLocale());
-		tabbedPane.setComponentOrientation(orientation);
+		mainTabbedPane.setComponentOrientation(orientation);
 
-		return tabbedPane;
+		return mainTabbedPane;
 	}
 
 	protected ImageButton createToolBarButton(String text, String iconName) {
@@ -556,7 +564,7 @@ public class LooksFrame extends JFrame implements IFrame {
 	}
 
 	protected AnimatedButton createAnimatedToolBarButton(String text, String iconName) {
-		AnimatedButton button = new AnimatedButton(text, iconName);
+		AnimatedButton button = new AnimatedButton(text, iconName, new MinimizeListenerRegistrar(this));
 		button.setFocusable(false);
 		return button;
 	}
@@ -705,5 +713,128 @@ public class LooksFrame extends JFrame implements IFrame {
 		separatorLabel.setFont(separatorLabel.getFont().deriveFont(style));
 		separatorLabel.setHorizontalAlignment(orientation.isLeftToRight() ? SwingConstants.LEFT : SwingConstants.RIGHT);
 		return DefaultComponentFactory.getInstance().createSeparator(separatorLabel);
+	}
+
+	public static enum LooksFrameTab {
+		STATUS_TAB,
+		TRACES_TAB,
+		GENERAL_TAB,
+		NAVIGATION_TAB,
+		TRANSCODING_TAB,
+		HELP_TAB,
+		UNKNOWN;
+
+		@Nonnull
+		public static LooksFrameTab typeOf(int value) {
+			switch (value) {
+				case 0:
+					return STATUS_TAB;
+				case 1:
+					return TRACES_TAB;
+				case 2:
+					return GENERAL_TAB;
+				case 3:
+					return NAVIGATION_TAB;
+				case 4:
+					return TRANSCODING_TAB;
+				case 5:
+					return HELP_TAB;
+				default:
+					return UNKNOWN;
+			}
+		}
+	}
+
+	public static class MinimizeListenerRegistrar implements AnimatedIconListenerRegistrar {
+
+		protected LooksFrame looksFrameInstance;
+
+		public MinimizeListenerRegistrar(@Nonnull LooksFrame looksFrame) {
+			if (looksFrame == null) {
+				throw new IllegalArgumentException("looksFrameInstance cannot be null");
+			}
+			this.looksFrameInstance = looksFrame;
+		}
+
+		/**
+		 * Creates a new instance without setting {@link #looksFrameInstance}. This MUST
+		 * be set before running {@link #register(AnimatedIcon)}.
+		 */
+		protected MinimizeListenerRegistrar() {
+		}
+
+		@Override
+		public void register(final AnimatedIcon animatedIcon) {
+			looksFrameInstance.registerWindowIconifyListener(new ListenerAction<LooksFrame.WindowMinimized>() {
+
+				@Override
+				public void performAction(WindowMinimized result) {
+					if (result == WindowMinimized.MINIMIZED) {
+						animatedIcon.suspend();
+					} else if (result == WindowMinimized.RESTORED) {
+						animatedIcon.unsuspend();
+					}
+				}
+
+			});
+		}
+	}
+
+	public LooksFrameTabModelChangeListener registerTabModelListener(@Nonnull ListenerAction<LooksFrameTab> action) { //TODO: (Nad) Temp?
+		return new LooksFrameTabModelChangeListener(action);
+	}
+
+	public class LooksFrameTabModelChangeListener implements ChangeListener {
+
+		@Nonnull
+		private final ListenerAction<LooksFrameTab> action;
+
+		public LooksFrameTabModelChangeListener(@Nonnull ListenerAction<LooksFrameTab> action) {
+			if (action == null) {
+				throw new IllegalArgumentException("action cannot be null");
+			}
+			this.action = action;
+			mainTabbedPane.getModel().addChangeListener(this);
+		}
+
+		@Override
+		public void stateChanged(ChangeEvent e) {
+			if (e != null && e.getSource() instanceof SingleSelectionModel) {
+				action.performAction(LooksFrameTab.typeOf(((SingleSelectionModel) e.getSource()).getSelectedIndex()));
+			}
+		}
+	}
+
+	public LooksFrameWindowIconifyListener registerWindowIconifyListener(@Nonnull ListenerAction<WindowMinimized> action) {
+		return new LooksFrameWindowIconifyListener(action);
+	}
+
+	public class LooksFrameWindowIconifyListener extends WindowAdapter {
+
+		@Nonnull
+		private final ListenerAction<WindowMinimized> action;
+
+		public LooksFrameWindowIconifyListener(@Nonnull ListenerAction<WindowMinimized> action) {
+			if (action == null) {
+				throw new IllegalArgumentException("action cannot be null");
+			}
+			this.action = action;
+			addWindowListener(this);
+		}
+
+		@Override
+		public void windowIconified(WindowEvent e) {
+			action.performAction(WindowMinimized.MINIMIZED);
+		}
+
+		@Override
+		public void windowDeiconified(WindowEvent e) {
+			action.performAction(WindowMinimized.RESTORED);
+		}
+	}
+
+	public static enum WindowMinimized {
+		MINIMIZED,
+		RESTORED
 	}
 }

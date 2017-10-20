@@ -1,3 +1,21 @@
+/*
+ * Digital Media Server, for streaming digital media to UPnP AV or DLNA
+ * compatible devices based on PS3 Media Server and Universal Media Server.
+ * Copyright (C) 2016 Digital Media Server developers.
+ *
+ * This program is free software: you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License as published by the Free Software
+ * Foundation, either version 3 of the License, or (at your option) any later
+ * version.
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+ * details.
+ *
+ * You should have received a copy of the GNU General Public License along with
+ * this program. If not, see http://www.gnu.org/licenses/.
+ */
 package net.pms.newgui;
 
 import java.awt.Color;
@@ -6,28 +24,34 @@ import java.awt.Font;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.swing.BorderFactory;
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
 import javax.swing.JTree;
-import javax.swing.tree.TreePath;
 import net.pms.encoders.Player;
+import net.pms.newgui.LooksFrame.LooksFrameTab;
+import net.pms.newgui.LooksFrame.MinimizeListenerRegistrar;
 import net.pms.newgui.components.AnimatedIcon;
 import net.pms.newgui.components.AnimatedIcon.AnimatedIconFrame;
-import net.pms.newgui.components.AnimatedIcon.AnimatedIconType;
 import net.pms.newgui.components.AnimatedTreeCellRenderer;
+import net.pms.newgui.components.ListenerAction;
 
 
+/**
+ * A {@link javax.swing.tree.TreeCellRenderer} implementation customized to
+ * render the transcoding engine {@link JTree} cells.
+ *
+ * @author Nadahar
+ */
 public class TranscodingEngineCellRenderer extends AnimatedTreeCellRenderer {
 
 	private static final long serialVersionUID = 1L;
 
 	private static final AnimatedIconFrame[] AMBER_FLASHING_FRAMES;
 	private static final ImageIcon CATEGORY_ICON = LooksFrame.readImageIcon("icon-treemenu-category.png");
-	private static final ImageIcon ENGINE_OFF_ICON = LooksFrame.readImageIcon("symbol-light-treemenu-red-on.png");
+	private static final ImageIcon ENGINE_OFF_ICON = LooksFrame.readImageIcon("symbol-light-treemenu-green-off.png");
 	private static final ImageIcon ENGINE_ON_ICON = LooksFrame.readImageIcon("symbol-light-treemenu-green-on.png");
 	private static final ImageIcon ENGINE_OFF_WARNING_ICON;
 
@@ -35,47 +59,81 @@ public class TranscodingEngineCellRenderer extends AnimatedTreeCellRenderer {
 		ArrayList<AnimatedIconFrame> tempFrames = new ArrayList<>(Arrays.asList(AnimatedIcon.buildAnimation(
 			"symbol-light-treemenu-amber-F%d.png", 0, 7, true, 15, 15, 15))
 		);
-		Icon amberOff = LooksFrame.readImageIcon("symbol-light-treemenu-amber-off.png");
-		tempFrames.add(0, new AnimatedIconFrame(amberOff, 470, 530)); //TODO: (Nad) Adjust
+		ImageIcon amberOff = LooksFrame.readImageIcon("symbol-light-treemenu-amber-off.png");
+		tempFrames.add(0, new AnimatedIconFrame(amberOff, 470, 530));
 		tempFrames.set(8, new AnimatedIconFrame(tempFrames.get(8).getIcon(), 800));
-		ENGINE_OFF_WARNING_ICON = (ImageIcon) tempFrames.get(2).getIcon();
 		tempFrames.remove(7);
 		tempFrames.remove(5);
 		tempFrames.remove(3);
 		tempFrames.remove(1);
 		AMBER_FLASHING_FRAMES = tempFrames.toArray(new AnimatedIconFrame[tempFrames.size()]);
+		ENGINE_OFF_WARNING_ICON = amberOff;
 	}
 
-	private final AnimatedIcon amberFlash;
-	private AnimatedIcon testFlash;
 	private final HashMap<EngineTreeNode, AnimatedIcon> warningIcons = new HashMap<>();
+	private final LooksFrame looksFrame;
 
-	public TranscodingEngineCellRenderer(JTree tree) {
-		if (tree == null) {
-			throw new IllegalArgumentException("tree cannot be null");
+	/**
+	 * Creates a new instance.
+	 */
+	public TranscodingEngineCellRenderer(@Nonnull LooksFrame looksFrame) {
+		if (looksFrame == null) {
+			throw new IllegalArgumentException("looksFrame cannot be null");
 		}
+		this.looksFrame = looksFrame;
 		setBackgroundSelectionColor(new Color(57, 114, 147));
 		setBorder(BorderFactory.createEmptyBorder(0, 3, 0, 3));
-		amberFlash = new AnimatedIcon(this, true, AMBER_FLASHING_FRAMES);
 	}
 
+	/**
+	 * Creates a new {@link AnimatedIcon} using {@link #AMBER_FLASHING_FRAMES}
+	 * if necessary and sets that for the specified {@link EngineTreeNode}.
+	 *
+	 * @param engineNode the {@link EngineTreeNode} to set a warning icon for.
+	 */
 	protected void setWarningIcon(@Nonnull EngineTreeNode engineNode) {
 		AnimatedIcon icon;
 		if (warningIcons.containsKey(engineNode)) {
 			icon = warningIcons.get(engineNode);
 		} else {
-			icon = new AnimatedIcon(this, true, AMBER_FLASHING_FRAMES);
+			icon = new AnimatedIcon(
+				this,
+				true,
+				new TranscodingTabListenerRegistrar(looksFrame),
+				AMBER_FLASHING_FRAMES
+			);
 			warningIcons.put(engineNode, icon);
 		}
 		setIcon(engineNode, icon);
 	}
 
+	/**
+	 * Removes the specified {@link AnimatedIcon} from {@link #warningIcons} if
+	 * it exists, and stops the animation if it is the last instance.
+	 *
+	 * @param engineNode the {@link EngineTreeNode} for which to remove the
+	 *            association.
+	 * @param icon the {@link AnimatedIcon} to remove.
+	 */
+	protected void removeWarningIcon(@Nonnull EngineTreeNode engineNode, @Nonnull AnimatedIcon icon) {
+		warningIcons.remove(engineNode);
+		if (!warningIcons.containsValue(icon)) {
+			icon.stop();
+		}
+	}
+
+	/**
+	 * Sets the specified {@link Icon} for the specified {@link EngineTreeNode},
+	 * handling starting and stopping of animations at the same time.
+	 *
+	 * @param engineNode the {@link EngineTreeNode} to set a warning icon for.
+	 * @param icon the {@link Icon} to set.
+	 */
 	protected void setIcon(@Nonnull EngineTreeNode engineNode, @Nullable Icon icon) {
 		Icon oldIcon = engineNode.getIcon();
 		if (icon != oldIcon) {
 			if (oldIcon instanceof AnimatedIcon) {
-				((AnimatedIcon) oldIcon).stop();
-				warningIcons.remove(engineNode);
+				removeWarningIcon(engineNode, (AnimatedIcon) oldIcon);
 			}
 			if (icon instanceof AnimatedIcon) {
 				((AnimatedIcon) icon).start();
@@ -96,10 +154,6 @@ public class TranscodingEngineCellRenderer extends AnimatedTreeCellRenderer {
 		boolean hasFocus
 	) {
 		super.getTreeCellRendererComponent(tree, value, sel, expanded, leaf, row, hasFocus);
-		if (testFlash == null) {
-			testFlash = new AnimatedIcon(tree, true, AMBER_FLASHING_FRAMES);
-			testFlash.start();
-		}
 
 		if (leaf && value instanceof EngineTreeNode) {
 			EngineTreeNode engineNode = (EngineTreeNode) value;
@@ -132,8 +186,50 @@ public class TranscodingEngineCellRenderer extends AnimatedTreeCellRenderer {
 		} else {
 			setIcon(CATEGORY_ICON);
 		}
-//		setIcon(testFlash);
 
 		return this;
+	}
+
+	/**
+	 * Creates a new {@link AnimatedIconListenerRegistrar} that registers tab
+	 * change events and application minimized events. Suitable for
+	 * {@link AnimatedIcon}s that's visible whenever this tab is visible.
+	 *
+	 * @author Nadahar
+	 */
+	private static class TranscodingTabListenerRegistrar extends MinimizeListenerRegistrar {
+
+		public TranscodingTabListenerRegistrar(LooksFrame looksFrame) {
+			super(looksFrame);
+		}
+
+		/**
+		 * Creates a new instance without setting {@link #looksFrameInstance}. This MUST
+		 * be set before running {@link #register(AnimatedIcon)}.
+		 */
+		protected TranscodingTabListenerRegistrar() {
+		}
+
+		@Override
+		public void register(final AnimatedIcon animatedIcon) {
+			looksFrameInstance.registerTabModelListener(new ListenerAction<LooksFrame.LooksFrameTab>() {
+
+				private boolean suspended = false;
+
+				@Override
+				public void performAction(LooksFrameTab result) {
+					if (result == LooksFrameTab.TRANSCODING_TAB) {
+						if (suspended) {
+							animatedIcon.unsuspend();
+							suspended = false;
+						}
+					} else if (!suspended) {
+						animatedIcon.suspend();
+						suspended = true;
+					}
+				}
+			});
+			super.register(animatedIcon);
+		}
 	}
 }
