@@ -27,14 +27,12 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.List;
-import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import net.pms.Messages;
 import net.pms.PMS;
-import net.pms.configuration.ExecutableInfo;
 import net.pms.configuration.ExternalProgramInfo;
 import net.pms.configuration.PmsConfiguration;
 import net.pms.configuration.ProgramExecutableType;
@@ -156,7 +154,7 @@ public final class PlayerFactory {
 
 			ExternalProgramInfo programInfo = player.getProgramInfo();
 			ReentrantReadWriteLock programInfoLock = programInfo.getLock();
-			// Lock it for consistency during tests, need write in case setAvailabe() needs to modify or a custom path is set
+			// Lock for consistency during tests, need write in case setAvailabe() needs to modify or a custom path is set
 			programInfoLock.writeLock().lock();
 			try {
 				if (configuration.isCustomProgramPathsSupported()) {
@@ -165,11 +163,11 @@ public final class PlayerFactory {
 					player.initCustomExecutablePath(customPath);
 				}
 
-				for (Entry<ProgramExecutableType, ExecutableInfo> entry : programInfo.getExecutablesInfo().entrySet()) {
-					testPlayerExecutableType(player, entry.getKey(), entry.getValue());
+				for (ProgramExecutableType executableType : programInfo.getExecutableTypes()) {
+					testPlayerExecutableType(player, executableType);
+
 				}
 				player.determineCurrentExecutableType();
-
 			} finally {
 				programInfoLock.writeLock().unlock();
 			}
@@ -190,25 +188,18 @@ public final class PlayerFactory {
 		}
 	}
 
-	//TODO: (Nad) JavaDocs
+	/**
+	 * Runs tests on the executable of the specified
+	 * {@link ProgramExecutableType} for the specified {@link Player}.
+	 *
+	 * @param player the {@link Player} whose executable to test.
+	 * @param executableType the {@link ProgramExecutableType} to test.
+	 */
 	protected static void testPlayerExecutableType(
 		@Nullable Player player,
 		@Nullable ProgramExecutableType executableType
 	) {
 		if (player == null || executableType == null || !player.getProgramInfo().containsType(executableType, true)) {
-			return;
-		}
-		ExecutableInfo executableInfo = player.getProgramInfo().getExecutableInfo(executableType);
-		testPlayerExecutableType(player, executableType, executableInfo);
-	}
-
-	//TODO: (Nad) JavaDocs
-	protected static void testPlayerExecutableType(
-		@Nonnull Player player,
-		@Nonnull ProgramExecutableType executableType,
-		@Nullable ExecutableInfo executableInfo
-	) {
-		if (executableInfo == null) {
 			return;
 		}
 		if (!player.testPlayer(executableType)) {
@@ -567,33 +558,40 @@ public final class PlayerFactory {
 		} finally {
 			PLAYERS_LOCK.readLock().unlock();
 		}
-		if (defaultType != null) {
-			switch (defaultType) {
-				case CUSTOM:
-					programInfo.setDefault(ProgramExecutableType.CUSTOM);
-					break;
-				case ORIGINAL:
-					programInfo.setOriginalDefault();
-					break;
-				case NONE:
-				default:
-					break;
+		ReentrantReadWriteLock programInfoLock = programInfo.getLock();
+		// Lock for consistency during reevaluation
+		programInfoLock.writeLock().lock();
+		try {
+			if (defaultType != null) {
+				switch (defaultType) {
+					case CUSTOM:
+						programInfo.setDefault(ProgramExecutableType.CUSTOM);
+						break;
+					case ORIGINAL:
+						programInfo.setOriginalDefault();
+						break;
+					case NONE:
+					default:
+						break;
+				}
 			}
-		}
 
-		Set<ProgramExecutableType> retestTypes;
-		if (changedType == null) {
-			retestTypes = EnumSet.allOf(ProgramExecutableType.class);
-		} else {
-			retestTypes = Collections.singleton(changedType);
-		}
-
-		for (Player player : affectedPlayers) {
-			for (ProgramExecutableType executableType : retestTypes) {
-				player.clearSpecificErrors(executableType);
-				testPlayerExecutableType(player, executableType);
+			Set<ProgramExecutableType> retestTypes;
+			if (changedType == null) {
+				retestTypes = EnumSet.allOf(ProgramExecutableType.class);
+			} else {
+				retestTypes = Collections.singleton(changedType);
 			}
-			player.determineCurrentExecutableType();
+
+			for (Player player : affectedPlayers) {
+				for (ProgramExecutableType executableType : retestTypes) {
+					player.clearSpecificErrors(executableType);
+					testPlayerExecutableType(player, executableType);
+				}
+				player.determineCurrentExecutableType();
+			}
+		} finally {
+			programInfoLock.writeLock().unlock();
 		}
 	}
 }

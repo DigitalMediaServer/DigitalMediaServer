@@ -158,8 +158,12 @@ public abstract class Player {
 	 * {@link Player} local {@link Map}.
 	 * <p>
 	 * The stored failures are per {@link ProgramExecutableType}, and the error
-	 * string is a localized error message. All access must be guarded with
-	 * {@link #specificErrorsLock}.
+	 * string is a localized error message.
+	 * <p>
+	 * All access must be guarded with {@link #specificErrorsLock}, and
+	 * {@link #specificErrorsLock} must always be locked after
+	 * {@link ExternalProgramInfo#getLock()} if both need locking in the same
+	 * block.
 	 */
 	@GuardedBy("specificErrorsLock")
 	protected final HashMap<ProgramExecutableType, String> specificErrors = new HashMap<>();
@@ -268,6 +272,7 @@ public abstract class Player {
 	 * @return The platform and configuration dependent {@link ExecutableInfo}
 	 *         for this {@link Player}.
 	 */
+	@Nullable
 	protected abstract ExternalProgramInfo programInfo();
 
 	/**
@@ -373,8 +378,9 @@ public abstract class Player {
 			// Generally available or unknown, check for Player specific failures
 			specificErrorsLock.readLock().lock();
 			try {
-				if (specificErrors.get(executableType) != null) {
-					return specificErrors.get(executableType);
+				String specificError = specificErrors.get(executableType);
+				if (specificError != null) {
+					return specificError;
 				}
 			} finally {
 				specificErrorsLock.readLock().unlock();
@@ -1117,78 +1123,84 @@ public abstract class Player {
 		if (executableType == null) {
 			throw new IllegalArgumentException("executableType cannot be null");
 		}
-		if (programInfo == null || programInfo.getPath(executableType) == null) {
-			return false;
-		}
-		if (avisynth()) {
-			if (!Platform.isWindows()) {
-				LOGGER.debug(
-					"Skipping transcoding engine {} ({}) as it's not compatible with this platform",
-					this,
-					executableType
-				);
-				setUnavailable(
-					executableType,
-					ExecutableErrorType.SPECIFIC,
-					String.format(Messages.getString("Engine.ExecutablePlatformIncompatible"), this)
-				);
-				return true;
-			}
-
-			if (!BasicSystemUtils.INSTANCE.isAvis()) {
-				LOGGER.debug(
-					"Transcoding engine {} ({}) is unavailable since AviSynth couldn't be found",
-					this,
-					executableType
-				);
-				setUnavailable(
-					executableType,
-					ExecutableErrorType.SPECIFIC,
-					String.format(Messages.getString("Engine.AviSynthNotFound"), this)
-				);
-				return true;
-			}
-		}
-
-		ExecutableInfo executableInfo = programInfo.getExecutableInfo(executableType);
-		if (
-			executableInfo != null &&
-			executableInfo.getAvailable() != null &&
-			(
-				!executableInfo.getAvailable().booleanValue() ||
-				!isSpecificTest()
-			)
-		) {
-			// Executable has already been tested
-			return true;
-		}
-		specificErrorsLock.writeLock().lock();
+		ReentrantReadWriteLock programInfoLock = programInfo.getLock();
+		programInfoLock.writeLock().lock();
 		try {
-			if (specificErrors.get(executableType) != null) {
-				// Executable Player specific failures has already been tested
-				return true;
-			}
-
-			ExecutableInfo result = testExecutable(executableInfo);
-			if (result == null) {
-				// Executable test not implemented
+			ExecutableInfo executableInfo = programInfo.getExecutableInfo(executableType);
+			if (executableInfo == null || executableInfo.getPath() == null) {
 				return false;
 			}
-			if (result.getAvailable() == null) {
-				LOGGER.error("Player test for {} failed to return availability, this is a bug", name());
-			} else if (!result.equals(executableInfo)) {
-				// The test resulted in a change
-				setAvailable(
-					result.getAvailable(),
-					executableType,
-					result.getVersion(),
-					result.getErrorType(),
-					result.getErrorText()
-				);
+			if (avisynth()) {
+				if (!Platform.isWindows()) {
+					LOGGER.debug(
+						"Skipping transcoding engine {} ({}) as it's not compatible with this platform",
+						this,
+						executableType
+					);
+					setUnavailable(
+						executableType,
+						ExecutableErrorType.SPECIFIC,
+						String.format(Messages.getString("Engine.ExecutablePlatformIncompatible"), this)
+					);
+					return true;
+				}
+
+				if (!BasicSystemUtils.INSTANCE.isAvis()) {
+					LOGGER.debug(
+						"Transcoding engine {} ({}) is unavailable since AviSynth couldn't be found",
+						this,
+						executableType
+					);
+					setUnavailable(
+						executableType,
+						ExecutableErrorType.SPECIFIC,
+						String.format(Messages.getString("Engine.AviSynthNotFound"), this)
+					);
+					return true;
+				}
 			}
-			return true;
+
+			if (
+				executableInfo.getAvailable() != null &&
+				(
+					!executableInfo.getAvailable().booleanValue() ||
+					!isSpecificTest()
+				)
+			) {
+				// Executable has already been tested
+				return true;
+			}
+			specificErrorsLock.writeLock().lock();
+			try {
+				if (specificErrors.get(executableType) != null) {
+					// Executable Player specific failures has already been tested
+					return true;
+				}
+
+				ExecutableInfo result = testExecutable(executableInfo);
+				if (result == null) {
+					// Executable test not implemented
+					return false;
+				}
+				if (result.getAvailable() == null) {
+					throw new AssertionError("Player test for " + name() + " failed to return availability");
+				}
+				if (!result.equals(executableInfo)) {
+					// The test resulted in a change
+					setAvailable(
+						result.getAvailable(),
+						executableType,
+						result.getVersion(),
+						result.getErrorType(),
+						result.getErrorText()
+					);
+				}
+				return true;
+			} finally {
+				specificErrorsLock.writeLock().unlock();
+			}
 		} finally {
-			specificErrorsLock.writeLock().unlock();
+			programInfoLock.writeLock().unlock();
 		}
 	}
 

@@ -20,8 +20,11 @@
 package net.pms.configuration;
 
 import java.io.FileNotFoundException;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import org.apache.commons.lang3.StringUtils;
 import com.sun.jna.Platform;
 import net.pms.util.FilePermissions;
@@ -37,51 +40,61 @@ public abstract class PlatformProgramPaths {
 	/**
 	 * @return The {@link FFmpegProgramInfo} for FFmpeg.
 	 */
+	@Nullable
 	public abstract FFmpegProgramInfo getFFmpeg();
 
 	/**
 	 * @return The {@link ExternalProgramInfo} for MPlayer.
 	 */
+	@Nullable
 	public abstract ExternalProgramInfo getMPlayer();
 
 	/**
 	 * @return The {@link ExternalProgramInfo} for VLC.
 	 */
+	@Nullable
 	public abstract ExternalProgramInfo getVLC();
 
 	/**
 	 * @return The {@link ExternalProgramInfo} for MEncoder.
 	 */
+	@Nullable
 	public abstract ExternalProgramInfo getMEncoder();
 
 	/**
 	 * @return The {@link ExternalProgramInfo} for tsMuxeR.
 	 */
+	@Nullable
 	public abstract ExternalProgramInfo getTsMuxeR();
 
 	/**
 	 * @return The {@link ExternalProgramInfo} for tsMuxeRNew.
 	 */
+	@Nullable
 	public abstract ExternalProgramInfo getTsMuxeRNew();
 
 	/**
 	 * @return The {@link ExternalProgramInfo} for FLAC.
 	 */
+	@Nullable
 	public abstract ExternalProgramInfo getFLAC();
 
 	/**
 	 * @return The {@link ExternalProgramInfo} for DCRaw.
 	 */
+	@Nullable
 	public abstract ExternalProgramInfo getDCRaw();
 
 	/**
 	 * @return The {@link ExternalProgramInfo} for InterFrame.
 	 */
+	@Nullable
 	public abstract ExternalProgramInfo getInterFrame();
 
 	/**
 	 * @return The {@link Path} for {@code ctrlsender.exe} for Windows.
 	 */
+	@Nullable
 	public Path getCtrlSender() {
 		return null;
 	}
@@ -89,11 +102,13 @@ public abstract class PlatformProgramPaths {
 	/**
 	 * @return The {@link Path} for {@code taskkill.exe} for Windows.
 	 */
+	@Nullable
 	public Path getTaskKill() {
 		return null;
 	}
 
 	/** Singleton {@link PlatformProgramPaths} instance */
+	@Nonnull
 	private static final PlatformProgramPaths INSTANCE;
 
 	/** The {@link Path} to {@code project.binaries.dir}. */
@@ -146,6 +161,7 @@ public abstract class PlatformProgramPaths {
 	 *
 	 * @return The platform dependent {@link PlatformProgramPaths} instance.
 	 */
+	@Nonnull
 	public static final PlatformProgramPaths get() { //TODO: (Nad) Was bug
 		return INSTANCE;
 	}
@@ -156,11 +172,16 @@ public abstract class PlatformProgramPaths {
 	 *
 	 * @return The path to the binaries folder.
 	 */
+	@Nonnull
 	protected static Path getBinariesFolder() {
 		String path = PropertiesUtil.getProjectProperties().get("project.binaries.dir");
 
-		if (StringUtils.isNotBlank(path)) {
-			return Paths.get(path);
+		try {
+			if (StringUtils.isNotBlank(path)) {
+				return Paths.get(path);
+			}
+		} catch (InvalidPathException e) {
+			System.err.println("Invalid \"project.binaries.dir\":" + e);
 		}
 		return Paths.get("");
 	}

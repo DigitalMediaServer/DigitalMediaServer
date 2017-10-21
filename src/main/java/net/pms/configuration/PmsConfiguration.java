@@ -379,6 +379,7 @@ public class PmsConfiguration extends RendererConfiguration {
 	protected String defaultLogFileFolder = null;
 
 	public TempFolder tempFolder;
+	@Nonnull
 	protected final PlatformProgramPaths programPaths;
 	public IpFilter filter;
 
@@ -757,6 +758,19 @@ public class PmsConfiguration extends RendererConfiguration {
 		return programPaths instanceof ConfigurableProgramPaths;
 	}
 
+	/**
+	 * Returns the configured {@link ProgramExecutableType} for the specified
+	 * {@link Player}. Note that this can be different from the
+	 * {@link Player#currentExecutableType} for the same {@link Player}.
+	 *
+	 * @param player the {@link Player} for which to get the configured
+	 *            {@link ProgramExecutableType}.
+	 * @return The configured {@link ProgramExecutableType}, the default
+	 *         {@link ProgramExecutableType} if none is configured or
+	 *         {@code null} if there is no default.
+	 *
+	 * @see Player#getCurrentExecutableType()
+	 */
 	@Nullable
 	public ProgramExecutableType getPlayerExecutableType(@Nonnull Player player) {
 		if (player == null) {
@@ -768,6 +782,14 @@ public class PmsConfiguration extends RendererConfiguration {
 		);
 	}
 
+	/**
+	 * Sets the configured {@link ProgramExecutableType} for the specified
+	 * {@link Player}.
+	 *
+	 * @param player the {@link Player} for which to set the configured
+	 *            {@link ProgramExecutableType}.
+	 * @param executableType the {@link ProgramExecutableType} to set.
+	 */
 	public void setPlayerExecutableType(@Nonnull Player player, @Nonnull ProgramExecutableType executableType) {
 		if (player == null) {
 			throw new IllegalArgumentException("player cannot be null");
@@ -864,26 +886,51 @@ public class PmsConfiguration extends RendererConfiguration {
 		);
 	}
 
+	/**
+	 * @return The {@link ExternalProgramInfo} for VLC.
+	 */
+	@Nullable
 	public ExternalProgramInfo getVLCPaths() {
 		return programPaths.getVLC();
 	}
 
+	/**
+	 * @return The {@link ExternalProgramInfo} for MEncoder.
+	 */
+	@Nullable
 	public ExternalProgramInfo getMEncoderPaths() {
 		return programPaths.getMEncoder();
 	}
 
+	/**
+	 * @return The {@link ExternalProgramInfo} for DCRaw.
+	 */
+	@Nullable
 	public ExternalProgramInfo getDCRawPaths() {
 		return programPaths.getDCRaw();
 	}
 
+	/**
+	 * @return The {@link ExternalProgramInfo} for FFmpeg.
+	 */
+	@Nullable
 	public ExternalProgramInfo getFFmpegPaths() {
 		return programPaths.getFFmpeg();
 	}
 
+	/**
+	 * @return The {@link ExternalProgramInfo} for MPlayer.
+	 */
+	@Nullable
 	public ExternalProgramInfo getMPlayerPaths() {
 		return programPaths.getMPlayer();
 	}
 
+	/**
+	 * @return The configured path to the MPlayer executable. If none is
+	 *         configured, the default is used.
+	 */
+	@Nullable
 	public String getMPlayerPath() {
 		ProgramExecutableType executableType = ProgramExecutableType.toProgramExecutableType(
 			ConfigurableProgramPaths.KEY_MPLAYER_EXECUTABLE_TYPE,
@@ -912,15 +959,28 @@ public class PmsConfiguration extends RendererConfiguration {
 		((ConfigurableProgramPaths) programPaths).setCustomMPlayerPath(customPath);
 	}
 
+	/**
+	 * @return The {@link ExternalProgramInfo} for tsMuxeR.
+	 */
+	@Nullable
 	public ExternalProgramInfo gettsMuxeRPaths() {
 		return programPaths.getTsMuxeR();
 	}
 
+	/**
+	 * @return The {@link ExternalProgramInfo} for tsMuxeRNew.
+	 */
+	@Nullable
 	public ExternalProgramInfo gettsMuxeRNewPaths() {
 		return programPaths.getTsMuxeRNew();
 	}
 
-	public String gettsMuxeRNewPath() { //TODO: (Nad) JavaDocs
+	/**
+	 * @return The configured path to the tsMuxeRNew executable. If none is
+	 *         configured, the default is used.
+	 */
+	@Nullable
+	public String gettsMuxeRNewPath() {
 		ProgramExecutableType executableType = ProgramExecutableType.toProgramExecutableType(
 			ConfigurableProgramPaths.KEY_TSMUXER_NEW_EXECUTABLE_TYPE,
 			gettsMuxeRNewPaths().getDefault()
@@ -949,10 +1009,19 @@ public class PmsConfiguration extends RendererConfiguration {
 		((ConfigurableProgramPaths) programPaths).setCustomTsMuxeRNewPath(customPath);
 	}
 
+	/**
+	 * @return The {@link ExternalProgramInfo} for FLAC.
+	 */
+	@Nullable
 	public ExternalProgramInfo getFLACPaths() {
 		return programPaths.getFLAC();
 	}
 
+	/**
+	 * @return The configured path to the FLAC executable. If none is
+	 *         configured, the default is used.
+	 */
+	@Nullable
 	public String getFLACPath() {
 		ProgramExecutableType executableType = ProgramExecutableType.toProgramExecutableType(
 			ConfigurableProgramPaths.KEY_FLAC_EXECUTABLE_TYPE,
@@ -981,10 +1050,19 @@ public class PmsConfiguration extends RendererConfiguration {
 		((ConfigurableProgramPaths) programPaths).setCustomFlacPath(customPath);
 	}
 
+	/**
+	 * @return The {@link ExternalProgramInfo} for Interframe.
+	 */
+	@Nullable
 	public ExternalProgramInfo getInterFramePaths() {
 		return programPaths.getInterFrame();
 	}
 
+	/**
+	 * @return The configured path to the Interframe folder. If none is
+	 *         configured, the default is used.
+	 */
+	@Nullable
 	public String getInterFramePath() {
 		ProgramExecutableType executableType = ProgramExecutableType.toProgramExecutableType(
 			ConfigurableProgramPaths.KEY_INTERFRAME_EXECUTABLE_TYPE,
