@@ -185,6 +185,8 @@ public class TranscodingEngineCellRenderer extends AnimatedTreeCellRenderer {
 			}
 		} else {
 			setIcon(CATEGORY_ICON);
+			setToolTipText(null);
+			setFont(getFont().deriveFont(Font.PLAIN));
 		}
 
 		return this;

@@ -782,10 +782,12 @@ public class AnimatedIcon implements Icon, ActionListener {
 			int durationLast,
 			int duration
 		) {
-		AnimatedIconFrame[] result = new AnimatedIconFrame[returnToFirst ? 2 * (lastIdx - firstIdx) : lastIdx - firstIdx + 1];
+		int count = Math.abs(lastIdx - firstIdx);
+		AnimatedIconFrame[] result = new AnimatedIconFrame[returnToFirst ? 2 * count : count + 1];
 
+		boolean increasing = firstIdx <= lastIdx;
 		int idx = firstIdx;
-		for (int i = 0; i <= lastIdx - firstIdx; i++) {
+		for (int i = 0; i <= count; i++) {
 			Icon icon = LooksFrame.readImageIcon(String.format(resourceNamePattern, idx));
 			if (icon == null) {
 				throw new IllegalArgumentException(String.format(
@@ -796,11 +798,14 @@ public class AnimatedIcon implements Icon, ActionListener {
 					lastIdx
 				));
 			}
-			if (idx > firstIdx && idx < lastIdx) {
+			if (
+				increasing && idx > firstIdx && idx < lastIdx ||
+				!increasing && idx < firstIdx && idx > lastIdx
+			) {
 				AnimatedIconFrame frame = new AnimatedIconFrame(icon, duration);
 				result[i] = frame;
 				if (returnToFirst) {
-					result[2 * (lastIdx - firstIdx) - i] = frame;
+					result[2 * count - i] = frame;
 				}
 			} else if (idx == firstIdx) {
 				result[i] = new AnimatedIconFrame(icon, durationFirst);
@@ -808,7 +813,11 @@ public class AnimatedIcon implements Icon, ActionListener {
 				result[i] = new AnimatedIconFrame(icon, durationLast);
 			}
 
-			idx++;
+			if (increasing) {
+				idx++;
+			} else {
+				idx--;
+			}
 		}
 		return result;
 	}

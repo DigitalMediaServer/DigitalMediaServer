@@ -29,7 +29,6 @@ import java.awt.event.ActionListener;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
 import java.io.File;
-import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -115,24 +114,26 @@ public class EnginePanel extends JScrollPane {
 	private AnimatedIcon engineStatusMissing;
 
 	static {
-		ArrayList<AnimatedIconFrame> tempFrames = new ArrayList<>(Arrays.asList(AnimatedIcon.buildAnimation(
-			"symbol-light-red-F%d.png", 0, 7, true, 15, 15, 15))
-		);
-		ImageIcon redOff = LooksFrame.readImageIcon("symbol-light-red-off.png");
-		tempFrames.add(0, new AnimatedIconFrame(redOff, 300));
-		tempFrames.set(8, new AnimatedIconFrame(tempFrames.get(8).getIcon(), 300));
-		tempFrames.remove(7);
-		tempFrames.remove(5);
-		tempFrames.remove(3);
-		tempFrames.remove(1);
+		ArrayList<AnimatedIconFrame> tempFrames = new ArrayList<>();
+		tempFrames.add(new AnimatedIconFrame(LooksFrame.readImageIcon("symbol-light-red-off.png"), 2000));
+		tempFrames.addAll(Arrays.asList(AnimatedIcon.buildAnimation(
+			"symbol-light-red-F%d.png", 0, 7, false, 8, 20, 8
+		)));
+		tempFrames.addAll(Arrays.asList(AnimatedIcon.buildAnimation(
+			"symbol-light-red-F%d.png", 6, 1, false, 10, 40, 20
+		)));
+		tempFrames.set(13, new AnimatedIconFrame(tempFrames.get(13).getIcon(), 35));
+		tempFrames.set(12, new AnimatedIconFrame(tempFrames.get(12).getIcon(), 30));
+		tempFrames.set(11, new AnimatedIconFrame(tempFrames.get(11).getIcon(), 25));
 		RED_FLASHING_FRAMES = tempFrames.toArray(new AnimatedIconFrame[tempFrames.size()]);
 
 		tempFrames = new ArrayList<>(Arrays.asList(AnimatedIcon.buildAnimation(
-			"symbol-light-treemenu-red-F%d.png", 0, 7, true, 15, 15, 15))
+			"symbol-light-treemenu-red-F%d.png", 0, 7, true, 15, 800, 15))
 		);
-		redOff = LooksFrame.readImageIcon("symbol-light-treemenu-red-off.png");
-		tempFrames.add(0, new AnimatedIconFrame(redOff, 500));
-		tempFrames.set(8, new AnimatedIconFrame(tempFrames.get(8).getIcon(), 800));
+		tempFrames.add(0, new AnimatedIconFrame(
+			LooksFrame.readImageIcon("symbol-light-treemenu-red-off.png"),
+			500
+		));
 		tempFrames.remove(7);
 		tempFrames.remove(5);
 		tempFrames.remove(3);
@@ -140,11 +141,12 @@ public class EnginePanel extends JScrollPane {
 		SMALL_RED_FLASHING_FRAMES = tempFrames.toArray(new AnimatedIconFrame[tempFrames.size()]);
 
 		tempFrames = new ArrayList<>(Arrays.asList(AnimatedIcon.buildAnimation(
-			"symbol-light-treemenu-amber-F%d.png", 0, 7, true, 15, 15, 15))
+			"symbol-light-treemenu-amber-F%d.png", 0, 7, true, 15, 800, 15))
 		);
-		ImageIcon amberOff = LooksFrame.readImageIcon("symbol-light-treemenu-amber-off.png");
-		tempFrames.add(0, new AnimatedIconFrame(amberOff, 500));
-		tempFrames.set(8, new AnimatedIconFrame(tempFrames.get(8).getIcon(), 800));
+		tempFrames.add(0, new AnimatedIconFrame(
+			LooksFrame.readImageIcon("symbol-light-treemenu-amber-off.png"),
+			500
+		));
 		tempFrames.remove(7);
 		tempFrames.remove(5);
 		tempFrames.remove(3);
