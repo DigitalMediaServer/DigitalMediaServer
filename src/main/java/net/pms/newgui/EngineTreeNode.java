@@ -1,70 +1,86 @@
 package net.pms.newgui;
 
-import static org.apache.commons.lang3.StringUtils.isNotBlank;
-import com.jgoodies.forms.builder.FormBuilder;
-import com.jgoodies.forms.factories.Paddings;
-import com.jgoodies.forms.layout.CellConstraints;
-import com.jgoodies.forms.layout.FormLayout;
-import java.awt.Dimension;
-import java.awt.Font;
-import java.awt.image.BufferedImage;
-import java.io.IOException;
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.NotThreadSafe;
-import javax.imageio.ImageIO;
 import javax.swing.Icon;
 import javax.swing.JComponent;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JTextArea;
+import javax.swing.JTree;
 import javax.swing.tree.DefaultMutableTreeNode;
-import net.pms.Messages;
+import javax.swing.tree.TreeNode;
 import net.pms.encoders.Player;
-import net.pms.newgui.components.AnimatedIcon;
 import net.pms.newgui.components.AnimatedTreeNode;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
+/**
+ * This is a {@link DefaultMutableTreeNode} extension that implements
+ * {@link AnimatedTreeNode} and provides the specialized functionality needed to
+ * represent a {@link Player} in the "Transcoding Engine Tree".
+ *
+ * @author Nadahar
+ */
 @NotThreadSafe
 public class EngineTreeNode extends DefaultMutableTreeNode implements AnimatedTreeNode {
 	private static final long serialVersionUID = 1L;
-	private static final Logger LOGGER = LoggerFactory.getLogger(EngineTreeNode.class);
 
+	/** The {@link Player} represented by this {@link TreeNode} */
 	protected final Player player;
-	protected final JComponent otherConfigPanel; //TODO: (Nad) Remove?
-	protected JPanel warningPanel; //TODO: (Nad) Rename
+
+	/**
+	 * A custom configuration panel if the linked {@link Player} is {@code null}
+	 * or doesn't provide one
+	 */
+	protected final JComponent customConfigurationPanel;
+
+	/** An {@link Icon} used by the {@link AnimatedTreeNode} implementation */
 	protected Icon icon;
 
-	public EngineTreeNode(@Nullable String nodeName, @Nullable Player player, @Nullable JComponent otherConfigPanel) {
+	/**
+	 * Creates a new instance using the specified parameters.
+	 *
+	 * @param nodeName the name of the node to be shown in the {@link JTree}.
+	 * @param player the {@link Player} this {@link TreeNode} should represent,
+	 *            if any.
+	 * @param customConfigurationPanel a custom configuration panel if
+	 *            {@code player} is {@code null} or doesn't provide one.
+	 */
+	public EngineTreeNode(@Nullable String nodeName, @Nullable Player player, @Nullable JComponent customConfigurationPanel) {
 		super(nodeName);
 		this.player = player;
-		this.otherConfigPanel = otherConfigPanel;
-
+		this.customConfigurationPanel = customConfigurationPanel;
 	}
 
+	/**
+	 * @return The ID of this {@link TreeNode} or {@code null}.
+	 */
 	@Nullable
-	public String id() { //TODO: (Nad) PlayerID?
+	public String id() {
 		if (player != null) {
 			return player.id().toString();
-		} else if (otherConfigPanel != null) {
-			return "" + otherConfigPanel.hashCode();
+		} else if (customConfigurationPanel != null) {
+			return Integer.toString(customConfigurationPanel.hashCode());
 		} else {
 			return null;
 		}
 	}
 
+	/**
+	 * @return The linked {@link Player} for this {@link TreeNode} or
+	 *         {@code null}.
+	 */
 	@Nullable
 	public Player getPlayer() {
 		return player;
 	}
 
-	@Nonnull
-	public JComponent getConfigPanel() {
+	/**
+	 * @return The configuration panel linked to this {@link TreeNode} or
+	 *         {@code null}.
+	 */
+	@Nullable
+	public JComponent getConfigurationPanel() {
 		if (player != null) {
-			return player.config();
-		} else if (otherConfigPanel != null) {
-			return otherConfigPanel;
+			return player.getConfigurationPanel();
+		} else if (customConfigurationPanel != null) {
+			return customConfigurationPanel;
 		} else {
 			return null;
 		}

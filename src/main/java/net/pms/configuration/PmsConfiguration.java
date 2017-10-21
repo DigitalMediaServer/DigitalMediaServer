@@ -2690,8 +2690,7 @@ public class PmsConfiguration extends RendererConfiguration {
 	 * Returns the priority index according to the rules of {@link List#indexOf}.
 	 *
 	 * @param id the {@link PlayerId} whose position to return.
-	 * @return The priority index of {@code id}, or -1 if this the priority list
-	 *         doesn't contain {@code id}.
+	 * @return The priority index of {@code id}.
 	 */
 	public int getEnginePriority(PlayerId id) {
 		if (id == null) {
@@ -2701,9 +2700,21 @@ public class PmsConfiguration extends RendererConfiguration {
 		buildEnginesPriority();
 		enginesPriorityLock.readLock().lock();
 		try {
-			return enginesPriority.indexOf(id);
+			int index = enginesPriority.indexOf(id);
+			if (index >= 0) {
+				return index;
+			}
 		} finally {
 			enginesPriorityLock.readLock().unlock();
+		}
+
+		// The engine isn't listed, add it last
+		enginesPriorityLock.writeLock().lock();
+		try {
+			enginesPriority.add(id);
+			return enginesPriority.indexOf(id);
+		} finally {
+			enginesPriorityLock.writeLock().unlock();
 		}
 	}
 

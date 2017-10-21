@@ -27,6 +27,7 @@ import java.util.Locale;
 import javax.annotation.concurrent.Immutable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.sun.jna.Platform;
 
 
 /**
@@ -85,10 +86,18 @@ public class StandardPlayerId extends PlayerId {
 	public static final List<PlayerId> ALL;
 
 	static {
+		boolean windows = Platform.isWindows();
 		List<PlayerId> allPlayers = new ArrayList<>(12);
 		allPlayers.add(FFMPEG_VIDEO);
+		if (windows) {
+			allPlayers.add(AVI_SYNTH_FFMPEG);
+		}
 		allPlayers.add(MENCODER_VIDEO);
+		if (windows) {
+			allPlayers.add(AVI_SYNTH_MENCODER);
+		}
 		allPlayers.add(TSMUXER_VIDEO);
+		allPlayers.add(VLC_VIDEO);
 		allPlayers.add(FFMPEG_AUDIO);
 		allPlayers.add(TSMUXER_AUDIO);
 		allPlayers.add(FFMPEG_WEB_VIDEO);
@@ -96,7 +105,7 @@ public class StandardPlayerId extends PlayerId {
 		allPlayers.add(VLC_VIDEO_STREAMING);
 		allPlayers.add(MENCODER_WEB_VIDEO);
 		allPlayers.add(VLC_AUDIO_STREAMING);
-		allPlayers.add(DCRaw.ID);
+		allPlayers.add(DCRAW);
 		ALL = Collections.unmodifiableList(allPlayers);
 	}
 

@@ -39,7 +39,7 @@ public class TsMuxeRAudio extends TsMuxeRVideo {
 	}
 
 	@Override
-	public JComponent config() {
+	public JComponent getConfigurationPanel() {
 		return null;
 	}
 

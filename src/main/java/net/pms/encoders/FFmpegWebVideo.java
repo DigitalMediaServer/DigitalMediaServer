@@ -131,7 +131,7 @@ public class FFmpegWebVideo extends FFMpegVideo {
 	}
 
 	@Override
-	public JComponent config() {
+	public JComponent getConfigurationPanel() {
 		return null;
 	}
 
@@ -156,7 +156,7 @@ public class FFmpegWebVideo extends FFMpegVideo {
 	}
 
 	@Override
-	public ProcessWrapper launchTranscode(
+	public synchronized ProcessWrapper launchTranscode(
 		DLNAResource dlna,
 		DLNAMediaInfo media,
 		OutputParams params

@@ -219,7 +219,7 @@ public class VideoLanVideoStreaming extends Player {
 	}
 
 	@Override
-	public JComponent config() {
+	public JComponent getConfigurationPanel() {
 		return null;
 	}
 

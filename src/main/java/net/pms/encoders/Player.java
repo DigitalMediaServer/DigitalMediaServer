@@ -62,6 +62,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.sun.jna.Platform;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 /**
  * The base class for all transcoding engines.
@@ -90,7 +91,17 @@ public abstract class Player {
 	protected final ExternalProgramInfo programInfo;
 
 	public abstract int purpose();
-	public abstract JComponent config();
+
+	/**
+	 * @return The configuration panel for this {@link Player} or {@code null}.
+	 */
+	@Nullable
+	public abstract JComponent getConfigurationPanel();
+
+	/**
+	 * @return The {@link PlayerId} for this {@link Player}.
+	 */
+	@Nonnull
 	public abstract PlayerId id();
 
 	/**
@@ -504,11 +515,15 @@ public abstract class Player {
 	}
 
 	/**
-	 * This will set the custom executable {@link Path} and the default
+	 * Sets the custom executable {@link Path} and the default
 	 * {@link ProgramExecutableType} type, but won't run tests or perform other
-	 * tasks normally needed after such a change. This should normally only be
-	 * called from {@link PlayerFactory#registerPlayer(Player)} to set the
-	 * configured {@link Path} before other registration tasks are performed.
+	 * tasks normally needed after such a change.
+	 * <p>
+	 * <b>This should normally only be called from
+	 * {@link PlayerFactory#registerPlayer(Player)}</b> to set the configured
+	 * {@link Path} before other registration tasks are performed.
+	 *
+	 * @param customPath The custom executable {@link Path}.
 	 */
 	public void initCustomExecutablePath(@Nullable Path customPath) {
 		customPath = ConfigurableProgramPaths.resolveCustomProgramPath(customPath);
@@ -522,48 +537,60 @@ public abstract class Player {
 	}
 
 	/**
+	 * Sets or clears the {@link ProgramExecutableType#CUSTOM} executable
+	 * {@link Path} for the underlying {@link ExternalProgramInfo}. This will
+	 * impact all players sharing the same {@link ExternalProgramInfo}.
+	 * <p>
+	 * A changed {@link Path} will result in a rerun of tests and a reevaluation
+	 * of the current {@link ExecutableInfo} for all affected {@link Player}s.
+	 * As this is a costly operations, no changes will be made if the specified
+	 * {@link Path} is equal to the existing {@link Path} or if both are
+	 * {@code null}.
 	 *
-	 * @param customPath //TODO: (Nad) JavaDocs
+	 * @param customPath the new custom {@link Path} or {@code null} to clear.
 	 * @param setConfiguration whether or not the {@link Path} should also be
-	 *            stored in the current {@link Configuration}.
-	 * @param runTests run tests and determine current executable type....
+	 *            stored in {@link PmsConfiguration}.
+	 * @return {@code true} if any changes were made as a result of this call,
+	 *         {@code false} otherwise.
 	 */
-	public void setCustomExecutablePath(@Nullable Path customPath, boolean setConfiguration) {
-		boolean changed = !setConfiguration;
+	public boolean setCustomExecutablePath(@Nullable Path customPath, boolean setConfiguration) {
+		boolean configurationChanged = false;
 		if (setConfiguration) {
 			try {
-				changed = configuration.setPlayerCustomPath(this, customPath);
+				configurationChanged = configuration.setPlayerCustomPath(this, customPath);
 			} catch (IllegalStateException e) {
-				changed = false;
+				configurationChanged = false;
 				LOGGER.warn("Failed to set custom executable path for {}: {}", name(), e.getMessage());
 				LOGGER.trace("", e);
 			}
 		}
 
+		customPath = ConfigurableProgramPaths.resolveCustomProgramPath(customPath);
+		boolean changed = programInfo.setPath(ProgramExecutableType.CUSTOM, customPath);
 		if (changed) {
-			customPath = ConfigurableProgramPaths.resolveCustomProgramPath(customPath);
-			changed = programInfo.setPath(ProgramExecutableType.CUSTOM, customPath);
-			if (changed) {
-				DefaultExecutableType defaultType;
-				if (customPath == null) {
-					defaultType = DefaultExecutableType.ORIGINAL;
-					if (setConfiguration && LOGGER.isDebugEnabled()) {
-						LOGGER.debug("Custom executable path for {} was cleared", programInfo);
-					}
-				} else {
-					defaultType = DefaultExecutableType.CUSTOM;
-					if (setConfiguration && LOGGER.isDebugEnabled()) {
-						LOGGER.debug("Custom executable path for {} was set to \"{}\"", programInfo, customPath);
-					}
+			DefaultExecutableType defaultType;
+			if (customPath == null) {
+				defaultType = DefaultExecutableType.ORIGINAL;
+				if (setConfiguration && LOGGER.isDebugEnabled()) {
+					LOGGER.debug("Custom executable path for {} was cleared", programInfo);
 				}
-				PlayerFactory.reEvaluateExecutable(this, ProgramExecutableType.CUSTOM, defaultType);
+			} else {
+				defaultType = DefaultExecutableType.CUSTOM;
+				if (setConfiguration && LOGGER.isDebugEnabled()) {
+					LOGGER.debug("Custom executable path for {} was set to \"{}\"", programInfo, customPath);
+				}
 			}
+			PlayerFactory.reEvaluateExecutable(this, ProgramExecutableType.CUSTOM, defaultType);
 		}
+		return changed || configurationChanged;
 	}
 
 	/**
 	 * Clears any registered {@link ExecutableErrorType#SPECIFIC} for the
 	 * specified {@link ProgramExecutableType}.
+	 *
+	 * @param executableType the {@link ProgramExecutableType} for which to
+	 *            clear registered {@link ExecutableErrorType#SPECIFIC} errors.
 	 */
 	public void clearSpecificErrors(@Nullable ProgramExecutableType executableType) {
 		if (executableType == null && !isSpecificTest()) {
@@ -1172,6 +1199,7 @@ public abstract class Player {
 	 * @return {@code true} if {@code object} is a {@link Player} and the IDs
 	 *         match, {@code false} otherwise.
 	 */
+	@SuppressFBWarnings("RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE")
 	@Override
 	public boolean equals(Object object) {
 		if (this == object) {
@@ -1191,6 +1219,7 @@ public abstract class Player {
 		return true;
 	}
 
+	@SuppressFBWarnings("RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE")
 	@Override
 	public int hashCode() {
 		final int prime = 31;

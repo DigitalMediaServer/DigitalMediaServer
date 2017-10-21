@@ -297,7 +297,7 @@ public class TranscodingTab {
 
 		DefaultMutableTreeNode root = new DefaultMutableTreeNode(Messages.getString("TrTab2.11"));
 		EngineTreeNode commonEnc = new EngineTreeNode(Messages.getString("TrTab2.5"), null, buildCommon());
-		tabbedPanel.add(commonEnc.getConfigPanel(), commonEnc.id());
+		tabbedPanel.add(commonEnc.getConfigurationPanel(), commonEnc.id());
 		root.add(commonEnc);
 
 		parent = new DefaultMutableTreeNode[5];
@@ -380,7 +380,7 @@ public class TranscodingTab {
 		for (Player player : PlayerFactory.getAllPlayers()) {
 			EngineTreeNode engine = new EngineTreeNode(player.name(), player, null);
 
-			JComponent engineSettings = engine.getConfigPanel();
+			JComponent engineSettings = engine.getConfigurationPanel();
 //			if (configPanel == null) {
 //				configPanel = buildEmpty(); //TODO: (Nad) Cleanup
 //			}

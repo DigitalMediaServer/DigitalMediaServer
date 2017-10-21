@@ -18,8 +18,8 @@
  */
 package net.pms.encoders;
 
-import com.jgoodies.forms.builder.PanelBuilder;
-import com.jgoodies.forms.factories.Borders;
+import com.jgoodies.forms.builder.FormBuilder;
+import com.jgoodies.forms.factories.Paddings;
 import com.jgoodies.forms.layout.CellConstraints;
 import com.jgoodies.forms.layout.FormLayout;
 import java.awt.event.ItemEvent;
@@ -58,14 +58,12 @@ public class FFmpegAudio extends FFMpegVideo {
 	}
 
 	@Override
-	public JComponent config() {
+	public JComponent getConfigurationPanel() {
 		FormLayout layout = new FormLayout(
 			"left:pref, 0:grow",
 			"p, 3dlu, p, 3dlu, p, 3dlu, p, 3dlu, p, 3dlu, 0:grow"
 		);
-		PanelBuilder builder = new PanelBuilder(layout);
-		builder.border(Borders.EMPTY);
-		builder.opaque(false);
+		FormBuilder builder = FormBuilder.create().layout(layout).border(Paddings.EMPTY).opaque(false);
 
 		CellConstraints cc = new CellConstraints();
 
@@ -77,7 +75,7 @@ public class FFmpegAudio extends FFMpegVideo {
 				configuration.setAudioResample(e.getStateChange() == ItemEvent.SELECTED);
 			}
 		});
-		builder.add(GuiUtil.getPreferredSizeComponent(noresample), cc.xy(2, 3));
+		builder.add(GuiUtil.getPreferredSizeComponent(noresample)).at(cc.xy(2, 3));
 
 		return builder.getPanel();
 	}

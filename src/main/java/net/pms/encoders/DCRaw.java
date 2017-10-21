@@ -67,7 +67,7 @@ public class DCRaw extends ImagePlayer {
 	}
 
 	@Override
-	public JComponent config() {
+	public JComponent getConfigurationPanel() {
 		return null;
 	}
 

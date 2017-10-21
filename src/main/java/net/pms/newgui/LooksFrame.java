@@ -780,7 +780,7 @@ public class LooksFrame extends JFrame implements IFrame {
 		}
 	}
 
-	public LooksFrameTabModelChangeListener registerTabModelListener(@Nonnull ListenerAction<LooksFrameTab> action) { //TODO: (Nad) Temp?
+	public LooksFrameTabModelChangeListener registerTabModelListener(@Nonnull ListenerAction<LooksFrameTab> action) {
 		return new LooksFrameTabModelChangeListener(action);
 	}
 

@@ -22,6 +22,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Vector;
 import javax.annotation.Nonnull;
@@ -130,15 +131,52 @@ public class GenericsComboBoxModel<E> extends AbstractListModel<E> implements Mu
 		return new ArrayList<E>(items);
 	}
 
-	public boolean retainItems(Collection<E> items) {
+	/**
+	 * Retains only the items that are contained in the specified
+	 * {@link Collection}. In other words, removes all items that are not
+	 * contained in the specified {@link Collection}.
+	 *
+	 * @param items the {@link Collection} of items to be retained.
+	 * @return {@code true} if the list of items is changed as a result of the
+	 *         call, {@code false} otherwise.
+	 */
+	public boolean retainItems(@Nullable Collection<E> items) {
+		if (items == null) {
+			return false;
+		}
 		return this.items.retainAll(items);
 	}
 
-	public boolean addItems(Collection<E> items) {
+	/**
+	 * Appends all the items in the specified {@link Collection} after the
+	 * current items, in the order that they are returned by the specified
+	 * {@link Collection}'s {@link Iterator}. The behavior of this operation is
+	 * undefined if the specified {@link Collection} is modified while the
+	 * operation is in progress.
+	 *
+	 * @param items the {@link Collection} of items to be added.
+	 * @return {@code true} if the list of items is changed as a result of the
+	 *         call, {@code false} otherwise.
+	 */
+	public boolean addItems(@Nullable Collection<E> items) {
+		if (items == null) {
+			return false;
+		}
 		return this.items.addAll(items);
 	}
 
-	public int setItems(Collection<E> items) {
+	/**
+	 * Makes sure that all the items in the specified {@link Collection} exists
+	 * in the list of items by adding those missing.
+	 *
+	 * @param items the {@link Collection} of items to make sure exists.
+	 * @return The number of additions made to the list of items as a result of
+	 *         the call.
+	 */
+	public int setItems(@Nullable Collection<E> items) {
+		if (items == null) {
+			return 0;
+		}
 		int count = 0;
 		for (E item : items) {
 			if (!this.items.contains(item)) {
@@ -149,8 +187,23 @@ public class GenericsComboBoxModel<E> extends AbstractListModel<E> implements Mu
 		return count;
 	}
 
-	//TODO: (Nad) JavaDocs
-	public int syncWith(Collection<E> items) {
+	/**
+	 * Makes sure that the list of items contains the same items as the
+	 * specified {@link Collection} in any order. This is a one-way
+	 * synchronization where all changes are made to the list of items and the
+	 * specified {@link Collection} is unchanged. Items will be removed and
+	 * added as needed.
+	 *
+	 * @param items the {@link Collection} of items to synchronize with.
+	 * @return The sum of additions (positive) and removals (negative) to the
+	 *         list of items. A zero return value doesn't necessarily mean that
+	 *         nothing was changed, but can also mean that the same number of
+	 *         items were added and removed.
+	 */
+	public int syncWith(@Nullable Collection<E> items) {
+		if (items == null) {
+			return 0;
+		}
 		int count = this.items.size();
 		if (retainItems(items)) {
 			count = this.items.size() - count;
