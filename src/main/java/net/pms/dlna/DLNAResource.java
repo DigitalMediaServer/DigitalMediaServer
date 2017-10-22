@@ -31,7 +31,7 @@ import java.util.concurrent.TimeUnit;
 import net.pms.Messages;
 import net.pms.PMS;
 import net.pms.configuration.FormatConfiguration;
-import net.pms.configuration.PmsConfiguration;
+import net.pms.configuration.PmsConfigu"ration;
 import net.pms.configuration.RendererConfiguration;
 import net.pms.dlna.virtual.TranscodeVirtualFolder;
 import net.pms.dlna.virtual.VirtualFolder;
@@ -2649,6 +2649,7 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 								mediaRenderer.getCustomFFmpegOptions().contains("-f ismv") ||
 								mediaRenderer.getCustomFFmpegOptions().contains("-f m4v") ||
 								mediaRenderer.getCustomFFmpegOptions().contains("-f mp4") ||
+								mediaRenderer.getCustomFFmpegOptions().contains("-f psp") ||
 								mediaRenderer.getCustomFFmpegOptions().contains("-f ipod")
 						) {
  							transcodedExtension = "_transcoded_to.mp4";
