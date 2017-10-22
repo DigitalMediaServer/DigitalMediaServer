@@ -165,7 +165,6 @@ public final class PlayerFactory {
 
 				for (ProgramExecutableType executableType : programInfo.getExecutableTypes()) {
 					testPlayerExecutableType(player, executableType);
-
 				}
 				player.determineCurrentExecutableType();
 			} finally {
@@ -202,7 +201,8 @@ public final class PlayerFactory {
 		if (player == null || executableType == null || !player.getProgramInfo().containsType(executableType, true)) {
 			return;
 		}
-		if (!player.testPlayer(executableType)) {
+		if (!player.testPlayer(executableType) && player.getProgramInfo().getExecutableInfo(executableType) != null) {
+			// Unavailability can only be set it the ExecutableInfo in non-null.
 			player.setUnavailable(
 				executableType,
 				ExecutableErrorType.GENERAL,
