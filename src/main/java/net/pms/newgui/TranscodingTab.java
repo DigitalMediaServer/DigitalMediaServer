@@ -27,6 +27,7 @@ import java.awt.*;
 import java.awt.event.*;
 import java.util.HashMap;
 import java.util.Locale;
+import javax.annotation.Nonnull;
 import javax.swing.*;
 import javax.swing.event.TreeSelectionEvent;
 import javax.swing.event.TreeSelectionListener;
@@ -39,6 +40,10 @@ import net.pms.PMS;
 import net.pms.configuration.PmsConfiguration;
 import net.pms.encoders.Player;
 import net.pms.encoders.PlayerFactory;
+import net.pms.newgui.LooksFrame.AbstractTabListenerRegistrar;
+import net.pms.newgui.LooksFrame.LooksFrameTab;
+import net.pms.newgui.components.AnimatedIcon;
+import net.pms.newgui.components.AnimatedIcon.AnimatedIconListenerRegistrar;
 import net.pms.newgui.components.CustomJButton;
 import net.pms.newgui.components.ImageButton;
 import net.pms.util.FormLayoutUtil;
@@ -63,10 +68,12 @@ public class TranscodingTab {
 	private final PmsConfiguration configuration;
 	private ComponentOrientation orientation;
 	private LooksFrame looksFrame;
+	private final TranscodingTabListenerRegistrar tabListenerRegistrar;
 
 	TranscodingTab(PmsConfiguration configuration, LooksFrame looksFrame) {
 		this.configuration = configuration;
 		this.looksFrame = looksFrame;
+		tabListenerRegistrar = new TranscodingTabListenerRegistrar(looksFrame);
 		// Apply the orientation for the locale
 		orientation = ComponentOrientation.getOrientation(PMS.getLocale());
 	}
@@ -332,7 +339,7 @@ public class TranscodingTab {
 		});
 
 		tree.setRequestFocusEnabled(false);
-		tree.setCellRenderer(new TranscodingEngineCellRenderer(looksFrame));
+		tree.setCellRenderer(new TranscodingEngineCellRenderer(tabListenerRegistrar));
 		tree.addMouseListener(new MouseAdapter() {
 			@Override
 			public void mousePressed(MouseEvent e) {
@@ -385,7 +392,7 @@ public class TranscodingTab {
 //				configPanel = buildEmpty(); //TODO: (Nad) Cleanup
 //			}
 
-			JComponent enginePanel = new EnginePanel(player, orientation, engineSettings, configuration);
+			JComponent enginePanel = new EnginePanel(player, orientation, engineSettings, configuration, tabListenerRegistrar);
 			engineSelectionPanels.put(engine, enginePanel);
 			tabbedPanel.add(enginePanel, engine.id());
 			//tabbedPanel.add(engine.id(), configPanel);
@@ -1115,5 +1122,25 @@ public class TranscodingTab {
 	// This is kind of a hack to give combo boxes a small preferred size
 	private static Dimension getPreferredHeight(JComponent component) {
 		return new Dimension(20, component.getPreferredSize().height);
+	}
+
+	/**
+	 * Creates a new {@link AnimatedIconListenerRegistrar} that registers tab
+	 * change to and from {@link LooksFrameTab#TRANSCODING_TAB} and application
+	 * minimize events. Suitable for {@link AnimatedIcon}s that's visible
+	 * whenever this tab is visible.
+	 *
+	 * @author Nadahar
+	 */
+	public static class TranscodingTabListenerRegistrar extends AbstractTabListenerRegistrar {
+
+		private TranscodingTabListenerRegistrar(@Nonnull LooksFrame looksFrame) {
+			super(looksFrame);
+		}
+
+		@Override
+		protected LooksFrameTab getVisibleTab() {
+			return LooksFrameTab.TRANSCODING_TAB;
+		}
 	}
 }

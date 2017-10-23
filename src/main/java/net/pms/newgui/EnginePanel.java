@@ -26,6 +26,8 @@ import java.awt.ComponentOrientation;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
 import java.io.File;
@@ -34,6 +36,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Locale;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -64,6 +67,7 @@ import net.pms.configuration.PmsConfiguration;
 import net.pms.configuration.ProgramExecutableType;
 import net.pms.configuration.WindowsProgramPaths;
 import net.pms.encoders.Player;
+import net.pms.newgui.TranscodingTab.TranscodingTabListenerRegistrar;
 import net.pms.newgui.components.AnimatedButton;
 import net.pms.newgui.components.AnimatedIcon;
 import net.pms.newgui.components.AnimatedIcon.AnimatedIconFrame;
@@ -80,7 +84,6 @@ import net.pms.util.Version;
  * @author Nadahar
  */
 public class EnginePanel extends JScrollPane {
-
 	private static final long serialVersionUID = 1L;
 
 	private static final String SELECTION_COL_SPEC = "left:pref, $lcgap, fill:50dlu:grow";
@@ -113,6 +116,7 @@ public class EnginePanel extends JScrollPane {
 	private final JComponent engineSettings;
 	private final JButton selectPath = new JButton("...");
 	private final PmsConfiguration configuration;
+	private final CardListenerRegistrar cardListenerRegistrar;
 	private final GenericsComboBoxModel<ProgramExecutableType> executableTypeModel = new GenericsComboBoxModel<ProgramExecutableType>();
 	private final DefaultTextField enginePath = new DefaultTextField(Messages.getString("EnginePanel.ExecutablePathDefaultText"), true);;
 	private final AnimatedButton selectedLight = new AnimatedButton();
@@ -129,7 +133,7 @@ public class EnginePanel extends JScrollPane {
 
 	static {
 		ArrayList<AnimatedIconFrame> tempFrames = new ArrayList<>();
-		tempFrames.add(new AnimatedIconFrame(LooksFrame.readImageIcon("symbol-light-red-off.png"), 2000));
+		tempFrames.add(new AnimatedIconFrame(LooksFrame.readImageIcon("symbol-light-red-off.png"), 2000)); //TODO: (Nad) Tweak
 		tempFrames.addAll(Arrays.asList(AnimatedIcon.buildAnimation("symbol-light-red-F%d.png", 0, 7, false, 8, 20, 8)));
 		tempFrames.addAll(Arrays.asList(AnimatedIcon.buildAnimation("symbol-light-red-F%d.png", 6, 1, false, 10, 40, 20)));
 		tempFrames.set(13, new AnimatedIconFrame(tempFrames.get(13).getIcon(), 35));
@@ -164,12 +168,14 @@ public class EnginePanel extends JScrollPane {
 	 * @param engineSettings the settings panel for this {@link Player} or
 	 *            {@code null}.
 	 * @param configuration the {@link PmsConfiguration}.
+	 * @param tabListenerRegistrar the {@link TranscodingTabListenerRegistrar}.
 	 */
 	public EnginePanel(
 		@Nonnull Player player,
 		@Nonnull ComponentOrientation orientation,
 		@Nullable JComponent engineSettings,
-		@Nonnull PmsConfiguration configuration
+		@Nonnull PmsConfiguration configuration,
+		@Nullable TranscodingTabListenerRegistrar tabListenerRegistrar
 	) {
 		super(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
 		if (player == null) {
@@ -182,6 +188,10 @@ public class EnginePanel extends JScrollPane {
 		this.orientation = orientation;
 		this.engineSettings = engineSettings;
 		this.configuration = configuration;
+		this.cardListenerRegistrar =
+			tabListenerRegistrar == null ?
+				null :
+				new CardListenerRegistrar(tabListenerRegistrar, this);
 		build();
 	}
 
@@ -228,16 +238,23 @@ public class EnginePanel extends JScrollPane {
 			return;
 		}
 		if (selectedLight.getIcon() instanceof AnimatedIcon) {
-			((AnimatedIcon) selectedLight.getIcon()).stop(); // TODO: (Nad) Unregister?
+			AnimatedIcon animatedIcon = (AnimatedIcon) selectedLight.getIcon();
+			animatedIcon.stop();
+			if (cardListenerRegistrar != null) {
+				cardListenerRegistrar.unregister(animatedIcon);
+			}
 		}
 
 		switch (iconState) {
 			case ERROR_ACTIVE:
 				if (engineErrorActive == null) {
-					engineErrorActive = new AnimatedIcon(selectedLight, true, null, RED_FLASHING_FRAMES); // TODO: (Nad) Registrar
+					engineErrorActive = new AnimatedIcon(selectedLight, true, RED_FLASHING_FRAMES);
 				}
 				engineErrorActive.start();
 				selectedLight.setIcon(engineErrorActive);
+				if (cardListenerRegistrar != null) {
+					cardListenerRegistrar.register(engineErrorActive);
+				}
 				break;
 			case ERROR:
 				selectedLight.setIcon(ENGINE_ERROR);
@@ -246,7 +263,7 @@ public class EnginePanel extends JScrollPane {
 				selectedLight.setIcon(ENGINE_OK);
 				break;
 			case OK_DISABLED:
-				statusLight.setIcon(ENGINE_OK_DISABLED);
+				selectedLight.setIcon(ENGINE_OK_DISABLED);
 				break;
 			case ERROR_DISABLED:
 			default:
@@ -270,19 +287,19 @@ public class EnginePanel extends JScrollPane {
 
 		if (player.isAvailable(selectedType)) {
 			if (player.isEnabled()) {
-				selectedLight.setIcon(ENGINE_OK);
+				setLight(IconState.OK);
 			} else {
-				selectedLight.setIcon(ENGINE_OK_DISABLED);
+				setLight(IconState.OK_DISABLED);
 			}
 		} else {
 			if (player.isEnabled()) {
 				if (player.getCurrentExecutableType() == selectedType) {
 					setLight(IconState.ERROR_ACTIVE);
 				} else {
-					selectedLight.setIcon(ENGINE_ERROR);
+					setLight(IconState.ERROR);
 				}
 			} else {
-				selectedLight.setIcon(ENGINE_ERROR_DISABLED);
+				setLight(IconState.ERROR_DISABLED);
 			}
 		}
 
@@ -297,23 +314,33 @@ public class EnginePanel extends JScrollPane {
 	protected void setStatusLight(@Nullable IconState iconState) {
 		if (iconState == null ||
 			statusLight.getIcon() != null &&
-			(iconState == IconState.OK && statusLight.getIcon() == ENGINE_STATUS_OK || iconState == IconState.ERROR &&
-				statusLight.getIcon() == engineStatusError || iconState == IconState.MISSING &&
-				statusLight.getIcon() == engineStatusMissing)) {
+			(
+				iconState == IconState.OK && statusLight.getIcon() == ENGINE_STATUS_OK ||
+				iconState == IconState.ERROR && statusLight.getIcon() == engineStatusError ||
+				iconState == IconState.MISSING && statusLight.getIcon() == engineStatusMissing
+			)
+		) {
 			return;
 		}
 		if (statusLight.getIcon() instanceof AnimatedIcon) {
-			((AnimatedIcon) statusLight.getIcon()).stop(); // TODO: Unregister?
+			AnimatedIcon animatedIcon = (AnimatedIcon) statusLight.getIcon();
+			animatedIcon.stop();
+			if (cardListenerRegistrar != null) {
+				cardListenerRegistrar.unregister(animatedIcon);
+			}
 		}
 
 		switch (iconState) {
 			case ERROR:
 			case ERROR_DISABLED:
 				if (engineStatusError == null) {
-					engineStatusError = new AnimatedIcon(statusLight, true, null, SMALL_AMBER_FLASHING_FRAMES); //TODO: (Nad) Registrar
+					engineStatusError = new AnimatedIcon(statusLight, true, SMALL_AMBER_FLASHING_FRAMES);
 				}
 				engineStatusError.start();
 				statusLight.setIcon(engineStatusError);
+				if (cardListenerRegistrar != null) {
+					cardListenerRegistrar.register(engineStatusError);
+				}
 				break;
 			case OK:
 			case OK_DISABLED:
@@ -321,10 +348,13 @@ public class EnginePanel extends JScrollPane {
 				break;
 			default:
 				if (engineStatusMissing == null) {
-					engineStatusMissing = new AnimatedIcon(statusLight, true, null, SMALL_RED_FLASHING_FRAMES); //TODO: (Nad) Registrar
+					engineStatusMissing = new AnimatedIcon(statusLight, true, SMALL_RED_FLASHING_FRAMES);
 				}
 				engineStatusMissing.start();
 				statusLight.setIcon(engineStatusMissing);
+				if (cardListenerRegistrar != null) {
+					cardListenerRegistrar.register(engineStatusMissing);
+				}
 				break;
 		}
 	}
@@ -575,5 +605,58 @@ public class EnginePanel extends JScrollPane {
 
 	private static enum IconState {
 		OK, OK_DISABLED, ERROR, ERROR_ACTIVE, ERROR_DISABLED, MISSING;
+	}
+
+	private static class CardListenerRegistrar extends ComponentAdapter {
+
+		@Nonnull
+		private final TranscodingTabListenerRegistrar tabListenerRegistrar;
+		@Nonnull
+		private final EnginePanel enginePanel;
+		private final HashSet<AnimatedIcon> subscribers = new HashSet<>();
+		private boolean isListening;
+
+		public CardListenerRegistrar(@Nonnull TranscodingTabListenerRegistrar tabListenerRegistrar, @Nonnull EnginePanel enginePanel) {
+			if (tabListenerRegistrar == null) {
+				throw new IllegalArgumentException("tabListenerRegistrar cannot be null");
+			}
+			this.tabListenerRegistrar = tabListenerRegistrar;
+			this.enginePanel = enginePanel;
+		}
+
+		@Override
+		public void componentShown(ComponentEvent e) {
+			for (AnimatedIcon subscriber : subscribers) {
+				subscriber.unsuspend();
+			}
+		}
+
+		@Override
+		public void componentHidden(ComponentEvent e) {
+			for (AnimatedIcon subscriber : subscribers) {
+				subscriber.suspend();
+			}
+		}
+
+		public void register(AnimatedIcon animatedIcon) {
+			tabListenerRegistrar.register(animatedIcon);
+			subscribers.add(animatedIcon);
+			if (!enginePanel.isVisible()) {
+				animatedIcon.suspend();
+			}
+			if (!isListening) {
+				enginePanel.addComponentListener(this);
+				isListening = true;
+			}
+		}
+
+		public void unregister(AnimatedIcon animatedIcon) {
+			tabListenerRegistrar.unregister(animatedIcon);
+			subscribers.remove(animatedIcon);
+			if (isListening && subscribers.size() == 0) {
+				enginePanel.removeComponentListener(this);
+				isListening = false;
+			}
+		}
 	}
 }

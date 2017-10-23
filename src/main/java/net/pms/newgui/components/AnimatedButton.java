@@ -70,12 +70,11 @@ public class AnimatedButton extends ImageButton implements AnimatedComponent {
 	 */
 	public AnimatedButton(
 		@Nullable String text,
-		@Nullable String defaultIconName,
-		@Nullable AnimatedIconListenerRegistrar listenerRegistrar
+		@Nullable String defaultIconName
 	) {
 		super(text, (Icon) null);
 		setProperites();
-		setIcons(defaultIconName, listenerRegistrar);
+		setIcons(defaultIconName);
 	}
 
 	/**
@@ -87,11 +86,10 @@ public class AnimatedButton extends ImageButton implements AnimatedComponent {
 	 *            description.
 	 */
 	public AnimatedButton(
-		@Nullable String defaultIconName,
-		@Nullable AnimatedIconListenerRegistrar listenerRegistrar
+		@Nullable String defaultIconName
 	) {
 		setProperites();
-		setIcons(defaultIconName, listenerRegistrar);
+		setIcons(defaultIconName);
 	}
 
 	/**
@@ -101,9 +99,9 @@ public class AnimatedButton extends ImageButton implements AnimatedComponent {
 		super();
 	}
 
-	private AnimatedIcon readAnimatedIcon(String filename, AnimatedIconListenerRegistrar listenerRegistrar) {
+	private AnimatedIcon readAnimatedIcon(String filename) {
 		URL url = LooksFrame.class.getResource("/resources/images/" + filename);
-		return url == null ? null : new AnimatedIcon(this, filename, listenerRegistrar);
+		return url == null ? null : new AnimatedIcon(this, filename);
 	}
 
 	/**
@@ -118,45 +116,28 @@ public class AnimatedButton extends ImageButton implements AnimatedComponent {
 	 */
 	@Override
 	public void setIcons(@Nullable String defaultIconName) {
-		setIcons(defaultIconName, null);
-	}
-
-	/**
-	 * Set static icons from standard naming convention that is of type
-	 * {@link AnimatedIcon}. While this can seem unnecessary it means that they
-	 * can handle transitions to and from other (animated) {@link AnimatedIcon}s
-	 * and thus be used on a {@link AnimatedButton}.
-	 *
-	 * @param defaultIconName the base image resource name used when the button
-	 *            is in the normal state and which the other state names are
-	 *            derived from.
-	 */
-	public void setIcons(
-		@Nullable String defaultIconName,
-		@Nullable AnimatedIconListenerRegistrar listenerRegistrar
-	) {
 		if (defaultIconName == null) {
 			return;
 		}
 
-		AnimatedIcon icon = readAnimatedIcon(defaultIconName, listenerRegistrar);
+		AnimatedIcon icon = readAnimatedIcon(defaultIconName);
 		if (icon == null) {
 			setIcon(UIManager.getIcon("OptionPane.warningIcon"));
 			return;
 		}
 		setIcon(icon);
 
-		icon = readAnimatedIcon(appendToFileName(defaultIconName, "_pressed"), listenerRegistrar);
+		icon = readAnimatedIcon(appendToFileName(defaultIconName, "_pressed"));
 		if (icon != null) {
 			setPressedIcon(icon);
 		}
 
-		icon = readAnimatedIcon(appendToFileName(defaultIconName, "_disabled"), listenerRegistrar);
+		icon = readAnimatedIcon(appendToFileName(defaultIconName, "_disabled"));
 		if (icon != null) {
 			setDisabledIcon(icon);
 		}
 
-		icon = readAnimatedIcon(appendToFileName(defaultIconName, "_mouseover"), listenerRegistrar);
+		icon = readAnimatedIcon(appendToFileName(defaultIconName, "_mouseover"));
 		if (icon != null) {
 			setRolloverIcon(icon);
 		}

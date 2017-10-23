@@ -195,25 +195,28 @@ public class RootFolder extends DLNAResource {
 	private IFrame frame = PMS.get().getFrame();
 
 	public void scan() {
-		if (!configuration.getUseCache()) {
-			throw new IllegalStateException("Can't scan when cache is disabled");
-		}
-		running = true;
+		try {
+			if (!configuration.getUseCache()) {
+				throw new IllegalStateException("Can't scan when cache is disabled");
+			}
+			running = true;
 
-		if (!isDiscovered()) {
-			discoverChildren();
-		}
+			if (!isDiscovered()) {
+				discoverChildren();
+			}
 
-		setDefaultRenderer(RendererConfiguration.getDefaultConf());
-		LOGGER.debug("Starting scan of: {}", this.getName());
-		scan(this);
+			setDefaultRenderer(RendererConfiguration.getDefaultConf());
+			LOGGER.debug("Starting scan of: {}", this.getName());
+			scan(this);
 
-		// Running might have been set false during scan
-		if (running) {
-			PMS.get().getDatabase().cleanup();
+			// Running might have been set false during scan
+			if (running) {
+				PMS.get().getDatabase().cleanup();
+			}
+		} finally {
+			frame.setScanLibraryEnabled(true);
+			frame.setStatusLine(null);
 		}
-		frame.setScanLibraryEnabled(true);
-		frame.setStatusLine(null);
 	}
 
 	/*

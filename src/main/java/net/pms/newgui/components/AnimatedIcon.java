@@ -18,6 +18,7 @@
  */
 package net.pms.newgui.components;
 
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import java.awt.Component;
 import java.awt.Graphics;
 import java.awt.event.ActionEvent;
@@ -29,6 +30,7 @@ import java.util.Random;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.swing.Icon;
+import javax.swing.ImageIcon;
 import javax.swing.JComponent;
 import javax.swing.Timer;
 import net.pms.newgui.LooksFrame;
@@ -123,8 +125,7 @@ public class AnimatedIcon implements Icon, ActionListener {
 		@Nonnull JComponent component,
 		@Nullable AnimatedIconStage nextStage,
 		boolean repeat,
-		@Nonnull List<AnimatedIconFrame> frames,
-		@Nullable AnimatedIconListenerRegistrar listenerRegistrar
+		@Nonnull List<AnimatedIconFrame> frames
 	) {
 		if (component == null) {
 			throw new IllegalArgumentException("component cannot be null");
@@ -142,10 +143,6 @@ public class AnimatedIcon implements Icon, ActionListener {
 		timer = new Timer(frames.get(0).durationMS, this);
 		timer.setRepeats(false);
 		setFrames(frames);
-
-		if (listenerRegistrar != null) {
-			listenerRegistrar.register(this);
-		}
 	}
 
 	/**
@@ -160,10 +157,9 @@ public class AnimatedIcon implements Icon, ActionListener {
 	public AnimatedIcon(
 		@Nonnull JComponent component,
 		boolean repeat,
-		@Nonnull List<AnimatedIconFrame> frames,
-		@Nullable AnimatedIconListenerRegistrar listenerRegistrar
+		@Nonnull List<AnimatedIconFrame> frames
 	) {
-		this(component, null, repeat, frames, listenerRegistrar);
+		this(component, null, repeat, frames);
 	}
 
 	/**
@@ -178,10 +174,9 @@ public class AnimatedIcon implements Icon, ActionListener {
 	public AnimatedIcon(
 		@Nonnull JComponent component,
 		@Nullable AnimatedIconStage nextStage,
-		@Nonnull List<AnimatedIconFrame> frames,
-		@Nullable AnimatedIconListenerRegistrar listenerRegistrar
+		@Nonnull List<AnimatedIconFrame> frames
 	) {
-		this(component, nextStage, false, frames, listenerRegistrar);
+		this(component, nextStage, false, frames);
 	}
 
 	/**
@@ -199,7 +194,6 @@ public class AnimatedIcon implements Icon, ActionListener {
 		@Nonnull JComponent component,
 		@Nullable AnimatedIconStage nextStage,
 		boolean repeat,
-		@Nullable AnimatedIconListenerRegistrar listenerRegistrar,
 		@Nonnull AnimatedIconFrame... frames
 	) {
 		if (component == null) {
@@ -218,10 +212,6 @@ public class AnimatedIcon implements Icon, ActionListener {
 		timer = new Timer(frames[0].durationMS, this);
 		timer.setRepeats(false);
 		setFrames(frames);
-
-		if (listenerRegistrar != null) {
-			listenerRegistrar.register(this);
-		}
 	}
 
 	/**
@@ -236,10 +226,9 @@ public class AnimatedIcon implements Icon, ActionListener {
 	public AnimatedIcon(
 		@Nonnull JComponent component,
 		boolean repeat,
-		@Nullable AnimatedIconListenerRegistrar listenerRegistrar,
 		@Nonnull AnimatedIconFrame... frames
 	) {
-		this(component, null, repeat, listenerRegistrar, frames);
+		this(component, null, repeat, frames);
 	}
 
 	/**
@@ -254,10 +243,9 @@ public class AnimatedIcon implements Icon, ActionListener {
 	public AnimatedIcon(
 		@Nonnull JComponent component,
 		@Nullable AnimatedIconStage nextStage,
-		@Nullable AnimatedIconListenerRegistrar listenerRegistrar,
 		@Nonnull AnimatedIconFrame... frames
 	) {
-		this(component, nextStage, false, listenerRegistrar, frames);
+		this(component, nextStage, false, frames);
 	}
 
 	/**
@@ -268,10 +256,9 @@ public class AnimatedIcon implements Icon, ActionListener {
 	 */
 	public AnimatedIcon(
 		@Nonnull JComponent component,
-		@Nonnull Icon icon,
-		@Nullable AnimatedIconListenerRegistrar listenerRegistrar
+		@Nonnull Icon icon
 	) {
-		this(component, false, listenerRegistrar, AnimatedIcon.buildAnimation(icon));
+		this(component, false, AnimatedIcon.buildAnimation(icon));
 	}
 
 	/**
@@ -283,10 +270,9 @@ public class AnimatedIcon implements Icon, ActionListener {
 	 */
 	public AnimatedIcon(
 		@Nonnull JComponent component,
-		@Nonnull String resourceName,
-		@Nullable AnimatedIconListenerRegistrar listenerRegistrar
+		@Nonnull String resourceName
 	) {
-		this(component, false, listenerRegistrar, AnimatedIcon.buildAnimation(resourceName));
+		this(component, false, AnimatedIcon.buildAnimation(resourceName));
 	}
 
 	/**
@@ -618,18 +604,49 @@ public class AnimatedIcon implements Icon, ActionListener {
 
 	@Override
 	public String toString() {
+		return toString(false);
+	}
+
+	/**
+	 * Returns a {@link String} representation of this {@link AnimatedIcon}.
+	 *
+	 * @param debug if {@code true} all {@link AnimatedIconFrame}s will be
+	 *            listed.
+	 * @return The {@link String} representation.
+	 */
+	public String toString(boolean debug) {
 		StringBuilder sb = new StringBuilder(getClass().getSimpleName());
 		sb.append(" [").append("Component=").append(component.getClass().getSimpleName());
 		if (component.getName() != null) {
 			sb.append(" ").append(component.getName());
 		}
 		sb.append(", Run State=").append(runState)
+			.append(", Suspend Level=").append(suspendLevel)
 			.append(", Repeat=").append(repeat ? "True" : "False")
 			.append(", Max Width=").append(maxIconWidth)
 			.append(", Max Height=").append(maxIconHeight)
 			.append(", Frames: ").append(frames.size());
-		for (int i = 0; i < frames.size(); i++) {
-			sb.append("\n").append(i).append(": ").append(frames.get(i));
+		if (debug) {
+			for (int i = 0; i < frames.size(); i++) {
+				sb.append("\n").append(i).append(": ").append(frames.get(i));
+			}
+		} else if (frames.size() > 1) {
+			AnimatedIconFrame firstFrame = frames.get(0);
+			String description;
+			if (firstFrame.getIcon() instanceof ImageIcon) {
+				description = ((ImageIcon) firstFrame.getIcon()).getDescription();
+				if (isNotBlank(description)) {
+					int lastSeparator = description.lastIndexOf("/");
+					if (lastSeparator > 0) {
+						description = description.substring(lastSeparator + 1);
+					}
+				} else {
+					description = firstFrame.getIcon().toString();
+				}
+			} else {
+				description = firstFrame.getIcon() == null ? null : firstFrame.getIcon().toString();
+			}
+			sb.append(", First Frame=").append(description);
 		}
 		sb.append("]");
 		return sb.toString();
@@ -1025,16 +1042,25 @@ public class AnimatedIcon implements Icon, ActionListener {
 
 		@Override
 		public String toString() {
-			return getClass().getSimpleName() + " [iconType=" + iconType + ", permanent=" + permanent + ", icon=" + icon + "]";
+			return
+				getClass().getSimpleName() +
+				" [iconType=" + iconType + ", permanent=" + permanent + ", icon=" + icon + "]";
 		}
 	}
 
-	public static interface AnimatedIconListenerRegistrar {
-
-		public void register(AnimatedIcon animatedIcon);
-
+	/**
+	 * This is a marker interface for implementations that registers
+	 * {@link AnimatedIcon}s with an {@link AnimatedIconListener}
+	 * implementation.
+	 *
+	 * @author Nadahar
+	 */
+	public interface AnimatedIconListenerRegistrar {
 	}
 
+	/**
+	 * Defines animation run states.
+	 */
 	public static enum RunState {
 
 		/** The animation is stopped */

@@ -21,9 +21,20 @@ package net.pms.newgui.components;
 import javax.annotation.Nullable;
 
 
-public interface ListenerAction<T> {
+/**
+ * An {@link AnimatedIconListenerAction} can be registered with
+ * {@link AnimatedIconListener} instances and executed in response to events.
+ *
+ * @param <T> the parameter type.
+ *
+ * @author Nadahar
+ */
+public interface AnimatedIconListenerAction<T> {
 
-	//TODO: (Nad) JavaDocs
-	public void performAction(@Nullable T result);
-
+	/**
+	 * Executes this action with the specified parameter value.
+	 *
+	 * @param value the parameter value.
+	 */
+	public void executeAction(@Nullable T value);
 }

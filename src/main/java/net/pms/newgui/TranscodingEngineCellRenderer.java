@@ -31,12 +31,10 @@ import javax.swing.Icon;
 import javax.swing.ImageIcon;
 import javax.swing.JTree;
 import net.pms.encoders.Player;
-import net.pms.newgui.LooksFrame.LooksFrameTab;
-import net.pms.newgui.LooksFrame.MinimizeListenerRegistrar;
+import net.pms.newgui.TranscodingTab.TranscodingTabListenerRegistrar;
 import net.pms.newgui.components.AnimatedIcon;
 import net.pms.newgui.components.AnimatedIcon.AnimatedIconFrame;
 import net.pms.newgui.components.AnimatedTreeCellRenderer;
-import net.pms.newgui.components.ListenerAction;
 
 
 /**
@@ -71,16 +69,19 @@ public class TranscodingEngineCellRenderer extends AnimatedTreeCellRenderer {
 	}
 
 	private final HashMap<EngineTreeNode, AnimatedIcon> warningIcons = new HashMap<>();
-	private final LooksFrame looksFrame;
+	@Nonnull
+	private final TranscodingTabListenerRegistrar tabListenerRegistrar;
 
 	/**
 	 * Creates a new instance.
+	 *
+	 * @param tabListenerRegistrar the {@link TranscodingTabListenerRegistrar}.
 	 */
-	public TranscodingEngineCellRenderer(@Nonnull LooksFrame looksFrame) {
-		if (looksFrame == null) {
-			throw new IllegalArgumentException("looksFrame cannot be null");
+	public TranscodingEngineCellRenderer(@Nonnull TranscodingTabListenerRegistrar tabListenerRegistrar) {
+		if (tabListenerRegistrar == null) {
+			throw new IllegalArgumentException("tabListenerRegistrar cannot be null");
 		}
-		this.looksFrame = looksFrame;
+		this.tabListenerRegistrar = tabListenerRegistrar;
 		setBackgroundSelectionColor(new Color(57, 114, 147));
 		setBorder(BorderFactory.createEmptyBorder(0, 3, 0, 3));
 	}
@@ -99,10 +100,10 @@ public class TranscodingEngineCellRenderer extends AnimatedTreeCellRenderer {
 			icon = new AnimatedIcon(
 				this,
 				true,
-				new TranscodingTabListenerRegistrar(looksFrame),
 				AMBER_FLASHING_FRAMES
 			);
 			warningIcons.put(engineNode, icon);
+			tabListenerRegistrar.register(icon);
 		}
 		setIcon(engineNode, icon);
 	}
@@ -119,6 +120,7 @@ public class TranscodingEngineCellRenderer extends AnimatedTreeCellRenderer {
 		warningIcons.remove(engineNode);
 		if (!warningIcons.containsValue(icon)) {
 			icon.stop();
+			tabListenerRegistrar.unregister(icon);
 		}
 	}
 
@@ -190,48 +192,5 @@ public class TranscodingEngineCellRenderer extends AnimatedTreeCellRenderer {
 		}
 
 		return this;
-	}
-
-	/**
-	 * Creates a new {@link AnimatedIconListenerRegistrar} that registers tab
-	 * change events and application minimized events. Suitable for
-	 * {@link AnimatedIcon}s that's visible whenever this tab is visible.
-	 *
-	 * @author Nadahar
-	 */
-	private static class TranscodingTabListenerRegistrar extends MinimizeListenerRegistrar {
-
-		public TranscodingTabListenerRegistrar(LooksFrame looksFrame) {
-			super(looksFrame);
-		}
-
-		/**
-		 * Creates a new instance without setting {@link #looksFrameInstance}. This MUST
-		 * be set before running {@link #register(AnimatedIcon)}.
-		 */
-		protected TranscodingTabListenerRegistrar() {
-		}
-
-		@Override
-		public void register(final AnimatedIcon animatedIcon) {
-			looksFrameInstance.registerTabModelListener(new ListenerAction<LooksFrame.LooksFrameTab>() {
-
-				private boolean suspended = false;
-
-				@Override
-				public void performAction(LooksFrameTab result) {
-					if (result == LooksFrameTab.TRANSCODING_TAB) {
-						if (suspended) {
-							animatedIcon.unsuspend();
-							suspended = false;
-						}
-					} else if (!suspended) {
-						animatedIcon.suspend();
-						suspended = true;
-					}
-				}
-			});
-			super.register(animatedIcon);
-		}
 	}
 }
