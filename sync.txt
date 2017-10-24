@@ -1,4 +1,4 @@
-UMS sync with: 221e345c3abbe41ef2facb88ab83f8c60c013724 Made sure that videos are transcoded if encoded audio passthrough should be used
+UMS sync with: e7267e081ceba4507e47a373b5b68cae7a57acb2 Fixed an exception if the renderer replied to GetProtocolInfo but didn't include sink
 
 Skipped:
 a4a099c7efcaf6dc8a28402a29eade757a2ce78d The ugly hack to solve problem when the TotalMatches are changed
@@ -10,3 +10,4 @@ d129c7d80839f3399868d061a8855a51bf9982af Add the fix to Reguest.java and update 
 52a69f264a6c062782bdc2b744a91e70a11f67a6 Corrected 3de1bf33c84a15d3030274ac3d24a9190748685c
 89b4d880374cf1e04b7ab020df8369efaefb6484 Automatic updating for 6.7.4
 06e66112e0dd6e9a574f010a5746bc02aa67dea9 Bump to 6.7.5
+299e309db866894887517c592b8cbb5c9f5275e6 Updated Surefire to fix compatibility with latest Maven
