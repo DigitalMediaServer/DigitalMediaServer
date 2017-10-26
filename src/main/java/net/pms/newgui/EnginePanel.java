@@ -28,6 +28,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
+import java.awt.event.ComponentListener;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
 import java.io.File;
@@ -62,6 +63,7 @@ import com.jgoodies.forms.layout.CellConstraints;
 import com.jgoodies.forms.layout.FormLayout;
 import com.sun.jna.Platform;
 import net.pms.Messages;
+import net.pms.PMS;
 import net.pms.configuration.ExecutableInfo;
 import net.pms.configuration.PmsConfiguration;
 import net.pms.configuration.ProgramExecutableType;
@@ -71,6 +73,9 @@ import net.pms.newgui.TranscodingTab.TranscodingTabListenerRegistrar;
 import net.pms.newgui.components.AnimatedButton;
 import net.pms.newgui.components.AnimatedIcon;
 import net.pms.newgui.components.AnimatedIcon.AnimatedIconFrame;
+import net.pms.newgui.components.AnimatedIcon.AnimatedIconListenerRegistrar;
+import net.pms.newgui.components.AnimatedIconListener;
+import net.pms.newgui.components.AnimatedIconListenerAction;
 import net.pms.newgui.components.DefaultTextField;
 import net.pms.newgui.components.GenericsComboBoxModel;
 import net.pms.util.FileUtil;
@@ -133,16 +138,22 @@ public class EnginePanel extends JScrollPane {
 
 	static {
 		ArrayList<AnimatedIconFrame> tempFrames = new ArrayList<>();
-		tempFrames.add(new AnimatedIconFrame(LooksFrame.readImageIcon("symbol-light-red-off.png"), 2000)); //TODO: (Nad) Tweak
-		tempFrames.addAll(Arrays.asList(AnimatedIcon.buildAnimation("symbol-light-red-F%d.png", 0, 7, false, 8, 20, 8)));
-		tempFrames.addAll(Arrays.asList(AnimatedIcon.buildAnimation("symbol-light-red-F%d.png", 6, 1, false, 10, 40, 20)));
-		tempFrames.set(13, new AnimatedIconFrame(tempFrames.get(13).getIcon(), 35));
-		tempFrames.set(12, new AnimatedIconFrame(tempFrames.get(12).getIcon(), 30));
-		tempFrames.set(11, new AnimatedIconFrame(tempFrames.get(11).getIcon(), 25));
+		tempFrames.addAll(Arrays.asList(AnimatedIcon.buildAnimation("symbol-light-red-F%d.png", 0, 16, true, 2240, 300, 15)));
+		tempFrames.remove(15);
+		tempFrames.remove(13);
+		tempFrames.remove(12);
+		tempFrames.remove(10);
+		tempFrames.remove(9);
+		tempFrames.remove(7);
+		tempFrames.remove(6);
+		tempFrames.remove(4);
+		tempFrames.remove(3);
+		tempFrames.remove(1);
 		RED_FLASHING_FRAMES = tempFrames.toArray(new AnimatedIconFrame[tempFrames.size()]);
 
-		tempFrames = new ArrayList<>(Arrays.asList(AnimatedIcon
-			.buildAnimation("symbol-light-treemenu-red-F%d.png", 0, 7, true, 15, 800, 15)));
+		tempFrames = new ArrayList<>(Arrays.asList(AnimatedIcon.buildAnimation(
+			"symbol-light-treemenu-red-F%d.png", 0, 7, true, 15, 800, 15
+		)));
 		tempFrames.add(0, new AnimatedIconFrame(LooksFrame.readImageIcon("symbol-light-treemenu-red-off.png"), 500));
 		tempFrames.remove(7);
 		tempFrames.remove(5);
@@ -150,8 +161,9 @@ public class EnginePanel extends JScrollPane {
 		tempFrames.remove(1);
 		SMALL_RED_FLASHING_FRAMES = tempFrames.toArray(new AnimatedIconFrame[tempFrames.size()]);
 
-		tempFrames = new ArrayList<>(Arrays.asList(AnimatedIcon.buildAnimation("symbol-light-treemenu-amber-F%d.png", 0, 7, true, 15, 800,
-			15)));
+		tempFrames = new ArrayList<>(Arrays.asList(AnimatedIcon.buildAnimation(
+			"symbol-light-treemenu-amber-F%d.png", 0, 7, true, 15, 800, 15
+		)));
 		tempFrames.add(0, new AnimatedIconFrame(LooksFrame.readImageIcon("symbol-light-treemenu-amber-off.png"), 500));
 		tempFrames.remove(7);
 		tempFrames.remove(5);
@@ -284,6 +296,11 @@ public class EnginePanel extends JScrollPane {
 		enginePath.setText(path == null ? null : path.toString());
 		enginePath.setEditable(selectedType == ProgramExecutableType.CUSTOM);
 		selectPath.setVisible(selectedType == ProgramExecutableType.CUSTOM);
+		if (selectedType == ProgramExecutableType.CUSTOM) {
+			enginePath.setToolTipText(String.format(Messages.getString("EnginePanel.ExecutablePathCustomToolTip"), player.name()));
+		} else {
+			enginePath.setToolTipText(String.format(Messages.getString("EnginePanel.ExecutablePathToolTip"), player.name()));
+		}
 
 		if (player.isAvailable(selectedType)) {
 			if (player.isEnabled()) {
@@ -365,6 +382,7 @@ public class EnginePanel extends JScrollPane {
 	protected void updateStatus() {
 		ProgramExecutableType current = player.getCurrentExecutableType();
 		currentExecutableType.setText(current == null ? Messages.getString("Generic.None") : current.toString());
+		String disabled = player.isEnabled() ? null : " (" + Messages.getString("Generic.Disabled").toLowerCase(PMS.getLocale()) + ")";
 
 		if (current != null) {
 			ExecutableInfo currentExecutableInfo = player.getProgramInfo().getExecutableInfo(current);
@@ -374,29 +392,57 @@ public class EnginePanel extends JScrollPane {
 			if (exists) {
 				if (player.isAvailable()) {
 					setStatusLight(IconState.OK);
-					status.setText(Messages.getString("Generic.OK"));
+					if (disabled != null) {
+						status.setText(Messages.getString("Generic.OK") + disabled);
+					} else {
+						status.setText(Messages.getString("Generic.OK"));
+					}
 				} else {
 					setStatusLight(IconState.ERROR);
-					status.setText(Messages.getString("Generic.Error"));
+					if (disabled != null) {
+						status.setText(Messages.getString("Generic.Error") + disabled);
+					} else {
+						status.setText(Messages.getString("Generic.Error"));
+					}
 				}
 				@SuppressWarnings("null")
 				Version executableVersion = currentExecutableInfo.getVersion();
 				if (executableVersion != null) {
-					version.setText(executableVersion.getVersionString());
+					if (disabled != null) {
+						version.setText(executableVersion.getVersionString() + disabled);
+					} else {
+						version.setText(executableVersion.getVersionString());
+					}
 				} else {
-					version.setText(Messages.getString("Generic.Unknown"));
+					if (disabled != null) {
+						version.setText(Messages.getString("Generic.Unknown") + disabled);
+					} else {
+						version.setText(Messages.getString("Generic.Unknown"));
+					}
 				}
 			} else {
 				setStatusLight(IconState.MISSING);
 				if (currentExecutableInfo == null || currentExecutableInfo.getPath() == null) {
-					status.setText(Messages.getString("Generic.Undefined"));
+					if (disabled != null) {
+						status.setText(Messages.getString("Generic.Undefined") + disabled);
+					} else {
+						status.setText(Messages.getString("Generic.Undefined"));
+					}
 				} else {
-					status.setText(Messages.getString("Generic.Missing"));
+					if (disabled != null) {
+						status.setText(Messages.getString("Generic.Missing") + disabled);
+					} else {
+						status.setText(Messages.getString("Generic.Missing"));
+					}
 				}
 			}
 		} else {
 			setStatusLight(IconState.MISSING);
-			status.setText(Messages.getString("Generic.NA"));
+			if (disabled != null) {
+				status.setText(Messages.getString("Generic.NA") + disabled);
+			} else {
+				status.setText(Messages.getString("Generic.NA"));
+			}
 			versionLabel.setVisible(false);
 			version.setVisible(false);
 		}
@@ -433,8 +479,9 @@ public class EnginePanel extends JScrollPane {
 			@Override
 			public void itemStateChanged(ItemEvent e) {
 				if (e.getStateChange() == ItemEvent.SELECTED) {
-					configuration.setPlayerExecutableType(player, executableTypeModel.getSelectedGItem());
-					updatePanel();
+					if (configuration.setPlayerExecutableType(player, executableTypeModel.getSelectedGItem())) {
+						updatePanel();
+					}
 				}
 			}
 		});
@@ -442,12 +489,14 @@ public class EnginePanel extends JScrollPane {
 			executableType.setPreferredSize(new Dimension(DLU_100X / 2, executableType.getPreferredSize().height));
 		}
 		engineTypeLabel.setLabelFor(executableType);
+		executableType.setToolTipText(Messages.getString("EnginePanel.ExecutableTypeToolTip"));
 		selection.add(engineTypeLabel, cc.xy(1, 1));
 		selection.add(executableType, cc.xy(3, 1, CellConstraints.LEFT, CellConstraints.DEFAULT));
 
 		JLabel enginePathLabel = new JLabel(Messages.getString("EnginePanel.ExecutablePath"));
 
 		selectPath.setPreferredSize(new Dimension(DLU_100X / 3, selectPath.getPreferredSize().height));
+		selectPath.setToolTipText(String.format(Messages.getString("EnginePanel.ExecutablePathBrowseToolTip"), player.name()));
 		selectPath.addActionListener(new ActionListener() {
 
 			@Override
@@ -501,6 +550,7 @@ public class EnginePanel extends JScrollPane {
 		selection.add(pathPanel, cc.xy(3, 3));
 
 		selectedLight.setFocusable(false);
+		selectedLight.setToolTipText(String.format(Messages.getString("EnginePanel.SelectedLight"), player.name()));
 		selection.add(selectedLight, cc.xy(1, 5, CellConstraints.CENTER, CellConstraints.CENTER));
 
 		selectionInfo.setBorder(new CompoundBorder(new EtchedBorder(EtchedBorder.LOWERED), new EmptyBorder(DLU_100Y / 20, DLU_100X / 15,
@@ -530,18 +580,22 @@ public class EnginePanel extends JScrollPane {
 			DLU_100X / 10)));
 
 		updateStatus();
+		statusLight.setToolTipText(String.format(Messages.getString("EnginePanel.StatusLightToolTop"), player.name()));
 		statusPanel.add(statusLight, cc.xy(1, 1));
 		statusPanel.add(new JLabel(Messages.getString("EnginePanel.Status")), cc.xy(3, 1));
 		status.setEditable(false);
+		status.setToolTipText(String.format(Messages.getString("EnginePanel.StatusToolTip"), player.name()));
 		statusPanel.add(status, cc.xy(5, 1));
 
-		statusPanel.add(new JLabel(Messages.getString("EnginePanel.EffectiveExecutableType")), cc.xy(7, 1));
+		statusPanel.add(new JLabel(Messages.getString("EnginePanel.ActiveExecutable")), cc.xy(7, 1));
 
 		currentExecutableType.setEditable(false);
+		currentExecutableType.setToolTipText(String.format(Messages.getString("EnginePanel.ActiveExecutableToolTip"), player.name()));
 		statusPanel.add(currentExecutableType, cc.xy(9, 1));
 
 		versionLabel.setText(Messages.getString("EnginePanel.Version"));
 		version.setEditable(false);
+		version.setToolTipText(String.format(Messages.getString("EnginePanel.VersionToolTip"), player.name()));
 		statusPanel.add(versionLabel, cc.xy(11, 1));
 		statusPanel.add(version, cc.xy(13, 1));
 
@@ -607,7 +661,24 @@ public class EnginePanel extends JScrollPane {
 		OK, OK_DISABLED, ERROR, ERROR_ACTIVE, ERROR_DISABLED, MISSING;
 	}
 
-	private static class CardListenerRegistrar extends ComponentAdapter {
+	/**
+	 * This is a hybrid between an {@link AnimatedIconListenerRegistrar} and an
+	 * {@link AnimatedIconListener} , although it doesn't declare the latter as
+	 * the implementation is simplified and doesn't involve
+	 * {@link AnimatedIconListenerAction}.
+	 * <p>
+	 * This will handle everything related to suspension and unsuspension of an
+	 * {@link AnimatedIcon} placed on one of the {@link EnginePanel} "cards".
+	 * <p>
+	 * It registers as a {@link ComponentListener} on the {@link EnginePanel}
+	 * itself and suspends registered {@link AnimatedIcon} as the visibility of
+	 * the panel changes. In addition, it registers with the specified
+	 * {@link TranscodingTabListenerRegistrar} which handles tab changes and
+	 * application minimize events.
+	 *
+	 * @author Nadahar
+	 */
+	private static class CardListenerRegistrar extends ComponentAdapter implements AnimatedIconListenerRegistrar {
 
 		@Nonnull
 		private final TranscodingTabListenerRegistrar tabListenerRegistrar;
@@ -616,7 +687,17 @@ public class EnginePanel extends JScrollPane {
 		private final HashSet<AnimatedIcon> subscribers = new HashSet<>();
 		private boolean isListening;
 
-		public CardListenerRegistrar(@Nonnull TranscodingTabListenerRegistrar tabListenerRegistrar, @Nonnull EnginePanel enginePanel) {
+		/**
+		 * Creates a new instance using the specified parameters.
+		 *
+		 * @param tabListenerRegistrar the
+		 *            {@link TranscodingTabListenerRegistrar} to register with.
+		 * @param enginePanel the {@link EnginePanel} to listen to.
+		 */
+		public CardListenerRegistrar(
+			@Nonnull TranscodingTabListenerRegistrar tabListenerRegistrar,
+			@Nonnull EnginePanel enginePanel
+		) {
 			if (tabListenerRegistrar == null) {
 				throw new IllegalArgumentException("tabListenerRegistrar cannot be null");
 			}
@@ -638,6 +719,14 @@ public class EnginePanel extends JScrollPane {
 			}
 		}
 
+		/**
+		 * Registers the specified {@link AnimatedIcon} with both a
+		 * {@link WindowIconifyListener}, a
+		 * {@link LooksFrameTabModelChangeListener} and starts acting on
+		 * visibility changes for the defined {@link EnginePanel}.
+		 *
+		 * @param animatedIcon the {@link AnimatedIcon} to register.
+		 */
 		public void register(AnimatedIcon animatedIcon) {
 			tabListenerRegistrar.register(animatedIcon);
 			subscribers.add(animatedIcon);
@@ -650,6 +739,14 @@ public class EnginePanel extends JScrollPane {
 			}
 		}
 
+		/**
+		 * Unregisters the specified {@link AnimatedIcon} with both a
+		 * {@link WindowIconifyListener}, a
+		 * {@link LooksFrameTabModelChangeListener} and stops acting on
+		 * visibility changes for the defined {@link EnginePanel}.
+		 *
+		 * @param animatedIcon the {@link AnimatedIcon} to unregister.
+		 */
 		public void unregister(AnimatedIcon animatedIcon) {
 			tabListenerRegistrar.unregister(animatedIcon);
 			subscribers.remove(animatedIcon);

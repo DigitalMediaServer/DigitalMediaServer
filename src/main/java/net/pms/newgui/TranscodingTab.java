@@ -31,6 +31,8 @@ import javax.annotation.Nonnull;
 import javax.swing.*;
 import javax.swing.event.TreeSelectionEvent;
 import javax.swing.event.TreeSelectionListener;
+import javax.swing.plaf.basic.BasicTreeUI;
+import javax.swing.tree.AbstractLayoutCache;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreePath;
@@ -84,7 +86,7 @@ public class TranscodingTab {
 	private JTextField maxbuffer;
 	private JComboBox<Integer> nbcores;
 	private DefaultMutableTreeNode parent[];
-	private JPanel tabbedPanel;
+	private JPanel cardsPanel;
 	private CardLayout cardLayout;
 	private JTextField abitrate;
 	private JTree tree;
@@ -169,8 +171,8 @@ public class TranscodingTab {
 
 	private JComponent buildRightTabbedPanel() {
 		cardLayout = new CardLayout();
-		tabbedPanel = new JPanel(cardLayout);
-		return tabbedPanel;
+		cardsPanel = new JPanel(cardLayout);
+		return cardsPanel;
 	}
 
 	private void setButtonsState() {
@@ -304,7 +306,7 @@ public class TranscodingTab {
 
 		DefaultMutableTreeNode root = new DefaultMutableTreeNode(Messages.getString("TrTab2.11"));
 		EngineTreeNode commonEnc = new EngineTreeNode(Messages.getString("TrTab2.5"), null, buildCommon());
-		tabbedPanel.add(commonEnc.getConfigurationPanel(), commonEnc.id());
+		cardsPanel.add(commonEnc.getConfigurationPanel(), commonEnc.id());
 		root.add(commonEnc);
 
 		parent = new DefaultMutableTreeNode[5];
@@ -319,7 +321,7 @@ public class TranscodingTab {
 		root.add(parent[3]);
 		root.add(parent[4]);
 
-		tabbedPanel.add(EMPTY_PANEL, new JPanel());
+		cardsPanel.add(EMPTY_PANEL, new JPanel());
 
 		tree = new JTree(new DefaultTreeModel(root));
 		ToolTipManager.sharedInstance().registerComponent(tree);
@@ -331,9 +333,9 @@ public class TranscodingTab {
 				setButtonsState();
 				if (e.getNewLeadSelectionPath() != null && e.getNewLeadSelectionPath().getLastPathComponent() instanceof EngineTreeNode) {
 					EngineTreeNode engine = (EngineTreeNode) e.getNewLeadSelectionPath().getLastPathComponent();
-					cardLayout.show(tabbedPanel, engine.id());
+					cardLayout.show(cardsPanel, engine.id());
 				} else {
-					cardLayout.show(tabbedPanel, EMPTY_PANEL);
+					cardLayout.show(cardsPanel, EMPTY_PANEL);
 				}
 			}
 		});
@@ -388,14 +390,9 @@ public class TranscodingTab {
 			EngineTreeNode engine = new EngineTreeNode(player.name(), player, null);
 
 			JComponent engineSettings = engine.getConfigurationPanel();
-//			if (configPanel == null) {
-//				configPanel = buildEmpty(); //TODO: (Nad) Cleanup
-//			}
-
 			JComponent enginePanel = new EnginePanel(player, orientation, engineSettings, configuration, tabListenerRegistrar);
 			engineSelectionPanels.put(engine, enginePanel);
-			tabbedPanel.add(enginePanel, engine.id());
-			//tabbedPanel.add(engine.id(), configPanel);
+			cardsPanel.add(enginePanel, engine.id());
 			parent[player.purpose()].add(engine);
 		}
 
@@ -407,24 +404,7 @@ public class TranscodingTab {
 		tree.updateUI();
 	}
 
-	private JComponent buildEmpty() { //TODO: (Nad) Remove
-		String colSpec = FormLayoutUtil.getColSpec(EMPTY_COL_SPEC, orientation);
-		FormLayout layout = new FormLayout(colSpec, EMPTY_ROW_SPEC);
-		FormBuilder builder = FormBuilder.create().layout(layout).border(Paddings.EMPTY).opaque(false);
-
-		CellConstraints cc = new CellConstraints();
-
-		builder.addSeparator(Messages.getString("TrTab2.1"), FormLayoutUtil.flip(cc.xyw(1, 1, 3), colSpec, orientation));
-
-		JPanel panel = builder.getPanel();
-
-		// Apply the orientation to the panel and all components in it
-		panel.applyComponentOrientation(orientation);
-
-		return panel;
-	}
-
-	public JComponent buildCommon() {
+	public JComponent buildCommon() { //TODO: (Nad) Replace engine tooltip
 		String colSpec = FormLayoutUtil.getColSpec(COMMON_COL_SPEC, orientation);
 		FormLayout layout = new FormLayout(colSpec, COMMON_ROW_SPEC);
 		FormBuilder builder = FormBuilder.create().layout(layout).border(Paddings.EMPTY).opaque(false);

@@ -798,11 +798,59 @@ public class AnimatedIcon implements Icon, ActionListener {
 			int durationFirst,
 			int durationLast,
 			int duration
-		) {
-		int count = Math.abs(lastIdx - firstIdx);
+	) {
+		return buildAnimation(
+			resourceNamePattern,
+			firstIdx,
+			lastIdx,
+			1,
+			returnToFirst,
+			durationFirst,
+			durationLast,
+			duration
+		);
+	}
+
+	/**
+	 * This will build and return an array of {@link AnimatedIconFrame}s based
+	 * on a first and last index and a {@link Formatter} formatted resource name
+	 * string.
+	 * <p>
+	 * <b>Note:</b> Leading zeroes can be specified by using the form
+	 * {@code %0nd} where {@code n} is the total number of digits. To format the
+	 * number {@code 4} as {@code 004} define it as {@code %03d} in the resource
+	 * name pattern.
+	 *
+	 * @param resourceNamePattern the resource named written as a
+	 *            {@link Formatter}.
+	 * @param firstIdx the first index number to use with the pattern.
+	 * @param lastIdx the last index number to use with the pattern.
+	 * @param step the unsigned value to increase or decrease the index for each
+	 *            frame.
+	 * @param returnToFirst specifies whether the animation should reverse back
+	 *            to the first frame after reaching the last frame.
+	 * @param durationFirst the duration in milliseconds for the first frame.
+	 * @param durationLast the duration in milliseconds for the last frame.
+	 * @param duration the duration in milliseconds for all frames but the first
+	 *            and the last.
+	 * @return The built array of {@link AnimatedIconFrame}s.
+	 */
+	public static AnimatedIconFrame[] buildAnimation(
+			String resourceNamePattern,
+			int firstIdx,
+			int lastIdx,
+			int step,
+			boolean returnToFirst,
+			int durationFirst,
+			int durationLast,
+			int duration
+	) {
+		step = Math.abs(step);
+		int count = Math.abs(lastIdx - firstIdx) / step;
 		AnimatedIconFrame[] result = new AnimatedIconFrame[returnToFirst ? 2 * count : count + 1];
 
 		boolean increasing = firstIdx <= lastIdx;
+		int lastUsedIdx = increasing ? firstIdx + count * step : firstIdx - count * step;
 		int idx = firstIdx;
 		for (int i = 0; i <= count; i++) {
 			Icon icon = LooksFrame.readImageIcon(String.format(resourceNamePattern, idx));
@@ -816,8 +864,8 @@ public class AnimatedIcon implements Icon, ActionListener {
 				));
 			}
 			if (
-				increasing && idx > firstIdx && idx < lastIdx ||
-				!increasing && idx < firstIdx && idx > lastIdx
+				increasing && idx > firstIdx && idx < lastUsedIdx ||
+				!increasing && idx < firstIdx && idx > lastUsedIdx
 			) {
 				AnimatedIconFrame frame = new AnimatedIconFrame(icon, duration);
 				result[i] = frame;
@@ -831,9 +879,9 @@ public class AnimatedIcon implements Icon, ActionListener {
 			}
 
 			if (increasing) {
-				idx++;
+				idx += step;
 			} else {
-				idx--;
+				idx -= step;
 			}
 		}
 		return result;

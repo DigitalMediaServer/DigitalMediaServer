@@ -24,7 +24,6 @@ import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Locale;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -176,6 +175,18 @@ public class ConfigurableProgramPaths extends PlatformProgramPaths {
 		setCustomProgramPath(path, platformPaths.getInterFrame(), KEY_INTERFRAME_PATH, true);
 	}
 
+	/**
+	 * Returns the configured {@link ProgramExecutableType} for the specified
+	 * {@link ExternalProgramInfo} using the specified {@link Configuration}
+	 * key. If the {@link Configuration} doesn't contain any value for the
+	 * specified key, the default from the {@link ProgramExecutableType} is
+	 * used.
+	 *
+	 * @param programInfo the {@link ExternalProgramInfo} to use for the default
+	 *            value.
+	 * @param configurationKey the {@link Configuration} key to use.
+	 * @return The resulting {@link ProgramExecutableType}.
+	 */
 	@Nullable
 	public ProgramExecutableType getConfiguredExecutableType(
 		@Nullable ExternalProgramInfo programInfo,
@@ -188,6 +199,16 @@ public class ConfigurableProgramPaths extends PlatformProgramPaths {
 		return getConfiguredExecutableType(configurationKey, programInfo == null ? null : programInfo.getDefault());
 	}
 
+	/**
+	 * Returns the configured {@link ProgramExecutableType} from the specified
+	 * {@link Configuration} key. If the {@link Configuration} doesn't contain
+	 * any value for the specified key, the specified default is used.
+	 *
+	 * @param configurationKey the {@link Configuration} key to use.
+	 * @param defaultExecutableType the default {@link ProgramExecutableType} if
+	 *            the specified key has no value.
+	 * @return The resulting {@link ProgramExecutableType}.
+	 */
 	@Nullable
 	public ProgramExecutableType getConfiguredExecutableType(
 		@Nullable String configurationKey,
@@ -200,37 +221,6 @@ public class ConfigurableProgramPaths extends PlatformProgramPaths {
 			configuration.getString(configurationKey),
 			defaultExecutableType
 		);
-	}
-
-	/**
-	 *
-	 * @param programInfo
-	 * @param executableType
-	 * @param configurationKey the {@link Configuration} key under which to
-	 *            store the {@code path}.
-	 */
-	public boolean setPlayerExecutableType(
-		@Nonnull ProgramExecutableType executableType,
-		@Nonnull String configurationKey
-	) {
-		if (isBlank(configurationKey)) {
-			throw new IllegalArgumentException("configurationKey can't be blank");
-		}
-		if (executableType == null) {
-			throw new IllegalArgumentException("executableType can't be null");
-		}
-
-		if (configuration == null) {
-			return false;
-		}
-
-		String currentValue = configuration.getString(configurationKey);
-		String newValue = executableType.toRootString();
-		if (newValue.equals(currentValue)) {
-			return false;
-		}
-		configuration.setProperty(configurationKey, newValue.toLowerCase(Locale.ROOT));
-		return true;
 	}
 
 	/**
@@ -261,6 +251,16 @@ public class ConfigurableProgramPaths extends PlatformProgramPaths {
 		setCustomProgramPath(customPath, programInfo, configurationKey, false);
 	}
 
+	/**
+	 * Gets the configured custom program {@link Path} from the
+	 * {@link Configuration} using the specified key. If the specified key has
+	 * no value, {@code null} is returned.
+	 *
+	 * @param configurationKey the {@link Configuration} key to use.
+	 * @return The resulting {@link Path} or {@code null}.
+	 * @throws ConfigurationException If the configured value can't be parsed as
+	 *             a valid {@link Path}.
+	 */
 	@Nullable
 	public Path getCustomProgramPath(@Nullable String configurationKey) throws ConfigurationException {
 		if (isBlank(configurationKey) || configuration == null) {
@@ -275,27 +275,25 @@ public class ConfigurableProgramPaths extends PlatformProgramPaths {
 			return Paths.get(configuredPath);
 		} catch (ConversionException | InvalidPathException e) {
 			throw new ConfigurationException(
-				"Invalid configured custom program path in \"" + configurationKey +"\": " + e.getMessage(),
+				"Invalid configured custom program path in \"" + configurationKey + "\": " + e.getMessage(),
 				e
 			);
 		}
 	}
 
 	/**
-	 * Sets a new {@link ProgramExecutableType#CUSTOM} {@link Path} for the
-	 * specified {@link ExternalProgramInfo} using the specified //TODO: (Nad) Rewrite JavaDocs
-	 * {@link Configuration} key. The {@link Path} is first written to
-	 * {@link #configuration} before being set in the specified
-	 * {@link ExternalProgramInfo} instance.
+	 * Sets a new {@link ProgramExecutableType#CUSTOM} {@link Path} in the
+	 * {@link Configuration} for the specified key. No change is done to any
+	 * {@link ExternalProgramInfo} instance. To set the {@link Path} both in the
+	 * {@link Configuration} and in the {@link ExternalProgramInfo} instance in
+	 * one operation, use {@link #setCustomProgramPath}.
 	 *
 	 * @param customPath the new {@link Path} or {@code null} to clear it.
 	 * @param configurationKey the {@link Configuration} key under which to
 	 *            store the {@code path}.
-	 * @param programInfo the {@link ExternalProgramInfo} in which to set
-	 *            {@code path}.
 	 * @return {@code true} if a change was made, {@code false} otherwise.
 	 */
-	public boolean setCustomProgramPath(@Nullable Path customPath, @Nonnull String configurationKey) {
+	public boolean setCustomProgramPathConfiguration(@Nullable Path customPath, @Nonnull String configurationKey) {
 		if (isBlank(configurationKey)) {
 			throw new IllegalArgumentException("configurationKey can't be blank");
 		}
@@ -350,7 +348,7 @@ public class ConfigurableProgramPaths extends PlatformProgramPaths {
 		}
 
 		if (setConfiguration) {
-			setCustomProgramPath(customPath, configurationKey);
+			setCustomProgramPathConfiguration(customPath, configurationKey);
 		}
 
 		customPath = resolveCustomProgramPath(customPath);
@@ -374,26 +372,6 @@ public class ConfigurableProgramPaths extends PlatformProgramPaths {
 		} finally {
 			lock.writeLock().unlock();
 		}
-	}
-
-	public boolean removeCustomProgramPath(@Nullable ExternalProgramInfo programInfo) {
-		if (programInfo == null) {
-			return false;
-		}
-
-		ReentrantReadWriteLock lock = programInfo.getLock();
-		lock.writeLock().lock();
-		try {
-			if (programInfo.containsType(ProgramExecutableType.CUSTOM, true)) {
-				programInfo.remove(ProgramExecutableType.CUSTOM);
-				programInfo.setOriginalDefault();
-				LOGGER.debug("Removed custom {} path", programInfo.getName());
-				return true;
-			}
-		} finally {
-			lock.writeLock().unlock();
-		}
-		return false;
 	}
 
 	/**

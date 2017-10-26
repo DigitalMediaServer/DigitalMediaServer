@@ -789,18 +789,27 @@ public class PmsConfiguration extends RendererConfiguration {
 	 * @param player the {@link Player} for which to set the configured
 	 *            {@link ProgramExecutableType}.
 	 * @param executableType the {@link ProgramExecutableType} to set.
+	 * @return {@code true} if a change was made, {@code false} otherwise.
 	 */
-	public void setPlayerExecutableType(@Nonnull Player player, @Nonnull ProgramExecutableType executableType) {
+	public boolean setPlayerExecutableType(@Nonnull Player player, @Nonnull ProgramExecutableType executableType) {
 		if (player == null) {
 			throw new IllegalArgumentException("player cannot be null");
 		}
 		if (executableType == null) {
 			throw new IllegalArgumentException("executableType cannot be null");
 		}
-		if (player.getExecutableTypeKey() != null) {
-			configuration.setProperty(player.getExecutableTypeKey(), executableType.toRootString());
+		String key = player.getExecutableTypeKey();
+		if (key != null) {
+			String currentValue = configuration.getString(key);
+			String newValue = executableType.toRootString();
+			if (newValue.equals(currentValue)) {
+				return false;
+			}
+			configuration.setProperty(key, newValue);
 			player.determineCurrentExecutableType(executableType);
+			return true;
 		}
+		return false;
 	}
 
 	/**
@@ -880,7 +889,7 @@ public class PmsConfiguration extends RendererConfiguration {
 		if (!isCustomProgramPathsSupported()) {
 			throw new IllegalStateException("The program paths aren't configurable");
 		}
-		return ((ConfigurableProgramPaths) programPaths).setCustomProgramPath(
+		return ((ConfigurableProgramPaths) programPaths).setCustomProgramPathConfiguration(
 			path,
 			player.getConfigurablePathKey()
 		);

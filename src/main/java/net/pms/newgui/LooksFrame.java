@@ -676,7 +676,13 @@ public class LooksFrame extends JFrame implements IFrame {
 
 	@Override
 	public void addEngines() {
-		tr.addEngines();
+		SwingUtilities.invokeLater(new Runnable() {
+
+			@Override
+			public void run() {
+				tr.addEngines();
+			}
+		});
 	}
 
 	@Override
@@ -1086,7 +1092,7 @@ public class LooksFrame extends JFrame implements IFrame {
 		protected abstract LooksFrameTab getVisibleTab();
 
 		/**
-		 * Registers the specified {@link AnimatedIcon} with both
+		 * Registers the specified {@link AnimatedIcon} with both a
 		 * {@link WindowIconifyListener} and a
 		 * {@link LooksFrameTabModelChangeListener}.
 		 *
@@ -1100,7 +1106,7 @@ public class LooksFrame extends JFrame implements IFrame {
 		}
 
 		/**
-		 * Registers the specified {@link AnimatedIcon} with both
+		 * Unregisters the specified {@link AnimatedIcon} with both a
 		 * {@link WindowIconifyListener} and a
 		 * {@link LooksFrameTabModelChangeListener}.
 		 *
