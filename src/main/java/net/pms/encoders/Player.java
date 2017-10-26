@@ -82,7 +82,17 @@ public abstract class Player {
 	protected final ExternalProgramInfo programInfo;
 
 	public abstract int purpose();
-	public abstract JComponent config();
+
+	/**
+	 * @return The configuration panel for this {@link Player} or {@code null}.
+	 */
+	@Nullable
+	public abstract JComponent getConfigurationPanel();
+
+	/**
+	 * @return The {@link PlayerId} for this {@link Player}.
+	 */
+	@Nonnull
 	public abstract PlayerId id();
 
 	/**

@@ -18,12 +18,11 @@
  */
 package net.pms.encoders;
 
-import com.jgoodies.forms.builder.PanelBuilder;
-import com.jgoodies.forms.factories.Borders;
+import com.jgoodies.forms.builder.FormBuilder;
+import com.jgoodies.forms.factories.Paddings;
 import com.jgoodies.forms.layout.CellConstraints;
 import com.jgoodies.forms.layout.FormLayout;
 import java.awt.Component;
-import java.awt.Font;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ItemEvent;
@@ -87,11 +86,6 @@ public class AviSynthFFmpeg extends FFMpegVideo {
 			threads = " -threads " + configuration.getNumberOfCpuCores();
 		}
 		return configuration.getMPEG2MainSettingsFFmpeg() + " -ab " + configuration.getAudioBitrate() + "k" + threads;
-	}
-
-	@Override
-	public JComponent config() {
-		return config("NetworkTab.5");
 	}
 
 	@Override
@@ -243,19 +237,13 @@ public class AviSynthFFmpeg extends FFMpegVideo {
 	private JCheckBox convertfps;
 
 	@Override
-	protected JComponent config(String languageLabel) {
+	public JComponent getConfigurationPanel() {
 		FormLayout layout = new FormLayout(
 			"left:pref, 0:grow",
 			"p, 3dlu, p, 3dlu, p, 3dlu, p, 3dlu, p, 3dlu");
-		PanelBuilder builder = new PanelBuilder(layout);
-		builder.border(Borders.EMPTY);
-		builder.opaque(false);
+		FormBuilder builder = FormBuilder.create().layout(layout).border(Paddings.EMPTY).opaque(false);
 
 		CellConstraints cc = new CellConstraints();
-
-		JComponent cmp = builder.addSeparator(Messages.getString(languageLabel), cc.xyw(2, 1, 1));
-		cmp = (JComponent) cmp.getComponent(0);
-		cmp.setFont(cmp.getFont().deriveFont(Font.BOLD));
 
 		multithreading = new JCheckBox(Messages.getString("MEncoderVideo.35"), configuration.isFfmpegAviSynthMultithreading());
 		multithreading.setContentAreaFilled(false);
@@ -265,7 +253,7 @@ public class AviSynthFFmpeg extends FFMpegVideo {
 				configuration.setFfmpegAviSynthMultithreading(e.getStateChange() == ItemEvent.SELECTED);
 			}
 		});
-		builder.add(GuiUtil.getPreferredSizeComponent(multithreading), cc.xy(2, 3));
+		builder.add(GuiUtil.getPreferredSizeComponent(multithreading)).at(cc.xy(2, 3));
 
 		interframe = new JCheckBox(Messages.getString("AviSynthMEncoder.13"), configuration.getFfmpegAvisynthInterFrame());
 		interframe.setContentAreaFilled(false);
@@ -283,7 +271,7 @@ public class AviSynthFFmpeg extends FFMpegVideo {
 				}
 			}
 		});
-		builder.add(GuiUtil.getPreferredSizeComponent(interframe), cc.xy(2, 5));
+		builder.add(GuiUtil.getPreferredSizeComponent(interframe)).at(cc.xy(2, 5));
 
 		interframegpu = new JCheckBox(Messages.getString("AviSynthMEncoder.15"), configuration.getFfmpegAvisynthInterFrameGPU());
 		interframegpu.setContentAreaFilled(false);
@@ -293,7 +281,7 @@ public class AviSynthFFmpeg extends FFMpegVideo {
 				configuration.setFfmpegAvisynthInterFrameGPU((e.getStateChange() == ItemEvent.SELECTED));
 			}
 		});
-		builder.add(GuiUtil.getPreferredSizeComponent(interframegpu), cc.xy(2, 7));
+		builder.add(GuiUtil.getPreferredSizeComponent(interframegpu)).at(cc.xy(2, 7));
 
 		convertfps = new JCheckBox(Messages.getString("AviSynthMEncoder.3"), configuration.getFfmpegAvisynthConvertFps());
 		convertfps.setContentAreaFilled(false);
@@ -303,7 +291,7 @@ public class AviSynthFFmpeg extends FFMpegVideo {
 				configuration.setFfmpegAvisynthConvertFps((e.getStateChange() == ItemEvent.SELECTED));
 			}
 		});
-		builder.add(GuiUtil.getPreferredSizeComponent(convertfps), cc.xy(2, 9));
+		builder.add(GuiUtil.getPreferredSizeComponent(convertfps)).at(cc.xy(2, 9));
 
 		configuration.addConfigurationListener(new ConfigurationListener() {
 			@Override

@@ -18,11 +18,10 @@
  */
 package net.pms.encoders;
 
-import com.jgoodies.forms.builder.PanelBuilder;
-import com.jgoodies.forms.factories.Borders;
+import com.jgoodies.forms.builder.FormBuilder;
+import com.jgoodies.forms.factories.Paddings;
 import com.jgoodies.forms.layout.CellConstraints;
 import com.jgoodies.forms.layout.FormLayout;
-import java.awt.Font;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
 import java.io.IOException;
@@ -59,20 +58,14 @@ public class FFmpegAudio extends FFMpegVideo {
 	}
 
 	@Override
-	public JComponent config() {
+	public JComponent getConfigurationPanel() {
 		FormLayout layout = new FormLayout(
 			"left:pref, 0:grow",
 			"p, 3dlu, p, 3dlu, p, 3dlu, p, 3dlu, p, 3dlu, 0:grow"
 		);
-		PanelBuilder builder = new PanelBuilder(layout);
-		builder.border(Borders.EMPTY);
-		builder.opaque(false);
+		FormBuilder builder = FormBuilder.create().layout(layout).border(Paddings.EMPTY).opaque(false);
 
 		CellConstraints cc = new CellConstraints();
-
-		JComponent cmp = builder.addSeparator(Messages.getString("NetworkTab.5"), cc.xyw(2, 1, 1));
-		cmp = (JComponent) cmp.getComponent(0);
-		cmp.setFont(cmp.getFont().deriveFont(Font.BOLD));
 
 		noresample = new JCheckBox(Messages.getString("TrTab2.22"), configuration.isAudioResample());
 		noresample.setContentAreaFilled(false);
@@ -82,7 +75,7 @@ public class FFmpegAudio extends FFMpegVideo {
 				configuration.setAudioResample(e.getStateChange() == ItemEvent.SELECTED);
 			}
 		});
-		builder.add(GuiUtil.getPreferredSizeComponent(noresample), cc.xy(2, 3));
+		builder.add(GuiUtil.getPreferredSizeComponent(noresample)).at(cc.xy(2, 3));
 
 		return builder.getPanel();
 	}
