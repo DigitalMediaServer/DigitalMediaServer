@@ -178,7 +178,7 @@ public class TranscodingTab {
 		{
 			arrowDownButton.setEnabled(false);
 			arrowUpButton.setEnabled(false);
-			toggleButton.setIconName(ToggleButtonState.On.getIconName());
+			toggleButton.setIcons(ToggleButtonState.On.getIconName());
 			toggleButton.setEnabled(false);
 		} else {
 			TreeNodeSettings node = (TreeNodeSettings) path.getLastPathComponent();
@@ -196,10 +196,10 @@ public class TranscodingTab {
 			}
 			Player player = node.getPlayer();
 			if (player.isEnabled()) {
-				toggleButton.setIconName(ToggleButtonState.On.getIconName());
+				toggleButton.setIcons(ToggleButtonState.On.getIconName());
 				toggleButton.setEnabled(true);
 			} else {
-				toggleButton.setIconName(ToggleButtonState.Off.getIconName());
+				toggleButton.setIcons(ToggleButtonState.Off.getIconName());
 				toggleButton.setEnabled(player.isAvailable());
 			}
 		}

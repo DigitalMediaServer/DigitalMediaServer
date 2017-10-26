@@ -350,10 +350,10 @@ public class StatusTab {
 
 		cmp = builder.addSeparator(null, FormLayoutUtil.flip(cc.xyw(1, 5, 5), colSpec, orientation));
 
-		connectedIcon.start();
-		connectedIntroIcon.start();
-		searchingIcon.start();
-		disconnectedIcon.start();
+		connectedIcon.startArm();
+		connectedIntroIcon.startArm();
+		searchingIcon.startArm();
+		disconnectedIcon.startArm();
 		connectionStatus.setFocusable(false);
 		builder.add(connectionStatus, FormLayoutUtil.flip(cc.xywh(1, 7, 1, 3, CellConstraints.CENTER, CellConstraints.TOP), colSpec, orientation));
 

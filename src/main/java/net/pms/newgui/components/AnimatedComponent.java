@@ -18,20 +18,29 @@
  */
 package net.pms.newgui.components;
 
-import net.pms.newgui.components.AnimatedIcon.AnimatedIconStage;
+import javax.annotation.Nullable;
+
 
 /**
- * Implements a callback function for {@link AnimatedIcon} to use for multi-icon
- * animations.
+ * An interface for animated components supporting {@link AnimatedIcon}.
  *
  * @author Nadahar
  */
-public interface AnimatedIconCallback {
+public interface AnimatedComponent extends AnimatedIconCallback {
 
 	/**
-	 * Sets the next {@link AnimatedIconStage}.
+	 * Helps {@link AnimatedIcon} instances to stop other instances when the
+	 * active {@link AnimatedIcon} is changed.
 	 *
-	 * @param stage the {@link AnimatedIconStage}.
+	 * @return the previously painted {@link AnimatedIcon} or {@code null}.
 	 */
-	void setNextIcon(AnimatedIconStage stage);
+	@Nullable
+	public AnimatedIcon getCurrentIcon();
+
+	/**
+	 * Sets the currently painted {@link AnimatedIcon}.
+	 *
+	 * @param icon the {@link AnimatedIcon} to set.
+	 */
+	public void setCurrentIcon(AnimatedIcon icon);
 }

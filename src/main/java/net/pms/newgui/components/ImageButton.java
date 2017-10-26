@@ -24,54 +24,104 @@ import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.UIManager;
 import net.pms.newgui.LooksFrame;
-import net.pms.newgui.components.AnimatedIcon.AnimatedIconStage;
 import net.pms.util.FileUtil;
 
-public class ImageButton extends JButton implements AnimatedIconCallback {
+
+/**
+ * This class is a {@link JButton} subclass that supports {@link Icon}
+ * decoration of the button using a standardized naming convention.
+ * <p>
+ * When an icon name is specified, it is assumed to be the name of an image
+ * resource, and additional button states are automatically set by looking for
+ * images resources with the same name with a suffix added. The convention
+ * states that:
+ * <ul>
+ * <li> {@code "_pressed"} is added to the "base" resource name for the pressed
+ * button state.</li>
+ * <li> {@code "_disabled"} is added to the "base" resource name for the disabled
+ * button state.</li>
+ * <li> {@code "_mouseover"} is added to the "base" resource name for the button
+ * state when the mouse is over the button.</li>
+ * </ul>
+ *
+ * @author Nadahar
+ */
+public class ImageButton extends JButton {
 
 	private static final long serialVersionUID = 8120596501408171329L;
 
-	public ImageButton(String text, String iconName) {
+	/**
+	 * Creates a new instance with the specified text and icon(s).
+	 *
+	 * @param text the button text.
+	 * @param defaultIconName the base image resource name used when the button
+	 *            is in the normal state and from which the other state names
+	 *            are derived from.
+	 */
+	public ImageButton(String text, String defaultIconName) {
 		super(text, null);
 		setProperites();
-		setIcons(iconName);
+		setIcons(defaultIconName);
 	}
 
-	public ImageButton(String iconName) {
-		this(null, iconName);
+	/**
+	 * Creates a new instance with the specified icon(s).
+	 *
+	 * @param defaultIconName the base image resource name used when the button
+	 *            is in the normal state and from which the other state names
+	 *            are derived from.
+	 */
+	public ImageButton(String defaultIconName) {
+		this(null, defaultIconName);
 	}
 
+	/**
+	 * Creates a new instance with no icons or text set.
+	 */
 	public ImageButton() {
 		this(null, (String) null);
 	}
 
+	/**
+	 * Creates a new instance with the specified {@link Icon} and text.
+	 *
+	 * @param text the text to use.
+	 * @param icon the {@link Icon} to use.
+	 */
 	public ImageButton(String text, Icon icon) {
 		super(text, icon);
 		setProperites();
 	}
 
+	/**
+	 * Creates a new instance with the specified {@link Icon}.
+	 *
+	 * @param icon the {@link Icon} to use.
+	 */
 	public ImageButton(Icon icon) {
 		super(icon);
 		setProperites();
 	}
 
-	private void setProperites() {
+	/**
+	 * Sets standard properties, used by constructors.
+	 */
+	protected void setProperites() {
 		setRequestFocusEnabled(false);
 		setBorderPainted(false);
-		setBorder(BorderFactory.createEmptyBorder(2,2,2,2));
+		setBorder(BorderFactory.createEmptyBorder(2, 2, 2, 2));
 		setContentAreaFilled(false);
 		setOpaque(false);
 	}
 
 	/**
 	 * Set icons from standard naming convention based on a base image name.
-	 * @param defaultIconName the base image resource name used when the
-	 *                        button is in the normal state and which
-	 *                        the other state names are derived from.
 	 *
-	 * @see AnimatedButton#setIcons(String)
+	 * @param defaultIconName the base image resource name used when the button
+	 *            is in the normal state and from which the other state names
+	 *            are derived from.
 	 */
-	protected void setIcons(String defaultIconName) {
+	public void setIcons(String defaultIconName) {
 		if (defaultIconName == null) {
 			return;
 		}
@@ -96,45 +146,6 @@ public class ImageButton extends JButton implements AnimatedIconCallback {
 		icon = LooksFrame.readImageIcon(FileUtil.appendToFileName(defaultIconName, "_mouseover"));
 		if (icon != null) {
 			setRolloverIcon(icon);
-		}
-	}
-
-
-	 /**
-	 * Set icons based on standard naming convention from a base image name.
-	 *
-	 * @param iconName the base image resource name used when the button is in
-	 *                 the normal state and which the other state names are
-	 *                 derived from.
-	 */
-
-	public void setIconName(String iconName) {
-		setIcons(iconName);
-	}
-
-	@Override
-	public void setNextIcon(AnimatedIconStage stage) {
-		switch (stage.iconType) {
-			case PRESSEDICON:
-				setPressedIcon(stage.icon);
-				break;
-			case DISABLEDICON:
-				setDisabledIcon(stage.icon);
-				break;
-			case SELECTEDICON:
-				setSelectedIcon(stage.icon);
-				break;
-			case DISABLEDSELECTEDICON:
-				setDisabledSelectedIcon(stage.icon);
-				break;
-			case ROLLOVERICON:
-				setRolloverIcon(stage.icon);
-				break;
-			case ROLLOVERSELECTEDICON:
-				setRolloverSelectedIcon(stage.icon);
-				break;
-			default:
-				setIcon(stage.icon);
 		}
 	}
 }

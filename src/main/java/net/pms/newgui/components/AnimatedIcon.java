@@ -18,6 +18,7 @@
  */
 package net.pms.newgui.components;
 
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import java.awt.Component;
 import java.awt.Graphics;
 import java.awt.event.ActionEvent;
@@ -26,39 +27,69 @@ import java.util.Formatter;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Random;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import javax.swing.Icon;
+import javax.swing.ImageIcon;
 import javax.swing.JComponent;
 import javax.swing.Timer;
 import net.pms.newgui.LooksFrame;
 
 /**
- *  The AnimatedIcon will display a series of {@link IconFrames} which each
- *  contains the {@link Icon} itself and the time to display that particular
- *  frame. The animation sequence will cycle until stopped.
+ * An {@link AnimatedIcon} will display a series of {@link AnimatedIconFrame}s
+ * that each contains the {@link Icon} itself and the time to display that
+ * particular frame. The animation sequence will cycle until stopped.
  *
- *  The size of the Icon is determined to be the largest width or height of
- *  any Icon. All other Icons are then aligned within the space available when
- *  the Icon is painted.
+ * The size of the {@link Icon} is determined to be the largest width or height
+ * of any of the {@link Icon}s. All other {@link Icon}s are then aligned within
+ * the space available when they are painted.
  *
- *  An AnimatedIcon cannot be shared by different components. However, the Icons
- *  added to an AnimatedIcon can be shared.
+ * An {@link AnimatedIcon} instance cannot be shared by different components.
+ * However, the {@link Icon}s added to an {@link AnimatedIcon} can be shared.
  *
- *  This class is in part based on Rob Camick's AnimatedIcon
- *  (https://tips4java.wordpress.com/2009/06/21/animated-icon/).
+ * This class is in part based on Rob Camick's AnimatedIcon
+ * (https://tips4java.wordpress.com/2009/06/21/animated-icon/).
+ *
+ * @author Nadahar
  */
 public class AnimatedIcon implements Icon, ActionListener {
-	public final static float TOP = 0.0f;
-	public final static float LEFT = 0.0f;
-	public final static float CENTER = 0.5f;
-	public final static float BOTTOM = 1.0f;
-	public final static float RIGHT = 1.0f;
+
+	/** Top alignment */
+	public static final float TOP = 0.0f;
+
+	/** Left alignment */
+	public static final float LEFT = 0.0f;
+
+	/** Center alignment */
+	public static final float CENTER = 0.5f;
+
+	/** Bottom alignment */
+	public static final float BOTTOM = 1.0f;
+
+	/** Right alignment */
+	public static final float RIGHT = 1.0f;
 
 	private JComponent component;
 	private final ArrayList<AnimatedIconFrame> frames = new ArrayList<>();
-	private boolean running = false;
+
+	/** The current {@link RunState} of this {@link AnimatedIcon} */
+	private RunState runState = RunState.STOPPED;
 	private boolean repeat = false;
 	private AnimatedIconStage nextStage = null;
 	private AnimatedIconStage permanentStage = null;
+
+	/**
+	 * The suspend reference counter.
+	 * <p>
+	 * Suspending an animation is only meant to be used when the animation is
+	 * invisible because of events like selecting another tab or minimizing the
+	 * application. The calls are thus expected to be event driven and matched
+	 * by an equal number of {@link #unsuspend()} calls before the animation is
+	 * visible again. Calls to {@link #suspend()} and {@link #unsuspend()} are
+	 * therefore reference counted so that callers won't have to keep track of
+	 * anything but canceling "their own" suspension.
+	 */
+	private int suspendLevel;
 
 	private float alignmentX = CENTER;
 	private float alignmentY = CENTER;
@@ -77,18 +108,33 @@ public class AnimatedIcon implements Icon, ActionListener {
 	//  Use to control processing
 
 	private int currentFrameIndex;
-	private Timer timer;
+	private final Timer timer;
 	private Random random;
 
+
 	/**
-	 * Create an AnimatedIcon.
+	 * Creates a new instance.
 	 *
-	 * @param component the component the icon will be painted on
-	 * @param nextStage the {@link AnimatedIconStage} to call after this animation has finished
-	 * @param repeat    determines if the animation should loop once the end is reached
-	 * @param frames	 the {@link AnimatedIconFrame}s to be painted as an animation
+	 * @param component the component the icon will be painted on.
+	 * @param nextStage the {@link AnimatedIconStage} to call after this
+	 *            animation has finished.
+	 * @param repeat determines if the animation should loop once the end is
+	 *            reached.
+	 * @param frames the {@link AnimatedIconFrame}s to be painted as an
+	 *            animation.
 	 */
-	private AnimatedIcon(JComponent component, AnimatedIconStage nextStage, boolean repeat, List<AnimatedIconFrame> frames) {
+	private AnimatedIcon(
+		@Nonnull JComponent component,
+		@Nullable AnimatedIconStage nextStage,
+		boolean repeat,
+		@Nonnull List<AnimatedIconFrame> frames
+	) {
+		if (component == null) {
+			throw new IllegalArgumentException("component cannot be null");
+		}
+		if (frames == null || frames.size() == 0) {
+			throw new IllegalArgumentException("frames cannot be null or empty");
+		}
 		this.component = component;
 		this.repeat = repeat;
 		this.nextStage = nextStage;
@@ -96,42 +142,68 @@ public class AnimatedIcon implements Icon, ActionListener {
 			this.permanentStage = nextStage;
 		}
 
-		timer = new Timer(frames.get(0).lengthMS, this);
+		timer = new Timer(frames.get(0).durationMS, this);
 		timer.setRepeats(false);
 		setFrames(frames);
 	}
 
 	/**
-	 * Create an AnimatedIcon.
+	 * Creates a new instance.
 	 *
-	 * @param component the component the icon will be painted on
-	 * @param repeat    determines if the animation should loop once the end is reached
-	 * @param frames	 the {@link AnimatedIconFrame}s to be painted as an animation
+	 * @param component the component the icon will be painted on.
+	 * @param repeat determines if the animation should loop once the end is
+	 *            reached.
+	 * @param frames the {@link AnimatedIconFrame}s to be painted as an
+	 *            animation.
 	 */
-	public AnimatedIcon(JComponent component, boolean repeat, List<AnimatedIconFrame> frames) {
+	public AnimatedIcon(
+		@Nonnull JComponent component,
+		boolean repeat,
+		@Nonnull List<AnimatedIconFrame> frames
+	) {
 		this(component, null, repeat, frames);
 	}
 
 	/**
-	 * Create an AnimatedIcon.
+	 * Creates a new instance.
 	 *
-	 * @param component the component the icon will be painted on
-	 * @param nextStage the {@link AnimatedIconStage} to call after this animation has finished
-	 * @param frames	 the {@link AnimatedIconFrame}s to be painted as an animation
+	 * @param component the component the icon will be painted on.
+	 * @param nextStage the {@link AnimatedIconStage} to call after this
+	 *            animation has finished.
+	 * @param frames the {@link AnimatedIconFrame}s to be painted as an
+	 *            animation.
 	 */
-	public AnimatedIcon(JComponent component, AnimatedIconStage nextStage, List<AnimatedIconFrame> frames) {
+	public AnimatedIcon(
+		@Nonnull JComponent component,
+		@Nullable AnimatedIconStage nextStage,
+		@Nonnull List<AnimatedIconFrame> frames
+	) {
 		this(component, nextStage, false, frames);
 	}
 
 	/**
-	 * Create an AnimatedIcon.
+	 * Creates a new instance.
 	 *
-	 * @param component the component the icon will be painted on
-	 * @param nextStage the {@link AnimatedIconStage} to call after this animation has finished
-	 * @param repeat    determines if the animation should loop once the end is reached
-	 * @param frames	 the {@link AnimatedIconFrame}s to be painted as an animation
+	 * @param component the component the icon will be painted on.
+	 * @param nextStage the {@link AnimatedIconStage} to call after this
+	 *            animation has finished.
+	 * @param repeat determines if the animation should loop once the end is
+	 *            reached.
+	 * @param frames the {@link AnimatedIconFrame}s to be painted as an
+	 *            animation.
 	 */
-	private AnimatedIcon(JComponent component, AnimatedIconStage nextStage, boolean repeat, final AnimatedIconFrame... frames) {
+	private AnimatedIcon(
+		@Nonnull JComponent component,
+		@Nullable AnimatedIconStage nextStage,
+		boolean repeat,
+		@Nonnull AnimatedIconFrame... frames
+	) {
+		if (component == null) {
+			throw new IllegalArgumentException("component cannot be null");
+		}
+		if (frames == null || frames.length == 0) {
+			throw new IllegalArgumentException("frames cannot be null or empty");
+		}
 		this.component = component;
 		this.repeat = repeat;
 		this.nextStage = nextStage;
@@ -139,60 +211,78 @@ public class AnimatedIcon implements Icon, ActionListener {
 			this.permanentStage = nextStage;
 		}
 
-		timer = new Timer(frames[0].lengthMS, this);
+		timer = new Timer(frames[0].durationMS, this);
 		timer.setRepeats(false);
 		setFrames(frames);
 	}
 
 	/**
-	 * Create an AnimatedIcon.
+	 * Creates a new instance.
 	 *
-	 * @param component the component the icon will be painted on
-	 * @param repeat    determines if the animation should loop once the end is reached
-	 * @param frames	 the {@link AnimatedIconFrame}s to be painted as an animation
+	 * @param component the component the icon will be painted on.
+	 * @param repeat determines if the animation should loop once the end is
+	 *            reached.
+	 * @param frames the {@link AnimatedIconFrame}s to be painted as an
+	 *            animation.
 	 */
-	public AnimatedIcon(JComponent component, boolean repeat, final AnimatedIconFrame... frames) {
+	public AnimatedIcon(
+		@Nonnull JComponent component,
+		boolean repeat,
+		@Nonnull AnimatedIconFrame... frames
+	) {
 		this(component, null, repeat, frames);
 	}
 
 	/**
-	 * Create an AnimatedIcon.
+	 * Creates a new instance.
 	 *
-	 * @param component the component the icon will be painted on
-	 * @param nextStage the {@link AnimatedIconStage} to call after this animation has finished
-	 * @param frames	 the {@link AnimatedIconFrame}s to be painted as an animation
+	 * @param component the component the icon will be painted on.
+	 * @param nextStage the {@link AnimatedIconStage} to call after this
+	 *            animation has finished.
+	 * @param frames the {@link AnimatedIconFrame}s to be painted as an
+	 *            animation.
 	 */
-	public AnimatedIcon(JComponent component, AnimatedIconStage nextStage, final AnimatedIconFrame... frames) {
+	public AnimatedIcon(
+		@Nonnull JComponent component,
+		@Nullable AnimatedIconStage nextStage,
+		@Nonnull AnimatedIconFrame... frames
+	) {
 		this(component, nextStage, false, frames);
 	}
 
 	/**
-	 * Create an AnimatedIcon with one static frame.
+	 * Creates a new instance with one static frame.
 	 *
-	 * @param component the component the icon will be painted on
-	 * @param icon the {@link Icon} to use for that one frame
+	 * @param component the component the icon will be painted on.
+	 * @param icon the {@link Icon} to use for that one frame.
 	 */
-	public AnimatedIcon(JComponent component, Icon icon) {
+	public AnimatedIcon(
+		@Nonnull JComponent component,
+		@Nonnull Icon icon
+	) {
 		this(component, false, AnimatedIcon.buildAnimation(icon));
 	}
 
 	/**
-	 * Create an AnimatedIcon with one static frame.
+	 * Creates a new instance with one static frame.
 	 *
-	 * @param component the component the icon will be painted on
+	 * @param component the component the icon will be painted on.
 	 * @param resourceName the resource name of the image to use for that one
-	 *                     frame.
+	 *            frame.
 	 */
-	public AnimatedIcon(JComponent component, String resourceName) {
+	public AnimatedIcon(
+		@Nonnull JComponent component,
+		@Nonnull String resourceName
+	) {
 		this(component, false, AnimatedIcon.buildAnimation(resourceName));
 	}
 
 	/**
-	 * Set the sequence of {@link AnimatedIconFrame}s to animate
+	 * Sets the sequence of {@link AnimatedIconFrame}s to animate.
 	 *
-	 * @param frames a {@link List} of {@link AnimatedIconFrame}
+	 * @param frames a {@link List} of {@link AnimatedIconFrame}s.
 	 */
-	public void setFrames(final List<AnimatedIconFrame> frames) {
+	public void setFrames(@Nonnull List<AnimatedIconFrame> frames) {
 		if (frames == null) {
 			throw new NullPointerException("Frames cannot be null");
 		}
@@ -206,10 +296,10 @@ public class AnimatedIcon implements Icon, ActionListener {
 			if (frame.icon == null) {
 				throw new NullPointerException("An icon cannot be null");
 			}
-			if (frame.lengthMS < 0) {
+			if (frame.durationMS < 0) {
 				throw new IllegalArgumentException("Length can't be negative");
 			}
-			if (frame.minLengthMS < 0) {
+			if (frame.minDurationMS < 0) {
 				throw new IllegalArgumentException("Minimum length can't be negative");
 			}
 
@@ -220,11 +310,11 @@ public class AnimatedIcon implements Icon, ActionListener {
 	}
 
 	/**
-	 * Set the sequence of {@link AnimatedIconFrame}s to animate
+	 * Sets the sequence of {@link AnimatedIconFrame}s to animate.
 	 *
-	 * @param frames an array of {@link AnimatedIconFrame}
+	 * @param frames an array of {@link AnimatedIconFrame}s.
 	 */
-	public void setFrames(final AnimatedIconFrame... frames) {
+	public void setFrames(@Nonnull AnimatedIconFrame... frames) {
 		if (frames == null) {
 			throw new NullPointerException("Frames cannot be null");
 		}
@@ -238,10 +328,10 @@ public class AnimatedIcon implements Icon, ActionListener {
 			if (frame.icon == null) {
 				throw new NullPointerException("An icon cannot be null");
 			}
-			if (frame.lengthMS < 0) {
+			if (frame.durationMS < 0) {
 				throw new IllegalArgumentException("Length can't be negative");
 			}
-			if (frame.minLengthMS < 0) {
+			if (frame.minDurationMS < 0) {
 				throw new IllegalArgumentException("Minimum length can't be negative");
 			}
 
@@ -252,77 +342,86 @@ public class AnimatedIcon implements Icon, ActionListener {
 	}
 
 	/**
-	 * Set the {@link AnimatedIconStage} to call after this animation has
-	 * finished. Sets repeat to {@code false}.
+	 * Sets the {@link AnimatedIconStage} to call after this animation has
+	 * finished. Sets repeat to {@code false} and restarts the timer if it's not
+	 * running.
+	 *
+	 * @param nextStage the {@link AnimatedIconStage} to set next.
 	 */
-	public void setNextStage(AnimatedIconStage nextStage) {
+	public void setNextStage(@Nullable AnimatedIconStage nextStage) {
 		this.nextStage = nextStage;
-		if (nextStage != null && nextStage.permanent) {
+		if (nextStage == null) {
+			return;
+		}
+		if (nextStage.permanent) {
 			this.permanentStage = nextStage;
 		}
-		if (!timer.isRunning()) {
+		repeat = false;
+		if (!timer.isRunning() && suspendLevel == 0) {
 			timer.restart();
 		}
 	}
 
 	/**
-	 *  Calculate the width and height of the Icon based on the maximum
-	 *  width and height of any individual Icon.
+	 * Calculates the width and height of the Icon based on the maximum width
+	 * and height of any individual Icon.
 	 */
 	private void calculateIconDimensions() {
 		maxIconWidth = 0;
 		maxIconHeight = 0;
 
-		for (AnimatedIconFrame frame : frames)
-		{
+		for (AnimatedIconFrame frame : frames) {
 			maxIconWidth = Math.max(maxIconWidth, frame.icon.getIconWidth());
 			maxIconHeight = Math.max(maxIconHeight, frame.icon.getIconHeight());
 		}
 	}
 
 	/**
-	 *  Get the alignment of the Icon on the x-axis
+	 * Gets the alignment of the icon on the x-axis.
 	 *
-	 *  @return the alignment
+	 * @return the alignment
 	 */
 	public float getAlignmentX() {
 		return alignmentX;
 	}
 
 	/**
-	 *  Specify the horizontal alignment of the icon.
+	 * Specifies the horizontal alignment of the icon.
 	 *
-	 *  @param alignmentX  common values are LEFT, CENTER (default)  or RIGHT
-	 *                     although any value between 0.0 and 1.0 can be used
+	 * @param alignmentX common values are {@code LEFT}, {@code CENTER}
+	 *            (default) or {@code RIGHT} although any value between
+	 *            {@code 0.0} and {@code 1.0} can be used.
 	 */
 	public void setAlignmentX(float alignmentX) {
 		this.alignmentX = alignmentX > 1.0f ? 1.0f : alignmentX < 0.0f ? 0.0f : alignmentX;
 	}
 
 	/**
-	 *  Get the alignment of the icon on the y-axis
+	 * Gets the alignment of the icon on the y-axis.
 	 *
-	 *  @return the alignment
+	 * @return the alignment.
 	 */
 	public float getAlignmentY() {
 		return alignmentY;
 	}
 
 	/**
-	 *  Specify the vertical alignment of the Icon.
+	 * Specifies the vertical alignment of the icon.
 	 *
-	 *  @param alignmentY  common values TOP, CENTER (default) or BOTTOM
-	 *                     although any value between 0.0 and 1.0 can be used
+	 * @param alignmentY common values {@code TOP}, {@code CENTER} (default) or
+	 *            {@code BOTTOM} although any value between {@code 0.0} and
+	 *            {@code 1.0} can be used.
 	 */
 	public void setAlignmentY(float alignmentY) {
 		this.alignmentY = alignmentY > 1.0f ? 1.0f : alignmentY < 0.0f ? 0.0f : alignmentY;
 	}
 
 	/**
-	 *  Set the index of the frame to be displayed and then repaint the {@link Icon}.
+	 * Sets the index of the frame to be displayed and then repaint the
+	 * {@link Icon}.
 	 *
-	 *  @param index the index of the {@link AnimatedIconFrame} to be displayed
-	 *  @param paint determines if the new frame should be painted
+	 * @param index the index of the {@link AnimatedIconFrame} to be displayed
+	 * @param paint determines if the new frame should be painted
 	 */
 	private void setCurrentFrameIndex(int index, boolean paint) {
 		currentFrameIndex = index;
@@ -331,38 +430,67 @@ public class AnimatedIcon implements Icon, ActionListener {
 			if (random == null) {
 				random = new Random();
 			}
-			timer.setInitialDelay(frame.minLengthMS + random.nextInt(frame.lengthMS - frame.minLengthMS + 1));
+			timer.setInitialDelay(frame.minDurationMS + random.nextInt(frame.durationMS - frame.minDurationMS + 1));
 		} else {
-			timer.setInitialDelay(frame.lengthMS);
+			timer.setInitialDelay(frame.durationMS);
 		}
-		if (running) {
+		if (runState == RunState.RUNNING && suspendLevel == 0) {
 			timer.restart();
 		}
 		if (paint) {
 			component.repaint(iconX, iconY, maxIconWidth, maxIconHeight);
+			if (component instanceof AnimatedTreeCellRenderer) {
+				// JTree needs some special treatment as nodes aren't automatically repainted
+				((AnimatedTreeCellRenderer) component).repaintAffectedNodes(this);
+			}
 		}
 	}
 
 	/**
-	 *  Starts the animation the beginning.
+	 * Starts the animation from the beginning. Does not alter the
+	 * {@link #runState}.
+	 *
+	 * @see #restartArm()
 	 */
 	public void restart() {
 		setCurrentFrameIndex(0, true);
-		start();
+		startArm();
 	}
 
 	/**
-	 * Sets the animation to continue from the beginning then continued.
+	 * Sets the animation to continue from the beginning either by a call to
+	 * {@link #resume()} or the next time {@link #paintIcon} is called.
+	 *
+	 * @see #restart()
 	 */
 	public void restartArm() {
 		setCurrentFrameIndex(0, false);
+		if (runState == RunState.RUNNING) {
+			runState = RunState.PAUSED;
+		}
 	}
 
 	/**
-	 * Arms the animation so that the timer is started during the next {@link #paintIcon(Component, Graphics, int, int)}
+	 * Starts the animation immediately without waiting for the
+	 * {@link AnimatedIcon} to be painted.
+	 *
+	 * @see #startArm()
 	 */
 	public void start() {
-		running = true;
+		if (!timer.isRunning() && suspendLevel == 0) {
+			timer.restart();
+		}
+		runState = RunState.RUNNING;
+	}
+
+	/**
+	 * Arms the animation so that the timer is started either by a call to
+	 * {@link #resume()} or the next time {@link #paintIcon} is called.
+	 *
+	 * @see #start()
+	 */
+	public void startArm() {
+		runState = RunState.RUNNING;
 	}
 
 	/**
@@ -372,7 +500,7 @@ public class AnimatedIcon implements Icon, ActionListener {
 		if (timer.isRunning()) {
 			timer.stop();
 		}
-		running = false;
+		runState = RunState.STOPPED;
 	}
 
 	/**
@@ -382,15 +510,21 @@ public class AnimatedIcon implements Icon, ActionListener {
 		if (timer.isRunning()) {
 			timer.stop();
 		}
+		if (runState == RunState.RUNNING) {
+			runState = RunState.PAUSED;
+		}
 	}
 
 	/**
-	 * Resumes the animation if it is armed/has been paused, automatically
-	 * called by {@link #paintIcon(Component, Graphics, int, int)}
+	 * Resumes the animation if it is paused/armed, automatically called by
+	 * {@link #paintIcon}.
 	 */
 	public void resume() {
-		if (running && !timer.isRunning()) {
-			timer.restart();
+		if (runState != RunState.STOPPED) {
+			if (!timer.isRunning() && suspendLevel == 0) {
+				timer.restart();
+			}
+			runState = RunState.RUNNING;
 		}
 	}
 
@@ -398,11 +532,147 @@ public class AnimatedIcon implements Icon, ActionListener {
 	 * Stops and resets the animation. The first frame will be displayed.
 	 */
 	public void reset() {
-		running = false;
+		runState = RunState.STOPPED;
 		if (timer.isRunning()) {
 			timer.stop();
 		}
 		setCurrentFrameIndex(0, true);
+
+	}
+
+	/**
+	 * @return {@code true} if repeat is enabled, {@code false} otherwise.
+	 */
+	public boolean isRepeat() {
+		return repeat;
+	}
+
+	/**
+	 * Sets whether the animation should continue with the first frame after the
+	 * last frame has been shown.
+	 *
+	 * @param repeat {@code true} to repeat the animation frames, {@code false}
+	 *            to stop after the last frame.
+	 */
+	public void setRepeat(boolean repeat) {
+		this.repeat = repeat;
+	}
+
+	/**
+	 * @return The current {@link RunState} of this {@link AnimatedIcon}.
+	 */
+	@Nonnull
+	public RunState getRunState() {
+		return runState;
+	}
+
+	/**
+	 * Suspends the animation. For normal animation control, use
+	 * {@link #pause()} instead. This will increase the suspend level by one and
+	 * stop the timer that updates the animation if it's running. It will not
+	 * change the {@link #runState} so that code controlling the animation run
+	 * state can proceed as normal.
+	 *
+	 * @return The new suspend level.
+	 *
+	 * @see #suspendLevel
+	 */
+	public int suspend() {
+		if (timer.isRunning()) {
+			timer.stop();
+		}
+		return ++suspendLevel;
+	}
+
+	/**
+	 * Unsuspends the animation. For normal animation control, use
+	 * {@link #resume()} instead. This will decrease the suspend level by one
+	 * restart the timer that updates the animation if the suspend level reached
+	 * zero and {@link #runState} is {@link RunState#RUNNING}. It will not
+	 * change the {@link #runState} so that code controlling the animation run
+	 * state can proceed as normal.
+	 *
+	 * @return The new suspend level.
+	 *
+	 * @see #suspendLevel
+	 */
+	public int unsuspend() {
+		if (suspendLevel > 0) {
+			suspendLevel--;
+		}
+		if (suspendLevel == 0 && runState == RunState.RUNNING && !timer.isRunning()) {
+			timer.restart();
+		}
+		return suspendLevel;
+	}
+
+	/**
+	 * @return {@code true} if the suspend level is greater than zero,
+	 *         {@code false} otherwise.
+	 *
+	 * @see #suspendLevel
+	 */
+	public boolean isSuspended() {
+		return suspendLevel > 0;
+	}
+
+	/**
+	 * @return the suspend level.
+	 *
+	 * @see #suspendLevel
+	 */
+	public int getSuspendLevel() {
+		return suspendLevel;
+	}
+
+	@Override
+	public String toString() {
+		return toString(false);
+	}
+
+	/**
+	 * Returns a {@link String} representation of this {@link AnimatedIcon}.
+	 *
+	 * @param debug if {@code true} all {@link AnimatedIconFrame}s will be
+	 *            listed.
+	 * @return The {@link String} representation.
+	 */
+	public String toString(boolean debug) {
+		StringBuilder sb = new StringBuilder(getClass().getSimpleName());
+		sb.append(" [").append("Component=").append(component.getClass().getSimpleName());
+		if (component.getName() != null) {
+			sb.append(" ").append(component.getName());
+		}
+		sb.append(", Run State=").append(runState)
+			.append(", Suspend Level=").append(suspendLevel)
+			.append(", Repeat=").append(repeat ? "True" : "False")
+			.append(", Max Width=").append(maxIconWidth)
+			.append(", Max Height=").append(maxIconHeight)
+			.append(", Frames: ").append(frames.size());
+		if (debug) {
+			for (int i = 0; i < frames.size(); i++) {
+				sb.append("\n").append(i).append(": ").append(frames.get(i));
+			}
+		} else if (frames.size() > 1) {
+			AnimatedIconFrame firstFrame = frames.get(0);
+			String description;
+			if (firstFrame.getIcon() instanceof ImageIcon) {
+				description = ((ImageIcon) firstFrame.getIcon()).getDescription();
+				if (isNotBlank(description)) {
+					int lastSeparator = description.lastIndexOf("/");
+					if (lastSeparator > 0) {
+						description = description.substring(lastSeparator + 1);
+					}
+				} else {
+					description = firstFrame.getIcon().toString();
+				}
+			} else {
+				description = firstFrame.getIcon() == null ? null : firstFrame.getIcon().toString();
+			}
+			sb.append(", First Frame=").append(description);
+		}
+		sb.append("]");
+		return sb.toString();
 	}
 
 	// Implement the Icon Interface
@@ -427,25 +697,31 @@ public class AnimatedIcon implements Icon, ActionListener {
 		return maxIconHeight;
 	}
 
-   /**
-	*  Paints the icons of this compound icon at the specified location
-	*
-	*  @param c The component on which the icon is painted
-	*  @param g the graphics context
-	*  @param x the X coordinate of the icon's top-left corner
-	*  @param y the Y coordinate of the icon's top-left corner
-	*/
+	/**
+	 * Paints the icons of this compound icon at the specified location.
+	 *
+	 * @param c The component on which the icon is painted.
+	 * @param g the graphics context.
+	 * @param x the {@code X} coordinate of the icon's top-left corner.
+	 * @param y the {@code Y} coordinate of the icon's top-left corner.
+	 */
 	@Override
 	public void paintIcon(Component c, Graphics g, int x, int y) {
 
 		// If the previous icon was an AnimatedIcon, stop the animation
-		if (c instanceof AnimatedButton) {
-			if (((AnimatedButton) c).getCurrentIcon() != this) {
-				if (((AnimatedButton) c).getCurrentIcon() != null) {
-					((AnimatedButton) c).getCurrentIcon().pause();
+		if (c instanceof AnimatedComponent) {
+			AnimatedComponent animatedComponent = (AnimatedComponent) c;
+			if (animatedComponent instanceof AnimatedTreeCellRenderer) {
+				// AnimatedIconCallBack / Sequences of animated icons isn't supported for
+				// AnimatedTreeCellRenderer because the renderer/component is shared between
+				// all nodes.
+				resume();
+			} else if (animatedComponent.getCurrentIcon() != this) {
+				if (animatedComponent.getCurrentIcon() != null) {
+					animatedComponent.getCurrentIcon().pause();
 				}
 
-				((AnimatedButton) c).setCurrentIcon(this);
+				animatedComponent.setCurrentIcon(this);
 				resume();
 			}
 		}
@@ -453,8 +729,7 @@ public class AnimatedIcon implements Icon, ActionListener {
 		//  Saving the x, y coordinates allows us to only repaint the icon and
 		//  not the entire component for each animation
 
-		if (c == component)
-		{
+		if (c == component) {
 			iconX = x;
 			iconY = y;
 		}
@@ -462,8 +737,8 @@ public class AnimatedIcon implements Icon, ActionListener {
 		//  Determine the proper alignment of the Icon, then paint it
 
 		Icon icon = frames.get(currentFrameIndex).icon;
-   		int width = getIconWidth();
-   		int height = getIconHeight();
+		int width = getIconWidth();
+		int height = getIconHeight();
 
 		int offsetX = getOffset(width, icon.getIconWidth(), alignmentX);
 		int offsetY = getOffset(height, icon.getIconHeight(), alignmentY);
@@ -518,25 +793,24 @@ public class AnimatedIcon implements Icon, ActionListener {
 
 	/**
 	 * This will build and return an array of {@link AnimatedIconFrame}s based
-	 * on a first and last index and a {@link Formatter} formatted resource
-	 * name string.<br>
-	 * <br>
-	 * <bold>TIP:</bold>
-	 * Leading zeroes can be specified by using the form <code>%0nd<code> where
-	 * n is the total number of digits. To format the number <code>4</code> as
-	 * <code>004</code> define it as <code>%03d</code> in the resource name
-	 * pattern.
+	 * on a first and last index and a {@link Formatter} formatted resource name
+	 * string.
+	 * <p>
+	 * <b>Note:</b> Leading zeroes can be specified by using the form
+	 * {@code %0nd} where {@code n} is the total number of digits. To format the
+	 * number {@code 4} as {@code 004} define it as {@code %03d} in the resource
+	 * name pattern.
 	 *
 	 * @param resourceNamePattern the resource named written as a
-	 *        {@link Formatter}.
+	 *            {@link Formatter}.
 	 * @param firstIdx the first index number to use with the pattern.
 	 * @param lastIdx the last index number to use with the pattern.
 	 * @param returnToFirst specifies whether the animation should reverse back
-	 *        to the first frame after reaching the last frame.
+	 *            to the first frame after reaching the last frame.
 	 * @param durationFirst the duration in milliseconds for the first frame.
 	 * @param durationLast the duration in milliseconds for the last frame.
-	 * @param duration the duration in milliseconds for all frames but the
-	 *        first and the last.
+	 * @param duration the duration in milliseconds for all frames but the first
+	 *            and the last.
 	 * @return The built array of {@link AnimatedIconFrame}s.
 	 */
 	public static AnimatedIconFrame[] buildAnimation(
@@ -547,11 +821,61 @@ public class AnimatedIcon implements Icon, ActionListener {
 			int durationFirst,
 			int durationLast,
 			int duration
-		) {
-		AnimatedIconFrame[] result = new AnimatedIconFrame[returnToFirst ? 2 * (lastIdx - firstIdx) : lastIdx - firstIdx + 1];
+	) {
+		return buildAnimation(
+			resourceNamePattern,
+			firstIdx,
+			lastIdx,
+			1,
+			returnToFirst,
+			durationFirst,
+			durationLast,
+			duration
+		);
+	}
 
+	/**
+	 * This will build and return an array of {@link AnimatedIconFrame}s based
+	 * on a first and last index and a {@link Formatter} formatted resource name
+	 * string.
+	 * <p>
+	 * <b>Note:</b> Leading zeroes can be specified by using the form
+	 * {@code %0nd} where {@code n} is the total number of digits. To format the
+	 * number {@code 4} as {@code 004} define it as {@code %03d} in the resource
+	 * name pattern.
+	 *
+	 * @param resourceNamePattern the resource named written as a
+	 *            {@link Formatter}.
+	 * @param firstIdx the first index number to use with the pattern.
+	 * @param lastIdx the last index number to use with the pattern.
+	 * @param step the unsigned value to increase or decrease the index for each
+	 *            frame.
+	 * @param returnToFirst specifies whether the animation should reverse back
+	 *            to the first frame after reaching the last frame.
+	 * @param durationFirst the duration in milliseconds for the first frame.
+	 * @param durationLast the duration in milliseconds for the last frame.
+	 * @param duration the duration in milliseconds for all frames but the first
+	 *            and the last.
+	 * @return The built array of {@link AnimatedIconFrame}s.
+	 */
+	public static AnimatedIconFrame[] buildAnimation(
+			String resourceNamePattern,
+			int firstIdx,
+			int lastIdx,
+			int step,
+			boolean returnToFirst,
+			int durationFirst,
+			int durationLast,
+			int duration
+	) {
+		step = Math.abs(step);
+		int count = Math.abs(lastIdx - firstIdx) / step;
+		AnimatedIconFrame[] result = new AnimatedIconFrame[returnToFirst ? 2 * count : count + 1];
+
+		boolean increasing = firstIdx <= lastIdx;
+		int lastUsedIdx = increasing ? firstIdx + count * step : firstIdx - count * step;
 		int idx = firstIdx;
-		for (int i = 0;i <= lastIdx - firstIdx;i++) {
+		for (int i = 0; i <= count; i++) {
 			Icon icon = LooksFrame.readImageIcon(String.format(resourceNamePattern, idx));
 			if (icon == null) {
 				throw new IllegalArgumentException(String.format(
@@ -562,11 +886,14 @@ public class AnimatedIcon implements Icon, ActionListener {
 					lastIdx
 				));
 			}
-			if (idx > firstIdx && idx < lastIdx) {
+			if (
+				increasing && idx > firstIdx && idx < lastUsedIdx ||
+				!increasing && idx < firstIdx && idx > lastUsedIdx
+			) {
 				AnimatedIconFrame frame = new AnimatedIconFrame(icon, duration);
 				result[i] = frame;
 				if (returnToFirst) {
-					result[2 * (lastIdx - firstIdx) - i] = frame;
+					result[2 * count - i] = frame;
 				}
 			} else if (idx == firstIdx) {
 				result[i] = new AnimatedIconFrame(icon, durationFirst);
@@ -574,7 +901,11 @@ public class AnimatedIcon implements Icon, ActionListener {
 				result[i] = new AnimatedIconFrame(icon, durationLast);
 			}
 
-			idx++;
+			if (increasing) {
+				idx += step;
+			} else {
+				idx -= step;
+			}
 		}
 		return result;
 	}
@@ -614,41 +945,41 @@ public class AnimatedIcon implements Icon, ActionListener {
 	 *
 	 */
 	public static class AnimatedIconFrame {
+
 		/**
 		 * The {@link Icon} to display for this frame
 		 */
-		public final Icon icon;
+		protected final Icon icon;
 
 		/**
 		 * The number of milliseconds this frame will be displayed for constant
 		 * duration frames or the maximum number of milliseconds this frame
 		 * will be displayed for random duration frames.
 		 */
-		public final int lengthMS;
+		protected final int durationMS;
 
 		/**
 		 * The minimum number of milliseconds this frame will displayed when
 		 * generating a random value.
 		 */
-		public final int minLengthMS;
+		protected final int minDurationMS;
 
 		/**
 		 * Indicates if the frame is a random duration frame.
 		 */
-
-		public final boolean random;
+		protected final boolean random;
 
 		/**
-		 * Creates an {@link AnimatedIconFrame} frame with constant duration.
+		 * Creates an {@link AnimatedIconFrame} frame with fixed duration.
 		 *
 		 * @param icon the {@link Icon} to display for this frame.
 		 * @param lengthMS the duration of this frame in milliseconds.
 		 */
 		public AnimatedIconFrame(Icon icon, int lengthMS) {
 			this.icon = icon;
-			this.lengthMS = lengthMS;
+			this.durationMS = lengthMS;
 			this.random = false;
-			this.minLengthMS = 0;
+			this.minDurationMS = 0;
 		}
 
 		/**
@@ -660,9 +991,65 @@ public class AnimatedIcon implements Icon, ActionListener {
 		 */
 		public AnimatedIconFrame(Icon icon, int minLengthMS, int maxLengthMS) {
 			this.icon = icon;
-			this.minLengthMS = minLengthMS;
-			this.lengthMS = maxLengthMS;
+			this.minDurationMS = minLengthMS;
+			this.durationMS = maxLengthMS;
 			this.random = true;
+		}
+
+		/**
+		 * @return The {@link Icon} for this frame.
+		 */
+		public Icon getIcon() {
+			return icon;
+		}
+
+		/**
+		 * @return The duration of this frame in milliseconds.
+		 */
+		public int getLengthMS() {
+			return durationMS;
+		}
+
+		/**
+		 * @return The minimum duration of this frame in milliseconds. Only
+		 *         relevant if this frame is a random length frame.
+		 */
+		public int getMinDurationMS() {
+			return minDurationMS;
+		}
+
+		/**
+		 * @return The maximum duration of this frame in milliseconds. Only
+		 *         relevant if this frame is a random length frame.
+		 */
+		public int getMaxDurationMS() {
+			return durationMS;
+		}
+
+		/**
+		 * @return {@code true} if this is a random duration frame,
+		 *         {@code false} otherwise.
+		 */
+		public boolean isRandom() {
+			return random;
+		}
+
+		@Override
+		public String toString() {
+			StringBuilder sb = new StringBuilder(getClass().getSimpleName());
+			sb.append("[Type=");
+			if (random) {
+				sb.append("Random, Min Duration=").append(minDurationMS).append("ms");
+				sb.append(", Max Duration=").append(durationMS).append("ms");
+			} else {
+				sb.append("Fixed, Duration=").append(durationMS).append("ms");
+			}
+			if (icon == null) {
+				sb.append(", No Icon]");
+			} else {
+				sb.append(", Icon=\"").append(icon).append("\"]");
+			}
+			return sb.toString();
 		}
 	}
 
@@ -670,46 +1057,90 @@ public class AnimatedIcon implements Icon, ActionListener {
 	 * Defines icon type used in callback
 	 */
 	public static enum AnimatedIconType {
+
+		/** The default icon */
 		DEFAULTICON,
+
+		/** The pressed icon */
 		PRESSEDICON,
+
+		/** The disabled icon */
 		DISABLEDICON,
+
+		/** The selected icon */
 		SELECTEDICON,
+
+		/** The disabled and selected icon */
 		DISABLEDSELECTEDICON,
+
+		/** The mouse-over icon */
 		ROLLOVERICON,
+
+		/** The mouse-over while selected icon */
 		ROLLOVERSELECTEDICON
 	}
 
 	/**
-	 * Defines an {@link AnimatedIcon} stage used for callback
+	 * This class represents an {@link AnimatedIcon} stage used for callback.
+	 *
+	 * @author Nadahar
 	 */
 	public static class AnimatedIconStage {
 
-		/**
-		 * The icon type for this stage
-		 */
+		/** The icon type for this stage */
 		public final AnimatedIconType iconType;
 
-		/**
-		 * The icon for this stage
-		 */
+		/** The icon for this stage */
 		public final AnimatedIcon icon;
 
-		/**
-		 * Whether this is a permanent stage or a one-time event
-		 */
+		/** Whether this is a permanent stage or a one-time event */
 		public final boolean permanent;
 
 		/**
 		 * Creates a new {@link AnimatedIcon} stage.
 		 *
-		 * @param iconType determines which {@link AnimatedIcon} this stage will replace.
+		 * @param iconType determines which {@link AnimatedIcon} this stage will
+		 *            replace.
 		 * @param icon the {@link AnimatedIcon} for this stage.
-		 * @param permanent specifies whether this is a permanent stage or a one-time event
+		 * @param permanent specifies whether this is a permanent stage or a
+		 *            one-time event
 		 */
 		public AnimatedIconStage(AnimatedIconType iconType, AnimatedIcon icon, boolean permanent) {
 			this.iconType = iconType;
 			this.icon = icon;
 			this.permanent = permanent;
 		}
+
+		@Override
+		public String toString() {
+			return
+				getClass().getSimpleName() +
+				" [iconType=" + iconType + ", permanent=" + permanent + ", icon=" + icon + "]";
+		}
+	}
+
+	/**
+	 * This is a marker interface for implementations that registers
+	 * {@link AnimatedIcon}s with an {@link AnimatedIconListener}
+	 * implementation.
+	 *
+	 * @author Nadahar
+	 */
+	public interface AnimatedIconListenerRegistrar {
+	}
+
+	/**
+	 * Defines animation run states.
+	 */
+	public static enum RunState {
+
+		/** The animation is stopped */
+		STOPPED,
+
+		/** The animation is paused/armed */
+		PAUSED,
+
+		/** The animation is running */
+		RUNNING;
 	}
 }
