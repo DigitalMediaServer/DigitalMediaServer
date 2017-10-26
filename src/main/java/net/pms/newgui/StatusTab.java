@@ -40,14 +40,18 @@ import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import javax.annotation.Nonnull;
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import net.pms.Messages;
 import net.pms.PMS;
 import net.pms.configuration.PmsConfiguration;
 import net.pms.configuration.RendererConfiguration;
+import net.pms.newgui.LooksFrame.AbstractTabListenerRegistrar;
+import net.pms.newgui.LooksFrame.LooksFrameTab;
 import net.pms.newgui.components.AnimatedIcon;
 import net.pms.newgui.components.AnimatedIcon.AnimatedIconFrame;
+import net.pms.newgui.components.AnimatedIcon.AnimatedIconListenerRegistrar;
 import net.pms.newgui.components.AnimatedIcon.AnimatedIconStage;
 import net.pms.newgui.components.AnimatedIcon.AnimatedIconType;
 import net.pms.newgui.components.AnimatedButton;
@@ -176,11 +180,17 @@ public class StatusTab {
 	private final AnimatedIcon connectedIntroIcon;
 	private final AnimatedIcon disconnectedIcon;
 	private final AnimatedIcon blockedIcon;
+	private final StatusTabListenerRegistrar tabListenerRegistrar;
 
-	StatusTab(PmsConfiguration configuration) {
+	StatusTab(PmsConfiguration configuration, final LooksFrame looksFrame) {
+
+		tabListenerRegistrar = new StatusTabListenerRegistrar(looksFrame);
+
 		// Build Animations
 		searchingIcon = new AnimatedIcon(
-			connectionStatus, true, AnimatedIcon.buildAnimation("icon-status-connecting_%02d.png", 0, 50, false, 40, 40, 40)
+			connectionStatus,
+			true,
+			AnimatedIcon.buildAnimation("icon-status-connecting_%02d.png", 0, 50, false, 40, 40, 40)
 		);
 
 		final Icon connectedLeft = LooksFrame.readImageIcon("icon-status-connected_89.png");
@@ -196,7 +206,9 @@ public class StatusTab {
 		));
 		connectedIntroFrames.add(new AnimatedIconFrame(connectedNone, 200));
 
-		connectedIcon = new AnimatedIcon(connectionStatus, true,
+		connectedIcon = new AnimatedIcon(
+			connectionStatus,
+			true,
 			new AnimatedIconFrame(connectedLeft, 500, 800),
 			new AnimatedIconFrame(connectedBoth, 80),
 			new AnimatedIconFrame(connectedLeft, 80, 600),
@@ -214,10 +226,17 @@ public class StatusTab {
 			new AnimatedIconFrame(connectedLeft, 100, 1000),
 			new AnimatedIconFrame(connectedBoth, 80)
 		);
+		tabListenerRegistrar.register(connectedIcon);
 
-		connectedIntroIcon = new AnimatedIcon(connectionStatus, new AnimatedIconStage(AnimatedIconType.DEFAULTICON, connectedIcon, true), connectedIntroFrames);
+		connectedIntroIcon = new AnimatedIcon(
+			connectionStatus,
+			new AnimatedIconStage(AnimatedIconType.DEFAULTICON, connectedIcon, true),
+			connectedIntroFrames
+		);
 
-		disconnectedIcon = new AnimatedIcon(connectionStatus, true,
+		disconnectedIcon = new AnimatedIcon(
+			connectionStatus,
+			true,
 			new AnimatedIconFrame(disconnectedNone, 200, 800),
 			new AnimatedIconFrame(disconnectedLeft, 300),
 			new AnimatedIconFrame(disconnectedRight, 300),
@@ -231,6 +250,7 @@ public class StatusTab {
 			new AnimatedIconFrame(disconnectedRight, 150),
 			new AnimatedIconFrame(disconnectedLeft, 150)
 		);
+		tabListenerRegistrar.register(disconnectedIcon);
 
 		blockedIcon = new AnimatedIcon(connectionStatus, "icon-status-warning.png");
 
@@ -501,10 +521,9 @@ public class StatusTab {
 				}
 				if (bi != null) {
 					return bi;
-				} else {
-					LOGGER.debug("Unable to read icon url \"{}\", using \"{}\" instead.", icon, RendererConfiguration.UNKNOWN_ICON);
-					icon = RendererConfiguration.UNKNOWN_ICON;
 				}
+				LOGGER.debug("Unable to read icon url \"{}\", using \"{}\" instead.", icon, RendererConfiguration.UNKNOWN_ICON);
+				icon = RendererConfiguration.UNKNOWN_ICON;
 			}
 
 			try {
@@ -562,7 +581,7 @@ public class StatusTab {
 		return bi;
 	}
 
-	private int getTickMarks() {
+	private static int getTickMarks() {
 		int mb = (int) (Runtime.getRuntime().maxMemory() / 1048576);
 		return mb < 1000 ? 100 : mb < 2500 ? 250 : mb < 5000 ? 500 : 1000;
 	}
@@ -601,5 +620,25 @@ public class StatusTab {
 			}
 		};
 		new Thread(r).start();
+	}
+
+	/**
+	 * Creates a new {@link AnimatedIconListenerRegistrar} that registers tab
+	 * change to and from {@link LooksFrameTab#STATUS_TAB} and application
+	 * minimize events. Suitable for {@link AnimatedIcon}s that's visible
+	 * whenever this tab is visible.
+	 *
+	 * @author Nadahar
+	 */
+	public static class StatusTabListenerRegistrar extends AbstractTabListenerRegistrar {
+
+		private StatusTabListenerRegistrar(@Nonnull LooksFrame looksFrame) {
+			super(looksFrame);
+		}
+
+		@Override
+		protected LooksFrameTab getVisibleTab() {
+			return LooksFrameTab.STATUS_TAB;
+		}
 	}
 }

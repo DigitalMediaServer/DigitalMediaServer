@@ -18,7 +18,10 @@
  */
 package net.pms.newgui;
 
+import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
+import com.jgoodies.forms.factories.DefaultComponentFactory;
+import com.jgoodies.forms.layout.Sizes;
 import com.jgoodies.looks.Options;
 import com.jgoodies.looks.plastic.PlasticLookAndFeel;
 import com.jgoodies.looks.windows.WindowsLookAndFeel;
@@ -30,7 +33,12 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map.Entry;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.event.ChangeEvent;
@@ -45,11 +53,16 @@ import net.pms.io.BasicSystemUtils;
 import net.pms.io.WindowsNamedPipe;
 import net.pms.newgui.StatusTab.ConnectionState;
 import net.pms.newgui.components.AnimatedIcon;
+import net.pms.newgui.components.AnimatedIcon.AnimatedIconListenerRegistrar;
 import net.pms.newgui.components.AnimatedIcon.AnimatedIconStage;
 import net.pms.newgui.components.AnimatedIcon.AnimatedIconType;
 import net.pms.newgui.components.WindowProperties.WindowPropertiesConfiguration;
 import net.pms.newgui.components.AnimatedButton;
+import net.pms.newgui.components.AnimatedIconListener;
+import net.pms.newgui.components.AnimatedIconListener.MinimizeListenerRegistrar;
+import net.pms.newgui.components.AnimatedIconListener.WindowIconifyListener;
 import net.pms.newgui.components.ImageButton;
+import net.pms.newgui.components.AnimatedIconListenerAction;
 import net.pms.newgui.components.WindowProperties;
 import net.pms.util.PropertiesUtil;
 import org.slf4j.Logger;
@@ -88,15 +101,22 @@ public class LooksFrame extends JFrame implements IFrame {
 	private TranscodingTab tr;
 	private GeneralTab gt;
 	private HelpTab ht;
+	private final JTabbedPane mainTabbedPane = new JTabbedPane(SwingConstants.TOP);
 	private final AnimatedButton reload = createAnimatedToolBarButton(Messages.getString("LooksFrame.12"), "button-restart.png");;
 	private final AnimatedIcon restartRequredIcon = new AnimatedIcon(
-		reload, true, AnimatedIcon.buildAnimation("button-restart-requiredF%d.png", 0, 24, true, 800, 300, 15)
+		reload,
+		true,
+		AnimatedIcon.buildAnimation("button-restart-requiredF%d.png", 0, 24, true, 800, 300, 15)
 	);
 	private AnimatedIcon restartIcon;
 	private AbstractButton webinterface;
 	private JLabel status;
-	private static Object lookAndFeelInitializedLock = new Object();
-	private static boolean lookAndFeelInitialized = false;
+	private final static Object lookAndFeelInitializedLock = new Object();
+	private volatile static boolean lookAndFeelInitialized = false;
+	private static int dlu100x = 167; // Default, will be set properly after LAF
+	private static int dlu100y = 163; // Default, will be set properly after LAF
+	private final MinimizeListenerRegistrar minimizeListenerRegistrar = new MinimizeListenerRegistrar(this);
+	private final LooksFrameTabListenerRegistrar tabListenerRegistrar = new LooksFrameTabListenerRegistrar(mainTabbedPane);
 	private ViewLevel viewLevel = ViewLevel.UNKNOWN;
 
 	public ViewLevel getViewLevel() {
@@ -127,6 +147,10 @@ public class LooksFrame extends JFrame implements IFrame {
 	}
 
 	public static void initializeLookAndFeel() {
+
+		if (lookAndFeelInitialized) {
+			return;
+		}
 
 		synchronized (lookAndFeelInitializedLock) {
 			if (lookAndFeelInitialized) {
@@ -188,8 +212,33 @@ public class LooksFrame extends JFrame implements IFrame {
 				}
 			}
 
+			JLabel tempLabel = new JLabel();
+			dlu100x = Sizes.getUnitConverter().dialogUnitXAsPixel(100, tempLabel);
+			dlu100y = Sizes.getUnitConverter().dialogUnitYAsPixel(100, tempLabel);
+
 			lookAndFeelInitialized = true;
 		}
+	}
+
+	/**
+	 * Returns the the number of pixels represented by 100 horizontal dialog
+	 * units for the default {@link JLabel} font using the current
+	 * {@code LookAndFeel}.
+	 *
+	 * @return The size in pixels of 100 horizontal DLU units.
+	 */
+	public static int getDLU100x() {
+		return dlu100x;
+	}
+
+	/**
+	 * Returns the the number of pixels represented by 100 vertical dialog units
+	 * for the default {@link JLabel} font using the current {@code LookAndFeel}.
+	 *
+	 * @return The size in pixels of 100 vertical DLU units.
+	 */
+	public static int getDLU100y() {
+		return dlu100y;
 	}
 
 	/**
@@ -204,6 +253,7 @@ public class LooksFrame extends JFrame implements IFrame {
 		setResizable(true);
 		windowProperties = new WindowProperties(this, STANDARD_SIZE, MINIMUM_SIZE, windowConfiguration);
 		this.configuration = configuration;
+		minimizeListenerRegistrar.register(restartRequredIcon);
 		Options.setDefaultIconSize(new Dimension(18, 18));
 		Options.setUseNarrowButtons(true);
 
@@ -436,33 +486,32 @@ public class LooksFrame extends JFrame implements IFrame {
 	}
 
 	public JComponent buildMain() {
-		final JTabbedPane tabbedPane = new JTabbedPane(SwingConstants.TOP);
 
-		tabbedPane.setUI(new CustomTabbedPaneUI());
+		mainTabbedPane.setUI(new CustomTabbedPaneUI());
 
-		st = new StatusTab(configuration);
+		st = new StatusTab(configuration, this);
 		tt = new TracesTab(configuration, this);
 		gt = new GeneralTab(configuration, this);
 		nt = new NavigationShareTab(configuration, this);
 		tr = new TranscodingTab(configuration, this);
 		ht = new HelpTab();
 
-		tabbedPane.addTab(Messages.getString("LooksFrame.18"), st.build());
-		tabbedPane.addTab(Messages.getString("LooksFrame.19"), tt.build());
-		tabbedPane.addTab(Messages.getString("LooksFrame.20"), gt.build());
-		tabbedPane.addTab(Messages.getString("LooksFrame.22"), nt.build());
+		mainTabbedPane.addTab(Messages.getString("LooksFrame.18"), st.build());
+		mainTabbedPane.addTab(Messages.getString("LooksFrame.19"), tt.build());
+		mainTabbedPane.addTab(Messages.getString("LooksFrame.20"), gt.build());
+		mainTabbedPane.addTab(Messages.getString("LooksFrame.22"), nt.build());
 		if (!configuration.isDisableTranscoding()) {
-			tabbedPane.addTab(Messages.getString("LooksFrame.21"), tr.build());
+			mainTabbedPane.addTab(Messages.getString("LooksFrame.21"), tr.build());
 		} else {
 			tr.build();
 		}
-		tabbedPane.addTab(Messages.getString("LooksFrame.24"), new HelpTab().build());
-		tabbedPane.addTab(Messages.getString("LooksFrame.25"), new AboutTab().build());
+		mainTabbedPane.addTab(Messages.getString("LooksFrame.24"), new HelpTab().build());
+		mainTabbedPane.addTab(Messages.getString("LooksFrame.25"), new AboutTab().build());
 
-		tabbedPane.addChangeListener(new ChangeListener() {
+		mainTabbedPane.addChangeListener(new ChangeListener() {
 			@Override
 			public void stateChanged(ChangeEvent e) {
-				int selectedIndex = tabbedPane.getSelectedIndex();
+				int selectedIndex = mainTabbedPane.getSelectedIndex();
 
 				if (HELP_PAGES[selectedIndex] != null) {
 					PMS.setHelpPage(HELP_PAGES[selectedIndex]);
@@ -473,7 +522,7 @@ public class LooksFrame extends JFrame implements IFrame {
 			}
 		});
 
-		tabbedPane.setBorder(new EmptyBorder(5, 5, 5, 5));
+		mainTabbedPane.setBorder(new EmptyBorder(5, 5, 5, 5));
 
 		/*
 		 * Set the orientation of the tabbedPane.
@@ -481,9 +530,9 @@ public class LooksFrame extends JFrame implements IFrame {
 		 * messes with the layout of several tabs.
 		 */
 		ComponentOrientation orientation = ComponentOrientation.getOrientation(PMS.getLocale());
-		tabbedPane.setComponentOrientation(orientation);
+		mainTabbedPane.setComponentOrientation(orientation);
 
-		return tabbedPane;
+		return mainTabbedPane;
 	}
 
 	protected ImageButton createToolBarButton(String text, String iconName) {
@@ -590,19 +639,30 @@ public class LooksFrame extends JFrame implements IFrame {
 
 	@Override
 	public void addEngines() {
-		tr.addEngines();
+		SwingUtilities.invokeLater(new Runnable() {
+
+			@Override
+			public void run() {
+				tr.addEngines();
+			}
+		});
 	}
 
 	@Override
-	public void setStatusLine(String line) {
-		if (line == null || "".equals(line)) {
-			line = "";
-			status.setBorder(BorderFactory.createEmptyBorder());
-		} else {
-			status.setBorder(BorderFactory.createEmptyBorder(0, 9, 8, 0));
-		}
+	public void setStatusLine(final String line) {
+		SwingUtilities.invokeLater(new Runnable() {
 
-		status.setText(line);
+			@Override
+			public void run() {
+				if (isBlank(line)) {
+					status.setBorder(BorderFactory.createEmptyBorder());
+					status.setText("");
+				} else {
+					status.setBorder(BorderFactory.createEmptyBorder(0, 9, 8, 0));
+					status.setText(line);
+				}
+			}
+		});
 	}
 
 	@Override
@@ -622,12 +682,404 @@ public class LooksFrame extends JFrame implements IFrame {
 	}
 
 	@Override
-	public void setScanLibraryEnabled(boolean flag) {
-		getNt().setScanLibraryEnabled(flag);
+	public void setScanLibraryEnabled(final boolean flag) {
+		final NavigationShareTab navigationShareTab = getNt();
+		SwingUtilities.invokeLater(new Runnable() {
+
+			@Override
+			public void run() {
+				navigationShareTab.setScanLibraryEnabled(flag);
+			}
+		});
 	}
 
 	@Override
 	public String getLog() {
 		return getTt().getList().getText();
+	}
+
+	/**
+	 * @return The {@link MinimizeListenerRegistrar} instance created for this
+	 *         {@link LooksFrame} instance.
+	 */
+	@Nonnull
+	public MinimizeListenerRegistrar getMinimizeListenerRegistrar() {
+		return minimizeListenerRegistrar;
+	}
+
+	/**
+	 * @return The {@link LooksFrameTabListenerRegistrar} instance created for
+	 *         this {@link LooksFrame} instance.
+	 */
+	@Nonnull
+	public LooksFrameTabListenerRegistrar getTabListenerRegistrar() {
+		return tabListenerRegistrar;
+	}
+
+	public static JComponent createStyledSeparator(String text, int style, ComponentOrientation orientation) {
+		JLabel separatorLabel = new JLabel(text);
+		separatorLabel.setFont(separatorLabel.getFont().deriveFont(style));
+		separatorLabel.setHorizontalAlignment(orientation.isLeftToRight() ? SwingConstants.LEFT : SwingConstants.RIGHT);
+		return DefaultComponentFactory.getInstance().createSeparator(separatorLabel);
+	}
+
+	/**
+	 * This {@code enum} represents the different "main tabs" of DMS' GUI.
+	 *
+	 * @author Nadahar
+	 */
+	public static enum LooksFrameTab {
+
+		/** The {@code Status} tab */
+		STATUS_TAB,
+
+		/** The {@code Logs} tab */
+		TRACES_TAB,
+
+		/** The {@code General Configuration} tab */
+		GENERAL_TAB,
+
+		/** The {@code Navigation/Share Settings} tab */
+		NAVIGATION_TAB,
+
+		/** The {@code Transcoding Settings} tab */
+		TRANSCODING_TAB,
+
+		/** The {@code Help} tab */
+		HELP_TAB,
+
+		/** The {@code About} tab */
+		ABOUT_TAB,
+
+		/** An unknown or invalid tab */
+		UNKNOWN;
+
+		/**
+		 * Converts a tab index value to a {@link LooksFrameTab} instance.
+		 *
+		 * @param value the tab index value.
+		 * @return The corresponding {@link LooksFrameTab} instance.
+		 */
+		@Nonnull
+		public static LooksFrameTab typeOf(int value) {
+			switch (value) {
+				case 0:
+					return STATUS_TAB;
+				case 1:
+					return TRACES_TAB;
+				case 2:
+					return GENERAL_TAB;
+				case 3:
+					return NAVIGATION_TAB;
+				case 4:
+					return TRANSCODING_TAB;
+				case 5:
+					return HELP_TAB;
+				case 6:
+					return ABOUT_TAB;
+				default:
+					return UNKNOWN;
+			}
+		}
+	}
+
+	/**
+	 * This class is an {@link AnimatedIconListenerRegistrar} implementation
+	 * that registers {@link AnimatedIcon}s and suspends or unsuspends them on
+	 * {@link LooksFrame} tab change events.
+	 *
+	 * @author Nadahar
+	 */
+	public static class LooksFrameTabListenerRegistrar implements AnimatedIconListenerRegistrar {
+
+		private final LooksFrameTabModelChangeListener listener;
+		private final HashMap<AnimatedIcon, SubscriberInfo> subscribers = new HashMap<>();
+		private boolean isListening;
+		private final AnimatedIconListenerAction<LooksFrameTab> listenerAction = new AnimatedIconListenerAction<LooksFrameTab>() {
+
+			@Override
+			public void executeAction(@Nullable LooksFrameTab value) {
+				if (value == null) {
+					return;
+				}
+				for (Entry<AnimatedIcon, SubscriberInfo> entry : subscribers.entrySet()) {
+					if (value == entry.getValue().tab) {
+						unsuspendIcon(entry.getKey(), entry.getValue());
+					} else {
+						suspendIcon(entry.getKey(), entry.getValue());
+					}
+				}
+			}
+		};
+
+		/**
+		 * Unsuspends the specified {@link AnimatedIcon} if it is suspended and
+		 * updates the specified {@link SubscriberInfo}.
+		 *
+		 * @param animatedIcon the {@link AnimatedIcon} to unsuspend.
+		 * @param subscriberInfo the {@link SubscriberInfo} belonging to
+		 *            {@code animatedIcon}.
+		 */
+		protected void unsuspendIcon(@Nonnull AnimatedIcon animatedIcon, @Nonnull SubscriberInfo subscriberInfo) {
+			if (subscriberInfo.suspended) {
+				animatedIcon.unsuspend();
+				subscriberInfo.suspended = false;
+			}
+		}
+
+		/**
+		 * Suspends the specified {@link AnimatedIcon} if it isn't already
+		 * suspended and updates the specified {@link SubscriberInfo}.
+		 *
+		 * @param animatedIcon the {@link AnimatedIcon} to suspend.
+		 * @param subscriberInfo the {@link SubscriberInfo} belonging to
+		 *            {@code animatedIcon}.
+		 */
+		protected void suspendIcon(@Nonnull AnimatedIcon animatedIcon, @Nonnull SubscriberInfo subscriberInfo) {
+			if (!subscriberInfo.suspended) {
+				animatedIcon.suspend();
+				subscriberInfo.suspended = true;
+			}
+		}
+
+		/**
+		 * Creates a new instance that listens to the specified
+		 * {@link JTabbedPane}.
+		 *
+		 * @param mainTabbedPane the {@link JTabbedPane} instance to listen to.
+		 */
+		protected LooksFrameTabListenerRegistrar(@Nonnull JTabbedPane mainTabbedPane) {
+			if (mainTabbedPane == null) {
+				throw new IllegalArgumentException("mainTabbedPane cannot be null");
+			}
+			listener = new LooksFrameTabModelChangeListener(mainTabbedPane);
+		}
+
+		/**
+		 * Registers the specified {@link AnimatedIcon} with a
+		 * {@link LooksFrameTabModelChangeListener}.
+		 *
+		 * @param animatedIcon the {@link AnimatedIcon} to register.
+		 * @param visibleTab the {@link LooksFrameTab} for which
+		 *            {@code animatedIcon} should be visible.
+		 */
+		public void register(@Nullable AnimatedIcon animatedIcon, @Nullable LooksFrameTab visibleTab) {
+			if (animatedIcon == null || visibleTab == null) {
+				return;
+			}
+			SubscriberInfo subscriberInfo = subscribers.get(animatedIcon);
+			if (subscriberInfo == null || subscriberInfo.tab != visibleTab) {
+				if (subscriberInfo != null) {
+					LOGGER.debug(
+						"TabListenerRegistrar Warning: Changing tab on already registered icon {} from {} to {}",
+						animatedIcon,
+						subscriberInfo.tab,
+						visibleTab
+					);
+					if (subscriberInfo.suspended) {
+						unsuspendIcon(animatedIcon, subscriberInfo);
+					}
+				}
+				subscriberInfo = new SubscriberInfo(visibleTab);
+				if (listener.getCurrentTab() != visibleTab) {
+					suspendIcon(animatedIcon, subscriberInfo);
+					subscriberInfo.suspended = true;
+				}
+				subscribers.put(animatedIcon, subscriberInfo);
+				if (!isListening) {
+					listener.registerAction(listenerAction);
+					isListening = true;
+				}
+			}
+		}
+
+		/**
+		 * Unregisters the specified {@link AnimatedIcon} with a
+		 * {@link LooksFrameTabModelChangeListener}.
+		 *
+		 * @param animatedIcon the {@link AnimatedIcon} to unregister.
+		 */
+		public void unregister(@Nullable AnimatedIcon animatedIcon) {
+			if (animatedIcon != null && subscribers.containsKey(animatedIcon)) {
+				if (subscribers.get(animatedIcon).suspended) {
+					animatedIcon.unsuspend();
+				}
+				subscribers.remove(animatedIcon);
+				if (isListening && subscribers.size() == 0) {
+					listener.unregisterAction(listenerAction);
+					isListening = false;
+				}
+			}
+		}
+
+		/**
+		 * An internal "struct" to hold information about subscribing
+		 * {@link AnimatedIcon}s.
+		 */
+		protected static class SubscriberInfo {
+
+			private final LooksFrameTab tab;
+			private boolean suspended;
+
+			/**
+			 * Creates a new instance for the specified {@link LooksFrameTab}.
+			 *
+			 * @param visibleTab the {@link LooksFrameTab} for which the
+			 *            associated {@link AnimatedIcon} should be visible.
+			 */
+			public SubscriberInfo(LooksFrameTab visibleTab) {
+				this.tab = visibleTab;
+			}
+
+			@Override
+			public String toString() {
+				return getClass().getSimpleName() + " [suspended=" + suspended + ", tab=" + tab + "]";
+			}
+		}
+	}
+
+	/**
+	 * This is an {@link AnimatedIconListener} implementation that listens to
+	 * {@link LooksFrame} tab change events and executes registered
+	 * {@link AnimatedIconListenerAction}s in response to events.
+	 *
+	 * @author Nadahar
+	 */
+	public static class LooksFrameTabModelChangeListener implements AnimatedIconListener<LooksFrameTab>, ChangeListener {
+
+		@Nonnull private final JTabbedPane mainTabbedPane;
+		@Nonnull private final HashSet<AnimatedIconListenerAction<LooksFrameTab>> actions = new HashSet<>();
+		private boolean isListening;
+		@Nonnull private LooksFrameTab currentTab;
+
+
+		/**
+		 * Creates a new instance using the specified {@link JTabbedPane}
+		 * instance.
+		 *
+		 * @param mainTabbedPane the {@link JTabbedPane} instance to listen to.
+		 * @param actions (optional) one or more
+		 *            {@link AnimatedIconListenerAction}s to add.
+		 */
+		@SafeVarargs
+		public LooksFrameTabModelChangeListener(
+			@Nonnull JTabbedPane mainTabbedPane,
+			@Nullable AnimatedIconListenerAction<LooksFrameTab>... actions
+		) {
+			if (mainTabbedPane == null) {
+				throw new IllegalArgumentException("mainTabbedPane cannot be null");
+			}
+			this.mainTabbedPane = mainTabbedPane;
+			this.currentTab = LooksFrameTab.typeOf(mainTabbedPane.getSelectedIndex());
+			if (actions != null && actions.length > 0) {
+				this.actions.addAll(Arrays.asList(actions));
+			}
+		}
+
+		/**
+		 * @return The currently active {@link LooksFrameTab}.
+		 */
+		public LooksFrameTab getCurrentTab() {
+			return currentTab;
+		}
+
+		@Override
+		public boolean registerAction(@Nullable AnimatedIconListenerAction<LooksFrameTab> action) {
+			if (action == null) {
+				return false;
+			}
+			boolean add = actions.add(action);
+			if (add && !isListening) {
+				mainTabbedPane.getModel().addChangeListener(this);
+				isListening = true;
+			}
+			return add;
+		}
+
+		@Override
+		public boolean unregisterAction(@Nullable AnimatedIconListenerAction<LooksFrameTab> action) {
+			if (action == null) {
+				return false;
+			}
+			boolean remove = actions.remove(action);
+			if (remove && isListening && actions.size() == 0) {
+				mainTabbedPane.getModel().removeChangeListener(this);
+				isListening = false;
+			}
+			return remove;
+		}
+
+		@Override
+		public void stateChanged(ChangeEvent e) {
+			if (e != null && e.getSource() instanceof SingleSelectionModel) {
+				LooksFrameTab newTab = LooksFrameTab.typeOf(((SingleSelectionModel) e.getSource()).getSelectedIndex());
+				if (newTab != currentTab) {
+					currentTab = newTab;
+					for (AnimatedIconListenerAction<LooksFrameTab> action : actions) {
+						action.executeAction(newTab);
+					}
+				}
+			}
+		}
+	}
+
+	/**
+	 * Creates a new {@link AnimatedIconListenerRegistrar} that registers tab
+	 * change and application minimize events. Suitable for {@link AnimatedIcon}
+	 * s that's visible whenever a given tab is visible.
+	 *
+	 * @author Nadahar
+	 */
+	public abstract static class AbstractTabListenerRegistrar implements AnimatedIconListenerRegistrar {
+
+		private final MinimizeListenerRegistrar minimizeListenerRegistrar;
+		private final LooksFrameTabListenerRegistrar tabListenerRegistrar;
+
+		/**
+		 * Creates a new instance using the specified {@link LooksFrame}
+		 * instance.
+		 *
+		 * @param looksFrame the {@link LooksFrame} instance to listen to.
+		 */
+		protected AbstractTabListenerRegistrar(@Nonnull LooksFrame looksFrame) {
+			if (looksFrame == null) {
+				throw new IllegalArgumentException("looksFrame cannot be null");
+			}
+			minimizeListenerRegistrar = looksFrame.getMinimizeListenerRegistrar();
+			tabListenerRegistrar = looksFrame.getTabListenerRegistrar();
+		}
+
+		/**
+		 * @return The tab for which the {@link AnimatedIcon} is visible
+		 */
+		protected abstract LooksFrameTab getVisibleTab();
+
+		/**
+		 * Registers the specified {@link AnimatedIcon} with both a
+		 * {@link WindowIconifyListener} and a
+		 * {@link LooksFrameTabModelChangeListener}.
+		 *
+		 * @param animatedIcon the {@link AnimatedIcon} to register.
+		 */
+		public void register(@Nullable AnimatedIcon animatedIcon) {
+			if (animatedIcon != null) {
+				minimizeListenerRegistrar.register(animatedIcon);
+				tabListenerRegistrar.register(animatedIcon, getVisibleTab());
+			}
+		}
+
+		/**
+		 * Unregisters the specified {@link AnimatedIcon} with both a
+		 * {@link WindowIconifyListener} and a
+		 * {@link LooksFrameTabModelChangeListener}.
+		 *
+		 * @param animatedIcon the {@link AnimatedIcon} to unregister.
+		 */
+		public void unregister(AnimatedIcon animatedIcon) {
+			if (animatedIcon != null) {
+				minimizeListenerRegistrar.unregister(animatedIcon);
+				tabListenerRegistrar.unregister(animatedIcon);
+			}
+		}
 	}
 }
