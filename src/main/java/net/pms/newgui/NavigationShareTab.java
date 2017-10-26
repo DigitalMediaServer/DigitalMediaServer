@@ -910,8 +910,8 @@ public class NavigationShareTab {
 		builderFolder.add(arrowUpButton, FormLayoutUtil.flip(cc.xy(5, 3), colSpec, orientation));
 
 		scanButton.setToolTipText(Messages.getString("FoldTab.2"));
-		scanBusyIcon.start();
-		scanBusyDisabledIcon.start();
+		scanBusyIcon.startArm();
+		scanBusyDisabledIcon.startArm();
 		scanButton.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
