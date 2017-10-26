@@ -39,7 +39,7 @@ import net.pms.configuration.PmsConfiguration;
 import net.pms.encoders.Player;
 import net.pms.encoders.PlayerFactory;
 import net.pms.newgui.components.CustomJButton;
-import net.pms.newgui.components.JImageButton;
+import net.pms.newgui.components.ImageButton;
 import net.pms.util.FormLayoutUtil;
 import net.pms.util.KeyedComboBoxModel;
 import net.pms.util.KeyedStringComboBoxModel;
@@ -117,9 +117,9 @@ public class TranscodingTab {
 	 * Revisions before that allowed only 8.
 	 */
 	private static final int MAX_CORES = 16;
-	private JImageButton arrowDownButton;
-	private JImageButton arrowUpButton;
-	private JImageButton toggleButton;
+	private ImageButton arrowDownButton;
+	private ImageButton arrowUpButton;
+	private ImageButton toggleButton;
 	private static enum ToggleButtonState {
 		On ("button-toggle-on.png"),
 		Off ("button-toggle-off.png");
@@ -214,7 +214,7 @@ public class TranscodingTab {
 
 		CellConstraints cc = new CellConstraints();
 
-		arrowDownButton = new JImageButton("button-arrow-down.png");
+		arrowDownButton = new ImageButton("button-arrow-down.png");
 		arrowDownButton.setToolTipText(Messages.getString("TrTab2.6"));
 		arrowDownButton.addActionListener(new ActionListener() {
 			@Override
@@ -243,7 +243,7 @@ public class TranscodingTab {
 		});
 		builder.add(arrowDownButton, FormLayoutUtil.flip(cc.xy(2, 3), colSpec, orientation));
 
-		arrowUpButton = new JImageButton("button-arrow-up.png");
+		arrowUpButton = new ImageButton("button-arrow-up.png");
 		arrowUpButton.setToolTipText(Messages.getString("TrTab2.6"));
 		arrowUpButton.addActionListener(new ActionListener() {
 			@Override
@@ -271,7 +271,7 @@ public class TranscodingTab {
 		});
 		builder.add(arrowUpButton, FormLayoutUtil.flip(cc.xy(3, 3), colSpec, orientation));
 
-		toggleButton = new JImageButton();
+		toggleButton = new ImageButton();
 		toggleButton.setToolTipText(Messages.getString("TrTab2.0"));
 		setButtonsState();
 		toggleButton.addActionListener(new ActionListener() {

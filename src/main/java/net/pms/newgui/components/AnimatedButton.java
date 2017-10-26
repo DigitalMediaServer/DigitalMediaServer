@@ -24,7 +24,7 @@ import net.pms.newgui.LooksFrame;
 import net.pms.util.FileUtil;
 
 
-public class JAnimatedButton extends JImageButton {
+public class AnimatedButton extends ImageButton {
 
 	private static final long serialVersionUID = -8316312033513554308L;
 
@@ -50,23 +50,23 @@ public class JAnimatedButton extends JImageButton {
 	}
 
 
-	public JAnimatedButton(String text, AnimatedIcon icon) {
+	public AnimatedButton(String text, AnimatedIcon icon) {
 		super(text, icon);
 	}
 
-	public JAnimatedButton(AnimatedIcon icon) {
+	public AnimatedButton(AnimatedIcon icon) {
 		super(icon);
 	}
 
-	public JAnimatedButton(String text, String iconName) {
+	public AnimatedButton(String text, String iconName) {
 		super(text, iconName);
 	}
 
-	public JAnimatedButton(String iconName) {
+	public AnimatedButton(String iconName) {
 		super(iconName);
 	}
 
-	public JAnimatedButton() {
+	public AnimatedButton() {
 		super();
 	}
 
@@ -79,13 +79,13 @@ public class JAnimatedButton extends JImageButton {
 	 * Set static icons from standard naming convention that is of type
 	 * {@link AnimatedIcon}. While this can seem unnecessary it means
 	 * that they can handle transitions to and from other (animated)
-	 * {@link AnimatedIcon}s and thus be used on a {@link JAnimatedButton}.
+	 * {@link AnimatedIcon}s and thus be used on a {@link AnimatedButton}.
 	 *
 	 * @param defaultIconName the base image resource name used when the
 	 *                        button is in the normal state and which
 	 *                        the other state names are derived from.
 	 *
-	 * @see JImageButton#setIcons(String)
+	 * @see ImageButton#setIcons(String)
 	 */
 	@Override
 	protected void setIcons(String defaultIconName) {

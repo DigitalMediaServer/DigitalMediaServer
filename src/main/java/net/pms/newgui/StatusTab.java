@@ -50,7 +50,7 @@ import net.pms.newgui.components.AnimatedIcon;
 import net.pms.newgui.components.AnimatedIcon.AnimatedIconFrame;
 import net.pms.newgui.components.AnimatedIcon.AnimatedIconStage;
 import net.pms.newgui.components.AnimatedIcon.AnimatedIconType;
-import net.pms.newgui.components.JAnimatedButton;
+import net.pms.newgui.components.AnimatedButton;
 import net.pms.util.BasicPlayer;
 import net.pms.util.FormLayoutUtil;
 import net.pms.util.StringUtil;
@@ -170,7 +170,7 @@ public class StatusTab {
 		SEARCHING, CONNECTED, DISCONNECTED, BLOCKED, UNKNOWN
 	};
 	private ConnectionState connectionState = ConnectionState.UNKNOWN;
-	private final JAnimatedButton connectionStatus = new JAnimatedButton();
+	private final AnimatedButton connectionStatus = new AnimatedButton();
 	private final AnimatedIcon searchingIcon;
 	private final AnimatedIcon connectedIcon;
 	private final AnimatedIcon connectedIntroIcon;
