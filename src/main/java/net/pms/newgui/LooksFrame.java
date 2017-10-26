@@ -48,8 +48,8 @@ import net.pms.newgui.components.AnimatedIcon;
 import net.pms.newgui.components.AnimatedIcon.AnimatedIconStage;
 import net.pms.newgui.components.AnimatedIcon.AnimatedIconType;
 import net.pms.newgui.components.WindowProperties.WindowPropertiesConfiguration;
-import net.pms.newgui.components.JAnimatedButton;
-import net.pms.newgui.components.JImageButton;
+import net.pms.newgui.components.AnimatedButton;
+import net.pms.newgui.components.ImageButton;
 import net.pms.newgui.components.WindowProperties;
 import net.pms.util.PropertiesUtil;
 import org.slf4j.Logger;
@@ -88,7 +88,7 @@ public class LooksFrame extends JFrame implements IFrame {
 	private TranscodingTab tr;
 	private GeneralTab gt;
 	private HelpTab ht;
-	private final JAnimatedButton reload = createAnimatedToolBarButton(Messages.getString("LooksFrame.12"), "button-restart.png");;
+	private final AnimatedButton reload = createAnimatedToolBarButton(Messages.getString("LooksFrame.12"), "button-restart.png");;
 	private final AnimatedIcon restartRequredIcon = new AnimatedIcon(
 		reload, true, AnimatedIcon.buildAnimation("button-restart-requiredF%d.png", 0, 24, true, 800, 300, 15)
 	);
@@ -486,20 +486,20 @@ public class LooksFrame extends JFrame implements IFrame {
 		return tabbedPane;
 	}
 
-	protected JImageButton createToolBarButton(String text, String iconName) {
-		JImageButton button = new JImageButton(text, iconName);
+	protected ImageButton createToolBarButton(String text, String iconName) {
+		ImageButton button = new ImageButton(text, iconName);
 		button.setFocusable(false);
 		return button;
 	}
 
-	protected JAnimatedButton createAnimatedToolBarButton(String text, String iconName) {
-		JAnimatedButton button = new JAnimatedButton(text, iconName);
+	protected AnimatedButton createAnimatedToolBarButton(String text, String iconName) {
+		AnimatedButton button = new AnimatedButton(text, iconName);
 		button.setFocusable(false);
 		return button;
 	}
 
-	protected JImageButton createToolBarButton(String text, String iconName, String toolTipText) {
-		JImageButton button = new JImageButton(text, iconName);
+	protected ImageButton createToolBarButton(String text, String iconName, String toolTipText) {
+		ImageButton button = new ImageButton(text, iconName);
 		button.setToolTipText(toolTipText);
 		button.setFocusable(false);
 		button.setBorderPainted(false);

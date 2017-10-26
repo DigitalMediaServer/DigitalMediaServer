@@ -439,13 +439,13 @@ public class AnimatedIcon implements Icon, ActionListener {
 	public void paintIcon(Component c, Graphics g, int x, int y) {
 
 		// If the previous icon was an AnimatedIcon, stop the animation
-		if (c instanceof JAnimatedButton) {
-			if (((JAnimatedButton) c).getCurrentIcon() != this) {
-				if (((JAnimatedButton) c).getCurrentIcon() != null) {
-					((JAnimatedButton) c).getCurrentIcon().pause();
+		if (c instanceof AnimatedButton) {
+			if (((AnimatedButton) c).getCurrentIcon() != this) {
+				if (((AnimatedButton) c).getCurrentIcon() != null) {
+					((AnimatedButton) c).getCurrentIcon().pause();
 				}
 
-				((JAnimatedButton) c).setCurrentIcon(this);
+				((AnimatedButton) c).setCurrentIcon(this);
 				resume();
 			}
 		}
