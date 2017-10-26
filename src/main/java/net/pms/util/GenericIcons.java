@@ -158,7 +158,7 @@ public enum GenericIcons {
 			}
 
 			if (isBlank(label)) {
-				label = Messages.getString("General.Unknown");
+				label = Messages.getString("Generic.Unknown");
 			}
 
 			if (imageCache.containsKey(label)) {
