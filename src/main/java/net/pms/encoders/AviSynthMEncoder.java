@@ -18,14 +18,13 @@
  */
 package net.pms.encoders;
 
-import com.jgoodies.forms.builder.PanelBuilder;
-import com.jgoodies.forms.factories.Borders;
+import com.jgoodies.forms.builder.FormBuilder;
+import com.jgoodies.forms.factories.Paddings;
 import com.jgoodies.forms.layout.CellConstraints;
 import com.jgoodies.forms.layout.FormLayout;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
-import java.awt.Font;
 import java.awt.event.*;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -65,20 +64,14 @@ public class AviSynthMEncoder extends MEncoderVideo {
 	private JCheckBox multithreading;
 
 	@Override
-	public JComponent config() {
+	public JComponent getConfigurationPanel() {
 		FormLayout layout = new FormLayout(
 			"left:pref, 0:grow",
 			"p, 3dlu, p, 3dlu, p, 3dlu, p, 3dlu, p, 12dlu, p, 3dlu, 0:grow"
 		);
-		PanelBuilder builder = new PanelBuilder(layout);
-		builder.border(Borders.EMPTY);
-		builder.opaque(false);
+		FormBuilder builder = FormBuilder.create().layout(layout).border(Paddings.EMPTY).opaque(false);
 
 		CellConstraints cc = new CellConstraints();
-
-		JComponent cmp = builder.addSeparator(Messages.getString("NetworkTab.5"), cc.xyw(2, 1, 1));
-		cmp = (JComponent) cmp.getComponent(0);
-		cmp.setFont(cmp.getFont().deriveFont(Font.BOLD));
 
 		multithreading = new JCheckBox(Messages.getString("MEncoderVideo.35"), configuration.getAvisynthMultiThreading());
 		multithreading.setContentAreaFilled(false);
@@ -88,7 +81,7 @@ public class AviSynthMEncoder extends MEncoderVideo {
 				configuration.setAvisynthMultiThreading((e.getStateChange() == ItemEvent.SELECTED));
 			}
 		});
-		builder.add(GuiUtil.getPreferredSizeComponent(multithreading), cc.xy(2, 3));
+		builder.add(GuiUtil.getPreferredSizeComponent(multithreading)).at(cc.xy(2, 3));
 
 		interframe = new JCheckBox(Messages.getString("AviSynthMEncoder.13"), configuration.getAvisynthInterFrame());
 		interframe.setContentAreaFilled(false);
@@ -106,7 +99,7 @@ public class AviSynthMEncoder extends MEncoderVideo {
 				}
 			}
 		});
-		builder.add(GuiUtil.getPreferredSizeComponent(interframe), cc.xy(2, 5));
+		builder.add(GuiUtil.getPreferredSizeComponent(interframe)).at(cc.xy(2, 5));
 
 		interframegpu = new JCheckBox(Messages.getString("AviSynthMEncoder.15"), configuration.getAvisynthInterFrameGPU());
 		interframegpu.setContentAreaFilled(false);
@@ -116,7 +109,7 @@ public class AviSynthMEncoder extends MEncoderVideo {
 				configuration.setAvisynthInterFrameGPU((e.getStateChange() == ItemEvent.SELECTED));
 			}
 		});
-		builder.add(GuiUtil.getPreferredSizeComponent(interframegpu), cc.xy(2, 7));
+		builder.add(GuiUtil.getPreferredSizeComponent(interframegpu)).at(cc.xy(2, 7));
 
 		convertfps = new JCheckBox(Messages.getString("AviSynthMEncoder.3"), configuration.getAvisynthConvertFps());
 		convertfps.setContentAreaFilled(false);
@@ -126,7 +119,7 @@ public class AviSynthMEncoder extends MEncoderVideo {
 				configuration.setAvisynthConvertFps((e.getStateChange() == ItemEvent.SELECTED));
 			}
 		});
-		builder.add(GuiUtil.getPreferredSizeComponent(convertfps), cc.xy(2, 9));
+		builder.add(GuiUtil.getPreferredSizeComponent(convertfps)).at(cc.xy(2, 9));
 
 		String aviSynthScriptInstructions = Messages.getString("AviSynthMEncoder.4") +
 			Messages.getString("AviSynthMEncoder.5") +
@@ -138,7 +131,7 @@ public class AviSynthMEncoder extends MEncoderVideo {
 		aviSynthScriptInstructionsContainer.setBorder(BorderFactory.createEtchedBorder());
 		aviSynthScriptInstructionsContainer.setBackground(new Color(255, 255, 192));
 		aviSynthScriptInstructionsContainer.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(new Color(130, 135, 144)), BorderFactory.createEmptyBorder(3, 5, 3, 5)));
-		builder.add(aviSynthScriptInstructionsContainer, cc.xy(2, 11));
+		builder.add(aviSynthScriptInstructionsContainer).at(cc.xy(2, 11));
 
 		String clip = configuration.getAvisynthScript();
 		if (clip == null) {
@@ -174,7 +167,7 @@ public class AviSynthMEncoder extends MEncoderVideo {
 
 		JScrollPane pane = new JScrollPane(textArea, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
 		pane.setPreferredSize(new Dimension(500, 350));
-		builder.add(pane, cc.xy(2, 13));
+		builder.add(pane).at(cc.xy(2, 13));
 
 		configuration.addConfigurationListener(new ConfigurationListener() {
 			@Override

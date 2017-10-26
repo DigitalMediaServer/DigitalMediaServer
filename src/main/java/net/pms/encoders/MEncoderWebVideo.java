@@ -42,7 +42,7 @@ public class MEncoderWebVideo extends MEncoderVideo {
 	}
 
 	@Override
-	public JComponent config() {
+	public JComponent getConfigurationPanel() {
 		return null;
 	}
 

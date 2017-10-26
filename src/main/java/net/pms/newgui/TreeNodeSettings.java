@@ -69,7 +69,7 @@ public class TreeNodeSettings extends DefaultMutableTreeNode {
 	public JComponent getConfigPanel() {
 		if (player != null) {
 			if (player.isAvailable()) {
-				return player.config();
+				return player.getConfigurationPanel();
 			}
 			return getWarningPanel();
 		} else if (otherConfigPanel != null) {
