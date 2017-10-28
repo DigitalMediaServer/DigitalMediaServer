@@ -51,12 +51,6 @@ public class ConfigurableProgramPaths extends PlatformProgramPaths {
 	/** The {@link Configuration} key for the custom MPlayer path. */
 	public static final String KEY_MPLAYER_PATH     = "mplayer_path";
 
-	/** The {@link Configuration} key for the tsMuxeRNew executable type. */
-	public static final String KEY_TSMUXER_NEW_EXECUTABLE_TYPE = "tsmuxer-new_executable_type";
-
-	/** The {@link Configuration} key for the custom tsMuxeRNew path. */
-	public static final String KEY_TSMUXER_NEW_PATH = "tsmuxer_new_path";
-
 	/** The {@link Configuration} key for the FLAC executable type. */
 	public static final String KEY_FLAC_EXECUTABLE_TYPE = "flac_executable_type";
 
@@ -83,7 +77,6 @@ public class ConfigurableProgramPaths extends PlatformProgramPaths {
 
 		// Read configured paths for all configurable program paths not handled by a Player.
 		setCustomPathFromConfiguration(getMPlayer(), KEY_MPLAYER_PATH);
-		setCustomPathFromConfiguration(getTsMuxeRNew(), KEY_TSMUXER_NEW_PATH);
 		setCustomPathFromConfiguration(getFLAC(), KEY_FLAC_PATH);
 		setCustomPathFromConfiguration(getInterFrame(), KEY_INTERFRAME_PATH);
 	}
@@ -114,11 +107,6 @@ public class ConfigurableProgramPaths extends PlatformProgramPaths {
 	}
 
 	@Override
-	public ExternalProgramInfo getTsMuxeRNew() {
-		return platformPaths.getTsMuxeRNew();
-	}
-
-	@Override
 	public ExternalProgramInfo getFLAC() {
 		return platformPaths.getFLAC();
 	}
@@ -141,17 +129,6 @@ public class ConfigurableProgramPaths extends PlatformProgramPaths {
 	 */
 	public void setCustomMPlayerPath(@Nullable Path path) {
 		setCustomProgramPath(path, platformPaths.getMPlayer(), KEY_MPLAYER_PATH, true);
-	}
-
-	/**
-	 * Sets a new {@link ProgramExecutableType#CUSTOM} {@link Path} for
-	 * "tsMuxeR new" both in {@link #configuration} and the
-	 * {@link ExternalProgramInfo}.
-	 *
-	 * @param path the new {@link Path} or {@code null} to clear it.
-	 */
-	public void setCustomTsMuxeRNewPath(@Nullable Path path) {
-		setCustomProgramPath(path, platformPaths.getTsMuxeRNew(), KEY_TSMUXER_NEW_PATH, true);
 	}
 
 	/**

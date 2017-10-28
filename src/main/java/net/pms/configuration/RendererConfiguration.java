@@ -1,7 +1,6 @@
 package net.pms.configuration;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
-import com.sun.jna.Platform;
 import java.awt.Color;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -21,6 +20,8 @@ import net.pms.PMS;
 import net.pms.dlna.*;
 import net.pms.dlna.DLNAMediaInfo.Mode3D;
 import net.pms.encoders.Player;
+import net.pms.encoders.PlayerFactory;
+import net.pms.encoders.StandardPlayerId;
 import net.pms.formats.Format;
 import net.pms.formats.Format.Identifier;
 import net.pms.formats.v2.AudioProperties;
@@ -1710,12 +1711,15 @@ public class RendererConfiguration extends UPNPHelper.Renderer {
 
 	public boolean isMuxH264MpegTS() {
 		boolean muxCompatible = getBoolean(MUX_H264_WITH_MPEGTS, true);
-		if (isUseMediaInfo()) {
+		if (muxCompatible && isUseMediaInfo()) {
 			muxCompatible = getFormatConfiguration().match(FormatConfiguration.MPEGTS, FormatConfiguration.H264, null) != null;
 		}
 
-		if (Platform.isMac() && System.getProperty("os.version") != null && System.getProperty("os.version").contains("10.4.")) {
-			muxCompatible = false; // no tsMuxeR for 10.4 (yet?)
+		if (muxCompatible) {
+			Player tsMuxeR = PlayerFactory.getPlayer(StandardPlayerId.TSMUXER_VIDEO, false, false);
+			if (tsMuxeR == null || !tsMuxeR.isActive()) {
+				muxCompatible = false;
+			}
 		}
 
 		return muxCompatible;
