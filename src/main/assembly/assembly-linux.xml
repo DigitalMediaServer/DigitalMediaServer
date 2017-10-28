@@ -46,12 +46,6 @@
 			<fileMode>0755</fileMode>
 			<lineEnding>keep</lineEnding>
 		</file>
-		<file>
-			<source>${project.binaries}/linux/tsMuxeR-new</source>
-			<outputDirectory>./linux</outputDirectory>
-			<fileMode>0755</fileMode>
-			<lineEnding>keep</lineEnding>
-		</file>
 
 		<!-- Include executable script DMS.sh -->
 		<file>
