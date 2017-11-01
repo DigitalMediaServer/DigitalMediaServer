@@ -38,6 +38,7 @@ import net.pms.PMS;
 import net.pms.configuration.PmsConfiguration;
 import net.pms.configuration.RendererConfiguration;
 import net.pms.dlna.*;
+import net.pms.dlna.protocolinfo.MimeType;
 import net.pms.encoders.ImagePlayer;
 import net.pms.external.StartStopListenerDelegate;
 import net.pms.formats.Format;
@@ -545,9 +546,8 @@ public class RequestV2 extends HTTPResource {
 						startStopListenerDelegate.start(dlna);
 
 						// Try to determine the content type of the file
-						String rendererMimeType = getRendererMimeType(dlna.mimeType(), mediaRenderer, dlna.getMedia());
-
-						if (rendererMimeType != null && !"".equals(rendererMimeType)) {
+						MimeType rendererMimeType = dlna.getMimeType(mediaRenderer);
+						if (rendererMimeType != null) {
 							output.headers().set(HttpHeaders.Names.CONTENT_TYPE, rendererMimeType);
 						}
 

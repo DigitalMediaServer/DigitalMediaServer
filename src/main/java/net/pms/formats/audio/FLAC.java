@@ -15,14 +15,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
- */package net.pms.formats.audio;
+ */
+package net.pms.formats.audio;
 
+import net.pms.dlna.protocolinfo.MimeType;
+import net.pms.dlna.protocolinfo.KnownMimeTypes;
 import net.pms.formats.AudioAsVideo;
 
 public class FLAC extends AudioBase {
-	/**
-	 * {@inheritDoc}
-	 */
+
 	@Override
 	public Identifier getIdentifier() {
 		return Identifier.FLAC;
@@ -33,14 +34,16 @@ public class FLAC extends AudioBase {
 		secondaryFormat = new AudioAsVideo();
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public String[] getSupportedExtensions() {
 		return new String[] {
 			"fla",
 			"flac",
 		};
+	}
+
+	@Override
+	public MimeType getStandardMimeType() {
+		return KnownMimeTypes.FLAC;
 	}
 }

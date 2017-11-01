@@ -18,7 +18,12 @@
  */
 package net.pms.encoders;
 
+import javax.annotation.Nullable;
+import net.pms.configuration.RendererConfiguration;
 import net.pms.dlna.DLNAResource;
+import net.pms.dlna.MediaType;
+import net.pms.dlna.protocolinfo.MimeType;
+import net.pms.dlna.protocolinfo.KnownMimeTypes;
 import net.pms.formats.Format;
 import net.pms.util.PlayerUtil;
 
@@ -58,9 +63,16 @@ public class VideoLanAudioStreaming extends VideoLanVideoStreaming {
 		return Format.AUDIO;
 	}
 
+	@Nullable
 	@Override
-	public String mimeType() {
-		return "audio/wav";
+	public MimeType getMimeType(@Nullable DLNAResource resource, @Nullable RendererConfiguration renderer) {
+		if (resource == null) {
+			return null;
+		}
+		if (resource.getMediaType() == MediaType.AUDIO) {
+			return KnownMimeTypes.WAV;
+		}
+		return super.getMimeType(resource, renderer);
 	}
 
 	@Override

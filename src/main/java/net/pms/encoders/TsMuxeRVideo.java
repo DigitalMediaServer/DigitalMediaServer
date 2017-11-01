@@ -46,6 +46,8 @@ import net.pms.configuration.ExternalProgramInfo;
 import net.pms.configuration.PmsConfiguration;
 import net.pms.configuration.RendererConfiguration;
 import net.pms.dlna.*;
+import net.pms.dlna.protocolinfo.MimeType;
+import net.pms.dlna.protocolinfo.KnownMimeTypes;
 import net.pms.formats.Format;
 import net.pms.io.*;
 import net.pms.newgui.GuiUtil;
@@ -702,9 +704,24 @@ public class TsMuxeRVideo extends Player {
 		return p;
 	}
 
+	@Nullable
 	@Override
-	public String mimeType() {
-		return "video/mpeg";
+	public MimeType getMimeType(@Nullable DLNAResource resource, @Nullable RendererConfiguration renderer) {
+		if (resource == null) {
+			return null;
+		}
+		if (resource.getMediaType() == MediaType.VIDEO) {
+			/*
+			 * XXX Should really be KnownMimeTypes.MPEG_TS but that can't be
+			 * used because this MIME type is hardcoded to use a specific DLNA
+			 * profile that only works with a few renderers.
+			 *
+			 * When the hardcoding is refactored, this should be changed to
+			 * KnownMimeTypes.MPEG_TS.
+			 */
+			return KnownMimeTypes.MPEG;
+		}
+		return super.getMimeType(resource, renderer);
 	}
 
 	@Override

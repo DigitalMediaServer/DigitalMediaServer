@@ -18,6 +18,9 @@
  */
 package net.pms.formats.audio;
 
+import net.pms.dlna.protocolinfo.MimeType;
+import net.pms.dlna.protocolinfo.KnownMimeTypes;
+
 public class MPGAudio extends AudioBase {
 
 	@Override
@@ -27,6 +30,11 @@ public class MPGAudio extends AudioBase {
 
 	@Override
 	public String[] getSupportedExtensions() {
-		return new String[] { "mpa", "mp2" };
+		return new String[] {"mpa", "mp1", "mp2"};
+	}
+
+	@Override
+	public MimeType getStandardMimeType() {
+		return KnownMimeTypes.MPA;
 	}
 }

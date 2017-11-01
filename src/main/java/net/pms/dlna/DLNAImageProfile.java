@@ -35,6 +35,7 @@ import net.pms.dlna.protocolinfo.DLNAOrgProfileName;
 import net.pms.dlna.protocolinfo.KnownDLNAOrgProfileName;
 import net.pms.dlna.protocolinfo.MimeType;
 import net.pms.dlna.protocolinfo.ProtocolInfo;
+import net.pms.dlna.protocolinfo.KnownMimeTypes;
 import net.pms.image.ColorSpaceType;
 import net.pms.image.GIFInfo;
 import net.pms.image.ImageFormat;
@@ -66,15 +67,6 @@ public class DLNAImageProfile implements Comparable<DLNAImageProfile>, Serializa
 
 	private static final long serialVersionUID = 1L;
 	private static final Logger LOGGER = LoggerFactory.getLogger(DLNAImageProfile.class);
-
-	/** Standard GIF mime-type */
-	public static final MimeType MIMETYPE_GIF = new MimeType("image", "gif");
-
-	/** Standard JPEG mime-type */
-	public static final MimeType MIMETYPE_JPEG = new MimeType("image", "jpeg");
-
-	/** Standard PNG mime-type */
-	public static final MimeType MIMETYPE_PNG = new MimeType("image", "png");
 
 	/** Integer representation of GIF_LRG. */
 	public static final int GIF_LRG_INT = 1;
@@ -172,7 +164,7 @@ public class DLNAImageProfile implements Comparable<DLNAImageProfile>, Serializa
 	/**
 	 * Creates a new {@link #JPEG_RES_H_V} profile instance with the exact
 	 * resolution H x V. Set {@code H} and {@code V} for this instance. The
-	 * default mime-type {@code image/jpeg} is used. Not applicable for other
+	 * default MIME type {@code image/jpeg} is used. Not applicable for other
 	 * profiles.
 	 *
 	 * @param horizontal the {@code H} value.
@@ -214,7 +206,8 @@ public class DLNAImageProfile implements Comparable<DLNAImageProfile>, Serializa
 
 	/** This profile's string value */
 	protected final String imageProfileStr;
-	/** This profile's mime type value */
+
+	/** This profile's MIME type value */
 	protected final MimeType mimeType;
 	private final int horizontal;
 	private final int vertical;
@@ -279,7 +272,7 @@ public class DLNAImageProfile implements Comparable<DLNAImageProfile>, Serializa
 
 	/**
 	 * Converts the integer passed as argument to a {@link DLNAImageProfile}
-	 * using the default mime-type for the profile. If the conversion fails,
+	 * using the default MIME type for the profile. If the conversion fails,
 	 * this method returns {@code null}.
 	 *
 	 * @param value the integer value to convert to a {@link DLNAImageProfile}.
@@ -306,7 +299,7 @@ public class DLNAImageProfile implements Comparable<DLNAImageProfile>, Serializa
 
 	/**
 	 * Converts the integer passed as argument to a {@link DLNAImageProfile}
-	 * using the default mime-type for the profile. If the conversion fails,
+	 * using the default MIME type for the profile. If the conversion fails,
 	 * this method returns the specified default.
 	 *
 	 * @param value the integer value to convert to a {@link DLNAImageProfile}.
@@ -382,7 +375,7 @@ public class DLNAImageProfile implements Comparable<DLNAImageProfile>, Serializa
 
 	/**
 	 * Converts the {@link String} passed as argument to a
-	 * {@link DLNAImageProfile} using the default mime-type for the profile. If
+	 * {@link DLNAImageProfile} using the default MIME type for the profile. If
 	 * the conversion fails, this method returns {@code null}.
 	 *
 	 * @param argument the {@link String} to convert to a
@@ -412,7 +405,7 @@ public class DLNAImageProfile implements Comparable<DLNAImageProfile>, Serializa
 
 	/**
 	 * Converts the {@link String} passed as argument to a
-	 * {@link DLNAImageProfile} using the default mime-type for the profile. If
+	 * {@link DLNAImageProfile} using the default MIME type for the profile. If
 	 * the conversion fails, this method returns the specified default.
 	 *
 	 * @param argument the {@link String} to convert to a
@@ -625,18 +618,18 @@ public class DLNAImageProfile implements Comparable<DLNAImageProfile>, Serializa
 	public MimeType getDefaultMimeType() {
 		switch (getFormat()) {
 			case GIF:
-				return MIMETYPE_GIF;
+				return KnownMimeTypes.GIF;
 			case JPEG:
-				return MIMETYPE_JPEG;
+				return KnownMimeTypes.JPEG;
 			case PNG:
-				return MIMETYPE_PNG;
+				return KnownMimeTypes.PNG;
 			default:
 				throw new IllegalStateException("Format is missing from switch statement");
 		}
 	}
 
 	/**
-	 * @return The formatted mime-type {@link String} for this
+	 * @return The formatted MIME type {@link String} for this
 	 *         {@link DLNAImageProfile}.
 	 */
 	public String getMimeTypeString() {

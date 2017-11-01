@@ -15,18 +15,20 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import javax.annotation.Nullable;
 import net.pms.Messages;
 import net.pms.PMS;
+import net.pms.configuration.FormatConfiguration.MatchResult;
 import net.pms.dlna.*;
 import net.pms.dlna.DLNAMediaInfo.Mode3D;
+import net.pms.dlna.protocolinfo.MimeType;
+import net.pms.dlna.protocolinfo.KnownMimeTypes;
 import net.pms.encoders.Player;
 import net.pms.encoders.PlayerFactory;
 import net.pms.encoders.StandardPlayerId;
 import net.pms.formats.Format;
 import net.pms.formats.Format.Identifier;
-import net.pms.formats.v2.AudioProperties;
 import net.pms.io.OutputParams;
-import net.pms.network.HTTPResource;
 import net.pms.network.SpeedStats;
 import net.pms.network.UPNPHelper;
 import net.pms.newgui.StatusTab;
@@ -34,6 +36,7 @@ import net.pms.util.BasicPlayer;
 import net.pms.util.FileWatcher;
 import net.pms.util.FormattableColor;
 import net.pms.util.InvalidArgumentException;
+import net.pms.util.ParseException;
 import net.pms.util.PropertiesUtil;
 import net.pms.util.StringUtil;
 import org.apache.commons.configuration.Configuration;
@@ -89,7 +92,7 @@ public class RendererConfiguration extends UPNPHelper.Renderer {
 	}
 
 	// Holds MIME type aliases
-	protected Map<String, String> mimes;
+	protected Map<MimeType, MimeType> mimes;
 
 	protected Map<String, String> charMap;
 	protected Map<String, String> DLNAPN;
@@ -102,20 +105,6 @@ public class RendererConfiguration extends UPNPHelper.Renderer {
 	protected static final String LPCM = "LPCM";
 	protected static final String MP3 = "MP3";
 	protected static final String WAV = "WAV";
-	protected static final String WMV = "WMV";
-
-	// Old video transcoding options
-	@Deprecated
-	protected static final String DEPRECATED_MPEGAC3 = "MPEGAC3";
-
-	@Deprecated
-	protected static final String DEPRECATED_MPEGPSAC3 = "MPEGPSAC3";
-
-	@Deprecated
-	protected static final String DEPRECATED_MPEGTSAC3 = "MPEGTSAC3";
-
-	@Deprecated
-	protected static final String DEPRECATED_H264TSAC3 = "H264TSAC3";
 
 	// Current video transcoding options
 	protected static final String MPEGTSH264AAC = "MPEGTS-H264-AAC";
@@ -124,6 +113,7 @@ public class RendererConfiguration extends UPNPHelper.Renderer {
 	protected static final String MPEGTSH265AC3 = "MPEGTS-H265-AC3";
 	protected static final String MPEGPSMPEG2AC3 = "MPEGPS-MPEG2-AC3";
 	protected static final String MPEGTSMPEG2AC3 = "MPEGTS-MPEG2-AC3";
+	protected static final String WMV = "WMV";
 
 	// property names
 	protected static final String ACCURATE_DLNA_ORGPN = "AccurateDLNAOrgPN";
@@ -1023,7 +1013,17 @@ public class RendererConfiguration extends UPNPHelper.Renderer {
 				if (equals > -1) {
 					String old = mime_change.substring(0, equals).trim().toLowerCase();
 					String nw = mime_change.substring(equals + 1).trim().toLowerCase();
-					mimes.put(old, nw);
+					try {
+						mimes.put(MimeType.FACTORY.createMimeType(old), MimeType.FACTORY.createMimeType(nw));
+					} catch (ParseException e) {
+						LOGGER.warn(
+							"Could not parse MIME type change from \"{}\" to \"{}\": {}",
+							old,
+							nw,
+							e.getMessage()
+						);
+						LOGGER.trace("", e);
+					}
 				}
 			}
 		}
@@ -1141,34 +1141,31 @@ public class RendererConfiguration extends UPNPHelper.Renderer {
 	}
 
 	public boolean isTranscodeToWMV() {
-		return getVideoTranscode().equals(WMV);
+		return WMV.equals(getVideoTranscode());
 	}
 
 	public boolean isTranscodeToMPEGPSMPEG2AC3() {
-		String videoTranscode = getVideoTranscode();
-		return videoTranscode.equals(MPEGPSMPEG2AC3) || videoTranscode.equals(DEPRECATED_MPEGAC3) || videoTranscode.equals(DEPRECATED_MPEGPSAC3);
+		return MPEGPSMPEG2AC3.equals(getVideoTranscode());
 	}
 
 	public boolean isTranscodeToMPEGTSMPEG2AC3() {
-		String videoTranscode = getVideoTranscode();
-		return videoTranscode.equals(MPEGTSMPEG2AC3) || videoTranscode.equals(DEPRECATED_MPEGTSAC3);
+		return MPEGTSMPEG2AC3.equals(getVideoTranscode());
 	}
 
 	public boolean isTranscodeToMPEGTSH264AC3() {
-		String videoTranscode = getVideoTranscode();
-		return videoTranscode.equals(MPEGTSH264AC3) || videoTranscode.equals(DEPRECATED_H264TSAC3);
+		return MPEGTSH264AC3.equals(getVideoTranscode());
 	}
 
 	public boolean isTranscodeToMPEGTSH264AAC() {
-		return getVideoTranscode().equals(MPEGTSH264AAC);
+		return MPEGTSH264AAC.equals(getVideoTranscode());
 	}
 
 	public boolean isTranscodeToMPEGTSH265AAC() {
-		return getVideoTranscode().equals(MPEGTSH265AAC);
+		return MPEGTSH265AAC.equals(getVideoTranscode());
 	}
 
 	public boolean isTranscodeToMPEGTSH265AC3() {
-		return getVideoTranscode().equals(MPEGTSH265AC3);
+		return MPEGTSH265AC3.equals(getVideoTranscode());
 	}
 
 	/**
@@ -1249,121 +1246,142 @@ public class RendererConfiguration extends UPNPHelper.Renderer {
 	}
 
 	/**
-	 * Determine the mime type specific for this renderer, given a generic mime
-	 * type. This translation takes into account all configured "Supported"
-	 * lines and mime type aliases for this renderer.
+	 * Determines the default transcoding MIME type for this
+	 * {@link RendererConfiguration}.
 	 *
-	 * @param mimeType
-	 *            The mime type to look up. Special values are
-	 *            <code>HTTPResource.VIDEO_TRANSCODE</code> and
-	 *            <code>HTTPResource.AUDIO_TRANSCODE</code>, which will be
-	 *            translated to the mime type of the transcoding profile
-	 *            configured for this renderer.
-	 * @return The mime type.
+	 * @param mediaType the {@link MediaType} for which to find the default
+	 *            {@link MimeType}.
+	 * @return The default {@link MimeType} or {@code null} if none could be
+	 *         found.
 	 */
-	public String getMimeType(String mimeType, DLNAMediaInfo media) {
+	@Nullable
+	public MimeType getDefaultTranscodeMimeType(@Nullable MediaType mediaType) {
+		if (mediaType == null) {
+			return null;
+		}
+		MimeType matchedMimeType = null;
+		switch (mediaType) {
+			case AUDIO:
+				String audioTranscode = getAudioTranscode();
+				if (isUseMediaInfo()) {
+					if (WAV.equals(audioTranscode)) {
+						MatchResult matchResult = getFormatConfiguration().match(FormatConfiguration.WAV, null, null);
+						if (matchResult.isMatch() && matchResult.getSpecifiedMimeType() != null) {
+							matchedMimeType = matchResult.getSpecifiedMimeType();
+						}
+					} else if (MP3.equals(audioTranscode)) {
+						MatchResult matchResult = getFormatConfiguration().match(FormatConfiguration.MP3, null, null);
+						if (matchResult.isMatch() && matchResult.getSpecifiedMimeType() != null) {
+							matchedMimeType = matchResult.getSpecifiedMimeType();
+						}
+					} else {
+						// Default audio transcoding MIME type
+						MatchResult matchResult = getFormatConfiguration().match(FormatConfiguration.LPCM, null, null);
+						if (matchResult.isMatch() && matchResult.getSpecifiedMimeType() != null) {
+							matchedMimeType = matchResult.getSpecifiedMimeType();
+						}
+					}
+				}
+				if (matchedMimeType == null) {
+					// No match found, try without using the "supported" lines
+					if (WAV.equals(audioTranscode)) {
+						matchedMimeType = KnownMimeTypes.WAV;
+					} else if (MP3.equals(audioTranscode)) {
+						matchedMimeType = KnownMimeTypes.MP3;
+					} else {
+						// Default audio transcoding MIME type
+						matchedMimeType = KnownMimeTypes.LPCM;
+					}
+				}
+				break;
+			case VIDEO:
+				String videoTranscode = getVideoTranscode();
+				if (isUseMediaInfo()) {
+					if (MPEGTSH264AC3.equals(videoTranscode)) {
+						MatchResult matchResult = getFormatConfiguration().match(FormatConfiguration.MPEGTS, FormatConfiguration.H264, FormatConfiguration.AC3);
+						if (matchResult.isMatch() && matchResult.getSpecifiedMimeType() != null) {
+							matchedMimeType = matchResult.getSpecifiedMimeType();
+						}
+					} else if (MPEGTSH264AAC.equals(videoTranscode)) {
+						MatchResult matchResult = getFormatConfiguration().match(FormatConfiguration.MPEGTS, FormatConfiguration.H264, FormatConfiguration.AAC_LC);
+						if (matchResult.isMatch() && matchResult.getSpecifiedMimeType() != null) {
+							matchedMimeType = matchResult.getSpecifiedMimeType();
+						}
+					} else if (MPEGTSH265AC3.equals(videoTranscode)) {
+						MatchResult matchResult = getFormatConfiguration().match(FormatConfiguration.MPEGTS, FormatConfiguration.H265, FormatConfiguration.AC3);
+						if (matchResult.isMatch() && matchResult.getSpecifiedMimeType() != null) {
+							matchedMimeType = matchResult.getSpecifiedMimeType();
+						}
+					} else if (MPEGTSH265AAC.equals(videoTranscode)) {
+						MatchResult matchResult = getFormatConfiguration().match(FormatConfiguration.MPEGTS, FormatConfiguration.H265, FormatConfiguration.AAC_LC);
+						if (matchResult.isMatch() && matchResult.getSpecifiedMimeType() != null) {
+							matchedMimeType = matchResult.getSpecifiedMimeType();
+						}
+					} else if (MPEGTSMPEG2AC3.equals(videoTranscode)) {
+						MatchResult matchResult = getFormatConfiguration().match(FormatConfiguration.MPEGTS, FormatConfiguration.MPEG2, FormatConfiguration.AC3);
+						if (matchResult.isMatch() && matchResult.getSpecifiedMimeType() != null) {
+							matchedMimeType = matchResult.getSpecifiedMimeType();
+						}
+					} else if (WMV.equals(videoTranscode)) {
+						MatchResult matchResult = getFormatConfiguration().match(FormatConfiguration.WMV, FormatConfiguration.WMV, FormatConfiguration.WMA);
+						if (matchResult.isMatch() && matchResult.getSpecifiedMimeType() != null) {
+							matchedMimeType = matchResult.getSpecifiedMimeType();
+						}
+					} else {
+						// Default video transcoding MIME type
+						MatchResult matchResult = getFormatConfiguration().match(FormatConfiguration.MPEGPS, FormatConfiguration.MPEG2, FormatConfiguration.AC3);
+						if (matchResult.isMatch() && matchResult.getSpecifiedMimeType() != null) {
+							matchedMimeType = matchResult.getSpecifiedMimeType();
+						}
+					}
+				}
+				if (matchedMimeType == null) {
+					// No match found, try without using the "supported" lines
+					if (
+						MPEGTSH264AC3.equals(videoTranscode) ||
+						MPEGTSH264AAC.equals(videoTranscode) ||
+						MPEGTSH265AC3.equals(videoTranscode) ||
+						MPEGTSH265AAC.equals(videoTranscode) ||
+						MPEGTSMPEG2AC3.equals(videoTranscode)
+					) {
+						matchedMimeType = KnownMimeTypes.MPEG_TS;
+					}
+					if (WMV.equals(videoTranscode) && !isXbox360()) {
+						matchedMimeType = KnownMimeTypes.WMV;
+					} else {
+						// Default video transcoding MIME type
+						matchedMimeType = KnownMimeTypes.MPEG;
+					}
+				}
+				break;
+			case IMAGE:
+				matchedMimeType = KnownMimeTypes.JPEG;
+				break;
+			case UNKNOWN:
+			default:
+				break;
+		}
+		return matchedMimeType;
+	}
+
+	/**
+	 * Replaces MIME types with replacement MIME types if configured, or simply
+	 * returns the specified MIME type.
+	 *
+	 * @param mimeType the {@link MimeType} to potentially replace.
+	 * @return The replaced {@link MimeType} or the original instance if no
+	 *         replacement is configured for {@code mimeType}.
+	 */
+	@Nullable
+	public MimeType replaceMimeType(@Nullable MimeType mimeType) {
 		if (mimeType == null) {
 			return null;
 		}
-
-		String matchedMimeType = null;
-
-		if (isUseMediaInfo()) {
-			// Use the supported information in the configuration to determine the transcoding mime type.
-			if (HTTPResource.VIDEO_TRANSCODE.equals(mimeType)) {
-				if (isTranscodeToMPEGTSH264AC3()) {
-					matchedMimeType = getFormatConfiguration().match(FormatConfiguration.MPEGTS, FormatConfiguration.H264, FormatConfiguration.AC3);
-				} else if (isTranscodeToMPEGTSH264AAC()) {
-					matchedMimeType = getFormatConfiguration().match(FormatConfiguration.MPEGTS, FormatConfiguration.H264, FormatConfiguration.AAC_LC);
-				} else if (isTranscodeToMPEGTSH265AC3()) {
-					matchedMimeType = getFormatConfiguration().match(FormatConfiguration.MPEGTS, FormatConfiguration.H265, FormatConfiguration.AC3);
-				} else if (isTranscodeToMPEGTSH265AAC()) {
-					matchedMimeType = getFormatConfiguration().match(FormatConfiguration.MPEGTS, FormatConfiguration.H265, FormatConfiguration.AAC_LC);
-				} else if (isTranscodeToMPEGTSMPEG2AC3()) {
-					matchedMimeType = getFormatConfiguration().match(FormatConfiguration.MPEGTS, FormatConfiguration.MPEG2, FormatConfiguration.AC3);
-				} else if (isTranscodeToWMV()) {
-					matchedMimeType = getFormatConfiguration().match(FormatConfiguration.WMV, FormatConfiguration.WMV, FormatConfiguration.WMA);
-				} else {
-					// Default video transcoding mime type
-					matchedMimeType = getFormatConfiguration().match(FormatConfiguration.MPEGPS, FormatConfiguration.MPEG2, FormatConfiguration.AC3);
-				}
-			} else if (HTTPResource.AUDIO_TRANSCODE.equals(mimeType)) {
-				if (isTranscodeToWAV()) {
-					matchedMimeType = getFormatConfiguration().match(FormatConfiguration.WAV, null, null);
-				} else if (isTranscodeToMP3()) {
-					matchedMimeType = getFormatConfiguration().match(FormatConfiguration.MP3, null, null);
-				} else {
-					// Default audio transcoding mime type
-					matchedMimeType = getFormatConfiguration().match(FormatConfiguration.LPCM, null, null);
-
-					if (matchedMimeType != null) {
-						if (pmsConfiguration.isAudioResample()) {
-							if (isTranscodeAudioTo441()) {
-								matchedMimeType += ";rate=44100;channels=2";
-							} else {
-								matchedMimeType += ";rate=48000;channels=2";
-							}
-						} else if (media != null && media.getFirstAudioTrack() != null) {
-							AudioProperties audio = media.getFirstAudioTrack().getAudioProperties();
-							if (audio.getSampleFrequency() > 0) {
-								matchedMimeType += ";rate=" + Integer.toString(audio.getSampleFrequency());
-							}
-							if (audio.getNumberOfChannels() > 0) {
-								matchedMimeType += ";channels=" + Integer.toString(audio.getNumberOfChannels());
-							}
-						}
-					}
-				}
-			}
+		// Apply renderer specific MIME type aliases
+		if (mimes.containsKey(mimeType)) {
+				return mimes.get(mimeType);
 		}
-
-		if (matchedMimeType == null) {
-			// No match found, try without media parser v2
-			if (HTTPResource.VIDEO_TRANSCODE.equals(mimeType)) {
-				if (isTranscodeToWMV()) {
-					matchedMimeType = HTTPResource.WMV_TYPEMIME;
-				} else {
-					// Default video transcoding mime type
-					matchedMimeType = HTTPResource.MPEG_TYPEMIME;
-				}
-			} else if (HTTPResource.AUDIO_TRANSCODE.equals(mimeType)) {
-				if (isTranscodeToWAV()) {
-					matchedMimeType = HTTPResource.AUDIO_WAV_TYPEMIME;
-				} else if (isTranscodeToMP3()) {
-					matchedMimeType = HTTPResource.AUDIO_MP3_TYPEMIME;
-				} else {
-					// Default audio transcoding mime type
-					matchedMimeType = HTTPResource.AUDIO_LPCM_TYPEMIME;
-
-					if (pmsConfiguration.isAudioResample()) {
-						if (isTranscodeAudioTo441()) {
-							matchedMimeType += ";rate=44100;channels=2";
-						} else {
-							matchedMimeType += ";rate=48000;channels=2";
-						}
-					} else if (media != null) {
-						AudioProperties audio = media.getFirstAudioTrack().getAudioProperties();
-						if (audio.getSampleFrequency() > 0) {
-							matchedMimeType += ";rate=" + Integer.toString(audio.getSampleFrequency());
-						}
-						if (audio.getNumberOfChannels() > 0) {
-							matchedMimeType += ";channels=" + Integer.toString(audio.getNumberOfChannels());
-						}
-					}
-				}
-			}
-		}
-
-		if (matchedMimeType == null) {
-			matchedMimeType = mimeType;
-		}
-
-		// Apply renderer specific mime type aliases
-		if (mimes.containsKey(matchedMimeType)) {
-			return mimes.get(matchedMimeType);
-		}
-
-		return matchedMimeType;
+		return mimeType;
 	}
 
 	public boolean matchUPNPDetails(String details) {
@@ -1712,7 +1730,7 @@ public class RendererConfiguration extends UPNPHelper.Renderer {
 	public boolean isMuxH264MpegTS() {
 		boolean muxCompatible = getBoolean(MUX_H264_WITH_MPEGTS, true);
 		if (muxCompatible && isUseMediaInfo()) {
-			muxCompatible = getFormatConfiguration().match(FormatConfiguration.MPEGTS, FormatConfiguration.H264, null) != null;
+			muxCompatible = getFormatConfiguration().match(FormatConfiguration.MPEGTS, FormatConfiguration.H264, null).isMatch();
 		}
 
 		if (muxCompatible) {
@@ -2213,7 +2231,7 @@ public class RendererConfiguration extends UPNPHelper.Renderer {
 
 		// Use the configured "Supported" lines in the renderer.conf
 		// to see if any of them match the MediaInfo library
-		if (isUseMediaInfo() && mediaInfo != null && getFormatConfiguration().match(mediaInfo) != null) {
+		if (isUseMediaInfo() && mediaInfo != null && getFormatConfiguration().match(mediaInfo).isMatch()) {
 			return true;
 		}
 

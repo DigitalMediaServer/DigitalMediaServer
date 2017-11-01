@@ -28,6 +28,7 @@ import net.pms.configuration.RendererConfiguration;
 import net.pms.dlna.DLNAMediaAudio;
 import net.pms.dlna.DLNAMediaInfo;
 import net.pms.dlna.LibMediaInfoParser;
+import net.pms.dlna.protocolinfo.KnownMimeTypes;
 import net.pms.formats.DVRMS;
 import net.pms.formats.Format;
 import net.pms.formats.ISO;
@@ -38,7 +39,6 @@ import net.pms.formats.audio.MP3;
 import net.pms.formats.audio.OGA;
 import net.pms.formats.audio.WAV;
 import net.pms.formats.image.RAW;
-import net.pms.network.HTTPResource;
 import org.apache.commons.configuration.ConfigurationException;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -97,7 +97,7 @@ public class FormatRecognitionTest {
 		// Construct regular two channel MP3 information
 		DLNAMediaInfo info = new DLNAMediaInfo();
 		info.setContainer("mp3");
-		info.setMimeType(HTTPResource.AUDIO_MP3_TYPEMIME);
+		info.setMimeType(KnownMimeTypes.MP3);
 		DLNAMediaAudio audio = new DLNAMediaAudio();
 		audio.getAudioProperties().setNumberOfChannels(2);
 		List<DLNAMediaAudio> audioCodes = new ArrayList<>();
@@ -294,7 +294,7 @@ public class FormatRecognitionTest {
 		info.setContainer("mpegps");
 		List<DLNAMediaAudio> audioCodes = new ArrayList<>();
 		info.setAudioTracksList(audioCodes);
-		info.setMimeType("video/mpeg");
+		info.setMimeType(KnownMimeTypes.MPEG);
 		info.setCodecV("mpeg2");
 		info.setMediaparsed(true);
 		Format format = new MPG();

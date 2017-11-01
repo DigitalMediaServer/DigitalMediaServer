@@ -67,11 +67,6 @@ public class MEncoderWebVideo extends MEncoderVideo {
 	}
 
 	@Override
-	public String mimeType() {
-		return "video/mpeg";
-	}
-
-	@Override
 	protected String[] getDefaultArgs() {
 		int nThreads = configuration.getMencoderMaxThreads();
 		String acodec = configuration.isMencoderAc3Fixed() ? "ac3_fixed" : "ac3";

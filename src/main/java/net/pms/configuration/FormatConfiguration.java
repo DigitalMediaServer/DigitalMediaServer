@@ -29,13 +29,17 @@ import java.util.*;
 import java.util.Map.Entry;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import net.pms.dlna.DLNAMediaAudio;
 import net.pms.dlna.DLNAMediaInfo;
 import net.pms.dlna.InputFile;
 import net.pms.dlna.LibMediaInfoParser;
+import net.pms.dlna.protocolinfo.MimeType;
 import net.pms.formats.Format;
 import net.pms.formats.Format.Identifier;
 import net.pms.util.AudioUtils;
+import net.pms.util.ParseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -168,7 +172,6 @@ public class FormatConfiguration {
 	public static final String WMV = "wmv";
 	/** Used as a "video codec" when sequences of raw, uncompressed YUV is used as a video stream in AVI, MP4 or MOV files */
 	public static final String YUV = "yuv";
-	public static final String MIMETYPE_AUTO = "MIMETYPE_AUTO";
 	public static final String und = "und";
 
 	private static class SupportSpec {
@@ -190,13 +193,9 @@ public class FormatConfiguration {
 		private String maxNbChannels;
 		private String maxVideoHeight;
 		private String maxVideoWidth;
-		private String mimeType;
+		private MimeType mimeType;
 		private String videoCodec;
 		private String supportLine;
-
-		SupportSpec() {
-			this.mimeType = MIMETYPE_AUTO;
-		}
 
 		boolean isValid() {
 			if (isBlank(format)) { // required
@@ -519,33 +518,34 @@ public class FormatConfiguration {
 	}
 
 	public boolean isFormatSupported(String container) {
-		return match(container, null, null) != null;
+		return match(container, null, null).isMatch();
 	}
 
 	public boolean isDTSSupported() {
-		return match(MPEGPS, null, DTS) != null || match(MPEGTS, null, DTS) != null;
+		return match(MPEGPS, null, DTS).isMatch() || match(MPEGTS, null, DTS).isMatch();
 	}
 
 	public boolean isLPCMSupported() {
-		return match(MPEGPS, null, LPCM) != null || match(MPEGTS, null, LPCM) != null;
+		return match(MPEGPS, null, LPCM).isMatch() || match(MPEGTS, null, LPCM).isMatch();
 	}
 
 	public boolean isMpeg2Supported() {
-		return match(MPEGPS, MPEG2, null) != null || match(MPEGTS, MPEG2, null) != null;
+		return match(MPEGPS, MPEG2, null).isMatch() || match(MPEGTS, MPEG2, null).isMatch();
 	}
 
 	/**
 	 * Match media information to audio codecs supported by the renderer and
-	 * return its MIME-type if the match is successful. Returns null if the
+	 * return its MIME type if the match is successful. Returns null if the
 	 * media is not natively supported by the renderer, which means it has
 	 * to be transcoded.
 	 *
 	 * @param media The MediaInfo metadata
 	 * @return The MIME type or null if no match was found.
 	 */
-	public String match(DLNAMediaInfo media) {
+	@Nonnull
+	public MatchResult match(DLNAMediaInfo media) {
 		if (media == null) {
-			return null;
+			return new MatchResult(false, null);
 		}
 		int frameRate = 0;
 		if (isNotBlank(media.getFrameRate())) {
@@ -603,10 +603,10 @@ public class FormatConfiguration {
 			);
 		}
 
-		String finalMimeType = null;
+		MatchResult finalMatchResult = null;
 
 		for (DLNAMediaAudio audio : media.getAudioTracksList()) {
-			String mimeType = match(
+			MatchResult matchResult = match(
 				media.getContainer(),
 				media.getCodecV(),
 				audio.getCodecA(),
@@ -619,17 +619,17 @@ public class FormatConfiguration {
 				media.getExtras()
 			);
 
-			finalMimeType = mimeType;
-
-			if (mimeType == null) { // if at least one audio track is not compatible, the file must be transcoded.
-				return null;
+			if (!matchResult.isMatch()) { // if at least one audio track is not compatible, the file must be transcoded.
+				return matchResult;
 			}
+
+			finalMatchResult = matchResult;
 		}
 
-		return finalMimeType;
+		return finalMatchResult != null ? finalMatchResult : new MatchResult(false, null);
 	}
 
-	public String match(String container, String videoCodec, String audioCodec) {
+	public MatchResult match(String container, String videoCodec, String audioCodec) {
 		return match(
 			container,
 			videoCodec,
@@ -644,7 +644,8 @@ public class FormatConfiguration {
 		);
 	}
 
-	public String match(
+	@Nonnull
+	public MatchResult match(
 		String container,
 		String videoCodec,
 		String audioCodec,
@@ -656,8 +657,6 @@ public class FormatConfiguration {
 		int videoHeight,
 		Map<String, String> extras
 	) {
-		String matchedMimeType = null;
-
 		for (SupportSpec supportSpec : supportSpecs) {
 			if (supportSpec.match(
 				container,
@@ -671,14 +670,14 @@ public class FormatConfiguration {
 				videoHeight,
 				extras
 			)) {
-				matchedMimeType = supportSpec.mimeType;
-				break;
+				return new MatchResult(true, supportSpec.mimeType);
 			}
 		}
 
-		return matchedMimeType;
+		return new MatchResult(false, null);
 	}
 
+	@Nonnull
 	private static SupportSpec parseSupportLine(String line) {
 		StringTokenizer st = new StringTokenizer(line, "\t ");
 		SupportSpec supportSpec = new SupportSpec();
@@ -703,7 +702,17 @@ public class FormatConfiguration {
 			} else if (token.startsWith("h:")) {
 				supportSpec.maxVideoHeight = token.substring(2).trim();
 			} else if (token.startsWith("m:")) {
-				supportSpec.mimeType = token.substring(2).trim();
+				try {
+					supportSpec.mimeType = MimeType.FACTORY.createMimeType(token.substring(2).trim());
+				} catch (ParseException e) {
+					LOGGER.warn("" +
+						"Could not parse MIME type \"{}\" from support line \"{}\": {}",
+						token.substring(2).trim(),
+						line,
+						e.getMessage()
+					);
+					LOGGER.trace("", e);
+				}
 			} else if (token.startsWith("b:")) {
 				supportSpec.maxBitrate = token.substring(2).trim();
 			} else if (token.startsWith("fps:")) {
@@ -721,5 +730,36 @@ public class FormatConfiguration {
 		}
 
 		return supportSpec;
+	}
+
+	/**
+	 * A container for holding the result of a "supported line" match operation.
+	 *
+	 * @author Nadahar
+	 */
+	public static class MatchResult {
+		private final boolean matches;
+		private final MimeType specifiedMimeType;
+
+		protected MatchResult(boolean matches, @Nullable MimeType specifiedMimeType) {
+			this.matches = matches;
+			this.specifiedMimeType = specifiedMimeType;
+		}
+
+		/**
+		 * @return {@code true} if it was a match, {@code false} otherwise.
+		 */
+		public boolean isMatch() {
+			return matches;
+		}
+
+		/**
+		 * @return the specified {@link MimeType} or {@code null} if none was
+		 *         specified.
+		 */
+		@Nullable
+		public MimeType getSpecifiedMimeType() {
+			return specifiedMimeType;
+		}
 	}
 }

@@ -49,10 +49,12 @@ import net.pms.dlna.DLNAMediaSubtitle;
 import net.pms.dlna.DLNAResource;
 import net.pms.dlna.FileTranscodeVirtualFolder;
 import net.pms.dlna.InputFile;
+import net.pms.dlna.MediaType;
+import net.pms.dlna.protocolinfo.MimeType;
+import net.pms.dlna.protocolinfo.KnownMimeTypes;
 import net.pms.formats.Format;
 import net.pms.formats.v2.SubtitleType;
 import net.pms.io.*;
-import net.pms.network.HTTPResource;
 import net.pms.newgui.GuiUtil;
 import net.pms.platform.windows.NTStatus;
 import net.pms.util.CodecUtil;
@@ -728,9 +730,77 @@ public class FFMpegVideo extends Player {
 		return getDefaultArgs(); // unused; return this array for for backwards compatibility
 	}
 
+	@Nullable
 	@Override
-	public String mimeType() {
-		return HTTPResource.VIDEO_TRANSCODE;
+	public MimeType getMimeType(@Nullable DLNAResource resource, @Nullable RendererConfiguration renderer) {
+		if (resource == null) {
+			return null;
+		}
+		MediaType mediaType = resource.getMediaType();
+		MimeType mimeType = null;
+		if (mediaType == MediaType.VIDEO && renderer != null) {
+			String customOptions = renderer.getCustomFFmpegOptions().toLowerCase(Locale.ROOT);
+			if (
+				customOptions.contains("-f avi") &&
+				customOptions.contains("divx")
+			) {
+				mimeType = KnownMimeTypes.DIVX;
+			} else if (
+				customOptions.contains("-f mjpeg") ||
+				customOptions.contains("-f avi") &&
+				// Using -vtag leave the possibility to get .avi or .divx extension for such DIVX files
+				!customOptions.contains("-tag:v divx")
+			) {
+				mimeType = KnownMimeTypes.AVI;
+			} else if (customOptions.contains("-f flv")) {
+				mimeType = KnownMimeTypes.FLV;
+			} else if (customOptions.contains("-f matroska")) {
+				mimeType = KnownMimeTypes.MATROSKA;
+			} else if (customOptions.contains("-f mov")) {
+				mimeType = KnownMimeTypes.MOV;
+			} else if (customOptions.contains("-f ogv")) {
+				mimeType = KnownMimeTypes.OGG;
+			} else if (customOptions.contains("-f rm")) {
+				mimeType = KnownMimeTypes.RM;
+			} else if (customOptions.contains("-f webm")) {
+				mimeType = KnownMimeTypes.WEBM;
+			} else if (
+				renderer.isTranscodeToMPEGTS() &&
+				!customOptions.contains("-mpegts_m2ts_mode  1") &&
+				!customOptions.contains("bluray-compat=1")
+			) {
+				mimeType = KnownMimeTypes.MPEG_TS;
+			} else if (
+					renderer.isTranscodeToMPEGTS() &&
+					(
+						customOptions.contains("-mpegts_m2ts_mode  1") ||
+						customOptions.contains("bluray-compat=1")
+					)
+				) {
+				mimeType = KnownMimeTypes.M2TS;
+			} else if (
+					customOptions.contains("-f ismv") ||
+					customOptions.contains("-f m4v") ||
+					customOptions.contains("-f mp4") ||
+					customOptions.contains("-f psp") ||
+					customOptions.contains("-f ipod")
+			) {
+				mimeType = KnownMimeTypes.MP4;
+			} else if (
+				customOptions.contains("-f asf") ||
+				customOptions.contains("-f vc1")
+			) {
+				mimeType = KnownMimeTypes.WMV;
+			} else if (customOptions.contains("-f vob")) {
+				mimeType = KnownMimeTypes.VOB;
+			}
+		}
+
+		if (mimeType == null) {
+			mimeType = super.getMimeType(resource, renderer);
+		}
+
+		return mimeType;
 	}
 
 	@Override

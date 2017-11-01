@@ -44,9 +44,11 @@ import net.pms.configuration.PmsConfiguration;
 import net.pms.configuration.RendererConfiguration;
 import net.pms.dlna.DLNAMediaInfo;
 import net.pms.dlna.DLNAResource;
+import net.pms.dlna.MediaType;
+import net.pms.dlna.protocolinfo.MimeType;
+import net.pms.dlna.protocolinfo.KnownMimeTypes;
 import net.pms.formats.Format;
 import net.pms.io.*;
-import net.pms.network.HTTPResource;
 import net.pms.newgui.GuiUtil;
 import net.pms.util.*;
 import net.pms.util.Version.WindowsVersionType;
@@ -141,10 +143,16 @@ public class VLCVideo extends Player {
 		return Format.VIDEO;
 	}
 
+	@Nullable
 	@Override
-	public String mimeType() {
-		// I think?
-		return HTTPResource.VIDEO_TRANSCODE;
+	public MimeType getMimeType(@Nullable DLNAResource resource, @Nullable RendererConfiguration renderer) {
+		if (resource == null) {
+			return null;
+		}
+		if (resource.getMediaType() == MediaType.VIDEO) {
+			return KnownMimeTypes.MPEG;
+		}
+		return super.getMimeType(resource, renderer);
 	}
 
 	@Override

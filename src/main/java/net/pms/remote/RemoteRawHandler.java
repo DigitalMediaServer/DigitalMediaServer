@@ -14,6 +14,8 @@ import net.pms.configuration.WebRender;
 import net.pms.dlna.DLNAResource;
 import net.pms.dlna.Range;
 import net.pms.dlna.RootFolder;
+import net.pms.dlna.protocolinfo.MimeType;
+import net.pms.dlna.protocolinfo.KnownMimeTypes;
 import net.pms.encoders.ImagePlayer;
 import net.pms.image.Image;
 import net.pms.image.ImageFormat;
@@ -55,7 +57,7 @@ public class RemoteRawHandler implements HttpHandler {
 			}
 			DLNAResource dlna = res.get(0);
 			long len;
-			String mime = null;
+			MimeType mimeType = null;
 			InputStream in;
 			Range.Byte range;
 			if (dlna.getMedia() != null && dlna.getMedia().isImage() && dlna.getMedia().getImageInfo() != null) {
@@ -65,14 +67,12 @@ public class RemoteRawHandler implements HttpHandler {
 					WebRender renderer = (WebRender) root.getDefaultRenderer();
 					supported = renderer.isImageFormatSupported(imageInfo.getFormat());
 				}
-				mime = dlna.getFormat() != null ?
-					dlna.getFormat().mimeType() :
-					root.getDefaultRenderer().getMimeType(dlna.mimeType(), dlna.getMedia());
 
 				len = supported && imageInfo.getSize() != ImageInfo.SIZE_UNKNOWN ? imageInfo.getSize() : dlna.length();
 				range = new Range.Byte(0l, len);
 				if (supported) {
 					in = dlna.getInputStream();
+					mimeType = dlna.getMimeType(root.getDefaultRenderer());
 				} else {
 					InputStream imageInputStream;
 					if (dlna.getPlayer() instanceof ImagePlayer) {
@@ -86,6 +86,7 @@ public class RemoteRawHandler implements HttpHandler {
 						imageInputStream = dlna.getInputStream();
 					}
 					Image image = Image.toImage(imageInputStream, 3840, 2400, ScaleType.MAX, ImageFormat.JPEG, false);
+					mimeType = KnownMimeTypes.JPEG;
 					len = image == null ? 0 : image.getBytes(false).length;
 					in = image == null ? null : new ByteArrayInputStream(image.getBytes(false));
 				}
@@ -98,11 +99,11 @@ public class RemoteRawHandler implements HttpHandler {
 					// For web resources actual length may be unknown until we open the stream
 					len = dlna.length();
 				}
-				mime = root.getDefaultRenderer().getMimeType(dlna.mimeType(), dlna.getMedia());
+				mimeType = dlna.getMimeType(root.getDefaultRenderer());
 			}
 			Headers hdr = t.getResponseHeaders();
-			LOGGER.debug("Sending media \"{}\" with mime type \"{}\"", dlna, mime);
-			hdr.add("Content-Type", mime);
+			LOGGER.debug("Sending media \"{}\" with MIME type \"{}\"", dlna, mimeType);
+			hdr.add("Content-Type", mimeType.toString());
 			hdr.add("Accept-Ranges", "bytes");
 			hdr.add("Server", PMS.get().getServerName());
 			hdr.add("Connection", "keep-alive");

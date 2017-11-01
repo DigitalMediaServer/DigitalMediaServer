@@ -46,6 +46,8 @@ import net.pms.dlna.DLNAMediaAudio;
 import net.pms.dlna.DLNAMediaInfo;
 import net.pms.dlna.DLNAMediaSubtitle;
 import net.pms.dlna.DLNAResource;
+import net.pms.dlna.MediaType;
+import net.pms.dlna.protocolinfo.MimeType;
 import net.pms.formats.Format;
 import net.pms.io.BasicSystemUtils;
 import net.pms.io.OutputParams;
@@ -266,8 +268,6 @@ public abstract class Player {
 	// need to get rid of this
 	public abstract String[] args();
 
-	public abstract String mimeType();
-
 	/**
 	 * Used to retrieve the {@link ExternalProgramInfo} for the {@link Player}
 	 * during construction.
@@ -318,6 +318,30 @@ public abstract class Player {
 
 	public boolean isTimeSeekable() {
 		return false;
+	}
+
+	/**
+	 * Resolves the {@link MimeType} for this {@link Player} for the specified
+	 * {@link RendererConfiguration}.
+	 *
+	 * @param resource the {@link DLNAResource} for which to resolve the
+	 *            {@link MimeType}.
+	 * @param renderer the {@link RendererConfiguration} to resolve for.
+	 * @return The resolved {@link MimeType} or {@code null}.
+	 */
+	@Nullable
+	public MimeType getMimeType(@Nullable DLNAResource resource, @Nullable RendererConfiguration renderer) {
+		if (resource == null) {
+			return null;
+		}
+		MediaType mediaType = resource.getMediaType();
+		MimeType mimeType;
+		if (renderer != null) {
+			mimeType = renderer.getDefaultTranscodeMimeType(mediaType);
+		} else {
+			mimeType = getDefaultMimeType(mediaType);
+		}
+		return mimeType;
 	}
 
 	/**
@@ -756,6 +780,28 @@ public abstract class Player {
 	@Override
 	public String toString() {
 		return name();
+	}
+
+	/**
+	 * Gets the default {@link MimeType} for the specified {@link MediaType}.
+	 *
+	 * @param mediaType the {@link MediaType} for which to get the default
+	 *            {@link MimeType}.
+	 * @return The default {@link MimeType} or {@code null}.
+	 */
+	@Nullable
+	public static MimeType getDefaultMimeType(@Nonnull MediaType mediaType) {
+		switch (mediaType) {
+			case AUDIO:
+				return MimeType.FACTORY.audioDefault;
+			case IMAGE:
+				return MimeType.FACTORY.imageDefault;
+			case VIDEO:
+				return MimeType.FACTORY.videoDefault;
+			case UNKNOWN:
+			default:
+				return null;
+		}
 	}
 
 	/**
