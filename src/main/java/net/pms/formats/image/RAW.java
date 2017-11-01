@@ -11,6 +11,8 @@ import net.pms.configuration.RendererConfiguration;
 import net.pms.dlna.DLNAMediaInfo;
 import net.pms.dlna.DLNAThumbnail;
 import net.pms.dlna.InputFile;
+import net.pms.dlna.protocolinfo.MimeType;
+import net.pms.dlna.protocolinfo.KnownMimeTypes;
 import net.pms.encoders.PlayerFactory;
 import net.pms.encoders.DCRaw;
 import net.pms.image.ImageFormat;
@@ -28,17 +30,11 @@ import com.drew.metadata.Metadata;
 public class RAW extends ImageBase {
 	private static final Logger LOGGER = LoggerFactory.getLogger(RAW.class);
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public Identifier getIdentifier() {
 		return Identifier.RAW;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public String[] getSupportedExtensions() {
 		return new String[] {
@@ -192,5 +188,10 @@ public class RAW extends ImageBase {
 			);
 			LOGGER.trace("", e);
 		}
+	}
+
+	@Override
+	public MimeType mimeType() {
+		return KnownMimeTypes.RAW;
 	}
 }

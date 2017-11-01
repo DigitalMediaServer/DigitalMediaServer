@@ -413,40 +413,40 @@ public class PanasonicDmpProfiles implements Serializable {
 		dmpProfile = dmpProfile.trim();
 		ProtocolInfoAttribute attribute = DLNAOrgProfileName.FACTORY.getProfileName(dmpProfile);
 		if (attribute != null) {
-			// Mime-types must be mapped manually, as this information is missing from X-PANASONIC-DMP-Profile
+			// MIME types must be mapped manually, as this information is missing from X-PANASONIC-DMP-Profile
 			MimeType mimeType;
 			if (attribute.getValue().startsWith("JPEG")) {
-				mimeType = new MimeType("image", "jpeg");
+				mimeType = KnownMimeTypes.JPEG;
 			} else if (attribute.getValue().startsWith("PNG")) {
-				mimeType = new MimeType("image", "png");
+				mimeType = KnownMimeTypes.PNG;
 			} else if (attribute.getValue().startsWith("GIF")) {
-				mimeType = new MimeType("image", "gif");
+				mimeType = KnownMimeTypes.GIF;
 			} else if (attribute.getValue().startsWith("MPEG")) {
-				mimeType = new MimeType("video", "mpeg");
+				mimeType = KnownMimeTypes.MPEG;
 			} else if (attribute.getValue().startsWith("AC3")) {
-				mimeType = new MimeType("audio", "vnd.dolby.dd-raw");
+				mimeType = KnownMimeTypes.AC3;
 			} else if (attribute.getValue().startsWith("AMR")) {
-				mimeType = new MimeType("audio", "3gpp");
+				mimeType = KnownMimeTypes.THREEGPPA;
 			} else if (attribute.getValue().startsWith("LPCM")) {
-				mimeType = new MimeType("audio", "L16");
+				mimeType = KnownMimeTypes.LPCM;
 			} else if (attribute.getValue().startsWith("MP2")) {
-				mimeType = new MimeType("audio", "mpeg");
+				mimeType = KnownMimeTypes.MP2;
 			} else if (attribute.getValue().startsWith("MP3")) {
-				mimeType = new MimeType("audio", "mpeg");
+				mimeType = KnownMimeTypes.MP3;
 			} else if (attribute.getValue().startsWith("AAC")) {
-				mimeType = new MimeType("audio", "mp4");
+				mimeType = KnownMimeTypes.M4A;
 			} else if (attribute.getValue().startsWith("WMA")) {
-				mimeType = new MimeType("audio", "x-ms-wma");
+				mimeType = KnownMimeTypes.WMA;
 			} else if (attribute.getValue().startsWith("MPEG4")) {
-				mimeType = new MimeType("video", "mp4");
+				mimeType = KnownMimeTypes.MP4;
 			} else if (attribute.getValue().startsWith("MPEG")) {
-				mimeType = new MimeType("video", "mpeg");
+				mimeType = KnownMimeTypes.MPEG;
 			} else if (attribute.getValue().startsWith("WMV")) {
-				mimeType = new MimeType("video", "x-ms-wmv");
+				mimeType = KnownMimeTypes.WMV;
 			} else if (attribute.getValue().startsWith("VC1")) {
-				mimeType = new MimeType("video", "mpeg");
+				mimeType = KnownMimeTypes.VC1;
 			} else {
-				throw new ParseException("Can't infer mime-type for \"" + attribute + "\"");
+				throw new ParseException("Can't infer MIME type for \"" + attribute + "\"");
 			}
 			return new ProtocolInfo(
 				Protocol.HTTP_GET,
@@ -457,24 +457,24 @@ public class PanasonicDmpProfiles implements Serializable {
 		}
 		attribute = PanasonicComProfileName.FACTORY.getProfileName(dmpProfile);
 		if (attribute != null) {
-			// Mime-types must be mapped manually, as this information is missing from X-PANASONIC-DMP-Profile
+			// MIME types must be mapped manually, as this information is missing from X-PANASONIC-DMP-Profile
 			if (attribute instanceof KnownPanasonicComProfileName) {
 				MimeType mimeType;
 				switch ((KnownPanasonicComProfileName) attribute) {
 					case MPO_3D:
-						mimeType = new MimeType("image", "mpo");
+						mimeType = KnownMimeTypes.MPO;
 						break;
 					case PV_DIVX_DIV3:
 					case PV_DIVX_DIV4:
 					case PV_DIVX_DIVX:
 					case PV_DIVX_DX50:
-						mimeType = new MimeType("video", "divx");
+						mimeType = KnownMimeTypes.DIVX;
 						break;
 					case PV_DRM_DIVX_DIV3:
 					case PV_DRM_DIVX_DIV4:
 					case PV_DRM_DIVX_DIVX:
 					case PV_DRM_DIVX_DX50:
-						// No idea what mime-type they use for DRM, or how to handle them
+						// No idea what MIME type they use for DRM, or how to handle them
 						return null;
 					default:
 						throw new ParseException("Unimplemented PANASONIC.COM_PN profile \"" + attribute + "\"");
@@ -486,7 +486,7 @@ public class PanasonicDmpProfiles implements Serializable {
 					Collections.singletonMap(attribute.getName(), attribute)
 				);
 			}
-			throw new ParseException("Can't infer mime-type for \"" + attribute + "\"");
+			throw new ParseException("Can't infer MIME type for \"" + attribute + "\"");
 		}
 
 		// No match found for known DLNA.ORG_PN or PANASONIC.COM_PN profiles

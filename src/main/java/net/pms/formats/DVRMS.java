@@ -18,7 +18,11 @@
  */
 package net.pms.formats;
 
+import net.pms.dlna.protocolinfo.MimeType;
+import net.pms.dlna.protocolinfo.KnownMimeTypes;
+
 public class DVRMS extends Format {
+
 	@Override
 	public Identifier getIdentifier() {
 		return Identifier.DVRMS;
@@ -39,5 +43,10 @@ public class DVRMS extends Format {
 			"dvr",
 			"dvr-ms",
 		};
+	}
+
+	@Override
+	public MimeType mimeType() {
+		return KnownMimeTypes.DVR_MS;
 	}
 }

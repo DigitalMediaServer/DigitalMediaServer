@@ -18,6 +18,7 @@
  */
 package net.pms.formats.subtitle;
 
+import net.pms.dlna.protocolinfo.MimeType;
 import net.pms.formats.Format;
 
 public abstract class SubtitleBase extends Format {
@@ -29,5 +30,10 @@ public abstract class SubtitleBase extends Format {
 	@Override
 	public boolean transcodable() {
 		return false;
+	}
+
+	@Override
+	public MimeType mimeType() {
+		return null;
 	}
 }

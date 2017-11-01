@@ -18,6 +18,9 @@
  */
 package net.pms.formats.image;
 
+import net.pms.dlna.protocolinfo.MimeType;
+import net.pms.dlna.protocolinfo.KnownMimeTypes;
+
 public class TIFF extends ImageBase {
 	/**
 	 * {@inheritDoc}
@@ -39,7 +42,7 @@ public class TIFF extends ImageBase {
 	}
 
 	@Override
-	public String mimeType() {
-		return "image/tiff";
+	public MimeType mimeType() {
+		return KnownMimeTypes.TIFF;
 	}
 }

@@ -18,6 +18,9 @@
  */
 package net.pms.formats.audio;
 
+import net.pms.dlna.protocolinfo.MimeType;
+import net.pms.dlna.protocolinfo.KnownMimeTypes;
+
 public class DTS extends AudioBase {
 
 	@Override
@@ -28,5 +31,10 @@ public class DTS extends AudioBase {
 	@Override
 	public String[] getSupportedExtensions() {
 		return new String[] { "dts" };
+	}
+
+	@Override
+	public MimeType mimeType() {
+		return KnownMimeTypes.DTS;
 	}
 }

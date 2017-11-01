@@ -23,10 +23,7 @@ import java.net.Authenticator;
 import java.net.URL;
 import java.net.URLConnection;
 import net.pms.PMS;
-import net.pms.configuration.RendererConfiguration;
-import net.pms.dlna.DLNAMediaInfo;
 import net.pms.dlna.DLNAResource;
-import net.pms.formats.Format;
 import net.pms.util.PropertiesUtil;
 import static net.pms.util.StringUtil.convertURLToFileName;
 import org.slf4j.Logger;
@@ -39,84 +36,6 @@ import org.slf4j.LoggerFactory;
  */
 public class HTTPResource {
 	private static final Logger LOGGER = LoggerFactory.getLogger(HTTPResource.class);
-	public static final String UNKNOWN_VIDEO_TYPEMIME = "video/mpeg";
-	public static final String UNKNOWN_IMAGE_TYPEMIME = "image/jpeg";
-	public static final String UNKNOWN_AUDIO_TYPEMIME = "audio/mpeg";
-	public static final String AUDIO_TRANSCODE = "audio/transcode";
-	public static final String VIDEO_TRANSCODE = "video/transcode";
-	public static final String AUDIO_AC3_TYPEMIME = "audio/vnd.dolby.dd-raw";
-	public static final String AUDIO_ADPCM_TYPEMIME = "audio/x-adpcm";
-	public static final String AUDIO_ADTS_TYPEMIME = "audio/vnd.dlna.adts";
-	public static final String AUDIO_AIFF_TYPEMIME = "audio/aiff";
-	public static final String AUDIO_APE_TYPEMIME = "audio/x-ape";
-	public static final String AUDIO_ATRAC_TYPEMIME = "audio/x-sony-oma";
-	public static final String AUDIO_AU_TYPEMIME = "audio/basic";
-	public static final String AUDIO_DSF_TYPEMIME = "audio/x-dsf";
-	public static final String AUDIO_DFF_TYPEMIME = "audio/x-dff";
-	public static final String AUDIO_DTS_TYPEMIME = "audio/vnd.dts";
-	public static final String AUDIO_DTSHD_TYPEMIME = "audio/vnd.dts.hd";
-	public static final String AUDIO_EAC3_TYPEMIME = "audio/eac3";
-	public static final String AUDIO_FLAC_TYPEMIME = "audio/x-flac";
-	public static final String AUDIO_LPCM_TYPEMIME = "audio/L16";
-	public static final String AUDIO_M4A_TYPEMIME = "audio/mp4";
-	public static final String AUDIO_MKA_TYPEMIME = "audio/x-matroska";
-	public static final String AUDIO_MLP_TYPEMIME = "audio/vnd.dolby.mlp";
-	public static final String AUDIO_MP3_TYPEMIME = "audio/mpeg";
-	public static final String AUDIO_MP2_TYPEMIME = "audio/mpeg";
-	public static final String AUDIO_MPA_TYPEMIME = "audio/mpeg";
-	public static final String AUDIO_MPC_TYPEMIME = "audio/x-musepack";
-	public static final String AUDIO_OGA_TYPEMIME = "audio/ogg";
-	public static final String AUDIO_RA_TYPEMIME = "audio/vnd.rn-realaudio";
-	public static final String AUDIO_SHN_TYPEMIME = "audio/x-shn";
-	public static final String AUDIO_THREEGPPA_TYPEMIME = "audio/3gpp";
-	public static final String AUDIO_THREEGPP2A_TYPEMIME = "audio/3gpp2";
-	public static final String AUDIO_TRUEHD_TYPEMIME = "audio/vnd.dolby.mlp";
-	public static final String AUDIO_TTA_TYPEMIME = "audio/x-tta";
-	public static final String AUDIO_VORBIS_TYPEMIME = "audio/ogg";
-	public static final String AUDIO_WAV_TYPEMIME = "audio/wav";
-	public static final String AUDIO_WEBM_TYPEMIME = "audio/webm";
-	public static final String AUDIO_WMA_TYPEMIME = "audio/x-ms-wma";
-	public static final String AUDIO_WV_TYPEMIME = "audio/x-wavpack";
-	public static final String ASF_TYPEMIME = "video/x-ms-asf";
-	public static final String AVI_TYPEMIME = "video/avi";
-	public static final String BMP_TYPEMIME = "image/bmp";
-	public static final String DIVX_TYPEMIME = "video/x-divx";
-	public static final String FLV_TYPEMIME = "video/x-flv";
-	public static final String GIF_TYPEMIME = "image/gif";
-	public static final String JPEG_TYPEMIME = "image/jpeg";
-	public static final String MATROSKA_TYPEMIME = "video/x-matroska";
-	public static final String MOV_TYPEMIME = "video/quicktime";
-	public static final String MP4_TYPEMIME = "video/mp4";
-	public static final String MPEG_TYPEMIME = "video/mpeg";
-	public static final String PNG_TYPEMIME = "image/png";
-	public static final String RM_TYPEMIME = "application/vnd.rn-realmedia";
-	public static final String THREEGPP_TYPEMIME = "video/3gpp";
-	public static final String THREEGPP2_TYPEMIME = "video/3gpp2";
-	public static final String TIFF_TYPEMIME = "image/tiff";
-	public static final String WMV_TYPEMIME = "video/x-ms-wmv";
-	public static final String OGG_TYPEMIME = "video/ogg";
-	public static final String WEBM_TYPEMIME = "video/webm";
-	public HTTPResource() { }
-
-	/**
-	 * Returns for a given item type the default MIME type associated. This is used in the HTTP transfers
-	 * as in the client might do different things for different MIME types.
-	 * @param type Type for which the default MIME type is needed.
-	 * @return Default MIME associated with the file type.
-	 */
-	public static String getDefaultMimeType(int type) {
-		String mimeType = HTTPResource.UNKNOWN_VIDEO_TYPEMIME;
-
-		if (type == Format.VIDEO) {
-			mimeType = HTTPResource.UNKNOWN_VIDEO_TYPEMIME;
-		} else if (type == Format.IMAGE) {
-			mimeType = HTTPResource.UNKNOWN_IMAGE_TYPEMIME;
-		} else if (type == Format.AUDIO) {
-			mimeType = HTTPResource.UNKNOWN_AUDIO_TYPEMIME;
-		}
-
-		return mimeType;
-	}
 
 	/**
 	 * Returns an InputStream associated with the fileName.
@@ -229,16 +148,6 @@ public class HTTPResource {
 		}
 
 		return bytes.toByteArray();
-	}
-
-	/**
-	 * Returns the supplied MIME type customized for the supplied media renderer according to the renderer's aliasing rules.
-	 * @param mimetype MIME type to customize.
-	 * @param renderer media renderer to customize the MIME type for.
-	 * @return The MIME type
-	 */
-	public String getRendererMimeType(String mimetype, RendererConfiguration renderer, DLNAMediaInfo media) {
-		return renderer.getMimeType(mimetype, media);
 	}
 
 	public int getDLNALocalesCount() {

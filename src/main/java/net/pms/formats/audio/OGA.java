@@ -18,18 +18,16 @@
  */
 package net.pms.formats.audio;
 
+import net.pms.dlna.protocolinfo.MimeType;
+import net.pms.dlna.protocolinfo.KnownMimeTypes;
+
 public class OGA extends AudioBase {
-	/**
-	 * {@inheritDoc}
-	 */
+
 	@Override
 	public Identifier getIdentifier() {
 		return Identifier.OGA;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public String[] getSupportedExtensions() {
 		return new String[] {
@@ -37,5 +35,10 @@ public class OGA extends AudioBase {
 			"spx",
 			"opus",
 		};
+	}
+
+	@Override
+	public MimeType mimeType() {
+		return KnownMimeTypes.OGA;
 	}
 }

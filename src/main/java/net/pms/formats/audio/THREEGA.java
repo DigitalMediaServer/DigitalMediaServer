@@ -18,6 +18,9 @@
  */
 package net.pms.formats.audio;
 
+import net.pms.dlna.protocolinfo.MimeType;
+import net.pms.dlna.protocolinfo.KnownMimeTypes;
+
 public class THREEGA extends AudioBase {
 
 	@Override
@@ -32,5 +35,10 @@ public class THREEGA extends AudioBase {
 			"amr",
 			"3gpa",
 		};
+	}
+
+	@Override
+	public MimeType mimeType() {
+		return KnownMimeTypes.THREEGPPA;
 	}
 }

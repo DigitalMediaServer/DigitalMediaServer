@@ -18,6 +18,8 @@
  */
 package net.pms.formats.image;
 
+import net.pms.dlna.protocolinfo.MimeType;
+
 
 public class WBMP extends ImageBase {
 
@@ -32,7 +34,7 @@ public class WBMP extends ImageBase {
 	}
 
 	@Override
-	public String mimeType() {
-		return "image/vnd.wap.wbmp";
+	public MimeType mimeType() {
+		return MimeType.FACTORY.createMimeType("image","vnd.wap.wbmp");
 	}
 }

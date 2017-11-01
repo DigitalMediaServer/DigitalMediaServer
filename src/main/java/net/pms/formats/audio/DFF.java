@@ -16,7 +16,10 @@
  * You should have received a copy of the GNU General Public License along with
  * this program. If not, see http://www.gnu.org/licenses/.
  */
-	package net.pms.formats.audio;
+package net.pms.formats.audio;
+
+import net.pms.dlna.protocolinfo.MimeType;
+import net.pms.dlna.protocolinfo.KnownMimeTypes;
 
 	public class DFF extends AudioBase {
 
@@ -28,5 +31,10 @@
 		@Override
 		public String[] getSupportedExtensions() {
 			return new String[] { "dff" };
+		}
+
+		@Override
+		public MimeType mimeType() {
+			return KnownMimeTypes.DFF;
 		}
 	}

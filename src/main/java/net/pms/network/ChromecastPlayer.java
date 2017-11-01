@@ -35,7 +35,7 @@ public class ChromecastPlayer extends BasicPlayer.Logical {
 			}
 			try {
 				api.launchApp(MediaPlayer);
-				api.load("", null, item.uri, r.mimeType());
+				api.load("", null, item.uri, r.getMimeType(renderer).toString());
 			} catch (IOException e) {
 				LOGGER.debug("Bad chromecast load: " + e);
 			}
@@ -69,6 +69,7 @@ public class ChromecastPlayer extends BasicPlayer.Logical {
 		}
 	}
 
+	@Override
 	public void forward() {
 		try {
 			api.seek(60);
@@ -100,7 +101,7 @@ public class ChromecastPlayer extends BasicPlayer.Logical {
 		return PLAYCONTROL | VOLUMECONTROL;
 	}
 
-	private int translateState(MediaStatus.PlayerState s) {
+	private static int translateState(MediaStatus.PlayerState s) {
 		switch(s) {
 			case IDLE: return STOPPED;
 			case PLAYING: // buffering is a kind of playing

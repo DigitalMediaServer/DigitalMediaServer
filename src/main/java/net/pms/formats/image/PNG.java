@@ -18,25 +18,23 @@
  */
 package net.pms.formats.image;
 
+import net.pms.dlna.protocolinfo.MimeType;
+import net.pms.dlna.protocolinfo.KnownMimeTypes;
+
 public class PNG extends ImageBase {
-	/**
-	 * {@inheritDoc}
-	 */
+
 	@Override
 	public Identifier getIdentifier() {
 		return Identifier.PNG;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public String[] getSupportedExtensions() {
 		return new String[] { "png" };
 	}
 
 	@Override
-	public String mimeType() {
-		return "image/png";
+	public MimeType mimeType() {
+		return KnownMimeTypes.PNG;
 	}
 }

@@ -18,6 +18,9 @@
  */
 package net.pms.formats.audio;
 
+import net.pms.dlna.protocolinfo.MimeType;
+import net.pms.dlna.protocolinfo.KnownMimeTypes;
+
 public class MPC extends AudioBase {
 
 	@Override
@@ -32,5 +35,10 @@ public class MPC extends AudioBase {
 			"mp+",
 			"mpp",
 		};
+	}
+
+	@Override
+	public MimeType mimeType() {
+		return KnownMimeTypes.MPC;
 	}
 }

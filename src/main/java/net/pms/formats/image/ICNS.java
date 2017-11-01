@@ -18,6 +18,8 @@
  */
 package net.pms.formats.image;
 
+import net.pms.dlna.protocolinfo.MimeType;
+
 
 public class ICNS extends ImageBase {
 
@@ -32,7 +34,7 @@ public class ICNS extends ImageBase {
 	}
 
 	@Override
-	public String mimeType() {
-		return "image/icns";
+	public MimeType mimeType() {
+		return MimeType.FACTORY.createMimeType("image","icns");
 	}
 }

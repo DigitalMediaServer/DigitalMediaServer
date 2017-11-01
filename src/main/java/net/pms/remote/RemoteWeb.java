@@ -25,8 +25,8 @@ import net.pms.dlna.DLNAResource;
 import net.pms.dlna.DLNAThumbnailInputStream;
 import net.pms.dlna.RealFile;
 import net.pms.dlna.RootFolder;
+import net.pms.dlna.protocolinfo.KnownMimeTypes;
 import net.pms.image.ImageFormat;
-import net.pms.network.HTTPResource;
 import net.pms.newgui.DbgPacker;
 import net.pms.util.FullyPlayed;
 import org.apache.commons.configuration.ConfigurationException;
@@ -297,7 +297,10 @@ public class RemoteWeb {
 					in = FullyPlayed.addFullyPlayedOverlay(in);
 				}
 				Headers hdr = t.getResponseHeaders();
-				hdr.add("Content-Type", ImageFormat.PNG.equals(in.getFormat()) ? HTTPResource.PNG_TYPEMIME : HTTPResource.JPEG_TYPEMIME);
+				hdr.add("Content-Type", ImageFormat.PNG.equals(in.getFormat()) ?
+					KnownMimeTypes.PNG.toString() :
+					KnownMimeTypes.JPEG.toString()
+				);
 				hdr.add("Accept-Ranges", "bytes");
 				hdr.add("Connection", "keep-alive");
 				t.sendResponseHeaders(200, in.getSize());

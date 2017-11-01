@@ -18,6 +18,9 @@
  */
 package net.pms.formats.image;
 
+import net.pms.dlna.protocolinfo.MimeType;
+import net.pms.dlna.protocolinfo.KnownMimeTypes;
+
 public class GIF extends ImageBase {
 	/**
 	 * {@inheritDoc}
@@ -36,7 +39,7 @@ public class GIF extends ImageBase {
 	}
 
 	@Override
-	public String mimeType() {
-		return "image/gif";
+	public MimeType mimeType() {
+		return KnownMimeTypes.GIF;
 	}
 }

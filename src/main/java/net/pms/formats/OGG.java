@@ -1,5 +1,8 @@
 package net.pms.formats;
 
+import net.pms.dlna.protocolinfo.MimeType;
+import net.pms.dlna.protocolinfo.KnownMimeTypes;
+
 public class OGG extends Format {
 
 	@Override
@@ -23,5 +26,10 @@ public class OGG extends Format {
 			"ogm",
 			"ogv"
 		};
+	}
+
+	@Override
+	public MimeType mimeType() {
+		return KnownMimeTypes.OGG;
 	}
 }

@@ -19,6 +19,9 @@
  */
 package net.pms.formats.image;
 
+import net.pms.dlna.protocolinfo.MimeType;
+import net.pms.dlna.protocolinfo.KnownMimeTypes;
+
 public class BMP extends ImageBase {
 
 	@Override
@@ -32,7 +35,7 @@ public class BMP extends ImageBase {
 	}
 
 	@Override
-	public String mimeType() {
-		return "image/bmp";
+	public MimeType mimeType() {
+		return KnownMimeTypes.BMP;
 	}
 }

@@ -18,18 +18,16 @@
  */
 package net.pms.formats.audio;
 
+import net.pms.dlna.protocolinfo.MimeType;
+import net.pms.dlna.protocolinfo.KnownMimeTypes;
+
 public class MP3 extends AudioBase {
-	/**
-	 * {@inheritDoc}
-	 */
+
 	@Override
 	public Identifier getIdentifier() {
 		return Identifier.MP3;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public String[] getSupportedExtensions() {
 		return new String[] { "mp3" };
@@ -38,5 +36,10 @@ public class MP3 extends AudioBase {
 	@Override
 	public boolean transcodable() {
 		return false;
+	}
+
+	@Override
+	public MimeType mimeType() {
+		return KnownMimeTypes.MP3;
 	}
 }

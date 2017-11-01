@@ -18,6 +18,9 @@
  */
 package net.pms.formats.audio;
 
+import net.pms.dlna.protocolinfo.MimeType;
+import net.pms.dlna.protocolinfo.KnownMimeTypes;
+
 public class ATRAC extends AudioBase {
 
 	@Override
@@ -36,5 +39,10 @@ public class ATRAC extends AudioBase {
 			"oma",
 			"omg"
 		};
+	}
+
+	@Override
+	public MimeType mimeType() {
+		return KnownMimeTypes.ATRAC;
 	}
 }

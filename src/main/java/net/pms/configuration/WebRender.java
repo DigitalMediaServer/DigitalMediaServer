@@ -33,6 +33,8 @@ import net.pms.Messages;
 import net.pms.PMS;
 import net.pms.dlna.DLNAMediaInfo;
 import net.pms.dlna.DLNAResource;
+import net.pms.dlna.protocolinfo.MimeType;
+import net.pms.dlna.protocolinfo.KnownMimeTypes;
 import net.pms.dlna.virtual.VirtualVideoAction;
 import net.pms.encoders.FFMpegVideo;
 import net.pms.encoders.Player;
@@ -60,7 +62,7 @@ public class WebRender extends DeviceConfiguration implements RendererConfigurat
 	@SuppressWarnings("unused")
 	private int port;
 	private String ua;
-	private String defaultMime;
+	private MimeType defaultMime;
 	private int browser = 0;
 	private String platform = null;
 	private int screenWidth = 0;
@@ -101,7 +103,7 @@ public class WebRender extends DeviceConfiguration implements RendererConfigurat
 		ua = "";
 		fileless = true;
 		String userFmt = pmsconfiguration.getWebTranscode();
-		defaultMime = userFmt != null ? ("video/" + userFmt) : RemoteUtil.transMime();
+		defaultMime = isNotBlank(userFmt) ? MimeType.FACTORY.createMimeType("video", userFmt) : RemoteUtil.transMime();
 		startStop = null;
 		subLang = "";
 		if (pmsConfiguration.useWebControl()) {
@@ -278,11 +280,11 @@ public class WebRender extends DeviceConfiguration implements RendererConfigurat
 		return isScreenSizeConstrained() ? screenHeight : RemoteUtil.getHeight();
 	}
 
-	public String getVideoMimeType() {
+	public MimeType getVideoMimeType() {
 		if (isChromeTrick()) {
-			return RemoteUtil.MIME_WEBM;
+			return KnownMimeTypes.WEBM;
 		} else if (isFirefoxLinuxMp4()) {
-			return RemoteUtil.MIME_MP4;
+			return KnownMimeTypes.MP4;
 		}
 		return defaultMime;
 	}
@@ -318,21 +320,15 @@ public class WebRender extends DeviceConfiguration implements RendererConfigurat
 				if (flash) {
 					ffFlashCmds(cmdList, media);
 				} else {
-					String mimeType = getVideoMimeType();
-					switch (mimeType) {
-						case RemoteUtil.MIME_OGG:
+					MimeType mimeType = getVideoMimeType();
+					if (mimeType != null) {
+						if (mimeType.equalValue(KnownMimeTypes.OGG)) {
 							ffOggCmd(cmdList);
-							break;
-						case RemoteUtil.MIME_MP4:
+						} else if (mimeType.equalValue(KnownMimeTypes.MP4)) {
 							ffMp4Cmd(cmdList);
-							break;
-						case RemoteUtil.MIME_WEBM:
-							if (isChromeTrick()) {
-								ffChromeCmd(cmdList);
-							} else {
-								// nothing here yet
-							}
-							break;
+						} else if (mimeType.equalValue(KnownMimeTypes.WEBM) && isChromeTrick()) {
+							ffChromeCmd(cmdList);
+						}
 					}
 				}
 				if (isLowBitrate()) {
@@ -494,7 +490,7 @@ public class WebRender extends DeviceConfiguration implements RendererConfigurat
 
 	public static boolean supportedFormat(Format f) {
 		for (Format f1 : supportedFormats) {
-			if (f.getIdentifier() == f1.getIdentifier() || f1.mimeType().equals(f.mimeType())) {
+			if (f.getIdentifier() == f1.getIdentifier() || f1.mimeType().equalValue(f.mimeType())) {
 				return true;
 			}
 		}

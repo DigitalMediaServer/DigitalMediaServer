@@ -18,6 +18,9 @@
  */
 package net.pms.formats.audio;
 
+import net.pms.dlna.protocolinfo.MimeType;
+import net.pms.dlna.protocolinfo.KnownMimeTypes;
+
 public class MKA extends AudioBase {
 
 	@Override
@@ -28,5 +31,10 @@ public class MKA extends AudioBase {
 	@Override
 	public String[] getSupportedExtensions() {
 		return new String[] { "mka" };
+	}
+
+	@Override
+	public MimeType mimeType() {
+		return KnownMimeTypes.MKA;
 	}
 }

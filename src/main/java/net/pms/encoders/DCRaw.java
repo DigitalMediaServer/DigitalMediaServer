@@ -112,11 +112,6 @@ public class DCRaw extends ImagePlayer {
 	}
 
 	@Override
-	public String mimeType() {
-		return "image/jpeg";
-	}
-
-	@Override
 	public String name() {
 		return NAME;
 	}

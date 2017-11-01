@@ -372,7 +372,7 @@ public class FormatsRegressionTest0 {
 		MKV mKV0 = new MKV();
 		String str1 = mKV0.toString();
 		String[] str_array2 = mKV0.getSupportedExtensions();
-		String str3 = mKV0.mimeType();
+		String str3 = mKV0.mimeType().toString();
 
 		// Regression assertion (captures the current behavior of the code)
 		assertTrue("'" + str1 + "' != '" + "MKV" + "'", str1.equals("MKV"));

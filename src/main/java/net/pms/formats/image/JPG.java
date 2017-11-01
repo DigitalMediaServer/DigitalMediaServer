@@ -18,6 +18,9 @@
  */
 package net.pms.formats.image;
 
+import net.pms.dlna.protocolinfo.MimeType;
+import net.pms.dlna.protocolinfo.KnownMimeTypes;
+
 public class JPG extends ImageBase {
 	/**
 	 * {@inheritDoc}
@@ -41,7 +44,7 @@ public class JPG extends ImageBase {
 	}
 
 	@Override
-	public String mimeType() {
-		return "image/jpeg";
+	public MimeType mimeType() {
+		return KnownMimeTypes.JPEG;
 	}
 }

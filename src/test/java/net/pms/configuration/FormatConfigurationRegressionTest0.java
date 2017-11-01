@@ -332,14 +332,6 @@ public class FormatConfigurationRegressionTest0 {
 	}
 
 	@Test
-	public void test41() throws Throwable {
-		String str0 = FormatConfiguration.MIMETYPE_AUTO;
-
-		// Regression assertion (captures the current behavior of the code)
-		assertTrue("'" + str0 + "' != '" + "MIMETYPE_AUTO"+ "'", str0.equals("MIMETYPE_AUTO"));
-	}
-
-	@Test
 	public void test42() throws Throwable {
 		String str0 = FormatConfiguration.VP7;
 

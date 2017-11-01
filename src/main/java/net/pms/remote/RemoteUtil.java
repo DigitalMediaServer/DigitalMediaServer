@@ -19,6 +19,8 @@ import net.pms.configuration.RendererConfiguration;
 import net.pms.configuration.WebRender;
 import net.pms.dlna.DLNAMediaInfo;
 import net.pms.dlna.Range;
+import net.pms.dlna.protocolinfo.MimeType;
+import net.pms.dlna.protocolinfo.KnownMimeTypes;
 import net.pms.newgui.LooksFrame;
 import net.pms.util.FileWatcher;
 import net.pms.util.Languages;
@@ -32,16 +34,7 @@ import org.slf4j.LoggerFactory;
 public class RemoteUtil {
 	private static final Logger LOGGER = LoggerFactory.getLogger(RemoteUtil.class);
 
-	public static final String MIME_MP4 = "video/mp4";
-	public static final String MIME_OGG = "video/ogg";
-	public static final String MIME_WEBM = "video/webm";
-	//public static final String MIME_TRANS = MIME_MP4;
-	public static final String MIME_TRANS = MIME_OGG;
-	//public static final String MIME_TRANS = MIME_WEBM;
-	public static final String MIME_MP3 = "audio/mpeg";
-	public static final String MIME_WAV = "audio/wav";
-	public static final String MIME_PNG = "image/png";
-	public static final String MIME_JPG = "image/jpeg";
+	public static final MimeType MIME_TRANS = KnownMimeTypes.OGG;
 
 	public static void respond(HttpExchange t, String response, int status, String mime) {
 		if (response != null) {
@@ -176,16 +169,16 @@ public class RemoteUtil {
 		dump(in, os);
 	}
 
-	public static boolean directmime(String mime) {
+	public static boolean directmime(MimeType mimeType) {
 		if (
-			mime != null &&
+			mimeType != null &&
 			(
-				mime.equals(MIME_MP4) ||
-				mime.equals(MIME_WEBM) ||
-				mime.equals(MIME_OGG) ||
-				mime.equals(MIME_MP3) ||
-				mime.equals(MIME_PNG) ||
-				mime.equals(MIME_JPG)
+				mimeType.equalValue(KnownMimeTypes.MP4) ||
+				mimeType.equalValue(KnownMimeTypes.WEBM) ||
+				mimeType.equalValue(KnownMimeTypes.OGG) ||
+				mimeType.equalValue(KnownMimeTypes.MP3) ||
+				mimeType.equalValue(KnownMimeTypes.PNG) ||
+				mimeType.equalValue(KnownMimeTypes.JPEG)
 			)
 		) {
 			return true;
@@ -277,9 +270,9 @@ public class RemoteUtil {
 		return getHW(PMS.getConfiguration().getWebWidth(), WIDTH, DEFAULT_WIDTH);
 	}
 
-	public static boolean transMp4(String mime, DLNAMediaInfo media) {
+	public static boolean transMp4(MimeType mimeType, DLNAMediaInfo media) {
 		LOGGER.debug("mp4 profile " + media.getH264Profile());
-		return mime.equals(MIME_MP4) && (PMS.getConfiguration().isWebMp4Trans() || media.getAvcAsInt() >= 40);
+		return mimeType.equalValue(KnownMimeTypes.MP4) && (PMS.getConfiguration().isWebMp4Trans() || media.getAvcAsInt() >= 40);
 	}
 
 	private static IpFilter bumpFilter = null;
@@ -291,7 +284,7 @@ public class RemoteUtil {
 		return bumpFilter.allowed(t.getRemoteAddress().getAddress());
 	}
 
-	public static String transMime() {
+	public static MimeType transMime() {
 		return MIME_TRANS;
 	}
 
@@ -475,7 +468,7 @@ public class RemoteUtil {
 				if (url != null) {
 					t = compile(getInputStream(filename));
 					templates.put(filename, t);
-					PMS.getFileWatcher().add(new FileWatcher.Watch(url.getFile(), recompiler));
+					FileWatcher.add(new FileWatcher.Watch(url.getFile(), recompiler));
 				} else {
 					LOGGER.warn("Couldn't find web template \"{}\"", filename);
 				}

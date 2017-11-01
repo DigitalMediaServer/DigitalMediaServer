@@ -20,14 +20,12 @@ package net.pms.formats;
 
 import net.pms.configuration.RendererConfiguration;
 import net.pms.dlna.DLNAMediaInfo;
+import net.pms.dlna.protocolinfo.MimeType;
 import net.pms.util.FileUtil;
 
 public class WEB extends Format {
 	protected String url = null;
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public Identifier getIdentifier() {
 		return Identifier.WEB;
@@ -59,22 +57,20 @@ public class WEB extends Format {
 		return true;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public boolean isCompatible(DLNAMediaInfo media, RendererConfiguration renderer) {
 		return type == IMAGE;
 	}
 
+	@SuppressWarnings("deprecation")
 	@Override
-	public String mimeType() {
+	public MimeType mimeType() {
 		if (url != null) {
 			Format f = FormatFactory.getAssociatedFormat("." + FileUtil.getUrlExtension(url));
 			if (f != null) {
 				return f.mimeType();
 			}
 		}
-		return super.mimeType();
+		return Format.getFallbackMimeType(type);
 	}
 }

@@ -18,6 +18,9 @@
  */
 package net.pms.formats.audio;
 
+import net.pms.dlna.protocolinfo.MimeType;
+import net.pms.dlna.protocolinfo.KnownMimeTypes;
+
 public class THREEG2A extends AudioBase {
 
 	@Override
@@ -30,5 +33,10 @@ public class THREEG2A extends AudioBase {
 		return new String[] {
 			"3g2a",
 		};
+	}
+
+	@Override
+	public MimeType mimeType() {
+		return KnownMimeTypes.THREEGPP2A;
 	}
 }

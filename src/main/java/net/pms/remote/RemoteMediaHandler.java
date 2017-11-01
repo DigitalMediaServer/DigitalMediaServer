@@ -7,10 +7,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import net.pms.PMS;
-import net.pms.configuration.FormatConfiguration;
 import net.pms.configuration.RendererConfiguration;
 import net.pms.configuration.WebRender;
 import net.pms.dlna.*;
+import net.pms.dlna.protocolinfo.MimeType;
+import net.pms.dlna.protocolinfo.KnownMimeTypes;
 import net.pms.encoders.PlayerFactory;
 import net.pms.encoders.StandardPlayerId;
 import net.pms.util.FileUtil;
@@ -72,7 +73,6 @@ public class RemoteMediaHandler implements HttpHandler {
 				throw new IOException("Bad code");
 			}
 			DLNAMediaSubtitle sid = null;
-			String mimeType = root.getDefaultRenderer().getMimeType(resource.mimeType(), resource.getMedia());
 			//DLNAResource dlna = res.get(0);
 			WebRender renderer = (WebRender) defaultRenderer;
 			DLNAMediaInfo media = resource.getMedia();
@@ -80,14 +80,12 @@ public class RemoteMediaHandler implements HttpHandler {
 				media = new DLNAMediaInfo();
 				resource.setMedia(media);
 			}
-			if (mimeType.equals(FormatConfiguration.MIMETYPE_AUTO) && media.getMimeType() != null) {
-				mimeType = media.getMimeType();
-			}
+			MimeType mimeType = resource.getMimeType(defaultRenderer);
 			int code = 200;
 			resource.setDefaultRenderer(defaultRenderer);
 			if (resource.getFormat().isVideo()) {
 				if (flash) {
-					mimeType = "video/flash";
+					mimeType = KnownMimeTypes.FLASH;
 				} else if (!RemoteUtil.directmime(mimeType) || RemoteUtil.transMp4(mimeType, media)) {
 					mimeType = renderer != null ? renderer.getVideoMimeType() : RemoteUtil.transMime();
 					if (FileUtil.isUrl(resource.getSystemName())) {
@@ -115,14 +113,14 @@ public class RemoteMediaHandler implements HttpHandler {
 
 			media.setMimeType(mimeType);
 			Range.Byte range = RemoteUtil.parseRange(httpExchange.getRequestHeaders(), resource.length());
-			LOGGER.debug("Sending {} with mime type {} to {}", resource, mimeType, renderer);
+			LOGGER.debug("Sending {} with MIME type {} to {}", resource, mimeType, renderer);
 			InputStream in = resource.getInputStream(range, root.getDefaultRenderer());
 			if(range.getEnd() == 0) {
 				// For web resources actual length may be unknown until we open the stream
 				range.setEnd(resource.length());
 			}
 			Headers headers = httpExchange.getResponseHeaders();
-			headers.add("Content-Type", mimeType);
+			headers.add("Content-Type", mimeType.toString());
 			headers.add("Accept-Ranges", "bytes");
 			long end = range.getEnd();
 			long start = range.getStart();

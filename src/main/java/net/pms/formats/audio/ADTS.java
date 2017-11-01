@@ -18,6 +18,9 @@
  */
 package net.pms.formats.audio;
 
+import net.pms.dlna.protocolinfo.MimeType;
+import net.pms.dlna.protocolinfo.KnownMimeTypes;
+
 public class ADTS extends AudioBase {
 
 	@Override
@@ -28,5 +31,10 @@ public class ADTS extends AudioBase {
 	@Override
 	public String[] getSupportedExtensions() {
 		return new String[] { "aac" };
+	}
+
+	@Override
+	public MimeType mimeType() {
+		return KnownMimeTypes.ADTS;
 	}
 }

@@ -18,6 +18,9 @@
  */
 package net.pms.formats.audio;
 
+import net.pms.dlna.protocolinfo.MimeType;
+import net.pms.dlna.protocolinfo.KnownMimeTypes;
+
 public class AU extends AudioBase {
 
 	@Override
@@ -28,5 +31,10 @@ public class AU extends AudioBase {
 	@Override
 	public String[] getSupportedExtensions() {
 		return new String[] { "au", "snd" };
+	}
+
+	@Override
+	public MimeType mimeType() {
+		return KnownMimeTypes.AU;
 	}
 }

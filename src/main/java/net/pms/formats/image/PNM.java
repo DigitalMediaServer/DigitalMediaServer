@@ -18,6 +18,8 @@
  */
 package net.pms.formats.image;
 
+import net.pms.dlna.protocolinfo.MimeType;
+
 
 public class PNM extends ImageBase {
 
@@ -32,7 +34,7 @@ public class PNM extends ImageBase {
 	}
 
 	@Override
-	public String mimeType() {
-		return "image/x-portable-anymap";
+	public MimeType mimeType() {
+		return MimeType.FACTORY.createMimeType("image","x-portable-anymap");
 	}
 }

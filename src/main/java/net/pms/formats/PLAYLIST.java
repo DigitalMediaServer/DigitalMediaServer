@@ -20,12 +20,11 @@ package net.pms.formats;
 
 import net.pms.configuration.RendererConfiguration;
 import net.pms.dlna.DLNAMediaInfo;
+import net.pms.dlna.protocolinfo.MimeType;
+import net.pms.dlna.protocolinfo.KnownMimeTypes;
 
 public class PLAYLIST extends Format {
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public Identifier getIdentifier() {
 		return Identifier.PLAYLIST;
@@ -40,18 +39,12 @@ public class PLAYLIST extends Format {
 		type = PLAYLIST;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public boolean isCompatible(DLNAMediaInfo media, RendererConfiguration renderer) {
 		// TODO: manage via renderer conf setting
 		return false;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public String[] getSupportedExtensions() {
 		return new String[] {
@@ -61,5 +54,10 @@ public class PLAYLIST extends Format {
 			"cue",
 			"ups"
 		};
+	}
+
+	@Override
+	public MimeType mimeType() {
+		return KnownMimeTypes.M3U;
 	}
 }
