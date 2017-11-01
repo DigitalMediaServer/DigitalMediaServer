@@ -25,6 +25,7 @@ import net.pms.dlna.DLNAMediaAudio;
 import net.pms.dlna.DLNAMediaInfo;
 import net.pms.dlna.DLNAResource;
 import net.pms.dlna.DLNAThumbnailInputStream;
+import net.pms.dlna.protocolinfo.KnownMimeTypes;
 import net.pms.formats.FormatFactory;
 
 /**
@@ -67,7 +68,7 @@ public abstract class VirtualVideoAction extends DLNAResource {
 		mediaInfo.setContainer("mpegps");
 		ArrayList<DLNAMediaAudio> audioCodes = new ArrayList<>();
 		mediaInfo.setAudioTracksList(audioCodes);
-		mediaInfo.setMimeType("video/mpeg");
+		mediaInfo.setMimeType(KnownMimeTypes.MPEG);
 		mediaInfo.setCodecV("mpeg2");
 		mediaInfo.setMediaparsed(true);
 

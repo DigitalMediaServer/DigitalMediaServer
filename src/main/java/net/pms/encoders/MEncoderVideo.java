@@ -59,7 +59,6 @@ import net.pms.dlna.*;
 import net.pms.formats.Format;
 import net.pms.formats.v2.SubtitleType;
 import net.pms.io.*;
-import net.pms.network.HTTPResource;
 import net.pms.newgui.GuiUtil;
 import net.pms.newgui.components.CustomJButton;
 import net.pms.platform.windows.NTStatus;
@@ -2495,11 +2494,6 @@ public class MEncoderVideo extends Player {
 
 		configuration = prev;
 		return pw;
-	}
-
-	@Override
-	public String mimeType() {
-		return HTTPResource.VIDEO_TRANSCODE;
 	}
 
 	@Override

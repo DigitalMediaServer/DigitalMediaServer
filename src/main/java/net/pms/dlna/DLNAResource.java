@@ -28,18 +28,24 @@ import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import net.pms.Messages;
 import net.pms.PMS;
 import net.pms.configuration.FormatConfiguration;
+import net.pms.configuration.FormatConfiguration.MatchResult;
 import net.pms.configuration.PmsConfiguration;
 import net.pms.configuration.RendererConfiguration;
 import net.pms.dlna.DLNAImageProfile.HypotheticalResult;
+import net.pms.dlna.protocolinfo.MimeType;
+import net.pms.dlna.protocolinfo.KnownMimeTypes;
 import net.pms.dlna.virtual.TranscodeVirtualFolder;
 import net.pms.dlna.virtual.VirtualFolder;
 import net.pms.dlna.virtual.VirtualVideoAction;
 import net.pms.encoders.*;
 import net.pms.formats.Format;
 import net.pms.formats.FormatFactory;
+import net.pms.formats.v2.AudioProperties;
 import net.pms.image.ImageFormat;
 import net.pms.image.ImageInfo;
 import net.pms.io.OutputParams;
@@ -49,6 +55,7 @@ import net.pms.network.HTTPResource;
 import net.pms.network.UPNPControl.Renderer;
 import net.pms.util.*;
 import static net.pms.util.StringUtil.*;
+import static org.apache.commons.lang3.StringUtils.isBlank;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.text.StringEscapeUtils;
 import org.slf4j.Logger;
@@ -689,7 +696,6 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 							playerTranscoding = child.resolvePlayer(defaultRenderer);
 						}
 						child.setPlayer(playerTranscoding);
-						child.setPreferredMimeType(defaultRenderer);
 
 						if (resumeRes != null) {
 							resumeRes.player = playerTranscoding;
@@ -985,10 +991,13 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 			// 1) transcoding is forced by configuration, or
 			// 2) transcoding is preferred and not prevented by configuration
 			if (forceTranscode || (preferTranscode && !isSkipTranscode())) {
-				if (parserV2) {
-					LOGGER.trace("Final verdict: \"{}\" will be transcoded with player \"{}\" with mime type \"{}\"", getName(), resolvedPlayer.toString(), renderer != null ? renderer.getMimeType(mimeType(resolvedPlayer), media) : media.getMimeType());
-				} else {
-					LOGGER.trace("Final verdict: \"{}\" will be transcoded with player \"{}\"", getName(), resolvedPlayer.toString());
+				if (LOGGER.isTraceEnabled()) {
+					LOGGER.trace(
+						"Final verdict: \"{}\" will be transcoded with player \"{}\" with MIME type \"{}\"",
+						getName(),
+						resolvedPlayer.toString(),
+						getMimeType(resolvedPlayer, renderer)
+					);
 				}
 			} else {
 				resolvedPlayer = null;
@@ -998,33 +1007,6 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 			LOGGER.trace("Final verdict: \"{}\" will be streamed because no compatible player was found", getName());
 		}
 		return resolvedPlayer;
-	}
-
-
-	/**
-	 * Set the mimetype for this resource according to the given renderer's
-	 * supported preferences, if any.
-	 *
-	 * @param renderer The renderer
-	 * @return The previous mimetype for this resource, or null
-	 */
-	public String setPreferredMimeType(RendererConfiguration renderer) {
-		String prev = media != null ? media.getMimeType() : null;
-		boolean parserV2 = media != null && renderer != null && renderer.isUseMediaInfo();
-		if (parserV2 && (format == null || !format.isImage())) {
-			// See which MIME type the renderer prefers in case it supports the media
-			String preferred = renderer.getFormatConfiguration().match(media);
-			if (preferred != null) {
-				/**
-				 * Use the renderer's preferred MIME type for this file.
-				 */
-				if (!FormatConfiguration.MIMETYPE_AUTO.equals(preferred)) {
-					media.setMimeType(preferred);
-				}
-				LOGGER.trace("File \"{}\" will be sent with MIME type \"{}\"", getName(), preferred);
-			}
-		}
-		return prev;
 	}
 
 	/**
@@ -1914,19 +1896,19 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 	private String getDlnaOrgPnFlags(RendererConfiguration mediaRenderer, int localizationValue) {
 		// Use device-specific DMS conf, if any
 		PmsConfiguration configurationSpecificToRenderer = PMS.getConfiguration(mediaRenderer);
-		String mime = getRendererMimeType(mediaRenderer);
+		MimeType mimeType = getMimeType(mediaRenderer);
 
 		String dlnaOrgPnFlags = null;
 
 		if (mediaRenderer.isDLNAOrgPNUsed() || mediaRenderer.isAccurateDLNAOrgPN()) {
 			if (mediaRenderer.isPS3()) {
-				if (mime.equals(DIVX_TYPEMIME)) {
+				if (mimeType.equalValue(KnownMimeTypes.DIVX)) {
 					dlnaOrgPnFlags = "DLNA.ORG_PN=AVI";
-				} else if (mime.equals(WMV_TYPEMIME) && media != null && media.getHeight() > 700) {
+				} else if (mimeType.equalValue(KnownMimeTypes.WMV) && media != null && media.getHeight() > 700) {
 					dlnaOrgPnFlags = "DLNA.ORG_PN=WMVHIGH_PRO";
 				}
 			} else {
-				if (mime.equals(MPEG_TYPEMIME)) {
+				if (mimeType.equalValue(KnownMimeTypes.MPEG)) {
 					dlnaOrgPnFlags = "DLNA.ORG_PN=" + getMPEG_PS_PALLocalizedValue(localizationValue);
 
 					if (player != null) {
@@ -2295,10 +2277,10 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 							}
 						}
 					}
-				} else if (mime.equals("video/vnd.dlna.mpeg-tts")) {
+				} else if (KnownMimeTypes.MPEG_TS.equalValue(mimeType)) {
 					// patters - on Sony BDP m2ts clips aren't listed without this
 					dlnaOrgPnFlags = "DLNA.ORG_PN=" + getMPEG_TS_EULocalizedValue(localizationValue, media.isHDVideo());
-				} else if (mime.equals(JPEG_TYPEMIME)) {
+				} else if (mimeType.equalValue(KnownMimeTypes.JPEG)) {
 					int width = media.getWidth();
 					int height = media.getHeight();
 					if (width > 1024 || height > 768) { // 1024 * 768
@@ -2311,9 +2293,15 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 						dlnaOrgPnFlags = "DLNA.ORG_PN=JPEG_TN";
 					}
 
-				} else if (mime.equals(AUDIO_MP3_TYPEMIME)) {
+				} else if (mimeType.equalValue(KnownMimeTypes.MP3)) {
 					dlnaOrgPnFlags = "DLNA.ORG_PN=MP3";
-				} else if (mime.substring(0, 9).equals(AUDIO_LPCM_TYPEMIME) || mime.equals(AUDIO_WAV_TYPEMIME)) {
+				} else if (
+					"audio".equals(mimeType.getType()) &&
+					(
+						"wav".equals(mimeType.getSubtype()) ||
+						"L16".equals(mimeType.getSubtype().toUpperCase(Locale.ROOT))
+					)
+				) {
 					dlnaOrgPnFlags = "DLNA.ORG_PN=LPCM";
 				}
 			}
@@ -2324,28 +2312,6 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 		}
 
 		return dlnaOrgPnFlags;
-	}
-
-	/**
-	 * Gets the media renderer's mime type if available, returns a default mime type otherwise.
-	 *
-	 * @param mediaRenderer
-	 * 			Media Renderer for which to represent this information.
-	 * @return String representation of the mime type
-	 */
-	private String getRendererMimeType(RendererConfiguration mediaRenderer) {
-		// FIXME: There is a flaw here. In addChild(DLNAResource) the mime type
-		// is determined for the default renderer. This renderer may rewrite the
-		// mime type based on its configuration. Looking up that mime type is
-		// not guaranteed to return a match for another renderer.
-		String mime = mediaRenderer.getMimeType(mimeType(), media);
-
-		// Use our best guess if we have no valid mime type
-		if (mime == null || mime.contains("/transcode")) {
-			mime = HTTPResource.getDefaultMimeType(getType());
-		}
-
-		return mime;
 	}
 
 	/**
@@ -2483,7 +2449,8 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 				openTag(sb, "res");
 				addAttribute(sb, "xmlns:dlna", "urn:schemas-dlna-org:metadata-1-0/");
 				String dlnaOrgPnFlags = getDlnaOrgPnFlags(mediaRenderer, c);
-				String tempString = "http-get:*:" + getRendererMimeType(mediaRenderer) + ":" + (dlnaOrgPnFlags != null ? (dlnaOrgPnFlags + ";") : "") + getDlnaOrgOpFlags(mediaRenderer);
+				MimeType mimeType = getMimeType(mediaRenderer);
+				String tempString = "http-get:*:" + mimeType + ":" + (dlnaOrgPnFlags != null ? (dlnaOrgPnFlags + ";") : "") + getDlnaOrgOpFlags(mediaRenderer);
 				wireshark.append(' ').append(tempString);
 				addAttribute(sb, "protocolInfo", tempString);
 				if (subsAreValidForStreaming && mediaRenderer.offerSubtitlesByProtocolInfo() && !mediaRenderer.useClosedCaption()) {
@@ -2621,41 +2588,24 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 
 				endTag(sb);
 				// Add transcoded format extension to the output stream URL.
-				String transcodedExtension = "";
-				if (player != null && media != null) {
-					// Note: Can't use instanceof below because the audio classes inherit the corresponding video class
-					if (media.isVideo()) {
-						if (mediaRenderer.getCustomFFmpegOptions().contains("-f avi")) {
-							transcodedExtension = "_transcoded_to.avi";
-						} else if (mediaRenderer.getCustomFFmpegOptions().contains("-f flv")) {
-							transcodedExtension = "_transcoded_to.flv";
-						} else if (mediaRenderer.getCustomFFmpegOptions().contains("-f matroska")) {
-							transcodedExtension = "_transcoded_to.mkv";
-						} else if (mediaRenderer.getCustomFFmpegOptions().contains("-f mov")) {
-							transcodedExtension = "_transcoded_to.mov";
-						} else if (mediaRenderer.getCustomFFmpegOptions().contains("-f webm")) {
-							transcodedExtension = "_transcoded_to.webm";
-						} else if (mediaRenderer.isTranscodeToMPEGTS()) {
-							transcodedExtension = "_transcoded_to.ts";
-						} else if (mediaRenderer.isTranscodeToWMV() && !xbox360) {
-							transcodedExtension = "_transcoded_to.wmv";
-						} else {
-							transcodedExtension = "_transcoded_to.mpg";
-						}
-					} else if (media.isAudio()) {
-						if (mediaRenderer.isTranscodeToMP3()) {
-							transcodedExtension = "_transcoded_to.mp3";
-						} else if (mediaRenderer.isTranscodeToWAV()) {
-							transcodedExtension = "_transcoded_to.wav";
-						} else {
-							transcodedExtension = "_transcoded_to.pcm";
-						}
+				String transcodedExtension = null;
+				if (player != null && mimeType != null) {
+					transcodedExtension = mimeTypeToExtension(mimeType);
+					if (isBlank(transcodedExtension)) {
+						transcodedExtension = null;
+					} else {
+						transcodedExtension = "_transcoded_to."  + transcodedExtension;
 					}
 				}
 
-				wireshark.append(' ').append(getFileURL()).append(transcodedExtension);
-				sb.append(getFileURL()).append(transcodedExtension);
-				LOGGER.trace("Network debugger: " + wireshark.toString());
+
+				wireshark.append(' ').append(getFileURL());
+				sb.append(getFileURL());
+				if (transcodedExtension != null) {
+					wireshark.append(transcodedExtension);
+					sb.append(transcodedExtension);
+				}
+				LOGGER.trace("Network debugger: {}", wireshark.toString());
 				wireshark.setLength(0);
 				closeTag(sb, "res");
 			}
@@ -3330,7 +3280,7 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 				return wrap(fis, high, low);
 			}
 
-			 InputStream fis = getInputStream();
+			InputStream fis = getInputStream();
 
 			if (fis != null) {
 				if (low > 0) {
@@ -3491,24 +3441,120 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 		return input;
 	}
 
-	public String mimeType() {
-		return mimeType(player);
+	/**
+	 * Determines the {@link MediaType} for this resource.
+	 *
+	 * @return The {@link MediaType}.
+	 */
+	@Nonnull
+	public MediaType getMediaType() {
+		MediaType mediaType = media != null ? media.getMediaType() : null;
+		if (mediaType != null && mediaType != MediaType.UNKNOWN) {
+			return mediaType;
+		}
+		if (format != null) {
+			switch (format.getType()) {
+				case Format.AUDIO:
+					return MediaType.AUDIO;
+				case Format.IMAGE:
+					return MediaType.IMAGE;
+				case Format.VIDEO:
+					return MediaType.VIDEO;
+			}
+		}
+		return MediaType.UNKNOWN;
 	}
 
-	public String mimeType(Player player) {
-		if (player != null) {
-			// FIXME: This cannot be right. A player like FFmpeg can output many
-			// formats depending on the media and the renderer. Also, players are
-			// singletons. Therefore it is impossible to have exactly one mime
-			// type to return.
-			return player.mimeType();
-		} else if (media != null && media.isMediaparsed()) {
-			return media.getMimeType();
-		} else if (getFormat() != null) {
-			return getFormat().mimeType();
-		} else {
-			return getDefaultMimeType(getSpecificType());
+	/**
+	 * Resolves the MIME type for this {@link DLNAResource} for the specified
+	 * {@link RendererConfiguration}.
+	 *
+	 * @param renderer the {@link RendererConfiguration} for the renderer.
+	 * @return The resolved {@link MimeType} or {@code null} if it couldn't be
+	 *         resolved.
+	 */
+	@Nullable
+	public MimeType getMimeType(@Nullable RendererConfiguration renderer) {
+		return getMimeType(null, renderer);
+	}
+
+	/**
+	 * Resolves the MIME type for this {@link DLNAResource} for the specified
+	 * {@link Player} and {@link RendererConfiguration}.
+	 *
+	 * @param player the {@link Player} used for transcoding.
+	 * @param renderer the {@link RendererConfiguration} for the renderer.
+	 * @return The resolved {@link MimeType} or {@code null} if it couldn't be
+	 *         resolved.
+	 */
+	@SuppressWarnings("deprecation")
+	@Nullable
+	public MimeType getMimeType(@Nullable Player player, @Nullable RendererConfiguration renderer) {
+		if (player == null) {
+			player = this.player;
 		}
+		MimeType mimeType = null;
+		if (player == null) {
+			if (media != null) {
+				MediaType mediaType = getMediaType();
+				if (mediaType != MediaType.IMAGE && renderer != null && renderer.isUseMediaInfo()) {
+					MatchResult matchResult = renderer.getFormatConfiguration().match(media);
+					if (matchResult.isMatch() && matchResult.getSpecifiedMimeType() != null) {
+						mimeType = matchResult.getSpecifiedMimeType();
+					}
+				}
+				if (mimeType == null) {
+					mimeType = media.getMimeType();
+				}
+			}
+			if (mimeType == null && format != null) {
+				mimeType = format.getStandardMimeType();
+			}
+			if (mimeType == null) {
+				// XXX This can give a completely wrong MIME type
+				mimeType = Format.getFallbackMimeType(getSpecificType());
+			}
+		} else {
+			mimeType = player.getMimeType(this, renderer);
+		}
+		if (renderer != null) {
+			mimeType = renderer.replaceMimeType(mimeType);
+		}
+
+		if (KnownMimeTypes.LPCM.equalBaseValue(mimeType)) {
+			Map<String, String> parameters = new HashMap<>();
+			if (configuration.isAudioResample()) {
+				parameters.put("rate", renderer != null && renderer.isTranscodeAudioTo441() ? "44100" : "48000");
+				parameters.put("channels", "2");
+			} else if (media != null && media.getFirstAudioTrack() != null) {
+				AudioProperties audio = media.getFirstAudioTrack().getAudioProperties();
+				if (audio.getSampleFrequency() > 0) {
+					parameters.put("rate", Integer.toString(audio.getSampleFrequency()));
+				}
+				if (audio.getNumberOfChannels() > 0) {
+					parameters.put("channels", Integer.toString(audio.getNumberOfChannels()));
+				}
+			}
+			mimeType = MimeType.FACTORY.createMimeType(mimeType, parameters);
+		}
+
+		if (LOGGER.isTraceEnabled()) {
+			String mimeTypeString;
+			if (mimeType instanceof KnownMimeTypes) {
+				mimeTypeString = "\"" + mimeType.toString() + "\" (" + ((KnownMimeTypes) mimeType).name() + ")";
+			} else if (mimeType == null) {
+				mimeTypeString = "null";
+			} else {
+				mimeTypeString = "\"" + mimeType.toString() + "\"";
+			}
+			if (renderer != null) {
+				LOGGER.trace("Resolved MIME type {} for {} with {}", mimeTypeString, this, renderer);
+			} else {
+				LOGGER.trace("Resolved MIME type {} for {}", mimeTypeString, this);
+			}
+		}
+
+		return mimeType;
 	}
 
 	/**
@@ -3614,7 +3660,8 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 			// A URL
 			try {
 				return DLNAThumbnailInputStream.toThumbnailInputStream(downloadAndSend(thumb, true));
-			} catch (Exception e) {}
+			} catch (Exception e) {
+			}
 		}
 
 		// Or none of the above
@@ -4594,14 +4641,10 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 		RendererConfiguration r;
 		Player p;
 		DLNAMediaSubtitle s;
-		String m;
 		Rendering(DLNAResource d) {
 			r = d.getDefaultRenderer();
 			p = d.getPlayer();
 			s = d.getMediaSubtitle();
-			if (d.getMedia() != null) {
-				m = d.getMedia().getMimeType();
-			}
 		}
 	}
 
@@ -4611,7 +4654,6 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 		LOGGER.debug("Switching rendering context to '{} [{}]' from '{} [{}]'", r, p, rendering.r, rendering.p);
 		setDefaultRenderer(r);
 		setPlayer(p);
-		setPreferredMimeType(r);
 		return rendering;
 	}
 
@@ -4620,9 +4662,6 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 		setDefaultRenderer(rendering.r);
 		setPlayer(rendering.p);
 		media_subtitle = rendering.s;
-		if (media != null) {
-			media.setMimeType(rendering.m);
-		}
 	}
 
 	public DLNAResource isCoded() {
@@ -4701,5 +4740,170 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 		scaleWidth  = Player.convertToModX(scaleWidth, 4);
 		scaleHeight = Player.convertToModX(scaleHeight, 4);
 		return scaleWidth + "x" + scaleHeight;
+	}
+
+	/**
+	 * Tries to find a file extension from a {@link KnownMimeTypes} instance.
+	 * This isn't an exact science, and might return {@code null}.
+	 *
+	 * @param knownMimeType the {@link KnownMimeTypes} instance for which to try
+	 *            to find a corresponding file extension.
+	 * @return The file extension (without {@code .}) or {@code null}.
+	 */
+	@Nullable
+	public static String knownMimeTypeToExtension(@Nullable KnownMimeTypes knownMimeType) {
+		if (knownMimeType == null) {
+			return null;
+		}
+		switch (knownMimeType) {
+			case AC3:
+				return "ac3";
+			case ADPCM:
+				return "act";
+			case ADTS:
+				return "aac";
+			case AIFF:
+				return "aif";
+			case APE:
+				return "ape";
+			case ASF:
+				return "asf";
+			case ATRAC:
+				return "oma";
+			case AU:
+				return "au";
+			case AVI:
+				return "avi";
+			case BMP:
+				return "bmp";
+			case DFF:
+				return "dff";
+			case DIVX:
+				return "divx";
+			case DSF:
+				return "dsf";
+			case DTS:
+			case DTS_HD:
+				return "dts";
+			case DVR_MS:
+				return "dvr-ms";
+			case EAC3:
+				return "eac3";
+			case FLAC:
+				return "flac";
+			case FLASH:
+			case FLV:
+				return "flv";
+			case GIF:
+				return "gif";
+			case JPEG:
+				return "jpg";
+			case LPCM:
+				return "L16";
+			case M2TS:
+				return "m2ts";
+			case M3U:
+				return "m3u";
+			case M4A:
+				return "m4a";
+			case MATROSKA:
+				return "mkv";
+			case MKA:
+				return "mka";
+			case MLP:
+				return "mlp";
+			case MOV:
+				return "mov";
+			case MP2:
+				return "mp2";
+			case MP3:
+				return "mp3";
+			case MP4:
+				return "mp4";
+			case MPA:
+				return "mp1";
+			case MPC:
+				return "mpc";
+			case MPEG:
+				return "mpg";
+			case MPEG_TS:
+				return "ts";
+			case MPO:
+				return "mpo";
+			case OGA:
+				return "oga";
+			case OGG:
+				return "ogv";
+			case PNG:
+				return "png";
+			case RA:
+				return "ra";
+			case RAW:
+				return null;
+			case RM:
+				return "rm";
+			case SHN:
+				return "shn";
+			case THREEGPP:
+				return "3gp";
+			case THREEGPP2:
+			case THREEGPP2A:
+				return "3g2";
+			case THREEGPPA:
+				return "3ga";
+			case TIFF:
+				return "tif";
+			case TRUE_HD:
+				return "thd";
+			case TTA:
+				return "tta";
+			case VC1:
+				return "vc1";
+			case VOB:
+				return "vob";
+			case WAV:
+				return "wav";
+			case WEBM:
+			case WEBM_AUDIO:
+				return "webm";
+			case WMA:
+				return "wma";
+			case WMV:
+				return "wmv";
+			case WV:
+				return "wv";
+			default:
+				LOGGER.error("Unimplemnted KnownMimeType \"{}\" in knownMimeTypeToExtension()", knownMimeType.name());
+				return null;
+		}
+	}
+
+	/**
+	 * Tries to find a file extension from a {@link MimeType}. This isn't an
+	 * exact science, and might return {@code null}.
+	 *
+	 * @param mimeType the {@link MimeType} for which to try to find a
+	 *            corresponding file extension.
+	 * @return The file extension (without {@code .}) or {@code null}.
+	 */
+	@Nullable
+	public static String mimeTypeToExtension(@Nullable MimeType mimeType) {
+		if (mimeType == null) {
+			return null;
+		}
+		String extension = null;
+		if (mimeType instanceof KnownMimeTypes) {
+			extension = knownMimeTypeToExtension((KnownMimeTypes) mimeType);
+		}
+		if (isBlank(extension)) {
+			for (KnownMimeTypes knownMimeType : KnownMimeTypes.values()) {
+				if (mimeType.equalBaseValue(knownMimeType)) {
+					extension = knownMimeTypeToExtension(knownMimeType);
+					break;
+				}
+			}
+		}
+		return isBlank(extension) ? null : extension;
+
 	}
 }
