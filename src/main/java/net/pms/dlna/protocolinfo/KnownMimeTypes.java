@@ -245,7 +245,7 @@ public enum KnownMimeTypes implements MimeType {
 			}
 		} else if (other.getSubtype() == null) {
 			return false;
-		} else if (!subtype.toLowerCase(Locale.ROOT).equals(other.getSubtype().toLowerCase(Locale.ROOT))) {
+		} else if (!subtype.trim().toLowerCase(Locale.ROOT).equals(other.getSubtype().trim().toLowerCase(Locale.ROOT))) {
 			return false;
 		}
 		if (type == null) {
@@ -254,7 +254,7 @@ public enum KnownMimeTypes implements MimeType {
 			}
 		} else if (other.getType() == null) {
 			return false;
-		} else if (!type.toLowerCase(Locale.ROOT).equals(other.getType().toLowerCase(Locale.ROOT))) {
+		} else if (!type.trim().toLowerCase(Locale.ROOT).equals(other.getType().trim().toLowerCase(Locale.ROOT))) {
 			return false;
 		}
 		return true;
@@ -287,41 +287,48 @@ public enum KnownMimeTypes implements MimeType {
 	}
 
 	@Override
+	public boolean isImage() {
+		return isNotBlank(type) && type.toLowerCase(Locale.ROOT).equals("image");
+	}
+
+	@Override
 	public boolean isCompatible(MimeType other) {
+		return isCompatible(other, true, false);
+	}
+
+	@Override
+	public boolean isCompatible(MimeType other, boolean includeAnyType, boolean includeParameters) {
 		if (other == null) {
 			return false;
 		}
-		if (
-			(isBlank(type) || ANY.equals(type)) &&
-			isBlank(subtype) ||
-			(isBlank(other.getType()) || ANY.equals(other.getType())) &&
-			isBlank(other.getSubtype())
-		) {
-			return true;
-		} else if (isBlank(type) || (isBlank(other.getType()))) {
-			return
-				isBlank(subtype) ||
-				isBlank(other.getSubtype()) ||
-				ANY.equals(subtype) ||
-				ANY.equals(other.getSubtype()) ||
-				subtype.toLowerCase(Locale.ROOT).equals(other.getSubtype().toLowerCase(Locale.ROOT));
-		} else if (
-			type.toLowerCase(Locale.ROOT).equals(other.getType().toLowerCase(Locale.ROOT)) &&
-			(
-				isBlank(subtype) ||
-				ANY.equals(subtype) ||
-				isBlank(other.getSubtype()) ||
-				ANY.equals(other.getSubtype())
-			)
-		) {
-			return true;
-		} else if (isBlank(subtype) || isBlank(other.getSubtype())) {
+		if (includeParameters && !other.getParameters().isEmpty()) {
 			return false;
-		} else {
-			return
-				type.toLowerCase(Locale.ROOT).equals(other.getType().toLowerCase(Locale.ROOT)) &&
-				subtype.toLowerCase(Locale.ROOT).equals(other.getSubtype().toLowerCase(Locale.ROOT));
 		}
+		String thisType = isBlank(type) || type.trim().equals(ANY) ?
+			ANY :
+			type.trim().toLowerCase(Locale.ROOT);
+		if (ANY.equals(thisType)) {
+			return true;
+		}
+		String otherType = isBlank(other.getType()) || other.getType().trim().equals(ANY) ?
+			ANY :
+			other.getType().trim().toLowerCase(Locale.ROOT);
+		if (includeAnyType && ANY.equals(otherType)) {
+			return true;
+		}
+		if (!thisType.equals(otherType)) {
+			return false;
+		}
+		String thisSubtype = isBlank(subtype) || subtype.trim().equals(ANY) ?
+			ANY :
+			subtype.trim().toLowerCase(Locale.ROOT);
+		String otherSubtype = isBlank(other.getSubtype()) || other.getSubtype().trim().equals(ANY) ?
+			ANY :
+			other.getSubtype().trim().toLowerCase(Locale.ROOT);
+		if (ANY.equals(thisSubtype) || ANY.equals(otherSubtype)) {
+			return true;
+		}
+		return thisSubtype.equals(otherSubtype);
 	}
 
 	@Override
@@ -347,10 +354,5 @@ public enum KnownMimeTypes implements MimeType {
 	@Override
 	public String toStringWithoutParameters() {
 		return stringValue;
-	}
-
-	@Override
-	public boolean isImage() {
-		return isNotBlank(type) && type.toLowerCase(Locale.ROOT).equals("image");
 	}
 }

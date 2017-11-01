@@ -172,7 +172,7 @@ public class DLNAImageProfile implements DLNAOrgProfileName, Comparable<DLNAImag
 	 * Creates a new {@link #JPEG_RES_H_V} profile instance with the exact
 	 * resolution H x V. Set {@code H} and {@code V} for this instance. The
 	 * default MIME type {@code image/jpeg} is used. Not applicable for other
-	 * profiles.
+	 * profiles. //TODO: (Nad) MIME type?
 	 *
 	 * @param horizontal the {@code H} value.
 	 * @param vertical the {@code V} value.

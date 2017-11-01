@@ -76,10 +76,16 @@ public interface MimeType extends Serializable {
 	public String getSubtype();
 
 	/**
-	 * @return Whether the {@code subtype} (second) part of this
+	 * @return Whether or not the {@code subtype} (second) part of this
 	 *         {@link MimeType} matches anything.
 	 */
 	public boolean isAnySubtype();
+
+	/**
+	 * @return Whether or not the {@code type} (first) part of this
+	 *         {@link MimeType} is {@code "image"}.
+	 */
+	public boolean isImage();
 
 	/**
 	 * @return A {@link Map} containing the {@code parameters} of this
@@ -90,16 +96,33 @@ public interface MimeType extends Serializable {
 	public Map<String, String> getParameters();
 
 	/**
-	 * Determines whether this and {@code other} is compatible. That means being
-	 * either equal or having {@link #ANY} in {@code type} or {@code subtype} is
-	 * such a way that they can describe the same content without taking
-	 * parameters into account.
+	 * Determines whether {@code other} is compatible with this. That means
+	 * either being equal or having {@link #ANY} in {@code type} or
+	 * {@code subtype} is such a way that they can describe the same content
+	 * without taking parameters into account.
 	 *
 	 * @param other the {@link MimeType} to check compatibility against.
 	 * @return {@code true} of this and {@code other} is compatible,
 	 *         {@code false} otherwise.
 	 */
 	public boolean isCompatible(MimeType other);
+
+	/**
+	 * Determines whether {@code other} is compatible with this. That means
+	 * either being equal or satisfying equality according to the specified
+	 * "include" parameters.
+	 *
+	 * @param other the {@link MimeType} to check compatibility against.
+	 * @param includeAnyType determines if matches for {@code type} of value
+	 *            {@link #ANY} is allowed for {@code other}. If {@code true} and
+	 *            {@code other} is {@link #ANYANY}, {@code true} will always be
+	 *            returned.
+	 * @param includeParameters determines if the {@code parameters} map should
+	 *            be evaluated.
+	 * @return {@code true} of this and {@code other} is compatible,
+	 *         {@code false} otherwise.
+	 */
+	public boolean isCompatible(MimeType other, boolean includeAnyType, boolean includeParameters);
 
 	/**
 	 * Creates a {@link org.seamless.util.MimeType} from this instance.
@@ -141,12 +164,6 @@ public interface MimeType extends Serializable {
 	 */
 	@Nonnull
 	public String toStringWithoutParameters();
-
-	/**
-	 * @return Whether or not the {@code type} (first) part of this
-	 *         {@link MimeType} is {@code "image"}.
-	 */
-	public boolean isImage();
 
 	/**
 	 * Compares the {@link MimeType} by value. This is needed instead of
@@ -608,6 +625,11 @@ public interface MimeType extends Serializable {
 		}
 
 		@Override
+		public boolean isImage() {
+			return isNotBlank(type) && type.toLowerCase(Locale.ROOT).equals("image");
+		}
+
+		@Override
 		@Nonnull
 		public Map<String, String> getParameters() {
 			return parameters;
@@ -615,40 +637,42 @@ public interface MimeType extends Serializable {
 
 		@Override
 		public boolean isCompatible(MimeType other) {
+			return isCompatible(other, true, false);
+		}
+
+		@Override
+		public boolean isCompatible(MimeType other, boolean includeAnyType, boolean includeParameters) {
 			if (other == null) {
 				return false;
 			}
-			if (
-				(isBlank(type) || ANY.equals(type)) &&
-				isBlank(subtype) ||
-				(isBlank(other.getType()) || ANY.equals(other.getType())) &&
-				isBlank(other.getSubtype())
-			) {
-				return true;
-			} else if (isBlank(type) || (isBlank(other.getType()))) {
-				return
-					isBlank(subtype) ||
-					isBlank(other.getSubtype()) ||
-					ANY.equals(subtype) ||
-					ANY.equals(other.getSubtype()) ||
-					subtype.toLowerCase(Locale.ROOT).equals(other.getSubtype().toLowerCase(Locale.ROOT));
-			} else if (
-				type.toLowerCase(Locale.ROOT).equals(other.getType().toLowerCase(Locale.ROOT)) &&
-				(
-					isBlank(subtype) ||
-					ANY.equals(subtype) ||
-					isBlank(other.getSubtype()) ||
-					ANY.equals(other.getSubtype())
-				)
-			) {
-				return true;
-			} else if (isBlank(subtype) || isBlank(other.getSubtype())) {
+			if (includeParameters && !parameters.equals(other.getParameters())) {
 				return false;
-			} else {
-				return
-					type.toLowerCase(Locale.ROOT).equals(other.getType().toLowerCase(Locale.ROOT)) &&
-					subtype.toLowerCase(Locale.ROOT).equals(other.getSubtype().toLowerCase(Locale.ROOT));
 			}
+			String thisType = isBlank(type) || type.trim().equals(ANY) ?
+				ANY :
+				type.trim().toLowerCase(Locale.ROOT);
+			if (ANY.equals(thisType)) {
+				return true;
+			}
+			String otherType = isBlank(other.getType()) || other.getType().trim().equals(ANY) ?
+				ANY :
+				other.getType().trim().toLowerCase(Locale.ROOT);
+			if (includeAnyType && ANY.equals(otherType)) {
+				return true;
+			}
+			if (!thisType.equals(otherType)) {
+				return false;
+			}
+			String thisSubtype = isBlank(subtype) || subtype.trim().equals(ANY) ?
+				ANY :
+				subtype.trim().toLowerCase(Locale.ROOT);
+			String otherSubtype = isBlank(other.getSubtype()) || other.getSubtype().trim().equals(ANY) ?
+				ANY :
+				other.getSubtype().trim().toLowerCase(Locale.ROOT);
+			if (ANY.equals(thisSubtype) || ANY.equals(otherSubtype)) {
+				return true;
+			}
+			return thisSubtype.equals(otherSubtype);
 		}
 
 		@Override
@@ -765,11 +789,11 @@ public interface MimeType extends Serializable {
 		 *         otherwise.
 		 */
 		protected boolean evaluateEquals(MimeType other, boolean equalParameters) {
-			if (this == other) {
-				return true;
-			}
 			if (other == null) {
 				return false;
+			}
+			if (this == other) {
+				return true;
 			}
 			if (equalParameters && !parameters.equals(other.getParameters())) {
 				return false;
@@ -780,7 +804,7 @@ public interface MimeType extends Serializable {
 				}
 			} else if (other.getSubtype() == null) {
 				return false;
-			} else if (!subtype.toLowerCase(Locale.ROOT).equals(other.getSubtype().toLowerCase(Locale.ROOT))) {
+			} else if (!subtype.trim().toLowerCase(Locale.ROOT).equals(other.getSubtype().trim().toLowerCase(Locale.ROOT))) {
 				return false;
 			}
 			if (type == null) {
@@ -789,15 +813,10 @@ public interface MimeType extends Serializable {
 				}
 			} else if (other.getType() == null) {
 				return false;
-			} else if (!type.toLowerCase(Locale.ROOT).equals(other.getType().toLowerCase(Locale.ROOT))) {
+			} else if (!type.trim().toLowerCase(Locale.ROOT).equals(other.getType().trim().toLowerCase(Locale.ROOT))) {
 				return false;
 			}
 			return true;
-		}
-
-		@Override
-		public boolean isImage() {
-			return isNotBlank(type) && type.toLowerCase(Locale.ROOT).equals("image");
 		}
 	}
 }
