@@ -51,6 +51,7 @@ public class HTTPResource {
 	public static final String AUDIO_APE_TYPEMIME = "audio/x-ape";
 	public static final String AUDIO_ATRAC_TYPEMIME = "audio/x-sony-oma";
 	public static final String AUDIO_AU_TYPEMIME = "audio/basic";
+	public static final String AUDIO_CAF_TYPEMIME = "audio/x-caf";
 	public static final String AUDIO_DSF_TYPEMIME = "audio/x-dsf";
 	public static final String AUDIO_DFF_TYPEMIME = "audio/x-dff";
 	public static final String AUDIO_DTS_TYPEMIME = "audio/vnd.dts";
@@ -88,6 +89,7 @@ public class HTTPResource {
 	public static final String MOV_TYPEMIME = "video/quicktime";
 	public static final String MP4_TYPEMIME = "video/mp4";
 	public static final String MPEG_TYPEMIME = "video/mpeg";
+	public static final String MPEGTS_TYPEMIME = "video/vnd.dlna.mpeg-tts";
 	public static final String PNG_TYPEMIME = "image/png";
 	public static final String RM_TYPEMIME = "application/vnd.rn-realmedia";
 	public static final String THREEGPP_TYPEMIME = "video/3gpp";
