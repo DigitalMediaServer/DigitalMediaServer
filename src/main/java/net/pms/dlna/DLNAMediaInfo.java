@@ -893,7 +893,7 @@ public class DLNAMediaInfo implements Cloneable {
 					}
 
 					// Set container for formats that the normal parsing fails to do from Format
-					if (StringUtils.isBlank(container) && ext != null) {
+					if (isBlank(container) && ext != null) {
 						if (ext.getIdentifier() == Identifier.ADPCM) {
 							audio.setCodecA(FormatConfiguration.ADPCM);
 						} else if (ext.getIdentifier() == Identifier.DSF) {
@@ -903,7 +903,7 @@ public class DLNAMediaInfo implements Cloneable {
 						}
 					}
 
-					if (StringUtils.isNotBlank(audio.getSongname())) {
+					if (isNotBlank(audio.getSongname())) {
 						if (renderer != null && renderer.isPrependTrackNumbers() && audio.getTrack() > 0) {
 							audio.setSongname(audio.getTrack() + ": " + audio.getSongname());
 						}
@@ -915,7 +915,7 @@ public class DLNAMediaInfo implements Cloneable {
 						audioTracks.add(audio);
 					}
 				}
-				if (StringUtils.isBlank(container)) {
+				if (isBlank(container)) {
 					container = audio.getCodecA();
 				}
 			}
@@ -1471,13 +1471,14 @@ public class DLNAMediaInfo implements Cloneable {
 	}
 
 	public void postParse(InputFile f) {
-		String codecA = null;
-		if (getFirstAudioTrack() != null) {
-			codecA = getFirstAudioTrack().getCodecA();
-		}
-
 		if (container != null) {
 			switch (container) {
+				case FormatConfiguration.THREEGPP:
+					mimeType = HTTPResource.THREEGPP_TYPEMIME;
+					break;
+				case FormatConfiguration.THREEGPP2:
+					mimeType = HTTPResource.THREEGPP2_TYPEMIME;
+					break;
 				case FormatConfiguration.AVI:
 					mimeType = HTTPResource.AVI_TYPEMIME;
 					break;
@@ -1485,14 +1486,46 @@ public class DLNAMediaInfo implements Cloneable {
 				case FormatConfiguration.DVRMS:
 					mimeType = HTTPResource.ASF_TYPEMIME;
 					break;
+				case FormatConfiguration.DIVX:
+					mimeType = HTTPResource.DIVX_TYPEMIME;
+					break;
 				case FormatConfiguration.FLV:
 					mimeType = HTTPResource.FLV_TYPEMIME;
+					break;
+				case FormatConfiguration.MKV:
+					mimeType = HTTPResource.MATROSKA_TYPEMIME;
+					break;
+				case FormatConfiguration.MOV:
+					mimeType = HTTPResource.MOV_TYPEMIME;
+					break;
+				case FormatConfiguration.MP4:
+					mimeType = HTTPResource.MP4_TYPEMIME;
+					break;
+				case FormatConfiguration.MPEGPS:
+				case FormatConfiguration.MPEG1:
+				case FormatConfiguration.MPEG2:
+					mimeType = HTTPResource.MPEG_TYPEMIME;
+					break;
+				case FormatConfiguration.MPEGTS:
+					mimeType = HTTPResource.MPEGTS_TYPEMIME;
+					break;
+				case FormatConfiguration.MXF:
+					mimeType = HTTPResource.MXF_TYPEMIME;
+					break;
+				case FormatConfiguration.OGG:
+					mimeType = HTTPResource.OGG_TYPEMIME;
+					break;
+				case FormatConfiguration.RM:
+					mimeType = HTTPResource.RM_TYPEMIME;
+					break;
+				case FormatConfiguration.WEBM:
+					mimeType = HTTPResource.AUDIO_WEBM_TYPEMIME;
 					break;
 				case FormatConfiguration.WMV:
 					mimeType = HTTPResource.WMV_TYPEMIME;
 					break;
-				case FormatConfiguration.MOV:
-					mimeType = HTTPResource.MOV_TYPEMIME;
+				case FormatConfiguration.AC3:
+					mimeType = HTTPResource.AUDIO_AC3_TYPEMIME;
 					break;
 				case FormatConfiguration.ADPCM:
 					mimeType = HTTPResource.AUDIO_ADPCM_TYPEMIME;
@@ -1500,14 +1533,23 @@ public class DLNAMediaInfo implements Cloneable {
 				case FormatConfiguration.ADTS:
 					mimeType = HTTPResource.AUDIO_ADTS_TYPEMIME;
 					break;
-				case FormatConfiguration.M4A:
-					mimeType = HTTPResource.AUDIO_M4A_TYPEMIME;
+				case FormatConfiguration.AIFF:
+					mimeType = HTTPResource.AUDIO_AIFF_TYPEMIME;
 					break;
-				case FormatConfiguration.AC3:
-					mimeType = HTTPResource.AUDIO_AC3_TYPEMIME;
+				case FormatConfiguration.AIFC:
+					mimeType = HTTPResource.AUDIO_AIFC_TYPEMIME;
+					break;
+				case FormatConfiguration.AMR:
+					mimeType = HTTPResource.AUDIO_AMR_TYPEMIME;
+					break;
+				case FormatConfiguration.ATRAC:
+					mimeType = HTTPResource.AUDIO_ATRAC_TYPEMIME;
 					break;
 				case FormatConfiguration.AU:
 					mimeType = HTTPResource.AUDIO_AU_TYPEMIME;
+					break;
+				case FormatConfiguration.CAF:
+					mimeType = HTTPResource.AUDIO_CAF_TYPEMIME;
 					break;
 				case FormatConfiguration.DFF:
 					mimeType = HTTPResource.AUDIO_DFF_TYPEMIME;
@@ -1515,23 +1557,30 @@ public class DLNAMediaInfo implements Cloneable {
 				case FormatConfiguration.DSF:
 					mimeType = HTTPResource.AUDIO_DSF_TYPEMIME;
 					break;
+				case FormatConfiguration.DTS:
+					mimeType = HTTPResource.AUDIO_DTS_TYPEMIME;
+					break;
+				case FormatConfiguration.DTSHD:
+					mimeType = HTTPResource.AUDIO_DTSHD_TYPEMIME;
+					break;
 				case FormatConfiguration.EAC3:
 					mimeType = HTTPResource.AUDIO_EAC3_TYPEMIME;
 					break;
+				case FormatConfiguration.FLAC:
+					mimeType = HTTPResource.AUDIO_FLAC_TYPEMIME;
+					break;
+				case FormatConfiguration.LPCM:
+					mimeType = HTTPResource.AUDIO_LPCM_TYPEMIME;
+				case FormatConfiguration.M4A:
+					mimeType = HTTPResource.AUDIO_M4A_TYPEMIME;
+					break;
 				case FormatConfiguration.MPA:
+				case FormatConfiguration.MP1:
+				case FormatConfiguration.MP2:
 					mimeType = HTTPResource.AUDIO_MPA_TYPEMIME;
 					break;
-				case FormatConfiguration.MP2:
-					mimeType = HTTPResource.AUDIO_MP2_TYPEMIME;
-					break;
-				case FormatConfiguration.AIFC:
-					mimeType = HTTPResource.AUDIO_AIFC_TYPEMIME;
-					break;
-				case FormatConfiguration.AIFF:
-					mimeType = HTTPResource.AUDIO_AIFF_TYPEMIME;
-					break;
-				case FormatConfiguration.ATRAC:
-					mimeType = HTTPResource.AUDIO_ATRAC_TYPEMIME;
+				case FormatConfiguration.MP3:
+					mimeType = HTTPResource.AUDIO_MP3_TYPEMIME;
 					break;
 				case FormatConfiguration.MKA:
 					mimeType = HTTPResource.AUDIO_MKA_TYPEMIME;
@@ -1545,23 +1594,20 @@ public class DLNAMediaInfo implements Cloneable {
 				case FormatConfiguration.MPC:
 					mimeType = HTTPResource.AUDIO_MPC_TYPEMIME;
 					break;
-				case FormatConfiguration.OGG:
-					mimeType = HTTPResource.OGG_TYPEMIME;
-					break;
 				case FormatConfiguration.OGA:
 					mimeType = HTTPResource.AUDIO_OGA_TYPEMIME;
 					break;
 				case FormatConfiguration.RA:
 					mimeType = HTTPResource.AUDIO_RA_TYPEMIME;
 					break;
-				case FormatConfiguration.RM:
-					mimeType = HTTPResource.RM_TYPEMIME;
-					break;
 				case FormatConfiguration.SHORTEN:
 					mimeType = HTTPResource.AUDIO_SHN_TYPEMIME;
 					break;
 				case FormatConfiguration.THREEGA:
 					mimeType = HTTPResource.AUDIO_THREEGPPA_TYPEMIME;
+					break;
+				case FormatConfiguration.THREEG2A:
+					mimeType = HTTPResource.AUDIO_THREEGPP2A_TYPEMIME;
 					break;
 				case FormatConfiguration.TRUEHD:
 					mimeType = HTTPResource.AUDIO_TRUEHD_TYPEMIME;
@@ -1582,83 +1628,29 @@ public class DLNAMediaInfo implements Cloneable {
 				case FormatConfiguration.WMA10:
 					mimeType = HTTPResource.AUDIO_WMA_TYPEMIME;
 					break;
+				case FormatConfiguration.BMP:
+					mimeType = HTTPResource.BMP_TYPEMIME;
+					break;
+				case FormatConfiguration.GIF:
+					mimeType = HTTPResource.GIF_TYPEMIME;
+					break;
+				case FormatConfiguration.JPG:
+					mimeType = HTTPResource.JPEG_TYPEMIME;
+					break;
+				case FormatConfiguration.PNG:
+					mimeType = HTTPResource.PNG_TYPEMIME;
+					break;
+				case FormatConfiguration.TIFF:
+					mimeType = HTTPResource.TIFF_TYPEMIME;
+					break;
+				case FormatConfiguration.WEBP:
+					mimeType = HTTPResource.WEBP_TYPEMIME;
+					break;
 			}
 		}
 
 		if (mimeType == null) {
-			if (codecV != null) {
-				if ("matroska".equals(container) || "mkv".equals(container)) {
-					mimeType = HTTPResource.MATROSKA_TYPEMIME;
-				} else if ("ogg".equals(container)) {
-					mimeType = HTTPResource.OGG_TYPEMIME;
-				} else if ("3gp".equals(container)) {
-					mimeType = HTTPResource.THREEGPP_TYPEMIME;
-				} else if ("3g2".equals(container)) {
-					mimeType = HTTPResource.THREEGPP2_TYPEMIME;
-				} else if ("webm".equals(container)) {
-					mimeType = HTTPResource.WEBM_TYPEMIME;
-				} else if (container.startsWith("flash")) {
-					mimeType = HTTPResource.FLV_TYPEMIME;
-				} else if (codecV.equals("mjpeg") || "jpg".equals(container)) {
-					mimeType = HTTPResource.JPEG_TYPEMIME;
-				} else if ("png".equals(codecV) || "png".equals(container)) {
-					mimeType = HTTPResource.PNG_TYPEMIME;
-				} else if ("gif".equals(codecV) || "gif".equals(container)) {
-					mimeType = HTTPResource.GIF_TYPEMIME;
-				} else if ("tiff".equals(codecV) || "tiff".equals(container)) {
-					mimeType = HTTPResource.TIFF_TYPEMIME;
-				} else if ("bmp".equals(codecV) || "bmp".equals(container)) {
-					mimeType = HTTPResource.BMP_TYPEMIME;
-				} else if (codecV.startsWith("h264") || codecV.equals("h263") || codecV.equals("mpeg4") || codecV.equals("mp4")) {
-					mimeType = HTTPResource.MP4_TYPEMIME;
-				} else if (codecV.contains("mpeg") || codecV.contains("mpg")) {
-					mimeType = HTTPResource.MPEG_TYPEMIME;
-				}
-			} else if (codecV == null && codecA != null) {
-				if ("ogg".equals(container) || "oga".equals(container)) {
-					mimeType = HTTPResource.AUDIO_OGA_TYPEMIME;
-				} else if ("3gp".equals(container)) {
-					mimeType = HTTPResource.AUDIO_THREEGPPA_TYPEMIME;
-				} else if ("3g2".equals(container)) {
-					mimeType = HTTPResource.AUDIO_THREEGPP2A_TYPEMIME;
-				} else if ("adts".equals(container)) {
-					mimeType = HTTPResource.AUDIO_ADTS_TYPEMIME;
-				} else if ("matroska".equals(container) || "mkv".equals(container)) {
-					mimeType = HTTPResource.AUDIO_MKA_TYPEMIME;
-				} else if ("webm".equals(container)) {
-					mimeType = HTTPResource.AUDIO_WEBM_TYPEMIME;
-				} else if (codecA.contains("mp3")) {
-					mimeType = HTTPResource.AUDIO_MP3_TYPEMIME;
-				} else if (codecA.equals(FormatConfiguration.MPA)) {
-					mimeType = HTTPResource.AUDIO_MPA_TYPEMIME;
-				} else if (codecA.equals(FormatConfiguration.MP2)) {
-					mimeType = HTTPResource.AUDIO_MP2_TYPEMIME;
-				} else if (codecA.contains("flac")) {
-					mimeType = HTTPResource.AUDIO_FLAC_TYPEMIME;
-				} else if (codecA.contains("vorbis")) {
-					mimeType = HTTPResource.AUDIO_VORBIS_TYPEMIME;
-				} else if (codecA.contains("asf") || codecA.startsWith("wm")) {
-					mimeType = HTTPResource.AUDIO_WMA_TYPEMIME;
-				} else if (codecA.equals(FormatConfiguration.TRUEHD)) {
-					mimeType = HTTPResource.AUDIO_TRUEHD_TYPEMIME;
-				} else if (codecA.equals(FormatConfiguration.DTS)) {
-					mimeType = HTTPResource.AUDIO_DTS_TYPEMIME;
-				} else if (codecA.equals(FormatConfiguration.DTSHD)) {
-					mimeType = HTTPResource.AUDIO_DTSHD_TYPEMIME;
-				} else if (codecA.equals(FormatConfiguration.EAC3)) {
-					mimeType = HTTPResource.AUDIO_EAC3_TYPEMIME;
-				} else if (codecA.equals(FormatConfiguration.ADPCM)) {
-					mimeType = HTTPResource.AUDIO_ADPCM_TYPEMIME;
-				} else if (codecA.equals(FormatConfiguration.DFF)) {
-					mimeType = HTTPResource.AUDIO_DFF_TYPEMIME;
-				} else if (codecA.equals(FormatConfiguration.DSF)) {
-					mimeType = HTTPResource.AUDIO_DSF_TYPEMIME;
-				}
-			}
-
-			if (mimeType == null) {
-				mimeType = HTTPResource.getDefaultMimeType(getMediaType());
-			}
+			mimeType = HTTPResource.getDefaultMimeType(getMediaType());
 		}
 
 		MediaType mediaType = getMediaType();

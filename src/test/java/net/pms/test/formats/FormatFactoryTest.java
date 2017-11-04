@@ -133,6 +133,7 @@ public class FormatFactoryTest {
 		testSingleFormat("test.rmv", "MKV", FormatType.CONTAINER);
 		testSingleFormat("test.rmvb", "MKV", FormatType.CONTAINER);
 		testSingleFormat("test.rm", "MKV", FormatType.CONTAINER);
+		testSingleFormat("test.mxf", "MKV", FormatType.CONTAINER);
 		testSingleFormat("test.webm", "MKV", FormatType.CONTAINER);
 		testSingleFormat("test.265", "MKV", FormatType.CONTAINER);
 		testSingleFormat("test.h265", "MKV", FormatType.CONTAINER);
