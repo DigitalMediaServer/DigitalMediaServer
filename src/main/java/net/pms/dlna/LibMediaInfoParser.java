@@ -659,7 +659,7 @@ public class LibMediaInfoParser {
 			value.equals("wmva")
 		) {
 			format = FormatConfiguration.VC1;
-		} else if (value.equals("vc-3")) {
+		} else if (value.equals("vc-3") || value.startsWith("dnxhd")) {
 			format = FormatConfiguration.VC3;
 		} else if (value.startsWith("apr") || value.startsWith("prores")) {
 			format = FormatConfiguration.PRORES;
