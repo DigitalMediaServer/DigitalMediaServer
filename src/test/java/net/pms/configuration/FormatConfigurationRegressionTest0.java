@@ -12,7 +12,7 @@ import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 public class FormatConfigurationRegressionTest0 {
 
 	@Test
-	public void test01() throws Throwable {
+	public void testH263() throws Throwable {
 		String str0 = FormatConfiguration.H263;
 
 		// Regression assertion (captures the current behavior of the code)
@@ -20,7 +20,7 @@ public class FormatConfigurationRegressionTest0 {
 	}
 
 	@Test
-	public void test02() throws Throwable {
+	public void testAVI() throws Throwable {
 		String str0 = FormatConfiguration.AVI;
 
 		// Regression assertion (captures the current behavior of the code)
@@ -28,7 +28,7 @@ public class FormatConfigurationRegressionTest0 {
 	}
 
 	@Test
-	public void test03() throws Throwable {
+	public void testAU() throws Throwable {
 		String str0 = FormatConfiguration.AU;
 
 		// Regression assertion (captures the current behavior of the code)
@@ -36,7 +36,7 @@ public class FormatConfigurationRegressionTest0 {
 	}
 
 	@Test
-	public void test04() throws Throwable {
+	public void testMPEGPS() throws Throwable {
 		String str0 = FormatConfiguration.MPEGPS;
 
 		// Regression assertion (captures the current behavior of the code)
@@ -44,7 +44,7 @@ public class FormatConfigurationRegressionTest0 {
 	}
 
 	@Test
-	public void test05() throws Throwable {
+	public void testWMALOSSLESS() throws Throwable {
 		String str0 = FormatConfiguration.WMALOSSLESS;
 
 		// Regression assertion (captures the current behavior of the code)
@@ -52,7 +52,7 @@ public class FormatConfigurationRegressionTest0 {
 	}
 
 	@Test
-	public void test06() throws Throwable {
+	public void testFLV() throws Throwable {
 		String str0 = FormatConfiguration.FLV;
 
 		// Regression assertion (captures the current behavior of the code)
@@ -60,7 +60,7 @@ public class FormatConfigurationRegressionTest0 {
 	}
 
 	@Test
-	public void test07() throws Throwable {
+	public void testOPUS() throws Throwable {
 		String str0 = FormatConfiguration.OPUS;
 
 		// Regression assertion (captures the current behavior of the code)
@@ -68,7 +68,7 @@ public class FormatConfigurationRegressionTest0 {
 	}
 
 	@Test
-	public void test08() throws Throwable {
+	public void testCOOK() throws Throwable {
 		String str0 = FormatConfiguration.COOK;
 
 		// Regression assertion (captures the current behavior of the code)
@@ -76,7 +76,7 @@ public class FormatConfigurationRegressionTest0 {
 	}
 
 	@Test
-	public void test09() throws Throwable {
+	public void testADTS() throws Throwable {
 		String str0 = FormatConfiguration.ADTS;
 
 		// Regression assertion (captures the current behavior of the code)
@@ -84,7 +84,7 @@ public class FormatConfigurationRegressionTest0 {
 	}
 
 	@Test
-	public void test10() throws Throwable {
+	public void testRA() throws Throwable {
 		String str0 = FormatConfiguration.RA;
 
 		// Regression assertion (captures the current behavior of the code)
@@ -92,7 +92,7 @@ public class FormatConfigurationRegressionTest0 {
 	}
 
 	@Test
-	public void test11() throws Throwable {
+	public void testMKV() throws Throwable {
 		String str0 = FormatConfiguration.MKV;
 
 		// Regression assertion (captures the current behavior of the code)
@@ -100,7 +100,7 @@ public class FormatConfigurationRegressionTest0 {
 	}
 
 	@Test
-	public void test12() throws Throwable {
+	public void testVC1() throws Throwable {
 		String str0 = FormatConfiguration.VC1;
 
 		// Regression assertion (captures the current behavior of the code)
@@ -108,7 +108,7 @@ public class FormatConfigurationRegressionTest0 {
 	}
 
 	@Test
-	public void test13() throws Throwable {
+	public void testMP2() throws Throwable {
 		String str0 = FormatConfiguration.MP2;
 
 		// Regression assertion (captures the current behavior of the code)
@@ -116,7 +116,7 @@ public class FormatConfigurationRegressionTest0 {
 	}
 
 	@Test
-	public void test14() throws Throwable {
+	public void testLPCM() throws Throwable {
 		String str0 = FormatConfiguration.LPCM;
 
 		// Regression assertion (captures the current behavior of the code)
@@ -124,7 +124,7 @@ public class FormatConfigurationRegressionTest0 {
 	}
 
 	@Test
-	public void test15() throws Throwable {
+	public void testMPEG2() throws Throwable {
 		String str0 = FormatConfiguration.MPEG2;
 
 		// Regression assertion (captures the current behavior of the code)
@@ -132,7 +132,7 @@ public class FormatConfigurationRegressionTest0 {
 	}
 
 	@Test
-	public void test16() throws Throwable {
+	public void testM4A() throws Throwable {
 		String str0 = FormatConfiguration.M4A;
 
 		// Regression assertion (captures the current behavior of the code)
@@ -140,7 +140,7 @@ public class FormatConfigurationRegressionTest0 {
 	}
 
 	@Test
-	public void test17() throws Throwable {
+	public void testDIVX() throws Throwable {
 		String str0 = FormatConfiguration.DIVX;
 
 		// Regression assertion (captures the current behavior of the code)
@@ -148,7 +148,7 @@ public class FormatConfigurationRegressionTest0 {
 	}
 
 	@Test
-	public void test18() throws Throwable {
+	public void testTHREEGPP2() throws Throwable {
 		String str0 = FormatConfiguration.THREEGPP2;
 
 		// Regression assertion (captures the current behavior of the code)
@@ -156,7 +156,7 @@ public class FormatConfigurationRegressionTest0 {
 	}
 
 	@Test
-	public void test19() throws Throwable {
+	public void testOGG() throws Throwable {
 		String str0 = FormatConfiguration.OGG;
 
 		// Regression assertion (captures the current behavior of the code)
@@ -164,7 +164,7 @@ public class FormatConfigurationRegressionTest0 {
 	}
 
 	@Test
-	public void test20() throws Throwable {
+	public void testAC3() throws Throwable {
 		String str0 = FormatConfiguration.AC3;
 
 		// Regression assertion (captures the current behavior of the code)
@@ -172,7 +172,7 @@ public class FormatConfigurationRegressionTest0 {
 	}
 
 	@Test
-	public void test21() throws Throwable {
+	public void testATMOS() throws Throwable {
 		String str0 = FormatConfiguration.ATMOS;
 
 		// Regression assertion (captures the current behavior of the code)
@@ -180,7 +180,7 @@ public class FormatConfigurationRegressionTest0 {
 	}
 
 	@Test
-	public void test22() throws Throwable {
+	public void testWMAPRO() throws Throwable {
 		String str0 = FormatConfiguration.WMAPRO;
 
 		// Regression assertion (captures the current behavior of the code)
@@ -188,7 +188,7 @@ public class FormatConfigurationRegressionTest0 {
 	}
 
 	@Test
-	public void test23() throws Throwable {
+	public void testGIF() throws Throwable {
 		String str0 = FormatConfiguration.GIF;
 
 		// Regression assertion (captures the current behavior of the code)
@@ -196,7 +196,7 @@ public class FormatConfigurationRegressionTest0 {
 	}
 
 	@Test
-	public void test24() throws Throwable {
+	public void testMP4() throws Throwable {
 		String str0 = FormatConfiguration.MP4;
 
 		// Regression assertion (captures the current behavior of the code)
@@ -204,7 +204,7 @@ public class FormatConfigurationRegressionTest0 {
 	}
 
 	@Test
-	public void test25() throws Throwable {
+	public void testH264() throws Throwable {
 		String str0 = FormatConfiguration.H264;
 
 		// Regression assertion (captures the current behavior of the code)
@@ -212,7 +212,7 @@ public class FormatConfigurationRegressionTest0 {
 	}
 
 	@Test
-	public void test26() throws Throwable {
+	public void testATRAC() throws Throwable {
 		String str0 = FormatConfiguration.ATRAC;
 
 		// Regression assertion (captures the current behavior of the code)
@@ -220,7 +220,7 @@ public class FormatConfigurationRegressionTest0 {
 	}
 
 	@Test
-	public void test27() throws Throwable {
+	public void testHEAAC() throws Throwable {
 		String str0 = FormatConfiguration.HE_AAC;
 
 		// Regression assertion (captures the current behavior of the code)
@@ -228,7 +228,7 @@ public class FormatConfigurationRegressionTest0 {
 	}
 
 	@Test
-	public void test28() throws Throwable {
+	public void testWEBM() throws Throwable {
 		String str0 = FormatConfiguration.WEBM;
 
 		// Regression assertion (captures the current behavior of the code)
@@ -236,7 +236,7 @@ public class FormatConfigurationRegressionTest0 {
 	}
 
 	@Test
-	public void test29() throws Throwable {
+	public void testTIFF() throws Throwable {
 		String str0 = FormatConfiguration.TIFF;
 
 		// Regression assertion (captures the current behavior of the code)
@@ -244,7 +244,7 @@ public class FormatConfigurationRegressionTest0 {
 	}
 
 	@Test
-	public void test30() throws Throwable {
+	public void testWAV() throws Throwable {
 		String str0 = FormatConfiguration.WAV;
 
 		// Regression assertion (captures the current behavior of the code)
@@ -252,7 +252,7 @@ public class FormatConfigurationRegressionTest0 {
 	}
 
 	@Test
-	public void test31() throws Throwable {
+	public void testJPG() throws Throwable {
 		String str0 = FormatConfiguration.JPG;
 
 		// Regression assertion (captures the current behavior of the code)
@@ -260,7 +260,7 @@ public class FormatConfigurationRegressionTest0 {
 	}
 
 	@Test
-	public void test32() throws Throwable {
+	public void testVP9() throws Throwable {
 		String str0 = FormatConfiguration.VP9;
 
 		// Regression assertion (captures the current behavior of the code)
@@ -276,7 +276,7 @@ public class FormatConfigurationRegressionTest0 {
 	}
 
 	@Test
-	public void test34() throws Throwable {
+	public void testVP8() throws Throwable {
 		String str0 = FormatConfiguration.VP8;
 
 		// Regression assertion (captures the current behavior of the code)
@@ -284,7 +284,7 @@ public class FormatConfigurationRegressionTest0 {
 	}
 
 	@Test
-	public void test35() throws Throwable {
+	public void testTHREEGA() throws Throwable {
 		String str0 = FormatConfiguration.THREEGA;
 
 		// Regression assertion (captures the current behavior of the code)
@@ -292,7 +292,7 @@ public class FormatConfigurationRegressionTest0 {
 	}
 
 	@Test
-	public void test36() throws Throwable {
+	public void testMONKEYS_AUDIO() throws Throwable {
 		String str0 = FormatConfiguration.MONKEYS_AUDIO;
 
 		// Regression assertion (captures the current behavior of the code)
@@ -300,7 +300,7 @@ public class FormatConfigurationRegressionTest0 {
 	}
 
 	@Test
-	public void test37() throws Throwable {
+	public void testRALF() throws Throwable {
 		String str0 = FormatConfiguration.RALF;
 
 		// Regression assertion (captures the current behavior of the code)
@@ -308,7 +308,7 @@ public class FormatConfigurationRegressionTest0 {
 	}
 
 	@Test
-	public void test38() throws Throwable {
+	public void testMKA() throws Throwable {
 		String str0 = FormatConfiguration.MKA;
 
 		// Regression assertion (captures the current behavior of the code)
@@ -316,7 +316,7 @@ public class FormatConfigurationRegressionTest0 {
 	}
 
 	@Test
-	public void test39() throws Throwable {
+	public void testDSF() throws Throwable {
 		String str0 = FormatConfiguration.DSF;
 
 		// Regression assertion (captures the current behavior of the code)
@@ -324,7 +324,7 @@ public class FormatConfigurationRegressionTest0 {
 	}
 
 	@Test
-	public void test40() throws Throwable {
+	public void testCINEPAK() throws Throwable {
 		String str0 = FormatConfiguration.CINEPAK;
 
 		// Regression assertion (captures the current behavior of the code)
@@ -332,7 +332,7 @@ public class FormatConfigurationRegressionTest0 {
 	}
 
 	@Test
-	public void test41() throws Throwable {
+	public void testMIMETYPE_AUTO() throws Throwable {
 		String str0 = FormatConfiguration.MIMETYPE_AUTO;
 
 		// Regression assertion (captures the current behavior of the code)
@@ -340,7 +340,7 @@ public class FormatConfigurationRegressionTest0 {
 	}
 
 	@Test
-	public void test42() throws Throwable {
+	public void testVP7() throws Throwable {
 		String str0 = FormatConfiguration.VP7;
 
 		// Regression assertion (captures the current behavior of the code)
@@ -348,7 +348,7 @@ public class FormatConfigurationRegressionTest0 {
 	}
 
 	@Test
-	public void test43() throws Throwable {
+	public void testTHREEGPP() throws Throwable {
 		String str0 = FormatConfiguration.THREEGPP;
 
 		// Regression assertion (captures the current behavior of the code)
@@ -356,7 +356,7 @@ public class FormatConfigurationRegressionTest0 {
 	}
 
 	@Test
-	public void test44() throws Throwable {
+	public void testMJPEG() throws Throwable {
 		String str0 = FormatConfiguration.MJPEG;
 
 		// Regression assertion (captures the current behavior of the code)
@@ -364,7 +364,7 @@ public class FormatConfigurationRegressionTest0 {
 	}
 
 	@Test
-	public void test45() throws Throwable {
+	public void testBMP() throws Throwable {
 		String str0 = FormatConfiguration.BMP;
 
 		// Regression assertion (captures the current behavior of the code)
@@ -372,7 +372,7 @@ public class FormatConfigurationRegressionTest0 {
 	}
 
 	@Test
-	public void test46() throws Throwable {
+	public void testTTA() throws Throwable {
 		String str0 = FormatConfiguration.TTA;
 
 		// Regression assertion (captures the current behavior of the code)
@@ -380,7 +380,7 @@ public class FormatConfigurationRegressionTest0 {
 	}
 
 	@Test
-	public void test47() throws Throwable {
+	public void testAACLC() throws Throwable {
 		String str0 = FormatConfiguration.AAC_LC;
 
 		// Regression assertion (captures the current behavior of the code)
@@ -388,7 +388,7 @@ public class FormatConfigurationRegressionTest0 {
 	}
 
 	@Test
-	public void test48() throws Throwable {
+	public void testPNG() throws Throwable {
 		String str0 = FormatConfiguration.PNG;
 
 		// Regression assertion (captures the current behavior of the code)
@@ -396,7 +396,7 @@ public class FormatConfigurationRegressionTest0 {
 	}
 
 	@Test
-	public void test49() throws Throwable {
+	public void testWMV() throws Throwable {
 		String str0 = FormatConfiguration.WMV;
 
 		// Regression assertion (captures the current behavior of the code)
@@ -404,7 +404,7 @@ public class FormatConfigurationRegressionTest0 {
 	}
 
 	@Test
-	public void test50() throws Throwable {
+	public void testMPEGTS() throws Throwable {
 		String str0 = FormatConfiguration.MPEGTS;
 
 		// Regression assertion (captures the current behavior of the code)
@@ -412,7 +412,7 @@ public class FormatConfigurationRegressionTest0 {
 	}
 
 	@Test
-	public void test51() throws Throwable {
+	public void testDTS() throws Throwable {
 		String str0 = FormatConfiguration.DTS;
 
 		// Regression assertion (captures the current behavior of the code)
@@ -420,7 +420,7 @@ public class FormatConfigurationRegressionTest0 {
 	}
 
 	@Test
-	public void test52() throws Throwable {
+	public void testVP6() throws Throwable {
 		String str0 = FormatConfiguration.VP6;
 
 		// Regression assertion (captures the current behavior of the code)
@@ -428,7 +428,7 @@ public class FormatConfigurationRegressionTest0 {
 	}
 
 	@Test
-	public void test53() throws Throwable {
+	public void testQDESIGN() throws Throwable {
 		String str0 = FormatConfiguration.QDESIGN;
 
 		// Regression assertion (captures the current behavior of the code)
@@ -436,7 +436,7 @@ public class FormatConfigurationRegressionTest0 {
 	}
 
 	@Test
-	public void test54() throws Throwable {
+	public void testMPA() throws Throwable {
 		String str0 = FormatConfiguration.MPA;
 
 		// Regression assertion (captures the current behavior of the code)
@@ -444,7 +444,7 @@ public class FormatConfigurationRegressionTest0 {
 	}
 
 	@Test
-	public void test55() throws Throwable {
+	public void testTRUEHD() throws Throwable {
 		String str0 = FormatConfiguration.TRUEHD;
 
 		// Regression assertion (captures the current behavior of the code)
@@ -452,7 +452,7 @@ public class FormatConfigurationRegressionTest0 {
 	}
 
 	@Test
-	public void test56() throws Throwable {
+	public void testALAC() throws Throwable {
 		String str0 = FormatConfiguration.ALAC;
 
 		// Regression assertion (captures the current behavior of the code)
@@ -460,7 +460,7 @@ public class FormatConfigurationRegressionTest0 {
 	}
 
 	@Test
-	public void test57() throws Throwable {
+	public void testMPEG1() throws Throwable {
 		String str0 = FormatConfiguration.MPEG1;
 
 		// Regression assertion (captures the current behavior of the code)
@@ -468,7 +468,7 @@ public class FormatConfigurationRegressionTest0 {
 	}
 
 	@Test
-	public void test58() throws Throwable {
+	public void testMPC() throws Throwable {
 		String str0 = FormatConfiguration.MPC;
 
 		// Regression assertion (captures the current behavior of the code)
@@ -484,7 +484,7 @@ public class FormatConfigurationRegressionTest0 {
 	}
 
 	@Test
-	public void test60() throws Throwable {
+	public void testEAC3() throws Throwable {
 		String str0 = FormatConfiguration.EAC3;
 
 		// Regression assertion (captures the current behavior of the code)
@@ -492,7 +492,7 @@ public class FormatConfigurationRegressionTest0 {
 	}
 
 	@Test
-	public void test61() throws Throwable {
+	public void testVORBIS() throws Throwable {
 		String str0 = FormatConfiguration.VORBIS;
 
 		// Regression assertion (captures the current behavior of the code)
@@ -500,7 +500,7 @@ public class FormatConfigurationRegressionTest0 {
 	}
 
 	@Test
-	public void test62() throws Throwable {
+	public void testUnd() throws Throwable {
 		String str0 = FormatConfiguration.und;
 
 		// Regression assertion (captures the current behavior of the code)
@@ -508,7 +508,7 @@ public class FormatConfigurationRegressionTest0 {
 	}
 
 	@Test
-	public void test63() throws Throwable {
+	public void testH265() throws Throwable {
 		String str0 = FormatConfiguration.H265;
 
 		// Regression assertion (captures the current behavior of the code)
@@ -516,7 +516,7 @@ public class FormatConfigurationRegressionTest0 {
 	}
 
 	@Test
-	public void test64() throws Throwable {
+	public void testWMA() throws Throwable {
 		String str0 = FormatConfiguration.WMA;
 
 		// Regression assertion (captures the current behavior of the code)
@@ -524,7 +524,7 @@ public class FormatConfigurationRegressionTest0 {
 	}
 
 	@Test
-	public void test65() throws Throwable {
+	public void testTHEORA() throws Throwable {
 		String str0 = FormatConfiguration.THEORA;
 
 		// Regression assertion (captures the current behavior of the code)
@@ -540,7 +540,7 @@ public class FormatConfigurationRegressionTest0 {
 	}
 
 	@Test
-	public void test67() throws Throwable {
+	public void testSHORTEN() throws Throwable {
 		String str0 = FormatConfiguration.SHORTEN;
 
 		// Regression assertion (captures the current behavior of the code)
@@ -548,7 +548,7 @@ public class FormatConfigurationRegressionTest0 {
 	}
 
 	@Test
-	public void test68() throws Throwable {
+	public void testADPCM() throws Throwable {
 		String str0 = FormatConfiguration.ADPCM;
 
 		// Regression assertion (captures the current behavior of the code)
@@ -556,7 +556,7 @@ public class FormatConfigurationRegressionTest0 {
 	}
 
 	@Test
-	public void test69() throws Throwable {
+	public void testWMAVOICE() throws Throwable {
 		String str0 = FormatConfiguration.WMAVOICE;
 
 		// Regression assertion (captures the current behavior of the code)
@@ -564,7 +564,7 @@ public class FormatConfigurationRegressionTest0 {
 	}
 
 	@Test
-	public void test70() throws Throwable {
+	public void testDV() throws Throwable {
 		String str0 = FormatConfiguration.DV;
 
 		// Regression assertion (captures the current behavior of the code)
@@ -572,7 +572,7 @@ public class FormatConfigurationRegressionTest0 {
 	}
 
 	@Test
-	public void test71() throws Throwable {
+	public void testFLAC() throws Throwable {
 		String str0 = FormatConfiguration.FLAC;
 
 		// Regression assertion (captures the current behavior of the code)
@@ -580,7 +580,7 @@ public class FormatConfigurationRegressionTest0 {
 	}
 
 	@Test
-	public void test72() throws Throwable {
+	public void testRM() throws Throwable {
 		String str0 = FormatConfiguration.RM;
 
 		// Regression assertion (captures the current behavior of the code)
@@ -588,7 +588,7 @@ public class FormatConfigurationRegressionTest0 {
 	}
 
 	@Test
-	public void test73() throws Throwable {
+	public void testWAVPACK() throws Throwable {
 		String str0 = FormatConfiguration.WAVPACK;
 
 		// Regression assertion (captures the current behavior of the code)
@@ -596,7 +596,7 @@ public class FormatConfigurationRegressionTest0 {
 	}
 
 	@Test
-	public void test74() throws Throwable {
+	public void testMOV() throws Throwable {
 		String str0 = FormatConfiguration.MOV;
 
 		// Regression assertion (captures the current behavior of the code)
@@ -604,7 +604,7 @@ public class FormatConfigurationRegressionTest0 {
 	}
 
 	@Test
-	public void test75() throws Throwable {
+	public void testSOR() throws Throwable {
 		String str0 = FormatConfiguration.SORENSON;
 
 		// Regression assertion (captures the current behavior of the code)
@@ -612,7 +612,7 @@ public class FormatConfigurationRegressionTest0 {
 	}
 
 	@Test
-	public void test76() throws Throwable {
+	public void testMLP() throws Throwable {
 		String str0 = FormatConfiguration.MLP;
 
 		// Regression assertion (captures the current behavior of the code)
@@ -620,7 +620,7 @@ public class FormatConfigurationRegressionTest0 {
 	}
 
 	@Test
-	public void test77() throws Throwable {
+	public void testAMR() throws Throwable {
 		String str0 = FormatConfiguration.AMR;
 
 		// Regression assertion (captures the current behavior of the code)
@@ -628,7 +628,7 @@ public class FormatConfigurationRegressionTest0 {
 	}
 
 	@Test
-	public void test78() throws Throwable {
+	public void testMP3() throws Throwable {
 		String str0 = FormatConfiguration.MP3;
 
 		// Regression assertion (captures the current behavior of the code)
@@ -636,7 +636,7 @@ public class FormatConfigurationRegressionTest0 {
 	}
 
 	@Test
-	public void test79() throws Throwable {
+	public void testDTSHD() throws Throwable {
 		String str0 = FormatConfiguration.DTSHD;
 
 		// Regression assertion (captures the current behavior of the code)
@@ -689,14 +689,6 @@ public class FormatConfigurationRegressionTest0 {
 
 		// Regression assertion (captures the current behavior of the code)
 		assertTrue("'" + str0 + "' != '" + "ra28.8"+ "'", str0.equals("ra28.8"));
-	}
-
-	@Test
-	public void testRALF() throws Throwable {
-		String str0 = FormatConfiguration.RALF;
-
-		// Regression assertion (captures the current behavior of the code)
-		assertTrue("'" + str0 + "' != '" + "ralf"+ "'", str0.equals("ralf"));
 	}
 
 	@Test
@@ -888,5 +880,37 @@ public class FormatConfigurationRegressionTest0 {
 
 		// Regression assertion (captures the current behavior of the code)
 		assertTrue("'" + str0 + "' != '" + "dolbye"+ "'", str0.equals("dolbye"));
+	}
+
+	@Test
+	public void testAV1() throws Throwable {
+		String str0 = net.pms.configuration.FormatConfiguration.AV1;
+
+		// Regression assertion (captures the current behavior of the code)
+		assertTrue("'" + str0 + "' != '" + "av1"+ "'", str0.equals("av1"));
+	}
+
+	@Test
+	public void testMXF() throws Throwable {
+		String str0 = net.pms.configuration.FormatConfiguration.MXF;
+
+		// Regression assertion (captures the current behavior of the code)
+		assertTrue("'" + str0 + "' != '" + "mxf"+ "'", str0.equals("mxf"));
+	}
+
+	@Test
+	public void testVC3() throws Throwable {
+		String str0 = net.pms.configuration.FormatConfiguration.VC3;
+
+		// Regression assertion (captures the current behavior of the code)
+		assertTrue("'" + str0 + "' != '" + "vc3"+ "'", str0.equals("vc3"));
+	}
+
+	@Test
+	public void testPRORES() throws Throwable {
+		String str0 = net.pms.configuration.FormatConfiguration.PRORES;
+
+		// Regression assertion (captures the current behavior of the code)
+		assertTrue("'" + str0 + "' != '" + "prores"+ "'", str0.equals("prores"));
 	}
 }

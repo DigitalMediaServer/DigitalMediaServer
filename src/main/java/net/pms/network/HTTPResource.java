@@ -51,9 +51,11 @@ public class HTTPResource {
 	public static final String AUDIO_ADTS_TYPEMIME = "audio/vnd.dlna.adts";
 	public static final String AUDIO_AIFC_TYPEMIME = "audio/aifc";
 	public static final String AUDIO_AIFF_TYPEMIME = "audio/aiff";
+	public static final String AUDIO_AMR_TYPEMIME = "audio/amr";
 	public static final String AUDIO_APE_TYPEMIME = "audio/x-ape";
 	public static final String AUDIO_ATRAC_TYPEMIME = "audio/x-sony-oma";
 	public static final String AUDIO_AU_TYPEMIME = "audio/basic";
+	public static final String AUDIO_CAF_TYPEMIME = "audio/x-caf";
 	public static final String AUDIO_DSF_TYPEMIME = "audio/x-dsf";
 	public static final String AUDIO_DFF_TYPEMIME = "audio/x-dff";
 	public static final String AUDIO_DTS_TYPEMIME = "audio/vnd.dts";
@@ -91,11 +93,14 @@ public class HTTPResource {
 	public static final String MOV_TYPEMIME = "video/quicktime";
 	public static final String MP4_TYPEMIME = "video/mp4";
 	public static final String MPEG_TYPEMIME = "video/mpeg";
+	public static final String MPEGTS_TYPEMIME = "video/vnd.dlna.mpeg-tts";
+	public static final String MXF_TYPEMIME = "application/mxf";
 	public static final String PNG_TYPEMIME = "image/png";
 	public static final String RM_TYPEMIME = "application/vnd.rn-realmedia";
 	public static final String THREEGPP_TYPEMIME = "video/3gpp";
 	public static final String THREEGPP2_TYPEMIME = "video/3gpp2";
 	public static final String TIFF_TYPEMIME = "image/tiff";
+	public static final String WEBP_TYPEMIME = "image/webp";
 	public static final String WMV_TYPEMIME = "video/x-ms-wmv";
 	public static final String OGG_TYPEMIME = "video/ogg";
 	public static final String WEBM_TYPEMIME = "video/webm";
