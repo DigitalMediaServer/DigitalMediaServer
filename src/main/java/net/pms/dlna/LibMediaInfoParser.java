@@ -513,6 +513,8 @@ public class LibMediaInfoParser {
 			format = FormatConfiguration.FLV;
 		} else if (value.equals("webm")) {
 			format = FormatConfiguration.WEBM;
+		} else if (value.equals("mxf")) {
+			format = FormatConfiguration.MXF;
 		} else if (value.equals("qt") || value.equals("quicktime")) {
 			format = FormatConfiguration.MOV;
 		} else if (
@@ -601,6 +603,8 @@ public class LibMediaInfoParser {
 			format = FormatConfiguration.VP8;
 		} else if (value.startsWith("vp9")) {
 			format = FormatConfiguration.VP9;
+		} else if (value.startsWith("av1")) {
+			format = FormatConfiguration.AV1;
 		} else if (
 			(
 				value.startsWith("div") ||
@@ -651,6 +655,10 @@ public class LibMediaInfoParser {
 			value.equals("wmva")
 		) {
 			format = FormatConfiguration.VC1;
+		} else if (value.equals("vc-3")) {
+			format = FormatConfiguration.VC3;
+		} else if (value.startsWith("apr") || value.startsWith("prores")) {
+			format = FormatConfiguration.PRORES;
 		} else if (value.equals("au") || value.equals("uLaw/AU Audio File")) {
 			format = FormatConfiguration.AU;
 		} else if (value.equals("layer 3")) {
