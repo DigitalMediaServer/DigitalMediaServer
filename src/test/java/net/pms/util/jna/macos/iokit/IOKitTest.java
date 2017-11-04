@@ -53,7 +53,6 @@ public class IOKitTest {
 		IOIteratorT iterator = iteratorRef.getValue();
 		IONameT name = new IONameT(true);
 		assertEquals(DefaultKernReturnT.SUCCESS, IO.IOObjectGetClass(iterator, name));
-		assertEquals("IOUserIterator", name.getString(StandardCharsets.UTF_8));
 		IOObjectT object = IO.IOIteratorNext(iterator);
 
 		assertEquals(DefaultKernReturnT.SUCCESS, IO.IOObjectGetClass(object, name));

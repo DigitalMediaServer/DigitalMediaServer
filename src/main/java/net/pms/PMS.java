@@ -369,7 +369,7 @@ public class PMS {
 				// Don't use the {} syntax here as the check needs to be performed on every log level
 				LOGGER.info("Web configuration file permissions: " + FileUtil.getFilePermissions(webConfPath));
 			} catch (FileNotFoundException e) {
-				LOGGER.warn("Web configuration file not found: {}", e.getMessage());
+				LOGGER.info("Web configuration file not found: {}", e.getMessage());
 			}
 			LOGGER.info("");
 		}
