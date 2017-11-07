@@ -28,6 +28,7 @@ import java.awt.*;
 import java.io.*;
 import java.net.BindException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Paths;
 import java.security.AccessControlException;
 import java.sql.SQLException;
 import java.text.SimpleDateFormat;
@@ -66,6 +67,7 @@ import net.pms.network.ProxyServer;
 import net.pms.network.UPNPHelper;
 import net.pms.newgui.*;
 import net.pms.newgui.StatusTab.ConnectionState;
+import net.pms.newgui.components.WindowProperties.WindowPropertiesConfiguration;
 import net.pms.remote.RemoteWeb;
 import net.pms.util.*;
 import net.pms.util.jna.macos.iokit.IOKitUtils;
@@ -288,24 +290,25 @@ public class PMS {
 
 	private void displayBanner() throws IOException {
 		LOGGER.debug("");
-		LOGGER.info("Starting " + PropertiesUtil.getProjectProperties().get("project.name") + " " + getVersion());
+		LOGGER.info("Starting {} {}", PropertiesUtil.getProjectProperties().get("project.name"), getVersion());
 		LOGGER.info("Based on PS3 Media Server by shagrath and Universal Media Server");
 		LOGGER.info("http://www.digitalmediaserver.org");
 		LOGGER.info("");
 
 		String commitId = PropertiesUtil.getProjectProperties().get("git.commit.id");
-		String commitTime = PropertiesUtil.getProjectProperties().get("git.commit.time");
-		String shortCommitId = commitId.substring(0, 9);
-
-		LOGGER.info("Build: " + shortCommitId + " (" + commitTime + ")");
+		LOGGER.info(
+			"Build: {} ({})",
+			commitId.substring(0, 9),
+			PropertiesUtil.getProjectProperties().get("git.commit.time")
+		);
 
 		// Log system properties
 		logSystemInfo();
 
 		String cwd = new File("").getAbsolutePath();
-		LOGGER.info("Working directory: " + cwd);
+		LOGGER.info("Working directory: {}", cwd);
 
-		LOGGER.info("Temporary directory: " + configuration.getTempFolder());
+		LOGGER.info("Temporary directory: {}", configuration.getTempFolder());
 
 		/**
 		 * Verify the java.io.tmpdir is writable; JNA requires it.
@@ -315,12 +318,12 @@ public class PMS {
 		File javaTmpdir = new File(System.getProperty("java.io.tmpdir"));
 
 		if (!FileUtil.getFilePermissions(javaTmpdir).isWritable()) {
-			LOGGER.error("The Java temp directory \"" + javaTmpdir.getAbsolutePath() + "\" is not writable by DMS");
-			LOGGER.error("Please make sure the directory is writable for user \"" + System.getProperty("user.name") + "\"");
+			LOGGER.error("The Java temp directory \"{}\" is not writable by DMS", javaTmpdir.getAbsolutePath());
+			LOGGER.error("Please make sure the directory is writable for user \"{}\"", System.getProperty("user.name"));
 			throw new IOException("Cannot write to Java temp directory: " + javaTmpdir.getAbsolutePath());
 		}
 
-		LOGGER.info("Logging configuration file: " + LoggingConfig.getConfigFilePath());
+		LOGGER.info("Logging configuration file: {}", LoggingConfig.getConfigFilePath());
 
 		HashMap<String, String> lfps = LoggingConfig.getLogFilePaths();
 
@@ -434,9 +437,13 @@ public class PMS {
 		}
 
 		// Initialize splash screen
+		WindowPropertiesConfiguration windowConfiguration = null;
 		Splash splash = null;
 		if (!isHeadless()) {
-			splash = new Splash(configuration);
+			windowConfiguration = new WindowPropertiesConfiguration(
+				Paths.get(configuration.getProfileFolder()).resolve("DMS.dat")
+			);
+			splash = new Splash(configuration, windowConfiguration.getGraphicsConfiguration());
 		}
 
 		// Call this as early as possible
@@ -594,7 +601,7 @@ public class PMS {
 		sleepManager = new SleepManager();
 
 		if (!isHeadless()) {
-			frame = new LooksFrame(configuration);
+			frame = new LooksFrame(configuration, windowConfiguration);
 		} else {
 			LOGGER.info("Graphics environment not available or headless mode is forced");
 			LOGGER.info("Switching to console mode");
