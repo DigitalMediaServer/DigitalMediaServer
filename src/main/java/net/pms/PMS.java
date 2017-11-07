@@ -27,7 +27,10 @@ import com.sun.net.httpserver.HttpServer;
 import java.awt.*;
 import java.io.*;
 import java.net.BindException;
+import java.nio.charset.Charset;
+import java.nio.charset.IllegalCharsetNameException;
 import java.nio.charset.StandardCharsets;
+import java.nio.charset.UnsupportedCharsetException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -1362,7 +1365,7 @@ public class PMS {
 			);
 		} catch (FileNotFoundException e) {
 			LOGGER.debug("PID file not found, cannot check for running process");
-		} catch ( IOException e) {
+		} catch (IOException e) {
 			LOGGER.error("Error killing old process: " + e);
 		}
 
@@ -1390,7 +1393,22 @@ public class PMS {
 		Process p = pb.start();
 		String line;
 
-		try (BufferedReader in = new BufferedReader(new InputStreamReader(p.getInputStream(), "cp" + WinUtils.getOEMCP()))) {
+		Charset charset = null;
+		int codepage = WinUtils.getOEMCP();
+		String[] aliases = {"cp" + codepage, "MS" + codepage};
+		for (String alias : aliases) {
+			try {
+				charset = Charset.forName(alias);
+				break;
+			} catch (IllegalCharsetNameException | UnsupportedCharsetException e) {
+				charset = null;
+			}
+		}
+		if (charset == null) {
+			charset = Charset.defaultCharset();
+			LOGGER.warn("Couldn't find a supported charset for {}, using default ({})", aliases, charset);
+		}
+		try (BufferedReader in = new BufferedReader(new InputStreamReader(p.getInputStream(), charset))) {
 			try {
 				p.waitFor();
 			} catch (InterruptedException e) {

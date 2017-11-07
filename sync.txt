@@ -1,4 +1,4 @@
-UMS sync with: e7267e081ceba4507e47a373b5b68cae7a57acb2 Fixed an exception if the renderer replied to GetProtocolInfo but didn't include sink
+UMS sync with: 6df459d3a862520d22d0d63f9f4950ddaa8b7a61 Fixed codepage 932 Japanese
 
 Skipped:
 a4a099c7efcaf6dc8a28402a29eade757a2ce78d The ugly hack to solve problem when the TotalMatches are changed
