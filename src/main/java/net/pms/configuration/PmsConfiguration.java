@@ -23,7 +23,6 @@ import ch.qos.logback.classic.Level;
 import com.sun.jna.Platform;
 import java.awt.Color;
 import java.awt.Component;
-import java.awt.Frame;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -289,7 +288,6 @@ public class PmsConfiguration extends RendererConfiguration {
 	protected static final String KEY_RESUME_REWIND = "resume_rewind";
 	protected static final String KEY_ROOT_LOG_LEVEL = "log_level";
 	protected static final String KEY_RUN_WIZARD = "run_wizard";
-	protected static final String KEY_SCREEN_SIZE = "screen_size";
 	protected static final String KEY_SCRIPT_DIR = "script_dir";
 	protected static final String KEY_SEARCH_FOLDER = "search_folder";
 	protected static final String KEY_SEARCH_IN_FOLDER = "search_in_folder";
@@ -364,8 +362,6 @@ public class PmsConfiguration extends RendererConfiguration {
 	protected static final String KEY_WEB_THREADS = "web_threads";
 	protected static final String KEY_WEB_TRANSCODE = "web_transcode";
 	protected static final String KEY_WEB_WIDTH = "web_width";
-	protected static final String KEY_WINDOW_EXTENDED_STATE = "window_extended_state";
-	protected static final String KEY_WINDOW_GEOMETRY = "window_geometry";
 	protected static final String KEY_X264_CONSTANT_RATE_FACTOR = "x264_constant_rate_factor";
 
 	// Deprecated settings
@@ -4195,30 +4191,6 @@ public class PmsConfiguration extends RendererConfiguration {
 
 	public void setRootLogLevel(ch.qos.logback.classic.Level level) {
 		configuration.setProperty(KEY_ROOT_LOG_LEVEL, level.toString());
-	}
-
-	public void setWindowGeometry(String value) {
-		configuration.setProperty(KEY_WINDOW_GEOMETRY, value);
-	}
-
-	public String getWindowGeometry() {
-		return getString(KEY_WINDOW_GEOMETRY, "x=-1,y=-1,width=1000,height=750");
-	}
-
-	public void setScreenSize(String value) {
-		configuration.setProperty(KEY_SCREEN_SIZE, value);
-	}
-
-	public String getScreenSize() {
-		return getString(KEY_SCREEN_SIZE, "-1x-1");
-	}
-
-	public void setWindowExtendedState(int value) {
-		configuration.setProperty(KEY_WINDOW_EXTENDED_STATE, value);
-	}
-
-	public int getWindowExtendedState() {
-		return getInt(KEY_WINDOW_EXTENDED_STATE, Frame.NORMAL);
 	}
 
 	public boolean isShowSplashScreen() {
