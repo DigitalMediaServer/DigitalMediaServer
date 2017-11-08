@@ -90,9 +90,15 @@ public class DLNAMediaDatabase implements Runnable {
 		dbName = name;
 		File profileFolder = new File(configuration.getProfileFolder());
 		dbDir = new File(profileFolder.isDirectory() ? profileFolder : null, "database").getAbsolutePath();
-		url = Constants.START_URL + dbDir + File.separator + dbName + (configuration.getLoggingDatabase() ? ";TRACE_LEVEL_FILE=4" : "");
+		boolean logDB = configuration.getDatabaseLogging();
+		url = Constants.START_URL + dbDir + File.separator + dbName + (logDB ? ";TRACE_LEVEL_FILE=4" : "");
 		LOGGER.debug("Using database URL: {}", url);
 		LOGGER.info("Using database located at: \"{}\"", dbDir);
+		if (logDB) {
+			LOGGER.info("Database logging is enabled");
+		} else if (LOGGER.isDebugEnabled()) {
+			LOGGER.debug("Database logging is disabled");
+		}
 
 		try {
 			Class.forName("org.h2.Driver");
