@@ -6,6 +6,7 @@ import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import net.pms.Messages;
 import net.pms.PMS;
@@ -153,7 +154,7 @@ public class MediaMonitor extends VirtualFolder {
 		if (res.getLastStartPosition() == 0) {
 			elapsed = (double) (System.currentTimeMillis() - res.getStartTime()) / 1000;
 		} else {
-			elapsed = (double) (System.currentTimeMillis() - res.getLastStartSystemTime()) / 1000;
+			elapsed = (System.currentTimeMillis() - res.getLastStartSystemTime()) / 1000;
 			elapsed += res.getLastStartPosition();
 		}
 
@@ -186,8 +187,8 @@ public class MediaMonitor extends VirtualFolder {
 			DLNAResource tmp = res.getParent();
 			if (tmp != null) {
 				boolean isMonitored = false;
-				File[] foldersMonitored = PMS.get().getSharedFoldersArray(true);
-				if (foldersMonitored != null && foldersMonitored.length > 0) {
+				List<File> foldersMonitored = PMS.get().getSharedFolders(true);
+				if (foldersMonitored != null && !foldersMonitored.isEmpty()) {
 					for (File folderMonitored : foldersMonitored) {
 						if (rf.getFile().getAbsolutePath().contains(folderMonitored.getAbsolutePath())) {
 							isMonitored = true;

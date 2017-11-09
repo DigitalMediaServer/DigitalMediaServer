@@ -870,42 +870,27 @@ public class PMS {
 	}
 
 	/**
-	 * @deprecated Use {@link #getSharedFoldersArray()} instead.
-	 */
-	@SuppressWarnings("unused")
-	@Deprecated
-	public File[] getFoldersConf(boolean log) {
-		return getSharedFoldersArray(false);
-	}
-
-	/**
-	 * @deprecated Use {@link #getSharedFoldersArray()} instead.
-	 */
-	@Deprecated
-	public File[] getFoldersConf() {
-		return getSharedFoldersArray(false);
-	}
-
-	/**
-	 * Transforms a comma-separated list of directory entries into an array of {@link String}.
-	 * Checks that the directory exists and is a valid directory.
+	 * Transforms a comma-separated list of directory entries into an
+	 * {@link ArrayList} of {@link File}s. Verifies that the folder exists and
+	 * is valid.
 	 *
-	 * @return {@link java.io.File}[] Array of directories.
+	 * @return The {@link List} of folders.
 	 */
-	public File[] getSharedFoldersArray(boolean monitored) {
-		String folders;
+	@Nullable
+	public ArrayList<File> getSharedFolders(boolean monitored) {
+		String foldersString;
 		if (monitored) {
-			folders = configuration.getFoldersMonitored();
+			foldersString = configuration.getFoldersMonitored();
 		} else {
-			folders = configuration.getFolders();
+			foldersString = configuration.getFolders();
 		}
 
-		if (folders == null || folders.length() == 0) {
+		if (foldersString == null || foldersString.length() == 0) {
 			return null;
 		}
 
-		ArrayList<File> directories = new ArrayList<>();
-		String[] foldersArray = folders.split(",");
+		ArrayList<File> folders = new ArrayList<>();
+		String[] foldersArray = foldersString.split(",");
 
 		for (String folder : foldersArray) {
 			folder = folder.trim();
@@ -917,7 +902,7 @@ public class PMS {
 
 			// this is called *way* too often
 			// so log it so we can fix it.
-			LOGGER.info("Checking shared folder: " + folder);
+			LOGGER.info("Checking shared folder: {}", folder);
 
 			File file = new File(folder);
 
@@ -936,12 +921,10 @@ public class PMS {
 			}
 
 			// add the file even if there are problems so that the user can update the shared folders as required.
-			directories.add(file);
+			folders.add(file);
 		}
 
-		File f[] = new File[directories.size()];
-		directories.toArray(f);
-		return f;
+		return folders;
 	}
 
 	/**

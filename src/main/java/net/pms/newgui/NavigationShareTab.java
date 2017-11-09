@@ -30,6 +30,7 @@ import java.awt.Font;
 import java.awt.FontMetrics;
 import java.awt.event.*;
 import java.io.File;
+import java.util.List;
 import java.util.Vector;
 import javax.swing.*;
 import javax.swing.table.DefaultTableCellRenderer;
@@ -915,12 +916,12 @@ public class NavigationShareTab {
 		builderFolder.add(scanButton, FormLayoutUtil.flip(cc.xy(5, 3), colSpec, orientation));
 		scanButton.setEnabled(configuration.getUseCache());
 
-		File[] folders = PMS.get().getSharedFoldersArray(false);
-		if (folders != null && folders.length > 0) {
-			File[] foldersMonitored = PMS.get().getSharedFoldersArray(true);
+		List<File> folders = PMS.get().getSharedFolders(false); //TODO: (Nad) Here
+		if (folders != null && !folders.isEmpty()) {
+			List<File> foldersMonitored = PMS.get().getSharedFolders(true);
 			for (File folder : folders) {
 				boolean isMonitored = false;
-				if (foldersMonitored != null && foldersMonitored.length > 0) {
+				if (foldersMonitored != null && !foldersMonitored.isEmpty()) {
 					for (File folderMonitored : foldersMonitored) {
 						if (folderMonitored.getAbsolutePath().equals(folder.getAbsolutePath())) {
 							isMonitored = true;

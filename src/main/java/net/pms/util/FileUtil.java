@@ -1379,18 +1379,16 @@ public class FileUtil {
 				return isAdmin;
 			}
 			if (Platform.isWindows()) {
-				Float ver = null;
-				try {
-					ver = Float.valueOf(System.getProperty("os.version"));
-				} catch (NullPointerException | NumberFormatException e) {
+				Double version = PMS.get().getRegistry().getWindowsVersion();
+				if (version == null) {
 					LOGGER.error(
-						"Could not determine Windows version from {}. Administrator privileges is undetermined: {}",
-						System.getProperty("os.version"), e.getMessage()
+						"Could not determine Windows version from {}. Administrator privileges is undetermined.",
+						System.getProperty("os.version")
 					);
 					isAdmin = false;
 					return false;
 				}
-				if (ver >= 5.1) {
+				if (version >= 5.1) {
 					try {
 						String command = "reg query \"HKU\\S-1-5-19\"";
 						Process p = Runtime.getRuntime().exec(command);

@@ -18,7 +18,10 @@
  */
 package net.pms.dlna;
 
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import com.sun.jna.Platform;
+import com.sun.jna.platform.win32.Shell32Util;
+import com.sun.jna.platform.win32.Win32Exception;
 import java.io.*;
 import java.net.MalformedURLException;
 import java.net.URI;
@@ -26,9 +29,15 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.InvalidPathException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.text.Collator;
 import java.text.Normalizer;
 import java.util.*;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+import javax.annotation.concurrent.GuardedBy;
 import net.pms.Messages;
 import net.pms.PMS;
 import net.pms.configuration.MapFileConfiguration;
@@ -39,6 +48,7 @@ import net.pms.formats.Format;
 import net.pms.io.StreamGobbler;
 import net.pms.newgui.IFrame;
 import net.pms.util.CodeDb;
+import net.pms.util.FilePermissions;
 import net.pms.util.FileUtil;
 import net.pms.util.FileWatcher;
 import net.pms.util.ProcessUtil;
@@ -48,6 +58,9 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import platform.windows.CSIDLs;
+import platform.windows.GUID;
+import platform.windows.KnownFolders;
 import xmlwise.Plist;
 import xmlwise.XmlParseException;
 
@@ -263,53 +276,174 @@ public class RootFolder extends DLNAResource {
 		}
 	}
 
-	private List<RealFile> getConfiguredFolders() {
-		List<RealFile> res = new ArrayList<>();
-		File[] files = PMS.get().getSharedFoldersArray(false);
-		String s = configuration.getFoldersIgnored();
-		String[] skips = null;
-
-		if (s != null) {
-			skips = s.split(",");
-		}
-
-		if (files == null || files.length == 0) {
-			files = File.listRoots();
-		}
-
-		for (File f : files) {
-			if (skipPath(skips, f.getAbsolutePath().toLowerCase())) {
-				continue;
+	@Nullable
+	private static Path getWindowsKnownFolder(GUID guid) {
+		try {
+			String folderPath = Shell32Util.getKnownFolderPath(guid);
+			if (isNotBlank(folderPath)) {
+				Path folder = Paths.get(folderPath);
+				try {
+					FilePermissions permissions = new FilePermissions(folder);
+					if (permissions.isBrowsable()) {
+						return folder;
+					}
+					LOGGER.warn("Insufficient permissions to read default folder \"{}\"", guid);
+				} catch (FileNotFoundException e) {
+					LOGGER.debug("Default folder \"{}\" not found", folder);
+				}
 			}
-			res.add(new RealFile(f));
+		} catch (Win32Exception e) {
+			LOGGER.debug("Default folder \"{}\" not found: {}", guid, e.getMessage());
+		} catch (InvalidPathException e) {
+			LOGGER.error("Unexpected error while resolving default Windows folder with GUID {}: {}", guid, e.getMessage());
+			LOGGER.trace("", e);
+		}
+		return null;
+	}
+
+	@Nullable
+	private static Path getWindowsFolder(int csidl) {
+		try {
+			String folderPath = Shell32Util.getFolderPath(csidl);
+			if (isNotBlank(folderPath)) {
+				Path folder = Paths.get(folderPath);
+				FilePermissions permissions;
+				try {
+					permissions = new FilePermissions(folder);
+					if (permissions.isBrowsable()) {
+						return folder;
+					}
+					LOGGER.warn("Insufficient permissions to read default folder \"{}\"", csidl);
+				} catch (FileNotFoundException e) {
+					LOGGER.debug("Default folder \"{}\" not found", folder);
+				}
+			}
+		} catch (Win32Exception e) {
+			LOGGER.debug("Default folder \"{}\" not found: {}", csidl, e.getMessage()); //TODO: (Nad) Enum
+		} catch (InvalidPathException e) {
+			LOGGER.error("Unexpected error while resolving default Windows folder with id {}: {}", csidl, e.getMessage());
+			LOGGER.trace("", e);
+		}
+		return null;
+	}
+
+	private static final Object defaultFoldersLock = new Object();
+	@GuardedBy("defaultFoldersLock")
+	private static List<File> defaultFolders = null;
+
+	/**
+	 * Enumerates and returns the default shared folders if none is configured.
+	 *
+	 * @return The default shared folders.
+	 */
+	@Nonnull
+	public static List<File> getDefaultFolders() {
+		synchronized (defaultFoldersLock) {
+			if (defaultFolders == null) {
+				// Lazy initialization
+				defaultFolders = new ArrayList<File>();
+				if (Platform.isWindows()) {
+					Double version = PMS.get().getRegistry().getWindowsVersion();
+					if (version != null && version >= 6d) {
+						ArrayList<GUID> knownFolders = new ArrayList<>(Arrays.asList(new GUID[]{
+							KnownFolders.FOLDERID_Desktop,
+							KnownFolders.FOLDERID_Downloads,
+							KnownFolders.FOLDERID_Music,
+							KnownFolders.FOLDERID_OriginalImages,
+							KnownFolders.FOLDERID_PhotoAlbums,
+							KnownFolders.FOLDERID_Pictures,
+							KnownFolders.FOLDERID_Playlists,
+							KnownFolders.FOLDERID_PublicDownloads,
+							KnownFolders.FOLDERID_PublicMusic,
+							KnownFolders.FOLDERID_PublicPictures,
+							KnownFolders.FOLDERID_PublicVideos,
+							KnownFolders.FOLDERID_SavedPictures,
+							KnownFolders.FOLDERID_Videos,
+						}));
+						if (version >= 6.2) { // Windows 8
+							knownFolders.add(KnownFolders.FOLDERID_Screenshots);
+						}
+						for (GUID guid : knownFolders) {
+							Path folder = getWindowsKnownFolder(guid);
+							if (folder != null) {
+								defaultFolders.add(folder.toFile());
+							}
+						}
+					} else {
+						int[] csidls = {
+							CSIDLs.CSIDL_COMMON_MUSIC,
+							CSIDLs.CSIDL_COMMON_PICTURES,
+							CSIDLs.CSIDL_COMMON_VIDEO,
+							CSIDLs.CSIDL_DESKTOP,
+							CSIDLs.CSIDL_MYMUSIC,
+							CSIDLs.CSIDL_MYPICTURES,
+							CSIDLs.CSIDL_MYVIDEO
+						};
+						for (int csidl : csidls) {
+							Path folder = getWindowsFolder(csidl);
+							if (folder != null) {
+								defaultFolders.add(folder.toFile());
+							}
+						}
+					}
+				} else if (Platform.isMac()) {
+					//TODO: (Nad) macOS
+				} else {
+					//TODO: (Nad) Linux
+				}
+				defaultFolders = Collections.unmodifiableList(defaultFolders);
+			}
+			return defaultFolders;
+		}
+	}
+
+	@Nonnull
+	private List<RealFile> getConfiguredFolders() {
+		List<RealFile> resources = new ArrayList<>();
+		List<File> folders = PMS.get().getSharedFolders(false);
+		if (folders == null) {
+			return resources;
+		}
+		String ignoredFolders = configuration.getFoldersIgnored();
+		List<File> ignoredList = null;
+
+		if (isNotBlank(ignoredFolders)) {
+			ignoredFolders = ignoredFolders.trim();
+			ignoredList = new ArrayList<>();
+			String[] ignored = ignoredFolders.split("\\s*,\\s*");
+			for (String ignoredFolder : ignored) {
+				if (isNotBlank(ignoredFolder)) {
+					ignoredList.add(new File(ignoredFolder));
+				}
+			}
+		}
+
+		if (!folders.isEmpty() && ignoredList != null && !ignoredList.isEmpty()) {
+			for (Iterator<File> iterator = folders.iterator(); iterator.hasNext();) {
+				File file = iterator.next();
+				if (ignoredList.contains(file)) {
+					iterator.remove();
+				}
+			}
+		}
+
+		if (!folders.isEmpty()) { //TODO: (Nad) Temp test
+			folders = getDefaultFolders();
+		}
+
+		for (File folder : folders) {
+			resources.add(new RealFile(folder));
 		}
 
 		if (configuration.getSearchFolder()) {
-			SearchFolder sf = new SearchFolder(Messages.getString("PMS.143"), new FileSearch(res));
+			SearchFolder sf = new SearchFolder(Messages.getString("PMS.143"), new FileSearch(resources));
 			addChild(sf);
 		}
 
-		return res;
+		return resources;
 	}
 
-	private boolean skipPath(String[] skips, String path) {
-		if (skips == null) {
-			return false;
-		}
-		for (String s : skips) {
-			if (StringUtils.isBlank(s)) {
-				continue;
-			}
-
-			if (path.contains(s.toLowerCase())) {
-				return true;
-			}
-		}
-
-		return false;
-	}
-
-	private List<DLNAResource> getVirtualFolders() {
+	private static List<DLNAResource> getVirtualFolders() {
 		List<DLNAResource> res = new ArrayList<>();
 		List<MapFileConfiguration> mapFileConfs = MapFileConfiguration.parseVirtualFolders();
 
@@ -434,7 +568,7 @@ public class RootFolder extends DLNAResource {
 	 * @param spec (String) to be split
 	 * @return Array of (String) that represents the tokenized entry.
 	 */
-	private String[] parseFeedKey(String spec) {
+	private static String[] parseFeedKey(String spec) {
 		String[] pair = StringUtils.split(spec, ".", 2);
 
 		if (pair == null || pair.length < 2) {
@@ -455,7 +589,7 @@ public class RootFolder extends DLNAResource {
 	 * @param spec (String) to be split
 	 * @return Array of (String) that represents the tokenized entry.
 	 */
-	private String[] parseFeedValue(String spec) {
+	private static String[] parseFeedValue(String spec) {
 		StringTokenizer st = new StringTokenizer(spec, ",");
 		String[] triple = new String[3];
 		int i = 0;
@@ -474,7 +608,7 @@ public class RootFolder extends DLNAResource {
 	 *
 	 * @return iPhotoVirtualFolder the populated <code>VirtualFolder</code>, or null if one couldn't be created.
 	 */
-	private DLNAResource getiPhotoFolder() {
+	private static DLNAResource getiPhotoFolder() {
 		VirtualFolder iPhotoVirtualFolder = null;
 
 		if (Platform.isMac()) {
