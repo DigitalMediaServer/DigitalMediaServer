@@ -57,17 +57,11 @@ public class RootFolder extends DLNAResource {
 	private FolderLimit lim;
 	private MediaMonitor mon;
 	private Playlist last;
-	private ArrayList<String> tags;
 	private ArrayList<DLNAResource> webFolders;
 
-	public RootFolder(ArrayList<String> tags) {
-		setIndexId(0);
-		this.tags = tags;
-		webFolders = new ArrayList<>();
-	}
-
 	public RootFolder() {
-		this(null);
+		setIndexId(0);
+		webFolders = new ArrayList<>();
 	}
 
 	@Override
@@ -141,11 +135,11 @@ public class RootFolder extends DLNAResource {
 			}
 		}
 
-		for (DLNAResource r : getConfiguredFolders(tags)) {
+		for (DLNAResource r : getConfiguredFolders()) {
 			addChild(r);
 		}
 
-		for (DLNAResource r : getVirtualFolders(tags)) {
+		for (DLNAResource r : getVirtualFolders()) {
 			addChild(r);
 		}
 
@@ -269,10 +263,10 @@ public class RootFolder extends DLNAResource {
 		}
 	}
 
-	private List<RealFile> getConfiguredFolders(ArrayList<String> tags) {
+	private List<RealFile> getConfiguredFolders() {
 		List<RealFile> res = new ArrayList<>();
-		File[] files = PMS.get().getSharedFoldersArray(false, tags, configuration);
-		String s = configuration.getFoldersIgnored(tags);
+		File[] files = PMS.get().getSharedFoldersArray(false);
+		String s = configuration.getFoldersIgnored();
 		String[] skips = null;
 
 		if (s != null) {
@@ -299,6 +293,9 @@ public class RootFolder extends DLNAResource {
 	}
 
 	private boolean skipPath(String[] skips, String path) {
+		if (skips == null) {
+			return false;
+		}
 		for (String s : skips) {
 			if (StringUtils.isBlank(s)) {
 				continue;
@@ -312,9 +309,9 @@ public class RootFolder extends DLNAResource {
 		return false;
 	}
 
-	private List<DLNAResource> getVirtualFolders(ArrayList<String> tags) {
+	private List<DLNAResource> getVirtualFolders() {
 		List<DLNAResource> res = new ArrayList<>();
-		List<MapFileConfiguration> mapFileConfs = MapFileConfiguration.parseVirtualFolders(tags);
+		List<MapFileConfiguration> mapFileConfs = MapFileConfiguration.parseVirtualFolders();
 
 		if (mapFileConfs != null) {
 			for (MapFileConfiguration f : mapFileConfs) {
@@ -332,7 +329,7 @@ public class RootFolder extends DLNAResource {
 		webFolders.clear();
 		String webConfPath = configuration.getWebConfPath();
 		File webConf = new File(webConfPath);
-		if (webConf.exists() && configuration.getExternalNetwork() && !configuration.isHideWebFolder(tags)) {
+		if (webConf.exists() && configuration.getExternalNetwork()) {
 			addWebFolder(webConf);
 			FileWatcher.add(new FileWatcher.Watch(webConf.getPath(), rootWatcher, this, RELOAD_WEB_CONF));
 		}
@@ -1321,10 +1318,6 @@ public class RootFolder extends DLNAResource {
 		if (last != null) {
 			last.add(res);
 		}
-	}
-
-	public ArrayList<String> getTags() {
-		return tags;
 	}
 
 	// Automatic reloading

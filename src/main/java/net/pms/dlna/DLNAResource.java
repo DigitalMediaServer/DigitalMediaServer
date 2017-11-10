@@ -575,11 +575,6 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 			defaultRenderer = parent.getDefaultRenderer();
 		}
 
-		if (PMS.filter(defaultRenderer, child)) {
-			LOGGER.debug("Resource " + child.getName() + " is filtered out for render " + defaultRenderer.getRendererName());
-			return;
-		}
-
 		if (configuration.useCode() && !PMS.get().masterCodeValid()) {
 			String code = PMS.get().codeDb().getCode(child);
 			if (StringUtils.isNotEmpty(code)) {
@@ -1108,12 +1103,6 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 		}
 
 		if (dlna == null) {
-			return null;
-		}
-
-		if (PMS.filter(renderer, dlna)) {
-			// apply filter to make sure we're not bypassing it...
-			LOGGER.debug("Resource " + dlna.getName() + " is filtered out for render " + renderer.getRendererName());
 			return null;
 		}
 

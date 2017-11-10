@@ -175,7 +175,6 @@ public class RemoteWeb {
 	}
 
 	public RootFolder getRoot(String user, boolean create, HttpExchange t) {
-		String groupTag = getTag(user);
 		String cookie = RemoteUtil.getCookie("DMS", t);
 		RootFolder root;
 		synchronized (roots) {
@@ -205,15 +204,7 @@ public class RemoteWeb {
 				return root;
 			}
 
-			ArrayList<String> tag = new ArrayList<>();
-			tag.add(user);
-			if (!groupTag.equals(user)) {
-				tag.add(groupTag);
-			}
-
-			tag.add(t.getRemoteAddress().getHostString());
-			tag.add("web");
-			root = new RootFolder(tag);
+			root = new RootFolder();
 			try {
 				WebRender render = new WebRender(user);
 				root.setDefaultRenderer(render);
