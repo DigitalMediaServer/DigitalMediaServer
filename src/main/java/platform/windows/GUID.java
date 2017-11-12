@@ -5,7 +5,7 @@ import com.sun.jna.Pointer;
 
 
 /**
- * A simple extension of {@link com.sun.jna.platform.win32.Guid.GUID} to
+ * A simple extension of {@link com.sun.jna.platform.win32.Guid.GUID} that
  * overrides {@link #toString()}.
  */
 public class GUID extends com.sun.jna.platform.win32.Guid.GUID {
