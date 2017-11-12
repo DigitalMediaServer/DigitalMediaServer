@@ -34,11 +34,14 @@ import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import javax.annotation.Nonnull;
+import javax.annotation.concurrent.GuardedBy;
 import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
 import net.pms.Messages;
 import net.pms.PMS;
 import net.pms.dlna.CodeEnter;
+import net.pms.dlna.RootFolder;
 import net.pms.encoders.AviSynthFFmpeg;
 import net.pms.encoders.AviSynthMEncoder;
 import net.pms.encoders.DCRaw;
@@ -57,6 +60,7 @@ import net.pms.encoders.VLCWebVideo;
 import net.pms.encoders.VideoLanAudioStreaming;
 import net.pms.encoders.VideoLanVideoStreaming;
 import net.pms.formats.Format;
+import net.pms.newgui.NavigationShareTab.SharedFoldersTableModel;
 import net.pms.util.CoverSupplier;
 import net.pms.util.FilePermissions;
 import net.pms.util.FileUtil;
@@ -321,6 +325,7 @@ public class PmsConfiguration extends RendererConfiguration {
 	protected static final String KEY_UPNP_ENABLED = "upnp_enable";
 	protected static final String KEY_UPNP_PORT = "upnp_port";
 	protected static final String KEY_USE_CACHE = "use_cache";
+	protected static final String KEY_USE_DEFAULT_FOLDERS = "use_default_folders";
 	protected static final String KEY_USE_EMBEDDED_SUBTITLES_STYLE = "use_embedded_subtitles_style";
 	protected static final String KEY_USE_IMDB_INFO = "use_imdb_info";
 	protected static final String KEY_USE_MPLAYER_FOR_THUMBS = "use_mplayer_for_video_thumbs";
@@ -401,6 +406,7 @@ public class PmsConfiguration extends RendererConfiguration {
 			KEY_DISABLE_TRANSCODE_FOR_EXTENSIONS,
 			KEY_DISABLE_TRANSCODING,
 			KEY_FOLDERS,
+			KEY_FOLDERS_MONITORED,
 			KEY_FORCE_TRANSCODE_FOR_EXTENSIONS,
 			KEY_HIDE_EMPTY_FOLDERS,
 			KEY_HIDE_ENGINENAMES,
@@ -422,7 +428,8 @@ public class PmsConfiguration extends RendererConfiguration {
 			KEY_SHOW_IPHOTO_LIBRARY,
 			KEY_SHOW_ITUNES_LIBRARY,
 			KEY_SORT_METHOD,
-			KEY_USE_CACHE
+			KEY_USE_CACHE,
+			KEY_USE_DEFAULT_FOLDERS
 		)
 	);
 
@@ -2650,28 +2657,282 @@ public class PmsConfiguration extends RendererConfiguration {
 	}
 
 	public void save() throws ConfigurationException {
-		((PropertiesConfiguration)configuration).save();
-		LOGGER.info("Configuration saved to: " + PROFILE_PATH);
+		((PropertiesConfiguration) configuration).save();
+		LOGGER.info("Configuration saved to \"{}\"", PROFILE_PATH);
 	}
 
-	public String getFolders() {
-		return getString(KEY_FOLDERS, "");
+	private final Object sharedFoldersLock = new Object();
+
+	@GuardedBy("sharedFoldersLock")
+	private boolean sharedFoldersRead;
+
+	@GuardedBy("sharedFoldersLock")
+	private ArrayList<File> sharedFolders;
+
+	@GuardedBy("sharedFoldersLock")
+	private boolean monitoredFoldersRead;
+
+	@GuardedBy("sharedFoldersLock")
+	private ArrayList<File> monitoredFolders;
+
+	@GuardedBy("sharedFoldersLock")
+	private boolean ignoredFoldersRead;
+
+	@GuardedBy("sharedFoldersLock")
+	private ArrayList<File> ignoredFolders;
+
+	@GuardedBy("sharedFoldersLock")
+	private boolean defaultSharedFolders;
+
+	@GuardedBy("sharedFoldersLock")
+	private boolean defaultSharedFoldersRead;
+
+	private void readSharedFolders() {
+		synchronized (sharedFoldersLock) {
+			if (!sharedFoldersRead) {
+				sharedFolders = getFolders(KEY_FOLDERS);
+				sharedFoldersRead = true;
+			}
+		}
 	}
 
-	public String getFoldersIgnored() {
-		return getString(KEY_FOLDERS_IGNORED, null);
+	private void readDefaultSharedFolders() {
+		synchronized (sharedFoldersLock) {
+			if (!defaultSharedFoldersRead) {
+				Boolean useDefault = configuration.getBoolean(KEY_USE_DEFAULT_FOLDERS, null);
+				if (useDefault != null) {
+					defaultSharedFolders = useDefault.booleanValue();
+				} else {
+					defaultSharedFolders = isSharedFoldersEmpty();
+				}
+				defaultSharedFoldersRead = true;
+			}
+		}
 	}
 
-	public void setFolders(String value) {
-		configuration.setProperty(KEY_FOLDERS, value);
+	/**
+	 * @return {@code true} if the default shared folders are used,
+	 *         {@code false} otherwise.
+	 */
+	public boolean isDefaultSharedFolders() {
+		synchronized (sharedFoldersLock) {
+			readDefaultSharedFolders();
+			return defaultSharedFolders;
+		}
 	}
 
-	public String getFoldersMonitored() {
-		return getString(KEY_FOLDERS_MONITORED, "");
+	/**
+	 * Sets whether to use the default shared folders.
+	 *
+	 * @param useDefaultFolders {@code true} to use the default shared folders,
+	 *            {@code false} otherwise.
+	 */
+	public void setDefaultSharedFolders(boolean useDefaultFolders) {
+		synchronized (sharedFoldersLock) {
+			readDefaultSharedFolders();
+			if (useDefaultFolders != defaultSharedFolders) {
+				configuration.setProperty(KEY_USE_DEFAULT_FOLDERS, useDefaultFolders);
+				defaultSharedFolders = useDefaultFolders;
+			}
+		}
 	}
 
-	public void setFoldersMonitored(String value) {
-		configuration.setProperty(KEY_FOLDERS_MONITORED, value);
+	/**
+	 * @return {@code true} if the configured shared folders are empty,
+	 *         {@code false} otherwise.
+	 */
+	public boolean isSharedFoldersEmpty() {
+		synchronized (sharedFoldersLock) {
+			readSharedFolders();
+			return sharedFolders.isEmpty();
+		}
+	}
+
+	/**
+	 * @return The {@link List} of {@link File}s of shared folders.
+	 */
+	@Nonnull
+	public List<File> getSharedFolders() {
+		synchronized (sharedFoldersLock) {
+			if (isDefaultSharedFolders()) {
+				return RootFolder.getDefaultFolders();
+			}
+			readSharedFolders();
+			return new ArrayList<>(sharedFolders);
+		}
+	}
+
+	/**
+	 * @return The {@link List} of {@link File}s of monitored folders.
+	 */
+	@Nonnull
+	public List<File> getMonitoredFolders() {
+		synchronized (sharedFoldersLock) {
+			if (isDefaultSharedFolders()) {
+				return RootFolder.getDefaultFolders();
+			}
+			if (!monitoredFoldersRead) {
+				monitoredFolders = getFolders(KEY_FOLDERS_MONITORED);
+				monitoredFoldersRead = true;
+			}
+			return new ArrayList<>(monitoredFolders);
+		}
+	}
+
+	/**
+	 * @return The {@link List} of {@link File}s of ignored folders.
+	 */
+	@Nonnull
+	public List<File> getIgnoredFolders() {
+		synchronized (sharedFoldersLock) {
+			if (!ignoredFoldersRead) {
+				ignoredFolders = getFolders(KEY_FOLDERS_IGNORED);
+				ignoredFoldersRead = true;
+			}
+			return ignoredFolders;
+		}
+	}
+
+	/**
+	 * Transforms a comma-separated list of directory entries into an
+	 * {@link ArrayList} of {@link File}s. Verifies that the folder exists and
+	 * is valid.
+	 *
+	 * @param key the {@link Configuration} key to read.
+	 * @return The {@link List} of folders or {@code null}.
+	 */
+	@Nonnull
+	protected ArrayList<File> getFolders(String key) {
+		String foldersString = configuration.getString(key, null);
+
+		ArrayList<File> folders = new ArrayList<>();
+		if (foldersString == null || foldersString.length() == 0) {
+			return folders;
+		}
+		String[] foldersArray = foldersString.trim().split("\\s*,\\s*");
+
+		for (String folder : foldersArray) {
+			/*
+			 * Unescape embedded commas. Note: Backslashing isn't safe as it
+			 * conflicts with the Windows path separator:
+			 * http://ps3mediaserver.org/forum/viewtopic.php?f=14&t=8883&start=250#p43520
+			 */
+			folder = folder.replaceAll("&comma;", ",");
+
+			if (KEY_FOLDERS.equals(key)) {
+				LOGGER.info("Checking shared folder: \"{}\"", folder);
+			}
+
+			File file = new File(folder);
+			if (file.exists()) {
+				if (!file.isDirectory()) {
+					if (KEY_FOLDERS.equals(key)) {
+						LOGGER.warn(
+							"The file \"{}\" is not a folder! Please remove it from your shared folders " +
+							"list on the \"{}\" tab or in the configuration file.",
+							folder,
+							Messages.getString("LooksFrame.22")
+						);
+					} else {
+						LOGGER.debug("The file \"{}\" is not a folder - check the configuration for key \"{}\"", folder, key);
+					}
+				}
+			} else if (KEY_FOLDERS.equals(key)) {
+				LOGGER.warn(
+					"The folder \"{}\" does not exist. Please remove it from your shared folders " +
+					"list on the \"{}\" tab or in the configuration file.",
+					folder,
+					Messages.getString("LooksFrame.22")
+				);
+			} else {
+				LOGGER.debug("The folder \"{}\" does not exist - check the configuration for key \"{}\"", folder, key);
+			}
+
+			// add the file even if there are problems so that the user can update the shared folders as required.
+			folders.add(file);
+		}
+
+		return folders;
+	}
+
+	/**
+	 * Stores the shared folders in the configuration from the specified
+	 * {@link SharedFoldersTableModel#getDataVector()} value. This is expected
+	 * to be a {@link Vector} of rows containing a {@link Vector} of column
+	 * values where the first column is a {@link String} and the seconds is a
+	 * {@link Boolean}.
+	 *
+	 * @param tableVector the {@link SharedFoldersTableModel#getDataVector()}
+	 *            value to use.
+	 */
+	@SuppressWarnings("rawtypes")
+	public void setSharedFolders(Vector<Vector<?>> tableVector) {
+		if (tableVector == null || tableVector.isEmpty()) {
+			synchronized (sharedFoldersLock) {
+				if (!sharedFoldersRead || !sharedFolders.isEmpty()) {
+					configuration.setProperty(KEY_FOLDERS, "");
+					sharedFolders.clear();
+					sharedFoldersRead = true;
+				}
+				if (!monitoredFoldersRead || !monitoredFolders.isEmpty()) {
+					configuration.setProperty(KEY_FOLDERS_MONITORED, "");
+					monitoredFolders.clear();
+					monitoredFoldersRead = true;
+				}
+			}
+			return;
+		}
+		String listSeparator = String.valueOf(LIST_SEPARATOR);
+		ArrayList<File> tmpSharedfolders = new ArrayList<>();
+		ArrayList<File> tmpMonitoredFolders = new ArrayList<>();
+		for (Vector rowVector : tableVector) {
+			if (rowVector != null && rowVector.size() == 2 && rowVector.get(0) instanceof String) {
+				String folderPath = (String) rowVector.get(0);
+				/*
+				 * Escape embedded commas. Note: Backslashing isn't safe as it
+				 * conflicts with the Windows path separator:
+				 * http://ps3mediaserver.org/forum/viewtopic.php?f=14&t=8883&start=250#p43520
+				 */
+				if (folderPath.contains(listSeparator)) {
+					folderPath = folderPath.replace(listSeparator, "&comma;");
+				}
+				File folder = new File(folderPath);
+				tmpSharedfolders.add(folder);
+				if ((boolean) rowVector.get(1)) {
+					tmpMonitoredFolders.add(folder);
+				}
+			} else {
+				LOGGER.error("Unexpected vector content in setSharedFolders(), saving of shared folders failed");
+				return;
+			}
+		}
+		synchronized (sharedFoldersLock) {
+			if (!sharedFoldersRead || !sharedFolders.equals(tmpSharedfolders)) {
+				configuration.setProperty(KEY_FOLDERS, StringUtils.join(tmpSharedfolders, LIST_SEPARATOR));
+				sharedFolders = tmpSharedfolders;
+				sharedFoldersRead = true;
+			}
+			if (!monitoredFoldersRead || !monitoredFolders.equals(tmpMonitoredFolders)) {
+				configuration.setProperty(KEY_FOLDERS_MONITORED, StringUtils.join(tmpMonitoredFolders, LIST_SEPARATOR));
+				monitoredFolders = tmpMonitoredFolders;
+				monitoredFoldersRead = true;
+			}
+		}
+	}
+
+	/**
+	 * Sets the shared folders and the monitor folders to the platform default
+	 * folders.
+	 */
+	public void setSharedFoldersToDefault() {
+		synchronized (sharedFoldersLock) {
+			sharedFolders = new ArrayList<>(RootFolder.getDefaultFolders());
+			configuration.setProperty(KEY_FOLDERS, StringUtils.join(sharedFolders, LIST_SEPARATOR));
+			sharedFoldersRead = true;
+			monitoredFolders = new ArrayList<>(RootFolder.getDefaultFolders());
+			configuration.setProperty(KEY_FOLDERS_MONITORED, StringUtils.join(monitoredFolders, LIST_SEPARATOR));
+			monitoredFoldersRead = true;
+		}
 	}
 
 	public String getNetworkInterface() {

@@ -58,7 +58,7 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import platform.windows.CSIDLs;
+import platform.windows.CSIDL;
 import platform.windows.GUID;
 import platform.windows.KnownFolders;
 import xmlwise.Plist;
@@ -121,14 +121,8 @@ public class RootFolder extends DLNAResource {
 			addChild(last);
 		}
 
-		String m = configuration.getFoldersMonitored();
-		if (!StringUtils.isEmpty(m)) {
-			String[] tmp = m.split(",");
-			File[] dirs = new File[tmp.length];
-			for (int i = 0; i < tmp.length; i++) {
-				dirs[i] = new File(tmp[i].replaceAll("&comma;", ","));
-			}
-			mon = new MediaMonitor(dirs);
+		if (!configuration.getSharedFolders().isEmpty()) {
+			mon = new MediaMonitor();
 
 			if (!configuration.isHideNewMediaFolder()) {
 				addChild(mon);
@@ -302,9 +296,12 @@ public class RootFolder extends DLNAResource {
 	}
 
 	@Nullable
-	private static Path getWindowsFolder(int csidl) {
+	private static Path getWindowsFolder(@Nullable CSIDL csidl) {
+		if (csidl == null) {
+			return null;
+		}
 		try {
-			String folderPath = Shell32Util.getFolderPath(csidl);
+			String folderPath = Shell32Util.getFolderPath(csidl.getValue());
 			if (isNotBlank(folderPath)) {
 				Path folder = Paths.get(folderPath);
 				FilePermissions permissions;
@@ -319,7 +316,7 @@ public class RootFolder extends DLNAResource {
 				}
 			}
 		} catch (Win32Exception e) {
-			LOGGER.debug("Default folder \"{}\" not found: {}", csidl, e.getMessage()); //TODO: (Nad) Enum
+			LOGGER.debug("Default folder \"{}\" not found: {}", csidl, e.getMessage());
 		} catch (InvalidPathException e) {
 			LOGGER.error("Unexpected error while resolving default Windows folder with id {}: {}", csidl, e.getMessage());
 			LOGGER.trace("", e);
@@ -370,16 +367,16 @@ public class RootFolder extends DLNAResource {
 							}
 						}
 					} else {
-						int[] csidls = {
-							CSIDLs.CSIDL_COMMON_MUSIC,
-							CSIDLs.CSIDL_COMMON_PICTURES,
-							CSIDLs.CSIDL_COMMON_VIDEO,
-							CSIDLs.CSIDL_DESKTOP,
-							CSIDLs.CSIDL_MYMUSIC,
-							CSIDLs.CSIDL_MYPICTURES,
-							CSIDLs.CSIDL_MYVIDEO
+						CSIDL[] csidls = {
+							CSIDL.CSIDL_COMMON_MUSIC,
+							CSIDL.CSIDL_COMMON_PICTURES,
+							CSIDL.CSIDL_COMMON_VIDEO,
+							CSIDL.CSIDL_DESKTOP,
+							CSIDL.CSIDL_MYMUSIC,
+							CSIDL.CSIDL_MYPICTURES,
+							CSIDL.CSIDL_MYVIDEO
 						};
-						for (int csidl : csidls) {
+						for (CSIDL csidl : csidls) {
 							Path folder = getWindowsFolder(csidl);
 							if (folder != null) {
 								defaultFolders.add(folder.toFile());
@@ -400,35 +397,19 @@ public class RootFolder extends DLNAResource {
 	@Nonnull
 	private List<RealFile> getConfiguredFolders() {
 		List<RealFile> resources = new ArrayList<>();
-		List<File> folders = PMS.get().getSharedFolders(false);
+		List<File> folders = configuration.getSharedFolders();
 		if (folders == null) {
 			return resources;
 		}
-		String ignoredFolders = configuration.getFoldersIgnored();
-		List<File> ignoredList = null;
+		List<File> ignoredList = configuration.getIgnoredFolders();
 
-		if (isNotBlank(ignoredFolders)) {
-			ignoredFolders = ignoredFolders.trim();
-			ignoredList = new ArrayList<>();
-			String[] ignored = ignoredFolders.split("\\s*,\\s*");
-			for (String ignoredFolder : ignored) {
-				if (isNotBlank(ignoredFolder)) {
-					ignoredList.add(new File(ignoredFolder));
-				}
-			}
-		}
-
-		if (!folders.isEmpty() && ignoredList != null && !ignoredList.isEmpty()) {
+		if (!ignoredList.isEmpty()) {
 			for (Iterator<File> iterator = folders.iterator(); iterator.hasNext();) {
 				File file = iterator.next();
 				if (ignoredList.contains(file)) {
 					iterator.remove();
 				}
 			}
-		}
-
-		if (!folders.isEmpty()) { //TODO: (Nad) Temp test
-			folders = getDefaultFolders();
 		}
 
 		for (File folder : folders) {

@@ -870,64 +870,6 @@ public class PMS {
 	}
 
 	/**
-	 * Transforms a comma-separated list of directory entries into an
-	 * {@link ArrayList} of {@link File}s. Verifies that the folder exists and
-	 * is valid.
-	 *
-	 * @return The {@link List} of folders.
-	 */
-	@Nullable
-	public ArrayList<File> getSharedFolders(boolean monitored) {
-		String foldersString;
-		if (monitored) {
-			foldersString = configuration.getFoldersMonitored();
-		} else {
-			foldersString = configuration.getFolders();
-		}
-
-		if (foldersString == null || foldersString.length() == 0) {
-			return null;
-		}
-
-		ArrayList<File> folders = new ArrayList<>();
-		String[] foldersArray = foldersString.split(",");
-
-		for (String folder : foldersArray) {
-			folder = folder.trim();
-
-			// unescape embedded commas. note: backslashing isn't safe as it conflicts with
-			// Windows path separators:
-			// http://ps3mediaserver.org/forum/viewtopic.php?f=14&t=8883&start=250#p43520
-			folder = folder.replaceAll("&comma;", ",");
-
-			// this is called *way* too often
-			// so log it so we can fix it.
-			LOGGER.info("Checking shared folder: {}", folder);
-
-			File file = new File(folder);
-
-			if (file.exists()) {
-				if (!file.isDirectory()) {
-					LOGGER.warn(
-						"The file \"{}\" is not a folder! Please remove it from your shared folders list on the \"{}\" tab or in the configuration file.",
-						folder,  Messages.getString("LooksFrame.22")
-					);
-				}
-			} else {
-				LOGGER.warn(
-					"The folder \"{}\" does not exist. Please remove it from your shared folders list on the \"{}\" tab or in the configuration file.",
-					folder,  Messages.getString("LooksFrame.22")
-				);
-			}
-
-			// add the file even if there are problems so that the user can update the shared folders as required.
-			folders.add(file);
-		}
-
-		return folders;
-	}
-
-	/**
 	 * Restarts the server. The trigger is either a button on the main DMS window or via
 	 * an action item.
 	 */

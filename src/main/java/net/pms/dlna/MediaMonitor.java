@@ -9,8 +9,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import net.pms.Messages;
-import net.pms.PMS;
-import net.pms.configuration.PmsConfiguration;
 import net.pms.dlna.virtual.VirtualFolder;
 import net.pms.dlna.virtual.VirtualVideoAction;
 import net.pms.util.FileUtil;
@@ -23,16 +21,12 @@ import org.slf4j.LoggerFactory;
 
 public class MediaMonitor extends VirtualFolder {
 	private static Set<String> fullyPlayedEntries;
-	private File[] dirs;
-	private PmsConfiguration config;
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(MediaMonitor.class);
 
-	public MediaMonitor(File[] dirs) {
+	public MediaMonitor() {
 		super(Messages.getString("VirtualFolder.2"), "images/thumbnail-folder-256.png");
-		this.dirs = dirs;
 		fullyPlayedEntries = new HashSet<>();
-		config = PMS.getConfiguration();
 		parseMonitorFile();
 	}
 
@@ -41,7 +35,7 @@ public class MediaMonitor extends VirtualFolder {
 	 * @return The file
 	 */
 	private File monitorFile() {
-		return new File(config.getDataFile("DMS.mon"));
+		return new File(configuration.getDataFile("DMS.mon"));
 	}
 
 	private void parseMonitorFile() {
@@ -107,8 +101,8 @@ public class MediaMonitor extends VirtualFolder {
 				}
 				if (f.isDirectory()) {
 					boolean add = true;
-					if (config.isHideEmptyFolders()) {
-						add = FileUtil.isFolderRelevant(f, config, fullyPlayedEntries);
+					if (configuration.isHideEmptyFolders()) {
+						add = FileUtil.isFolderRelevant(f, configuration, fullyPlayedEntries);
 					}
 					if (add) {
 						res.addChild(new MonitorEntry(f, this));
@@ -120,10 +114,8 @@ public class MediaMonitor extends VirtualFolder {
 
 	@Override
 	public void discoverChildren() {
-		if (dirs != null) {
-			for (File f : dirs) {
-				scanDir(f.listFiles(), this);
-			}
+		for (File folder : configuration.getMonitoredFolders()) {
+			scanDir(folder.listFiles(), this);
 		}
 	}
 
@@ -187,7 +179,7 @@ public class MediaMonitor extends VirtualFolder {
 			DLNAResource tmp = res.getParent();
 			if (tmp != null) {
 				boolean isMonitored = false;
-				List<File> foldersMonitored = PMS.get().getSharedFolders(true);
+				List<File> foldersMonitored = configuration.getMonitoredFolders();
 				if (foldersMonitored != null && !foldersMonitored.isEmpty()) {
 					for (File folderMonitored : foldersMonitored) {
 						if (rf.getFile().getAbsolutePath().contains(folderMonitored.getAbsolutePath())) {

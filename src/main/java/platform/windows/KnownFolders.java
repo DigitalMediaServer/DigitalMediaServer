@@ -9,7 +9,7 @@ package platform.windows;
 public class KnownFolders {
 
 	/**
-	 * Desktop ({@link CSIDLs#CSIDL_DESKTOP})
+	 * Desktop ({@link CSIDL#CSIDL_DESKTOP})
 	 * <code>{B4BFCC3A-DB2C-424C-B029-7FE99A87C641}</code>
 	 */
 	public static final GUID FOLDERID_Desktop = new GUID("{B4BFCC3A-DB2C-424C-B029-7FE99A87C641}");
@@ -18,7 +18,7 @@ public class KnownFolders {
 	public static final GUID FOLDERID_Downloads = new GUID("{374DE290-123F-4565-9164-39C4925E467B}");
 
 	/**
-	 * Music ({@link CSIDLs#CSIDL_MYMUSIC})
+	 * Music ({@link CSIDL#CSIDL_MYMUSIC})
 	 * <code>{4BD8D571-6D19-48D3-BE97-422220080E43}</code>
 	 */
 	public static final GUID FOLDERID_Music = new GUID("{4BD8D571-6D19-48D3-BE97-422220080E43}");
@@ -30,7 +30,7 @@ public class KnownFolders {
 	public static final GUID FOLDERID_PhotoAlbums = new GUID("{69D2CF90-FC33-4FB7-9A0C-EBB0F0FCB43C}");
 
 	/**
-	 * Pictures ({@link CSIDLs#CSIDL_MYPICTURES})
+	 * Pictures ({@link CSIDL#CSIDL_MYPICTURES})
 	 * <code>{33E28130-4E1E-4676-835A-98395C3BC3BB}</code>
 	 */
 	public static final GUID FOLDERID_Pictures = new GUID("{33E28130-4E1E-4676-835A-98395C3BC3BB}");
@@ -42,25 +42,25 @@ public class KnownFolders {
 	public static final GUID FOLDERID_PublicDownloads = new GUID("{3D644C9B-1FB8-4F30-9B45-F670235F79C0}");
 
 	/**
-	 * Public Music ({@link CSIDLs#CSIDL_COMMON_MUSIC})
+	 * Public Music ({@link CSIDL#CSIDL_COMMON_MUSIC})
 	 * <code>{3214FAB5-9757-4298-BB61-92A9DEAA44FF}</code>
 	 */
 	public static final GUID FOLDERID_PublicMusic = new GUID("{3214FAB5-9757-4298-BB61-92A9DEAA44FF}");
 
 	/**
-	 * Public Pictures ({@link CSIDLs#CSIDL_COMMON_PICTURES})
+	 * Public Pictures ({@link CSIDL#CSIDL_COMMON_PICTURES})
 	 * <code>{B6EBFB86-6907-413C-9AF7-4FC2ABF07CC5}</code>
 	 */
 	public static final GUID FOLDERID_PublicPictures = new GUID("{B6EBFB86-6907-413C-9AF7-4FC2ABF07CC5}");
 
 	/**
-	 * Public Videos ({@link CSIDLs#CSIDL_COMMON_VIDEO})
+	 * Public Videos ({@link CSIDL#CSIDL_COMMON_VIDEO})
 	 * <code>{2400183A-6185-49FB-A2D8-4A392A602BA3}</code>
 	 */
 	public static final GUID FOLDERID_PublicVideos = new GUID("{2400183A-6185-49FB-A2D8-4A392A602BA3}");
 
 	/**
-	 * Videos ({@link CSIDLs#CSIDL_MYVIDEO})
+	 * Videos ({@link CSIDL#CSIDL_MYVIDEO})
 	 * <code>{18989B1D-99B5-455B-841C-AB7C74E4DDFC}</code>
 	 */
 	public static final GUID FOLDERID_Videos = new GUID("{18989B1D-99B5-455B-841C-AB7C74E4DDFC}");
