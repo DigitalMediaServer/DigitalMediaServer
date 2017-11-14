@@ -59,6 +59,12 @@ import net.pms.util.jna.macos.corefoundation.CoreFoundation.CFTypeRef;
 public class NSFoundation {
 
 	/**
+	 * Not to be instantiated.
+	 */
+	private NSFoundation() {
+	}
+	
+	/**
 	 * @return The login name of the current user.
 	 */
 	@Nonnull
@@ -206,7 +212,7 @@ public class NSFoundation {
 	 * @return The {@link ArrayList} of {@link Path}s of folders.
 	 */
 	@Nonnull
-	public ArrayList<Path> nsSearchPathForDirectoriesInDomains(
+	public static ArrayList<Path> nsSearchPathForDirectoriesInDomains(
 		NSSearchPathDirectory directory,
 		long domainMask,
 		boolean expandTilde
@@ -222,10 +228,11 @@ public class NSFoundation {
 		try {
 			long count = CoreFoundation.INSTANCE.CFArrayGetCount(cfArrayRef);
 			for (int i = 0; i < count; i++) {
-				CFTypeRef pathString =  CoreFoundation.INSTANCE.CFArrayGetValueAtIndex(cfArrayRef, i);
-				if (pathString != null) {
-					result.add(Paths.get(new CFStringRef(pathString).toString()));
-					CoreFoundation.INSTANCE.CFRelease(pathString);
+				CFTypeRef nsPathString =  CoreFoundation.INSTANCE.CFArrayGetValueAtIndex(cfArrayRef, i);
+				if (nsPathString != null) {
+					CFStringRef cfStringRef = new CFStringRef(NSFoundationIF.INSTANCE.CFBridgingRetain(nsPathString.getPointer()));
+					result.add(Paths.get(cfStringRef.toString()));
+					CoreFoundation.INSTANCE.CFRelease(cfStringRef);
 				}
 			}
 			return result;
