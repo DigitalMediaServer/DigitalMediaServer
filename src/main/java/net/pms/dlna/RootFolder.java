@@ -47,6 +47,9 @@ import net.pms.dlna.virtual.VirtualVideoAction;
 import net.pms.formats.Format;
 import net.pms.io.StreamGobbler;
 import net.pms.newgui.IFrame;
+import net.pms.platform.macos.NSFoundation;
+import net.pms.platform.macos.NSFoundation.NSSearchPathDirectory;
+import net.pms.platform.macos.NSFoundation.NSSearchPathDomainMask;
 import net.pms.platform.windows.CSIDL;
 import net.pms.platform.windows.GUID;
 import net.pms.platform.windows.KnownFolders;
@@ -326,7 +329,7 @@ public class RootFolder extends DLNAResource {
 
 	private static final Object defaultFoldersLock = new Object();
 	@GuardedBy("defaultFoldersLock")
-	private static List<File> defaultFolders = null;
+	private static List<Path> defaultFolders = null;
 
 	/**
 	 * Enumerates and returns the default shared folders if none is configured.
@@ -334,11 +337,11 @@ public class RootFolder extends DLNAResource {
 	 * @return The default shared folders.
 	 */
 	@Nonnull
-	public static List<File> getDefaultFolders() {
+	public static List<Path> getDefaultFolders() {
 		synchronized (defaultFoldersLock) {
 			if (defaultFolders == null) {
 				// Lazy initialization
-				defaultFolders = new ArrayList<File>();
+				defaultFolders = new ArrayList<Path>();
 				if (Platform.isWindows()) {
 					Double version = PMS.get().getRegistry().getWindowsVersion();
 					if (version != null && version >= 6d) {
@@ -363,7 +366,7 @@ public class RootFolder extends DLNAResource {
 						for (GUID guid : knownFolders) {
 							Path folder = getWindowsKnownFolder(guid);
 							if (folder != null) {
-								defaultFolders.add(folder.toFile());
+								defaultFolders.add(folder);
 							}
 						}
 					} else {
@@ -379,14 +382,54 @@ public class RootFolder extends DLNAResource {
 						for (CSIDL csidl : csidls) {
 							Path folder = getWindowsFolder(csidl);
 							if (folder != null) {
-								defaultFolders.add(folder.toFile());
+								defaultFolders.add(folder);
 							}
 						}
 					}
 				} else if (Platform.isMac()) {
-					//TODO: (Nad) macOS
+					defaultFolders.addAll(NSFoundation.nsSearchPathForDirectoriesInDomains(
+						NSSearchPathDirectory.NSDesktopDirectory,
+						NSSearchPathDomainMask.NSAllDomainsMask,
+						true
+					));
+					defaultFolders.addAll(NSFoundation.nsSearchPathForDirectoriesInDomains(
+						NSSearchPathDirectory.NSDownloadsDirectory,
+						NSSearchPathDomainMask.NSAllDomainsMask,
+						true
+					));
+					defaultFolders.addAll(NSFoundation.nsSearchPathForDirectoriesInDomains(
+						NSSearchPathDirectory.NSMoviesDirectory,
+						NSSearchPathDomainMask.NSAllDomainsMask,
+						true
+					));
+					defaultFolders.addAll(NSFoundation.nsSearchPathForDirectoriesInDomains(
+						NSSearchPathDirectory.NSMusicDirectory,
+						NSSearchPathDomainMask.NSAllDomainsMask,
+						true
+					));
+					defaultFolders.addAll(NSFoundation.nsSearchPathForDirectoriesInDomains(
+						NSSearchPathDirectory.NSPicturesDirectory,
+						NSSearchPathDomainMask.NSAllDomainsMask,
+						true
+					));
+					defaultFolders.addAll(NSFoundation.nsSearchPathForDirectoriesInDomains(
+						NSSearchPathDirectory.NSSharedPublicDirectory,
+						NSSearchPathDomainMask.NSAllDomainsMask,
+						true
+					));
 				} else {
-					//TODO: (Nad) Linux
+					defaultFolders.add(Paths.get(""));
+					String userHome = System.getProperty("user.home");
+					if (isNotBlank(userHome)) {
+						defaultFolders.add(Paths.get(userHome));
+					}
+					//TODO: (Nad) Implement xdg-user-dir for Linux when EnginesRegistration is merged:
+					// xdg-user-dir DESKTOP
+					// xdg-user-dir DOWNLOAD
+					// xdg-user-dir PUBLICSHARE
+					// xdg-user-dir MUSIC
+					// xdg-user-dir PICTURES
+					// xdg-user-dir VIDEOS
 				}
 				defaultFolders = Collections.unmodifiableList(defaultFolders);
 			}
@@ -397,23 +440,23 @@ public class RootFolder extends DLNAResource {
 	@Nonnull
 	private List<RealFile> getConfiguredFolders() {
 		List<RealFile> resources = new ArrayList<>();
-		List<File> folders = configuration.getSharedFolders();
+		List<Path> folders = configuration.getSharedFolders();
 		if (folders == null) {
 			return resources;
 		}
-		List<File> ignoredList = configuration.getIgnoredFolders();
+		List<Path> ignoredList = configuration.getIgnoredFolders();
 
 		if (!ignoredList.isEmpty()) {
-			for (Iterator<File> iterator = folders.iterator(); iterator.hasNext();) {
-				File file = iterator.next();
-				if (ignoredList.contains(file)) {
+			for (Iterator<Path> iterator = folders.iterator(); iterator.hasNext();) {
+				Path path = iterator.next();
+				if (ignoredList.contains(path)) {
 					iterator.remove();
 				}
 			}
 		}
 
-		for (File folder : folders) {
-			resources.add(new RealFile(folder));
+		for (Path folder : folders) {
+			resources.add(new RealFile(folder.toFile()));
 		}
 
 		if (configuration.getSearchFolder()) {

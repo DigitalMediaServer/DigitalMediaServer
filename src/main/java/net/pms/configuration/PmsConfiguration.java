@@ -32,6 +32,9 @@ import java.io.OutputStreamWriter;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import javax.annotation.Nonnull;
@@ -2668,19 +2671,19 @@ public class PmsConfiguration extends RendererConfiguration {
 	private boolean sharedFoldersRead;
 
 	@GuardedBy("sharedFoldersLock")
-	private ArrayList<File> sharedFolders;
+	private ArrayList<Path> sharedFolders;
 
 	@GuardedBy("sharedFoldersLock")
 	private boolean monitoredFoldersRead;
 
 	@GuardedBy("sharedFoldersLock")
-	private ArrayList<File> monitoredFolders;
+	private ArrayList<Path> monitoredFolders;
 
 	@GuardedBy("sharedFoldersLock")
 	private boolean ignoredFoldersRead;
 
 	@GuardedBy("sharedFoldersLock")
-	private ArrayList<File> ignoredFolders;
+	private ArrayList<Path> ignoredFolders;
 
 	@GuardedBy("sharedFoldersLock")
 	private boolean defaultSharedFolders;
@@ -2763,10 +2766,10 @@ public class PmsConfiguration extends RendererConfiguration {
 	}
 
 	/**
-	 * @return The {@link List} of {@link File}s of shared folders.
+	 * @return The {@link List} of {@link Path}s of shared folders.
 	 */
 	@Nonnull
-	public List<File> getSharedFolders() {
+	public List<Path> getSharedFolders() {
 		synchronized (sharedFoldersLock) {
 			if (isDefaultSharedFolders()) {
 				return RootFolder.getDefaultFolders();
@@ -2777,10 +2780,10 @@ public class PmsConfiguration extends RendererConfiguration {
 	}
 
 	/**
-	 * @return The {@link List} of {@link File}s of monitored folders.
+	 * @return The {@link List} of {@link Path}s of monitored folders.
 	 */
 	@Nonnull
-	public List<File> getMonitoredFolders() {
+	public List<Path> getMonitoredFolders() {
 		synchronized (sharedFoldersLock) {
 			if (isDefaultSharedFolders()) {
 				return RootFolder.getDefaultFolders();
@@ -2794,10 +2797,10 @@ public class PmsConfiguration extends RendererConfiguration {
 	}
 
 	/**
-	 * @return The {@link List} of {@link File}s of ignored folders.
+	 * @return The {@link List} of {@link Path}s of ignored folders.
 	 */
 	@Nonnull
-	public List<File> getIgnoredFolders() {
+	public List<Path> getIgnoredFolders() {
 		synchronized (sharedFoldersLock) {
 			if (!ignoredFoldersRead) {
 				ignoredFolders = getFolders(KEY_FOLDERS_IGNORED);
@@ -2809,17 +2812,17 @@ public class PmsConfiguration extends RendererConfiguration {
 
 	/**
 	 * Transforms a comma-separated list of directory entries into an
-	 * {@link ArrayList} of {@link File}s. Verifies that the folder exists and
+	 * {@link ArrayList} of {@link Path}s. Verifies that the folder exists and
 	 * is valid.
 	 *
 	 * @param key the {@link Configuration} key to read.
 	 * @return The {@link List} of folders or {@code null}.
 	 */
 	@Nonnull
-	protected ArrayList<File> getFolders(String key) {
+	protected ArrayList<Path> getFolders(String key) {
 		String foldersString = configuration.getString(key, null);
 
-		ArrayList<File> folders = new ArrayList<>();
+		ArrayList<Path> folders = new ArrayList<>();
 		if (foldersString == null || foldersString.length() == 0) {
 			return folders;
 		}
@@ -2836,33 +2839,33 @@ public class PmsConfiguration extends RendererConfiguration {
 				LOGGER.info("Checking shared folder: \"{}\"", folder);
 			}
 
-			File file = new File(folder);
-			if (file.exists()) {
-				if (!file.isDirectory()) {
+			Path path = Paths.get(folder);
+			if (Files.exists(path)) {
+				if (!Files.isDirectory(path)) {
 					if (KEY_FOLDERS.equals(key)) {
 						LOGGER.warn(
-							"The file \"{}\" is not a folder! Please remove it from your shared folders " +
+							"The \"{}\" is not a folder! Please remove it from your shared folders " +
 							"list on the \"{}\" tab or in the configuration file.",
 							folder,
 							Messages.getString("LooksFrame.22")
 						);
 					} else {
-						LOGGER.debug("The file \"{}\" is not a folder - check the configuration for key \"{}\"", folder, key);
+						LOGGER.debug("The \"{}\" is not a folder - check the configuration for key \"{}\"", folder, key);
 					}
 				}
 			} else if (KEY_FOLDERS.equals(key)) {
 				LOGGER.warn(
-					"The folder \"{}\" does not exist. Please remove it from your shared folders " +
+					"\"{}\" does not exist. Please remove it from your shared folders " +
 					"list on the \"{}\" tab or in the configuration file.",
 					folder,
 					Messages.getString("LooksFrame.22")
 				);
 			} else {
-				LOGGER.debug("The folder \"{}\" does not exist - check the configuration for key \"{}\"", folder, key);
+				LOGGER.debug("\"{}\" does not exist - check the configuration for key \"{}\"", folder, key);
 			}
 
-			// add the file even if there are problems so that the user can update the shared folders as required.
-			folders.add(file);
+			// add the path even if there are problems so that the user can update the shared folders as required.
+			folders.add(path);
 		}
 
 		return folders;
@@ -2896,8 +2899,8 @@ public class PmsConfiguration extends RendererConfiguration {
 			return;
 		}
 		String listSeparator = String.valueOf(LIST_SEPARATOR);
-		ArrayList<File> tmpSharedfolders = new ArrayList<>();
-		ArrayList<File> tmpMonitoredFolders = new ArrayList<>();
+		ArrayList<Path> tmpSharedfolders = new ArrayList<>();
+		ArrayList<Path> tmpMonitoredFolders = new ArrayList<>();
 		for (Vector rowVector : tableVector) {
 			if (rowVector != null && rowVector.size() == 2 && rowVector.get(0) instanceof String) {
 				String folderPath = (String) rowVector.get(0);
@@ -2908,7 +2911,7 @@ public class PmsConfiguration extends RendererConfiguration {
 				if (folderPath.contains(listSeparator)) {
 					folderPath = folderPath.replace(listSeparator, "&comma;");
 				}
-				File folder = new File(folderPath);
+				Path folder = Paths.get(folderPath);
 				tmpSharedfolders.add(folder);
 				if ((boolean) rowVector.get(1)) {
 					tmpMonitoredFolders.add(folder);

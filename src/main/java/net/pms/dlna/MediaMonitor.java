@@ -4,6 +4,7 @@ import com.sun.jna.Platform;
 import com.sun.jna.platform.FileUtils;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
@@ -114,8 +115,8 @@ public class MediaMonitor extends VirtualFolder {
 
 	@Override
 	public void discoverChildren() {
-		for (File folder : configuration.getMonitoredFolders()) {
-			scanDir(folder.listFiles(), this);
+		for (Path folder : configuration.getMonitoredFolders()) {
+			scanDir(folder.toFile().listFiles(), this);
 		}
 	}
 
@@ -179,10 +180,10 @@ public class MediaMonitor extends VirtualFolder {
 			DLNAResource tmp = res.getParent();
 			if (tmp != null) {
 				boolean isMonitored = false;
-				List<File> foldersMonitored = configuration.getMonitoredFolders();
+				List<Path> foldersMonitored = configuration.getMonitoredFolders();
 				if (foldersMonitored != null && !foldersMonitored.isEmpty()) {
-					for (File folderMonitored : foldersMonitored) {
-						if (rf.getFile().getAbsolutePath().contains(folderMonitored.getAbsolutePath())) {
+					for (Path folderMonitored : foldersMonitored) {
+						if (rf.getFile().getAbsolutePath().contains(folderMonitored.toAbsolutePath().toString())) {
 							isMonitored = true;
 						}
 					}

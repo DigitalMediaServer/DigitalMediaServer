@@ -63,7 +63,7 @@ public class NSFoundation {
 	 */
 	private NSFoundation() {
 	}
-	
+
 	/**
 	 * @return The login name of the current user.
 	 */
@@ -396,7 +396,7 @@ public class NSFoundation {
 		 * For more information on file system utilities, see Low-Level File
 		 * Management Programming Topics.
 		 *
-		 * @param userName the user name as a {@code NSString} whose home
+		 * @param nsUserName the user name as a {@code NSString} whose home
 		 *            directory to return.
 		 * @return A {@link Pointer} to a {@code NSString} containing the path
 		 *         to the home directory for the user specified by

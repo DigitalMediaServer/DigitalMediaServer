@@ -29,7 +29,7 @@ import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.FontMetrics;
 import java.awt.event.*;
-import java.io.File;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Vector;
@@ -95,7 +95,7 @@ public class NavigationShareTab {
 	private JComboBox<String> fullyPlayedAction;
 	private JTextField fullyPlayedOutputDirectory;
 	private CustomJButton selectFullyPlayedOutputDirectory;
-	private JCheckBox customizeFolders;
+	private JCheckBox customizeFolders; //TODO: (Nad) Layout, bounds
 	private final JImageButton addButton = new JImageButton("button-add-folder.png");
 	private final JImageButton removeButton = new JImageButton("button-remove-folder.png");
 	private final JImageButton arrowDownButton = new JImageButton("button-arrow-down.png");
@@ -791,6 +791,7 @@ public class NavigationShareTab {
 		FontMetrics metrics = cellRenderer.getFontMetrics(cellRenderer.getFont());
 		sharedFolders.setRowHeight(metrics.getLeading() + metrics.getMaxAscent() + metrics.getMaxDescent() + 4);
 		sharedFolders.setIntercellSpacing(new Dimension(8, 2));
+		sharedFolders.setEnabled(!defaultSharedFolders);
 
 		addButton.setToolTipText(Messages.getString("FoldTab.9"));
 		addButton.setEnabled(!defaultSharedFolders);
@@ -958,11 +959,11 @@ public class NavigationShareTab {
 
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	private void updateSharedFolders() {
-		List<File> folders = configuration.getSharedFolders();
+		List<Path> folders = configuration.getSharedFolders();
 		Vector<Vector<?>> newDataVector = new Vector<>();
 		if (!folders.isEmpty()) {
-			List<File> foldersMonitored = configuration.getMonitoredFolders();
-			for (File folder : folders) {
+			List<Path> foldersMonitored = configuration.getMonitoredFolders();
+			for (Path folder : folders) {
 				Vector rowVector = new Vector();
 				rowVector.add(folder.toString());
 				rowVector.add(Boolean.valueOf(foldersMonitored.contains(folder)));
