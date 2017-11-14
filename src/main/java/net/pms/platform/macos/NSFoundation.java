@@ -16,7 +16,7 @@
  * You should have received a copy of the GNU General Public License along with
  * this program. If not, see http://www.gnu.org/licenses/.
  */
-package platform.macos;
+package net.pms.platform.macos;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -92,6 +92,6 @@ public interface NSFoundation extends Library {
 
 	@Nullable
 	Pointer CFBridgingRelease(@Nullable CFTypeRef x);
-	
+
 	Pointer NSSearchPathForDirectoriesInDomains(NSSearchPathDirectory directory, long domainMask, boolean expandTild);
 }

@@ -1,4 +1,4 @@
-package platform.windows;
+package net.pms.platform.windows;
 
 /**
  * This is an utility class containing Windows {@code KnownFolder} constants.

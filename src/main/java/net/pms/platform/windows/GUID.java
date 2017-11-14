@@ -1,4 +1,4 @@
-package platform.windows;
+package net.pms.platform.windows;
 
 import javax.annotation.Nonnull;
 import com.sun.jna.Pointer;

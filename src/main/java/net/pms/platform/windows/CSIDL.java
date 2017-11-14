@@ -1,4 +1,4 @@
-package platform.windows;
+package net.pms.platform.windows;
 
 
 /**

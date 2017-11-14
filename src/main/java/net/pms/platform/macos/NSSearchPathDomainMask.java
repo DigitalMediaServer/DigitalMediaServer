@@ -16,7 +16,7 @@
  * You should have received a copy of the GNU General Public License along with
  * this program. If not, see http://www.gnu.org/licenses/.
  */
-package platform.macos;
+package net.pms.platform.macos;
 
 /**
  * These constants represents the {@code NS_OPTIONS} with the same name.
