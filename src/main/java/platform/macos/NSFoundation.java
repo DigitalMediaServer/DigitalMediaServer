@@ -26,6 +26,8 @@ import com.sun.jna.DefaultTypeMapper;
 import com.sun.jna.Library;
 import com.sun.jna.Native;
 import com.sun.jna.Pointer;
+import com.sun.jna.PointerType;
+
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import net.pms.util.jna.JnaIntEnum;
 import net.pms.util.jna.JnaIntEnumConverter;
@@ -80,7 +82,9 @@ public interface NSFoundation extends Library {
 	/**
 	 * The static {@link NSFoundation} instance.
 	 */
-	NSFoundation INSTANCE = (NSFoundation) Native.loadLibrary("Foundation", NSFoundation.class, options);
+	NSFoundation INSTANCE = (NSFoundation) Native.loadLibrary("/System/Library/Frameworks/Foundation.framework/Resources/BridgeSupport/Foundation.dylib", NSFoundation.class, options);
+//	NSFoundation INSTANCE = (NSFoundation) Native.loadLibrary("Foundation.framework/Resources/BridgeSupport/Foundation.dylib", NSFoundation.class, options);
+//	NSFoundation INSTANCE = (NSFoundation) Native.loadLibrary("Foundation", NSFoundation.class, options);
 
 	// After using a CFBridgingRetain on an NSObject, the caller must take responsibility for calling CFRelease at an appropriate time.
 	@Nullable
@@ -88,4 +92,6 @@ public interface NSFoundation extends Library {
 
 	@Nullable
 	Pointer CFBridgingRelease(@Nullable CFTypeRef x);
+	
+	Pointer NSSearchPathForDirectoriesInDomains(NSSearchPathDirectory directory, long domainMask, boolean expandTild);
 }
