@@ -242,14 +242,14 @@ public class NSFoundation {
 	}
 
 	/**
-	 * Partial mapping of Apple's NS (NextStep)/Cocoa Foundation framework. The
-	 * interface is protected to avoid direct use because the return types'
-	 * memory management in unclear. Use the corresponding methods in
-	 * {@link NSFoundation} which will return {@link CFTypeRef} types instead.
+	 * Partial mapping of Apple's NS (NextStep)/Cocoa Foundation framework. This
+	 * interface is protected to avoid direct use because it's unclear how to
+	 * release "NS" return types from JNA. Use the corresponding methods in
+	 * {@link NSFoundation} instead, which will return {@link CFTypeRef} types.
 	 * {@link CFTypeRef} types are released with
-	 * {@link CoreFoundation#CFRelease(CFTypeRef)} after used.
-	 *
-	 * The mappings are from
+	 * {@link CoreFoundation#CFRelease} after use.
+	 * <p>
+	 * The mappings are from:
 	 * <ul>
 	 * <li>NSObject.h</li>
 	 * <li>NSPathUtilities.h</li>

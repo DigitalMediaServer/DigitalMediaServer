@@ -22,6 +22,8 @@ import java.util.Set;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import net.pms.PMS;
 import net.pms.configuration.PmsConfiguration;
 import net.pms.dlna.DLNAMediaInfo;
@@ -1365,6 +1367,29 @@ public class FileUtil {
 			}
 		}
 		return path;
+	}
+
+	/**
+	 * Appends a suffix to a filename before the last {@code "."} if there is
+	 * one. If not, simply appends the suffix to the filename.
+	 *
+	 * @param fileName the filename to append to.
+	 * @param suffix the suffix to append.
+	 * @return The modified filename.
+	 */
+	@Nonnull
+	public static String appendToFileName(@Nonnull String fileName, @Nullable String suffix) {
+		if (fileName == null) {
+			throw new IllegalArgumentException("fileName cannot be null");
+		}
+		if (isBlank(suffix)) {
+			return fileName;
+		}
+		int i = fileName.lastIndexOf(".");
+		if (i < 0) {
+			return fileName + suffix;
+		}
+		return fileName.substring(0, i) + suffix + fileName.substring(i);
 	}
 
 	private static Boolean isAdmin = null;

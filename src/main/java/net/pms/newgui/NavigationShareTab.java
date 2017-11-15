@@ -18,6 +18,7 @@
  */
 package net.pms.newgui;
 
+import static org.apache.commons.lang3.StringUtils.isBlank;
 import com.jgoodies.forms.builder.PanelBuilder;
 import com.jgoodies.forms.factories.Borders;
 import com.jgoodies.forms.layout.CellConstraints;
@@ -33,6 +34,7 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Vector;
+import javax.annotation.Nullable;
 import javax.swing.*;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
@@ -47,6 +49,7 @@ import net.pms.newgui.components.CustomJButton;
 import net.pms.newgui.components.JAnimatedButton;
 import net.pms.newgui.components.JImageButton;
 import net.pms.util.CoverSupplier;
+import net.pms.util.FileUtil;
 import net.pms.util.FormLayoutUtil;
 import net.pms.util.FullyPlayedAction;
 import net.pms.util.KeyedComboBoxModel;
@@ -95,7 +98,7 @@ public class NavigationShareTab {
 	private JComboBox<String> fullyPlayedAction;
 	private JTextField fullyPlayedOutputDirectory;
 	private CustomJButton selectFullyPlayedOutputDirectory;
-	private JCheckBox customizeFolders; //TODO: (Nad) Layout, bounds
+	private final JImageButton customizeButton = new JImageButton();
 	private final JImageButton addButton = new JImageButton("button-add-folder.png");
 	private final JImageButton removeButton = new JImageButton("button-remove-folder.png");
 	private final JImageButton arrowDownButton = new JImageButton("button-arrow-down.png");
@@ -165,7 +168,7 @@ public class NavigationShareTab {
 		+ "9dlu,"                         //
 		+ "fill:default:grow";            // Shared folders
 	private static final String SHARED_FOLDER_COL_SPEC = "left:pref, left:pref, pref, pref, pref, pref, 0:grow";
-	private static final String SHARED_FOLDER_ROW_SPEC = "3*(p, 3dlu), 55dlu:grow";
+	private static final String SHARED_FOLDER_ROW_SPEC = "2*(p, 3dlu), 55dlu:grow";
 
 	public JComponent build() {
 		// Apply the orientation for the locale
@@ -741,46 +744,7 @@ public class NavigationShareTab {
 		cmp = (JComponent) cmp.getComponent(0);
 		cmp.setFont(cmp.getFont().deriveFont(Font.BOLD));
 
-		customizeFolders = new JCheckBox(Messages.getString("SharedFolders.CustomizeFolders"));
-		customizeFolders.setToolTipText(Messages.getString("SharedFolders.CustomizeFoldersToolTip"));
 		boolean defaultSharedFolders = configuration.isDefaultSharedFolders();
-		customizeFolders.setSelected(!defaultSharedFolders);
-		final JPanel tmpsharedPanel = sharedPanel;
-		customizeFolders.addItemListener(new ItemListener() {
-			@Override
-			public void itemStateChanged(ItemEvent e) {
-				final boolean customize = e.getStateChange() == ItemEvent.SELECTED;
-				SwingUtilities.invokeLater(new Runnable() {
-
-					@Override
-					public void run() {
-						if (customize && configuration.isSharedFoldersEmpty()) {
-							if (
-								JOptionPane.showConfirmDialog(
-									tmpsharedPanel,
-									Messages.getString("SharedFolders.CopyDefault"),
-									null,
-									JOptionPane.YES_NO_OPTION,
-									JOptionPane.QUESTION_MESSAGE
-								) == JOptionPane.YES_OPTION
-							) {
-								configuration.setSharedFoldersToDefault();
-							}
-						}
-						configuration.setDefaultSharedFolders(!customize);
-						addButton.setEnabled(customize);
-						removeButton.setEnabled(customize);
-						arrowDownButton.setEnabled(customize);
-						arrowUpButton.setEnabled(customize);
-						sharedFolders.setEnabled(customize);
-						updateSharedFolders();
-					}
-				});
-			}
-		});
-
-		builderFolder.add(customizeFolders, FormLayoutUtil.flip(cc.xyw(1, 3, 7), colSpec, orientation));
-
 		folderTableModel = new SharedFoldersTableModel();
 		sharedFolders = new JTable(folderTableModel);
 
@@ -792,6 +756,38 @@ public class NavigationShareTab {
 		sharedFolders.setRowHeight(metrics.getLeading() + metrics.getMaxAscent() + metrics.getMaxDescent() + 4);
 		sharedFolders.setIntercellSpacing(new Dimension(8, 2));
 		sharedFolders.setEnabled(!defaultSharedFolders);
+
+		updateCustomizeButton(!defaultSharedFolders);
+		final JPanel tmpsharedPanel = sharedPanel;
+		customizeButton.addActionListener(new ActionListener() {
+
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				boolean defaultFolders = !configuration.isDefaultSharedFolders();
+				if (!defaultFolders && configuration.isSharedFoldersEmpty()) {
+					if (
+						JOptionPane.showConfirmDialog(
+							tmpsharedPanel,
+							Messages.getString("SharedFolders.CopyDefault"),
+							null,
+							JOptionPane.YES_NO_OPTION,
+							JOptionPane.QUESTION_MESSAGE
+						) == JOptionPane.YES_OPTION
+					) {
+						configuration.setSharedFoldersToDefault();
+					}
+				}
+				configuration.setDefaultSharedFolders(defaultFolders);
+				updateCustomizeButton(!defaultFolders);
+				addButton.setEnabled(!defaultFolders);
+				removeButton.setEnabled(!defaultFolders);
+				arrowDownButton.setEnabled(!defaultFolders);
+				arrowUpButton.setEnabled(!defaultFolders);
+				sharedFolders.setEnabled(!defaultFolders);
+				updateSharedFolders();
+			}
+		});
+		builderFolder.add(customizeButton, FormLayoutUtil.flip(cc.xy(1, 3), colSpec, orientation));
 
 		addButton.setToolTipText(Messages.getString("FoldTab.9"));
 		addButton.setEnabled(!defaultSharedFolders);
@@ -821,7 +817,7 @@ public class NavigationShareTab {
 				}
 			}
 		});
-		builderFolder.add(addButton, FormLayoutUtil.flip(cc.xy(1, 5), colSpec, orientation));
+		builderFolder.add(addButton, FormLayoutUtil.flip(cc.xy(2, 3), colSpec, orientation));
 
 		removeButton.setToolTipText(Messages.getString("FoldTab.36"));
 		removeButton.setEnabled(!defaultSharedFolders);
@@ -849,7 +845,7 @@ public class NavigationShareTab {
 				}
 			}
 		});
-		builderFolder.add(removeButton, FormLayoutUtil.flip(cc.xy(2, 5), colSpec, orientation));
+		builderFolder.add(removeButton, FormLayoutUtil.flip(cc.xy(3, 3), colSpec, orientation));
 
 		arrowDownButton.setToolTipText(Messages.getString("FoldTab.12"));
 		arrowDownButton.setEnabled(!defaultSharedFolders);
@@ -872,7 +868,7 @@ public class NavigationShareTab {
 				}
 			}
 		});
-		builderFolder.add(arrowDownButton, FormLayoutUtil.flip(cc.xy(3, 5), colSpec, orientation));
+		builderFolder.add(arrowDownButton, FormLayoutUtil.flip(cc.xy(4, 3), colSpec, orientation));
 
 		arrowUpButton.setToolTipText(Messages.getString("FoldTab.12"));
 		arrowUpButton.setEnabled(!defaultSharedFolders);
@@ -896,7 +892,7 @@ public class NavigationShareTab {
 				}
 			}
 		});
-		builderFolder.add(arrowUpButton, FormLayoutUtil.flip(cc.xy(4, 5), colSpec, orientation));
+		builderFolder.add(arrowUpButton, FormLayoutUtil.flip(cc.xy(5, 3), colSpec, orientation));
 
 		scanButton.setToolTipText(Messages.getString("FoldTab.2"));
 		scanBusyIcon.start();
@@ -940,7 +936,7 @@ public class NavigationShareTab {
 			}
 		});
 
-		builderFolder.add(scanButton, FormLayoutUtil.flip(cc.xy(5, 5), colSpec, orientation));
+		builderFolder.add(scanButton, FormLayoutUtil.flip(cc.xy(6, 3), colSpec, orientation));
 		scanButton.setEnabled(configuration.getUseCache());
 
 		updateSharedFolders();
@@ -949,7 +945,7 @@ public class NavigationShareTab {
 		Dimension d = sharedFolders.getPreferredSize();
 		pane.setPreferredSize(new Dimension(d.width, sharedFolders.getRowHeight() * 2));
 		builderFolder.add(pane, FormLayoutUtil.flip(
-			cc.xyw(1, 7, 7, CellConstraints.DEFAULT, CellConstraints.FILL),
+			cc.xyw(1, 5, 7, CellConstraints.DEFAULT, CellConstraints.FILL),
 			colSpec,
 			orientation
 		));
@@ -973,6 +969,30 @@ public class NavigationShareTab {
 		folderTableModel.setDataVector(newDataVector, FOLDERS_COLUMN_NAMES);
 		TableColumn column = sharedFolders.getColumnModel().getColumn(0);
 		column.setMinWidth(600);
+	}
+
+	@Nullable
+	private static Icon getIcon(@Nullable String baseName, @Nullable String suffix) {
+		if (isBlank(baseName)) {
+			return null;
+		}
+		ImageIcon icon = isBlank(suffix) ?
+			LooksFrame.readImageIcon(baseName) :
+			LooksFrame.readImageIcon(FileUtil.appendToFileName(baseName, suffix));
+
+		return icon == null ? UIManager.getIcon("OptionPane.warningIcon") : icon;
+	}
+
+	private void updateCustomizeButton(boolean customize) {
+		String baseName = customize ? "button-default.png" : "button-modify.png";
+		customizeButton.setIcon(getIcon(baseName, null));
+		customizeButton.setPressedIcon(getIcon(baseName, "_pressed"));
+		customizeButton.setDisabledIcon(getIcon(baseName, "_disabled"));
+		customizeButton.setRolloverIcon(getIcon(baseName, "_mouseover"));
+		customizeButton.setToolTipText(customize ?
+			Messages.getString("SharedFolders.DefaultFoldersToolTip") :
+			Messages.getString("SharedFolders.ModifyFoldersToolTip")
+		);
 	}
 
 	public void setScanLibraryEnabled(boolean enabled) {
