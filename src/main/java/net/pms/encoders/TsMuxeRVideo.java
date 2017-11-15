@@ -711,7 +711,7 @@ public class TsMuxeRVideo extends Player {
 			return null;
 		}
 		if (resource.getMediaType() == MediaType.VIDEO) {
-			//TODO: (Nad) Bug?
+			//TODO: (Nad) Bug? https://github.com/DigitalMediaServer/DigitalMediaServer/commit/8526db168b01bc2e1e0a19fc18d9f167ab1eb711#commitcomment-25361770
 			return KnownMimeTypes.MPEG_TS;
 		}
 		return super.getMimeType(resource, renderer);

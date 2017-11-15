@@ -47,6 +47,6 @@ public class DVRMS extends Format {
 
 	@Override
 	public MimeType mimeType() {
-		return KnownMimeTypes.DVR_MS;
+		return KnownMimeTypes.ASF;
 	}
 }
