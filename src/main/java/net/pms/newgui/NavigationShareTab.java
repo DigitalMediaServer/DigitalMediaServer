@@ -763,28 +763,7 @@ public class NavigationShareTab {
 
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				boolean defaultFolders = !configuration.isDefaultSharedFolders();
-				if (!defaultFolders && configuration.isSharedFoldersEmpty()) {
-					if (
-						JOptionPane.showConfirmDialog(
-							tmpsharedPanel,
-							Messages.getString("SharedFolders.CopyDefault"),
-							null,
-							JOptionPane.YES_NO_OPTION,
-							JOptionPane.QUESTION_MESSAGE
-						) == JOptionPane.YES_OPTION
-					) {
-						configuration.setSharedFoldersToDefault();
-					}
-				}
-				configuration.setDefaultSharedFolders(defaultFolders);
-				updateCustomizeButton(!defaultFolders);
-				addButton.setEnabled(!defaultFolders);
-				removeButton.setEnabled(!defaultFolders);
-				arrowDownButton.setEnabled(!defaultFolders);
-				arrowUpButton.setEnabled(!defaultFolders);
-				sharedFolders.setEnabled(!defaultFolders);
-				updateSharedFolders();
+				toggleCustomizeFolders(tmpsharedPanel);
 			}
 		});
 		builderFolder.add(customizeButton, FormLayoutUtil.flip(cc.xy(1, 3), colSpec, orientation));
@@ -817,6 +796,24 @@ public class NavigationShareTab {
 				}
 			}
 		});
+		addButton.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mouseClicked(MouseEvent e) {
+				if (configuration.isDefaultSharedFolders() && e.getButton() == MouseEvent.BUTTON1 && e.getClickCount() > 1) {
+					if (
+						JOptionPane.showConfirmDialog(
+							tmpsharedPanel,
+							Messages.getString("SharedFolders.EnableModify"),
+							null,
+							JOptionPane.YES_NO_OPTION,
+							JOptionPane.QUESTION_MESSAGE
+						) == JOptionPane.YES_OPTION
+					) {
+						toggleCustomizeFolders(tmpsharedPanel);
+					}
+				}
+			}
+		});
 		builderFolder.add(addButton, FormLayoutUtil.flip(cc.xy(2, 3), colSpec, orientation));
 
 		removeButton.setToolTipText(Messages.getString("FoldTab.36"));
@@ -841,6 +838,24 @@ public class NavigationShareTab {
 					}
 					for (int i = rows.length - 1; i >= 0; i--) {
 						((SharedFoldersTableModel) sharedFolders.getModel()).removeRow(rows[i]);
+					}
+				}
+			}
+		});
+		removeButton.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mouseClicked(MouseEvent e) {
+				if (configuration.isDefaultSharedFolders() && e.getButton() == MouseEvent.BUTTON1 && e.getClickCount() > 1) {
+					if (
+						JOptionPane.showConfirmDialog(
+							tmpsharedPanel,
+							Messages.getString("SharedFolders.EnableModify"),
+							null,
+							JOptionPane.YES_NO_OPTION,
+							JOptionPane.QUESTION_MESSAGE
+						) == JOptionPane.YES_OPTION
+					) {
+						toggleCustomizeFolders(tmpsharedPanel);
 					}
 				}
 			}
@@ -983,6 +998,31 @@ public class NavigationShareTab {
 		return icon == null ? UIManager.getIcon("OptionPane.warningIcon") : icon;
 	}
 
+	private void toggleCustomizeFolders(Component parentComponent) {
+		boolean defaultFolders = !configuration.isDefaultSharedFolders();
+		if (!defaultFolders && configuration.isSharedFoldersEmpty()) {
+			if (
+				JOptionPane.showConfirmDialog(
+					parentComponent,
+					Messages.getString("SharedFolders.CopyDefault"),
+					null,
+					JOptionPane.YES_NO_OPTION,
+					JOptionPane.QUESTION_MESSAGE
+				) == JOptionPane.YES_OPTION
+			) {
+				configuration.setSharedFoldersToDefault();
+			}
+		}
+		configuration.setDefaultSharedFolders(defaultFolders);
+		updateCustomizeButton(!defaultFolders);
+		addButton.setEnabled(!defaultFolders);
+		removeButton.setEnabled(!defaultFolders);
+		arrowDownButton.setEnabled(!defaultFolders);
+		arrowUpButton.setEnabled(!defaultFolders);
+		sharedFolders.setEnabled(!defaultFolders);
+		updateSharedFolders();
+	}
+
 	private void updateCustomizeButton(boolean customize) {
 		String baseName = customize ? "button-default.png" : "button-modify.png";
 		customizeButton.setIcon(getIcon(baseName, null));
@@ -1026,7 +1066,7 @@ public class NavigationShareTab {
 		public void setValueAt(Object aValue, int row, int column) {
 			Vector rowVector = (Vector) dataVector.elementAt(row);
 			if (aValue instanceof Boolean && column == 1) {
-				rowVector.setElementAt((boolean) aValue, 1);
+				rowVector.setElementAt(aValue, 1);
 			} else {
 				rowVector.setElementAt(aValue, column);
 			}
