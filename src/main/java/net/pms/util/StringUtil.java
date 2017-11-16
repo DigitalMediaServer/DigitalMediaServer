@@ -29,6 +29,8 @@ import java.util.Formatter;
 import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import javax.swing.JEditorPane;
 import javax.swing.JTextPane;
 import javax.swing.text.html.HTMLEditorKit;
@@ -533,65 +535,43 @@ public class StringUtil {
 	}
 
 	/**
-	 * Creates a "readable" string by combining the strings in {@code strings}
+	 * Creates a "readable" string by combining the objects in {@code elements}
 	 * while inserting "{@code ,}" and "{@code and}" as appropriate. The
-	 * resulting {@link String} is in the form
-	 * "{@code element 1, element2 and element3}".
+	 * resulting {@link String} is in the form "
+	 * {@code element 1, element2 and element3}".
 	 *
-	 * @param strings the {@link Collection} of {@link String} to combine.
+	 * @param elements the elements to combine.
 	 * @return The combined "readable" {@link String}.
 	 */
-	public static String createReadableCombinedString(Collection<String> strings) {
-		return createReadableCombinedString(strings, null, null);
+	@Nonnull
+	public static String createReadableCombinedString(@Nullable Object... elements) {
+		return createReadableCombinedString(null, null, elements);
 	}
 
 	/**
-	 * Creates a "readable" string by combining the strings in {@code strings}
+	 * Creates a "readable" string by combining the objects in {@code elements}
 	 * while inserting {@code separator} and {@code lastSeparator} as
-	 * appropriate. The resulting {@link String} is in the form
-	 * "{@code element 1<separator> element2 <lastSeparator> element3}".
+	 * appropriate. The resulting {@link String} is in the form "
+	 * {@code element 1<separator> element2 <lastSeparator> element3}".
 	 *
-	 * @param strings the {@link Collection} of {@link String} to combine.
 	 * @param separator the "normal" separator used everywhere except between
 	 *            the last two elements.
 	 * @param lastSeparator the separator used between the last two elements.
+	 * @param elements the elements to combine.
 	 * @return The combined "readable" {@link String}.
 	 */
-	public static String createReadableCombinedString(Collection<String> strings, String separator, String lastSeparator) {
-		if (strings == null || strings.isEmpty()) {
+	@Nonnull
+	public static String createReadableCombinedString(
+		@Nullable String separator,
+		@Nullable String lastSeparator,
+		@Nullable Object... elements
+	) {
+		if (elements == null || elements.length == 0) {
 			return "";
 		}
-		return createReadableCombinedString(strings.toArray(new String[strings.size()]), separator, lastSeparator);
-	}
-
-	/**
-	 * Creates a "readable" string by combining the strings in {@code strings}
-	 * while inserting "{@code ,}" and "{@code and}" as appropriate. The
-	 * resulting {@link String} is in the form
-	 * "{@code element 1, element2 and element3}".
-	 *
-	 * @param strings the array of {@link String} to combine.
-	 * @return The combined "readable" {@link String}.
-	 */
-	public static String createReadableCombinedString(String[] strings) {
-		return createReadableCombinedString(strings, null, null);
-	}
-
-	/**
-	 * Creates a "readable" string by combining the strings in {@code strings}
-	 * while inserting {@code separator} and {@code lastSeparator} as
-	 * appropriate. The resulting {@link String} is in the form
-	 * "{@code element 1<separator> element2 <lastSeparator> element3}".
-	 *
-	 * @param strings the array of {@link String} to combine.
-	 * @param separator the "normal" separator used everywhere except between
-	 *            the last two elements.
-	 * @param lastSeparator the separator used between the last two elements.
-	 * @return The combined "readable" {@link String}.
-	 */
-	public static String createReadableCombinedString(String[] strings, String separator, String lastSeparator) {
-		if (strings == null || strings.length == 0) {
-			return "";
+		if (elements.length == 1 && elements[0] instanceof Collection<?>) {
+			// This method will catch a Collection<?> argument as well, convert it to an array
+			elements = ((Collection<?>) elements[0]).toArray();
 		}
 		if (separator == null) {
 			separator = ", ";
@@ -609,15 +589,15 @@ public class StringUtil {
 			}
 		}
 		StringBuilder sb = new StringBuilder();
-		for (int i = 0; i < strings.length; i++) {
+		for (int i = 0; i < elements.length; i++) {
 			if (i > 0) {
-				if (i == strings.length) {
+				if (i == elements.length) {
 					sb.append(lastSeparator);
 				} else {
 					sb.append(separator);
 				}
 			}
-			sb.append(strings[i]);
+			sb.append(elements[i]);
 		}
 		return sb.toString();
 	}
