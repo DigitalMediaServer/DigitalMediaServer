@@ -22,6 +22,8 @@ import java.util.Set;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import net.pms.PMS;
 import net.pms.configuration.PmsConfiguration;
 import net.pms.dlna.DLNAMediaInfo;
@@ -1367,6 +1369,29 @@ public class FileUtil {
 		return path;
 	}
 
+	/**
+	 * Appends a suffix to a filename before the last {@code "."} if there is
+	 * one. If not, simply appends the suffix to the filename.
+	 *
+	 * @param fileName the filename to append to.
+	 * @param suffix the suffix to append.
+	 * @return The modified filename.
+	 */
+	@Nonnull
+	public static String appendToFileName(@Nonnull String fileName, @Nullable String suffix) {
+		if (fileName == null) {
+			throw new IllegalArgumentException("fileName cannot be null");
+		}
+		if (isBlank(suffix)) {
+			return fileName;
+		}
+		int i = fileName.lastIndexOf(".");
+		if (i < 0) {
+			return fileName + suffix;
+		}
+		return fileName.substring(0, i) + suffix + fileName.substring(i);
+	}
+
 	private static Boolean isAdmin = null;
 	private static Object isAdminLock = new Object();
 
@@ -1379,18 +1404,16 @@ public class FileUtil {
 				return isAdmin;
 			}
 			if (Platform.isWindows()) {
-				Float ver = null;
-				try {
-					ver = Float.valueOf(System.getProperty("os.version"));
-				} catch (NullPointerException | NumberFormatException e) {
+				Double version = PMS.get().getRegistry().getWindowsVersion();
+				if (version == null) {
 					LOGGER.error(
-						"Could not determine Windows version from {}. Administrator privileges is undetermined: {}",
-						System.getProperty("os.version"), e.getMessage()
+						"Could not determine Windows version from {}. Administrator privileges is undetermined.",
+						System.getProperty("os.version")
 					);
 					isAdmin = false;
 					return false;
 				}
-				if (ver >= 5.1) {
+				if (version >= 5.1) {
 					try {
 						String command = "reg query \"HKU\\S-1-5-19\"";
 						Process p = Runtime.getRuntime().exec(command);
