@@ -4,12 +4,12 @@ import com.sun.jna.Platform;
 import com.sun.jna.platform.FileUtils;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import net.pms.Messages;
-import net.pms.PMS;
-import net.pms.configuration.PmsConfiguration;
 import net.pms.dlna.virtual.VirtualFolder;
 import net.pms.dlna.virtual.VirtualVideoAction;
 import net.pms.util.FileUtil;
@@ -22,16 +22,12 @@ import org.slf4j.LoggerFactory;
 
 public class MediaMonitor extends VirtualFolder {
 	private static Set<String> fullyPlayedEntries;
-	private File[] dirs;
-	private PmsConfiguration config;
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(MediaMonitor.class);
 
-	public MediaMonitor(File[] dirs) {
+	public MediaMonitor() {
 		super(Messages.getString("VirtualFolder.2"), "images/thumbnail-folder-256.png");
-		this.dirs = dirs;
 		fullyPlayedEntries = new HashSet<>();
-		config = PMS.getConfiguration();
 		parseMonitorFile();
 	}
 
@@ -40,7 +36,7 @@ public class MediaMonitor extends VirtualFolder {
 	 * @return The file
 	 */
 	private File monitorFile() {
-		return new File(config.getDataFile("DMS.mon"));
+		return new File(configuration.getDataFile("DMS.mon"));
 	}
 
 	private void parseMonitorFile() {
@@ -106,8 +102,8 @@ public class MediaMonitor extends VirtualFolder {
 				}
 				if (f.isDirectory()) {
 					boolean add = true;
-					if (config.isHideEmptyFolders()) {
-						add = FileUtil.isFolderRelevant(f, config, fullyPlayedEntries);
+					if (configuration.isHideEmptyFolders()) {
+						add = FileUtil.isFolderRelevant(f, configuration, fullyPlayedEntries);
 					}
 					if (add) {
 						res.addChild(new MonitorEntry(f, this));
@@ -119,10 +115,8 @@ public class MediaMonitor extends VirtualFolder {
 
 	@Override
 	public void discoverChildren() {
-		if (dirs != null) {
-			for (File f : dirs) {
-				scanDir(f.listFiles(), this);
-			}
+		for (Path folder : configuration.getMonitoredFolders()) {
+			scanDir(folder.toFile().listFiles(), this);
 		}
 	}
 
@@ -153,7 +147,7 @@ public class MediaMonitor extends VirtualFolder {
 		if (res.getLastStartPosition() == 0) {
 			elapsed = (double) (System.currentTimeMillis() - res.getStartTime()) / 1000;
 		} else {
-			elapsed = (double) (System.currentTimeMillis() - res.getLastStartSystemTime()) / 1000;
+			elapsed = (System.currentTimeMillis() - res.getLastStartSystemTime()) / 1000;
 			elapsed += res.getLastStartPosition();
 		}
 
@@ -186,10 +180,10 @@ public class MediaMonitor extends VirtualFolder {
 			DLNAResource tmp = res.getParent();
 			if (tmp != null) {
 				boolean isMonitored = false;
-				File[] foldersMonitored = PMS.get().getSharedFoldersArray(true);
-				if (foldersMonitored != null && foldersMonitored.length > 0) {
-					for (File folderMonitored : foldersMonitored) {
-						if (rf.getFile().getAbsolutePath().contains(folderMonitored.getAbsolutePath())) {
+				List<Path> foldersMonitored = configuration.getMonitoredFolders();
+				if (foldersMonitored != null && !foldersMonitored.isEmpty()) {
+					for (Path folderMonitored : foldersMonitored) {
+						if (rf.getFile().getAbsolutePath().contains(folderMonitored.toAbsolutePath().toString())) {
 							isMonitored = true;
 						}
 					}

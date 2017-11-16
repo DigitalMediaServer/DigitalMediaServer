@@ -20,3 +20,4 @@ target/
 /web/
 win32/
 .vscode/settings.json
+/src/main/java/net/pms/Test.java
