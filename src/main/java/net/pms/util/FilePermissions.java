@@ -30,6 +30,7 @@ import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.util.EnumSet;
+import java.util.Set;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -339,7 +340,33 @@ public class FilePermissions {
 	 * that has previously been evaluated will be included even if they aren't
 	 * specified.
 	 * <p>
-	 * If no {@code checkFlag} is specified, all permissions will be evaluated.
+	 * If {@code checkFlag} is {@code null}, all permissions are evaluated.
+	 *
+	 * @param checkFlag the {@link Set} of {@link FileFlag}s indicating which
+	 *            permissions to check.
+	 * @return An {@link EnumSet} containing the permissions for the file object
+	 *         that are present and have been evaluated. There is no way to
+	 *         differentiate between a permission that isn't evaluated and one
+	 *         that isn't granted, in both cases it won't be in the returned
+	 *         {@link EnumSet}.
+	 */
+	@Nonnull
+	public EnumSet<FileFlag> getFlags(@Nullable Set<FileFlag> checkFlag) {
+		if (checkFlag == null || checkFlag.isEmpty()) {
+			return getFlags();
+		}
+		return getFlags(checkFlag.toArray(new FileFlag[checkFlag.size()]));
+	}
+
+	/**
+	 * Makes sure that the specified file permissions are evaluated and returns
+	 * an {@link EnumSet} containing the permissions and properties of the file
+	 * object. {@code checkFlag} isn't a filter but a way to make sure that only
+	 * the permissions that are needed are evaluated, so that any permissions
+	 * that has previously been evaluated will be included even if they aren't
+	 * specified.
+	 * <p>
+	 * If no {@code checkFlag} is specified, all permissions are evaluated.
 	 *
 	 * @param checkFlag the {@link FileFlag}s indicating which permissions to check.
 	 * @return An {@link EnumSet} containing the permissions for the file object
@@ -349,7 +376,10 @@ public class FilePermissions {
 	 *         {@link EnumSet}.
 	 */
 	@Nonnull
-	public EnumSet<FileFlag> getFlags(FileFlag... checkFlag) {
+	public EnumSet<FileFlag> getFlags(@Nullable FileFlag... checkFlag) {
+		if (checkFlag == null) {
+			checkFlag = new FileFlag[0];
+		}
 		boolean checkRead = checkFlag.length == 0;
 		boolean checkWrite = checkFlag.length == 0;
 		boolean checkExecute = checkFlag.length == 0;
