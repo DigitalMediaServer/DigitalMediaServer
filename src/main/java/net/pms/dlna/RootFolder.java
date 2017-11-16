@@ -18,6 +18,7 @@
  */
 package net.pms.dlna;
 
+import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import com.sun.jna.Platform;
 import com.sun.jna.platform.win32.Shell32Util;
@@ -35,6 +36,7 @@ import java.nio.file.Paths;
 import java.text.Collator;
 import java.text.Normalizer;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.GuardedBy;
@@ -46,6 +48,8 @@ import net.pms.dlna.virtual.VirtualFolder;
 import net.pms.dlna.virtual.VirtualVideoAction;
 import net.pms.formats.Format;
 import net.pms.io.BasicSystemUtils;
+import net.pms.io.ListProcessWrapperResult;
+import net.pms.io.SimpleProcessWrapper;
 import net.pms.io.StreamGobbler;
 import net.pms.newgui.IFrame;
 import net.pms.platform.macos.NSFoundation;
@@ -56,9 +60,11 @@ import net.pms.platform.windows.GUID;
 import net.pms.platform.windows.KnownFolders;
 import net.pms.util.CodeDb;
 import net.pms.util.FilePermissions;
+import net.pms.util.FilePermissions.FileFlag;
 import net.pms.util.FileUtil;
 import net.pms.util.FileWatcher;
 import net.pms.util.ProcessUtil;
+import net.pms.util.StringUtil;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
@@ -70,6 +76,13 @@ import xmlwise.XmlParseException;
 
 public class RootFolder extends DLNAResource {
 	private static final Logger LOGGER = LoggerFactory.getLogger(RootFolder.class);
+	private static final Set<FileFlag> REQUIRED_SHARED_FOLDER_PERMISSIONS = new HashSet<>(
+		Arrays.asList(new FileFlag[] {
+			FileFlag.BROWSE,
+			FileFlag.FOLDER,
+			FileFlag.READ
+		})
+	);
 	private boolean running;
 	private FolderLimit lim;
 	private MediaMonitor mon;
@@ -282,16 +295,7 @@ public class RootFolder extends DLNAResource {
 		try {
 			String folderPath = Shell32Util.getKnownFolderPath(guid);
 			if (isNotBlank(folderPath)) {
-				Path folder = Paths.get(folderPath);
-				try {
-					FilePermissions permissions = new FilePermissions(folder);
-					if (permissions.isBrowsable()) {
-						return folder;
-					}
-					LOGGER.warn("Insufficient permissions to read default folder \"{}\"", guid);
-				} catch (FileNotFoundException e) {
-					LOGGER.debug("Default folder \"{}\" not found", folder);
-				}
+				return Paths.get(folderPath);
 			}
 		} catch (Win32Exception e) {
 			LOGGER.debug("Default folder \"{}\" not found: {}", guid, e.getMessage());
@@ -310,17 +314,7 @@ public class RootFolder extends DLNAResource {
 		try {
 			String folderPath = Shell32Util.getFolderPath(csidl.getValue());
 			if (isNotBlank(folderPath)) {
-				Path folder = Paths.get(folderPath);
-				FilePermissions permissions;
-				try {
-					permissions = new FilePermissions(folder);
-					if (permissions.isBrowsable()) {
-						return folder;
-					}
-					LOGGER.warn("Insufficient permissions to read default folder \"{}\"", csidl);
-				} catch (FileNotFoundException e) {
-					LOGGER.debug("Default folder \"{}\" not found", folder);
-				}
+				return Paths.get(folderPath);
 			}
 		} catch (Win32Exception e) {
 			LOGGER.debug("Default folder \"{}\" not found: {}", csidl, e.getMessage());
@@ -329,6 +323,39 @@ public class RootFolder extends DLNAResource {
 			LOGGER.trace("", e);
 		}
 		return null;
+	}
+
+	@Nullable
+	private static Path getLinuxFolder(@Nullable Path xdg, @Nullable String folderName) {
+		if (xdg == null || isBlank(folderName)) {
+			return null;
+		}
+		try {
+			ListProcessWrapperResult result = SimpleProcessWrapper.runProcessListOutput(10, TimeUnit.SECONDS, 1000, xdg.toString(), folderName);
+			if (result.getError() != null) {
+				LOGGER.warn("Failed to get default folder \"{}\": {}", folderName, result.getError().getMessage());
+				LOGGER.trace("", result.getError());
+				return null;
+			}
+			if (result.getOutput().isEmpty()) {
+				LOGGER.trace("Request for default folder \"{}\" got a blank reply", folderName);
+				return null;
+			}
+			if (isBlank(result.getOutput().get(0))) {
+				LOGGER.trace("Request for default folder \"{}\" got a blank path", folderName);
+				return null;
+			}
+			try {
+				return Paths.get(result.getOutput().get(0));
+			} catch (InvalidPathException ipe) {
+				LOGGER.warn("Couldn't resolve path \"{}\" for default folder \"{}\": {}", result.getOutput().get(0), folderName, ipe.getMessage());
+				LOGGER.trace("", ipe);
+				return null;
+			}
+		} catch (InterruptedException e) {
+			LOGGER.trace("getLinuxFolder() was interrupted while retrieving default folder \"{}\"", folderName);
+			return null;
+		}
 	}
 
 	private static final Object defaultFoldersLock = new Object();
@@ -422,19 +449,54 @@ public class RootFolder extends DLNAResource {
 						true
 					));
 				} else {
-					defaultFolders.add(Paths.get("").toAbsolutePath());
-					String userHome = System.getProperty("user.home");
-					if (isNotBlank(userHome)) {
-						defaultFolders.add(Paths.get(userHome));
+					Path xdg = FileUtil.findExecutableInOSPath(Paths.get("xdg-user-dir"));
+					if (xdg != null) {
+						String[] folderNames = {"DESKTOP", "DOWNLOAD", "PUBLICSHARE", "MUSIC", "PICTURES", "VIDEOS"};
+						for (String folderName : folderNames) {
+							Path folder = getLinuxFolder(xdg, folderName);
+							if (folder != null) {
+								defaultFolders.add(folder);
+							}
+						}
+					} else {
+						defaultFolders.add(Paths.get("").toAbsolutePath());
+						String userHome = System.getProperty("user.home");
+						if (isNotBlank(userHome)) {
+							defaultFolders.add(Paths.get(userHome));
+						}
 					}
-					//TODO: (Nad) Implement xdg-user-dir for Linux when EnginesRegistration is merged:
-					// xdg-user-dir DESKTOP
-					// xdg-user-dir DOWNLOAD
-					// xdg-user-dir PUBLICSHARE
-					// xdg-user-dir MUSIC
-					// xdg-user-dir PICTURES
-					// xdg-user-dir VIDEOS
 				}
+
+				// Remove non-existing or not readable folders
+				for (Iterator<Path> iterator = defaultFolders.iterator(); iterator.hasNext();) {
+					Path path = iterator.next();
+					try {
+						FilePermissions filePermissions = new FilePermissions(path);
+						Set<FileFlag> flags = filePermissions.getFlags(REQUIRED_SHARED_FOLDER_PERMISSIONS);
+						if (!flags.containsAll(REQUIRED_SHARED_FOLDER_PERMISSIONS)) {
+							iterator.remove();
+							HashSet<FileFlag> missingFlags = new HashSet<>(REQUIRED_SHARED_FOLDER_PERMISSIONS);
+							missingFlags.removeAll(flags);
+							if (missingFlags.contains(FileFlag.FOLDER)) {
+								LOGGER.warn(
+									"Skipping default folder \"{}\" because it's not a folder",
+									path
+								);
+							} else {
+								LOGGER.warn(
+									"Skipping default folder \"{}\" because it's missing {} permission{}",
+									path,
+									StringUtil.createReadableCombinedString(missingFlags),
+									missingFlags.size() > 1 ? "s" : ""
+								);
+							}
+						}
+					} catch (FileNotFoundException e) {
+						iterator.remove();
+						LOGGER.trace("Default folder \"{}\" not found", path.toString());
+					}
+				}
+
 				defaultFolders = Collections.unmodifiableList(defaultFolders);
 			}
 			return defaultFolders;

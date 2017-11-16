@@ -44,6 +44,7 @@ import net.pms.Messages;
 import net.pms.PMS;
 import net.pms.configuration.PmsConfiguration;
 import net.pms.dlna.DLNAMediaDatabase;
+import net.pms.dlna.RootFolder;
 import net.pms.newgui.LooksFrame.AbstractTabListenerRegistrar;
 import net.pms.newgui.LooksFrame.LooksFrameTab;
 import net.pms.newgui.components.AnimatedIcon;
@@ -1016,7 +1017,11 @@ public class NavigationShareTab {
 
 	private void toggleCustomizeFolders(Component parentComponent) {
 		boolean defaultFolders = !configuration.isDefaultSharedFolders();
-		if (!defaultFolders && configuration.isSharedFoldersEmpty()) {
+		if (
+			!defaultFolders &&
+			configuration.isSharedFoldersEmpty() &&
+			!RootFolder.getDefaultFolders().isEmpty()
+		) {
 			if (
 				JOptionPane.showConfirmDialog(
 					parentComponent,
