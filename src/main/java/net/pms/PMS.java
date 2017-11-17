@@ -28,6 +28,8 @@ import java.awt.*;
 import java.io.*;
 import java.net.BindException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.AccessControlException;
 import java.sql.SQLException;
@@ -80,8 +82,8 @@ import net.pms.util.jna.macos.iokit.IOKitUtils;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.event.ConfigurationEvent;
 import org.apache.commons.configuration.event.ConfigurationListener;
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.text.WordUtils;
-import org.fest.util.Files;
 import org.slf4j.ILoggerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -1321,17 +1323,20 @@ public class PMS {
 		try {
 			File logFile = new File(newLogFileName);
 			if (logFile.exists()) {
-				Files.delete(logFile);
+				if (!logFile.delete()) {
+					newLogFileName += ".prev";
+				}
 			}
 			logFile = new File(fullLogFileName);
 			if (logFile.exists()) {
 				File newFile = new File(newLogFileName);
 				if (!logFile.renameTo(newFile)) {
-					LOGGER.warn("Could not rename \"{}\" to \"{}\"",fullLogFileName,newLogFileName);
+					LOGGER.warn("Could not rename \"{}\" to \"{}\"", fullLogFileName, newLogFileName);
 				}
 			}
 		} catch (Exception e) {
-			LOGGER.warn("Could not rename \"{}\" to \"{}\": {}",fullLogFileName,newLogFileName,e);
+			LOGGER.warn("Could not rename \"{}\" to \"{}\": {}", fullLogFileName, newLogFileName, e.getMessage());
+			LOGGER.trace("", e);
 		}
 	}
 
@@ -1809,30 +1814,59 @@ public class PMS {
 	 * JNA is first initialized to have any effect.
 	 */
 	public static void configureJNA() {
-		// Set JNA "jnidispatch" resolution rules
+		String osName = System.getProperty("os.name");
+		if (osName == null) {
+			osName = "";
+		}
+		boolean windows = osName.startsWith("Windows");
+		double windowsVersion = Double.NaN;
 		try {
 			if (
-				System.getProperty("os.name") != null &&
-				System.getProperty("os.name").startsWith("Windows") &&
-				isNotBlank(System.getProperty("os.version")) &&
-				Double.parseDouble(System.getProperty("os.version")) < 5.2
+				windows &&
+				isNotBlank(System.getProperty("os.version"))
 			) {
-				String developmentPath = "src\\main\\external-resources\\lib\\winxp";
-				if (new File(developmentPath).exists()) {
-					System.setProperty("jna.boot.library.path", developmentPath);
-				} else {
-					System.setProperty("jna.boot.library.path", "win32\\winxp");
-				}
-			} else {
-				System.setProperty("jna.nosys", "true");
+				windowsVersion = Double.parseDouble(System.getProperty("os.version"));
 			}
-		} catch (NullPointerException | NumberFormatException e) {
-			System.setProperty("jna.nosys", "true");
+		} catch (NumberFormatException e) {
 			System.err.println(
 				"Could not determine Windows version from " +
 				System.getProperty("os.version") +
-				". Not applying Windows XP hack"
+				". Not applying Windows XP hack: " + e.getMessage()
 			);
+		}
+		boolean macos = osName.startsWith("Mac") || osName.startsWith("Darwin");
+
+		// Set JNA "jnidispatch" resolution rules
+		if (
+			windows && windowsVersion != Double.NaN && windowsVersion < 5.2
+		) {
+			String developmentPath = "src\\main\\external-resources\\lib\\winxp";
+			if (new File(developmentPath).exists()) {
+				System.setProperty("jna.boot.library.path", developmentPath);
+			} else {
+				System.setProperty("jna.boot.library.path", "win32\\winxp");
+			}
+		} else {
+			System.setProperty("jna.nosys", "true");
+		}
+
+		// Set JNA library path
+		ArrayList<String> libraryPaths = new ArrayList<>();
+		if (windows) {
+			Path path = Paths.get("target/bin/win32");
+			if (Files.exists(path)) {
+				libraryPaths.add(path.toAbsolutePath().toString());
+			}
+			libraryPaths.add("win32");
+		} else if (macos) {
+			Path path = Paths.get("target/bin/osx");
+			if (Files.exists(path)) {
+				libraryPaths.add(path.toAbsolutePath().toString());
+			}
+		}
+
+		if (!libraryPaths.isEmpty()) {
+			System.setProperty("jna.library.path", StringUtils.join(libraryPaths, File.pathSeparator));
 		}
 	}
 }

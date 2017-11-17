@@ -82,9 +82,9 @@ Function LockedListShow
 
 	${If} ${RunningX64}
 		File /oname=$PLUGINSDIR\LockedList64.dll `${NSISDIR}\Plugins\LockedList64.dll`
-		LockedList::AddModule "$INSTDIR\MediaInfo64.dll"
+		LockedList::AddModule "$INSTDIR\win32\MediaInfo64.dll"
 	${Else}
-		LockedList::AddModule "$INSTDIR\MediaInfo.dll"
+		LockedList::AddModule "$INSTDIR\win32\MediaInfo.dll"
 	${EndIf}
 
 	LockedList::Dialog /autonext /autoclosesilent
@@ -203,9 +203,6 @@ Section "Program Files"
 	File "${PROJECT_BASEDIR}\src\main\external-resources\DMS.bat"
 	File /r "${PROJECT_BASEDIR}\src\main\external-resources\web"
 	File "${PROJECT_BUILD_DIR}\dms.jar"
-	File "${PROJECT_BASEDIR}\MediaInfo.dll"
-	File "${PROJECT_BASEDIR}\MediaInfo64.dll"
-	File "${PROJECT_BASEDIR}\MediaInfo-License.html"
 	; File "${PROJECT_BASEDIR}\CHANGELOG.txt"
 	File "${PROJECT_BASEDIR}\README.txt"
 	File "${PROJECT_BASEDIR}\LICENSE.txt"
@@ -571,9 +568,6 @@ Section "Uninstall"
 	Delete /REBOOTOK "$INSTDIR\DMS.exe"
 	Delete /REBOOTOK "$INSTDIR\DMS.bat"
 	Delete /REBOOTOK "$INSTDIR\dms.jar"
-	Delete /REBOOTOK "$INSTDIR\MediaInfo.dll"
-	Delete /REBOOTOK "$INSTDIR\MediaInfo64.dll"
-	Delete /REBOOTOK "$INSTDIR\MediaInfo-License.html"
 	; Delete /REBOOTOK "$INSTDIR\CHANGELOG.txt"
 	Delete /REBOOTOK "$INSTDIR\WEB.conf"
 	Delete /REBOOTOK "$INSTDIR\README.txt"
