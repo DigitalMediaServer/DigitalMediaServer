@@ -1082,9 +1082,9 @@
 										<mkdir dir="${project.binaries}/win32/service" />
 
 										<!-- Download all necessary Windows binaries. Keep the same structure because NSIS expects it that way. -->
-										<get src="${project.binaries-base}/MediaInfo.dll?p=${binary-revision}" dest="${project.binaries}/MediaInfo.dll"  usetimestamp="true" />
-										<get src="${project.binaries-base}/MediaInfo64.dll?p=${binary-revision}" dest="${project.binaries}/MediaInfo64.dll" usetimestamp="true" />
-										<get src="${project.binaries-base}/MediaInfo-License.html?p=${binary-revision}" dest="${project.binaries}/MediaInfo-License.html" usetimestamp="true" />
+										<get src="${project.binaries-base}/MediaInfo.dll?p=${binary-revision}" dest="${project.binaries}/win32/MediaInfo.dll"  usetimestamp="true" />
+										<get src="${project.binaries-base}/MediaInfo64.dll?p=${binary-revision}" dest="${project.binaries}/win32/MediaInfo64.dll" usetimestamp="true" />
+										<get src="${project.binaries-base}/MediaInfo-License.html?p=${binary-revision}" dest="${project.binaries}/win32/MediaInfo-License.html" usetimestamp="true" />
 										<get src="${project.binaries-base}/win32/LICENSE-dsnative.txt?p=${binary-revision}" dest="${project.binaries}/win32/LICENSE-dsnative.txt" usetimestamp="true" />
 										<get src="${project.binaries-base}/win32/LICENSE-mplayer.txt?p=${binary-revision}" dest="${project.binaries}/win32/LICENSE-mplayer.txt" usetimestamp="true" />
 										<get src="${project.binaries-base}/win32/builds.txt?p=${binary-revision}" dest="${project.binaries}/win32/builds.txt" usetimestamp="true" />
@@ -1143,11 +1143,6 @@
 										<!-- Copy the dms-x.x.x-jar-with-dependencies.jar to dms.jar -->
 										<copy file="${project.basedir}/target/${project.artifactId}-${project.version}-jar-with-dependencies.jar"
 										      tofile="${project.basedir}/target/dms.jar" overwrite="true" />
-
-										<!-- MediaInfo library needs to be in the standard library path to be found -->
-										<copy file="${project.binaries}/MediaInfo.dll" todir="${project.basedir}" />
-										<copy file="${project.binaries}/MediaInfo64.dll" todir="${project.basedir}" />
-										<copy file="${project.binaries}/MediaInfo-License.html" todir="${project.basedir}" />
 
 										<!-- Copy the wrapper to its destination -->
 										<mkdir dir="${project.basedir}/win32/service" />
@@ -1373,16 +1368,12 @@
 										<get src="${project.binaries-base}/osx/dcraw" dest="${project.binaries}/osx/dcraw" usetimestamp="true" />
 										<get src="${project.binaries-base}/osx/ffmpeg" dest="${project.binaries}/osx/ffmpeg" usetimestamp="true" />
 										<get src="${project.binaries-base}/osx/flac" dest="${project.binaries}/osx/flac" usetimestamp="true" />
-										<get src="${project.binaries-base}/osx/libmediainfo.dylib" dest="${project.binaries}/libmediainfo.dylib" usetimestamp="true" />
-										<get src="${project.binaries-base}/MediaInfo-License.html" dest="${project.binaries}/MediaInfo-License.html" usetimestamp="true" />
+										<get src="${project.binaries-base}/osx/libmediainfo.dylib" dest="${project.binaries}/osx/libmediainfo.dylib" usetimestamp="true" />
+										<get src="${project.binaries-base}/MediaInfo-License.html" dest="${project.binaries}/osx/MediaInfo-License.html" usetimestamp="true" />
 										<get src="${project.binaries-base}/osx/mencoder" dest="${project.binaries}/osx/mencoder" usetimestamp="true" />
 										<get src="${project.binaries-base}/osx/mplayer" dest="${project.binaries}/osx/mplayer" usetimestamp="true" />
 										<!-- TODO: Update to a recent version that works on modern macOS versions -->
 										<get src="${project.binaries-base}/osx/tsMuxeR-new" dest="${project.binaries}/osx/tsMuxeR" usetimestamp="true" />
-
-										<!-- MediaInfo library needs to be in the standard library path to be found -->
-										<copy file="${project.binaries}/libmediainfo.dylib" todir="${project.basedir}" />
-										<copy file="${project.binaries}/MediaInfo-License.html" todir="${project.basedir}" />
 
 										<!-- Make all downloaded binaries executable -->
 										<chmod dir="${project.binaries}/osx" perm="a+x" includes="*" />
@@ -1555,15 +1546,11 @@
 										<get src="${project.binaries-base}/osx/dcraw" dest="${project.binaries}/osx/dcraw" usetimestamp="true" />
 										<get src="${project.binaries-base}/osx/ffmpeg" dest="${project.binaries}/osx/ffmpeg" usetimestamp="true" />
 										<get src="${project.binaries-base}/osx/flac" dest="${project.binaries}/osx/flac" usetimestamp="true" />
-										<get src="${project.binaries-base}/osx/libmediainfo.dylib" dest="${project.binaries}/libmediainfo.dylib" usetimestamp="true" />
-										<get src="${project.binaries-base}/MediaInfo-License.html" dest="${project.binaries}/MediaInfo-License.html" usetimestamp="true" />
+										<get src="${project.binaries-base}/osx/libmediainfo.dylib" dest="${project.binaries}/osx/libmediainfo.dylib" usetimestamp="true" />
+										<get src="${project.binaries-base}/MediaInfo-License.html" dest="${project.binaries}/osx/MediaInfo-License.html" usetimestamp="true" />
 										<get src="${project.binaries-base}/osx/mencoder" dest="${project.binaries}/osx/mencoder" usetimestamp="true" />
 										<get src="${project.binaries-base}/osx/mplayer" dest="${project.binaries}/osx/mplayer" usetimestamp="true" />
 										<get src="${project.binaries-base}/osx/tsMuxeR-new" dest="${project.binaries}/osx/tsMuxeR" usetimestamp="true" />
-
-										<!-- MediaInfo library needs to be in the standard library path to be found -->
-										<copy file="${project.binaries}/libmediainfo.dylib" todir="${project.basedir}" />
-										<copy file="${project.binaries}/MediaInfo-License.html" todir="${project.basedir}" />
 
 										<!-- Make all downloaded binaries executable -->
 										<chmod dir="${project.binaries}/osx" perm="a+x" includes="*" />
