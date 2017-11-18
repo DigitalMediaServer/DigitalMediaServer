@@ -3136,7 +3136,7 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 			 * DLNA dictates that a missing CI flag should be interpreted as
 			 * if it were 0, so the result should be the same.
 			 */
-			if (resElement.getCiFlag() == null || resElement.getCiFlag() == 0) {
+			if (resElement.getCiFlag() == null || resElement.getCiFlag().getIntValue() == 0) {
 				ciFlag = "";
 			} else {
 				ciFlag = ";DLNA.ORG_CI=" + resElement.getCiFlag().toString();
