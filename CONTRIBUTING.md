@@ -32,4 +32,4 @@ We welcome Pull Requests. Please be descriptive about the purpose of the code ch
 
 GitHub only allows a few attachment extensions: `.png`, `.gif`, `.jpg`, `.docx`, `.pptx`, `.xlsx`, `.txt`, `.pdf`, `.zip` and `.gz`. Other attachments can be zipped and attached here. Text files can also simply have a `.txt` extension added to their file name.
 
-GitHub has a size limit of 20 MB for attachments. If your attachment is too big, upload your attachment somewhere else (for example [wikisend.com](http://wikisend.com)) and post the link in the GitHub issue. If you upload your attachment elsewhere, please avoid sites with restricted access or intrusive ads.
+GitHub has a size limit of 20 MB for attachments. If your attachment is too big, upload your attachment somewhere else (for example [wikisend.com](http://wikisend.com), [zippyshare.com](http://www.zippyshare.com), [send-anywhere.com](https://send-anywhere.com), [anonfile](https://anonfile.com)) and post the link in the GitHub issue. If you upload your attachment elsewhere, please avoid sites with restricted access or intrusive ads.
