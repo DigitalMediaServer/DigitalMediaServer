@@ -1376,7 +1376,7 @@ public class DLNAImageProfile implements DLNAOrgProfileName, Comparable<DLNAImag
 		 * @return The {@link List} of failure messages.
 		 */
 		public List<String> getFailures() {
-			return Collections.unmodifiableList(this.failures);
+			return Collections.unmodifiableList(this.failures); //TODO: (Nad) Not truely immutable..?
 		}
 	}
 }
