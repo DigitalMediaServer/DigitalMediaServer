@@ -1,4 +1,4 @@
-UMS sync with: d899b06891b51418b245296ab3c4dae9af78c20b Created getYear(), isSameYear() and multiple variants of isEqual() in StringUtil
+UMS sync with: 81da57a451aefdee00627f5ddec0883d0c8b1705 Improved match logic
 
 Skipped:
 a4a099c7efcaf6dc8a28402a29eade757a2ce78d The ugly hack to solve problem when the TotalMatches are changed
