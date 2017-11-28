@@ -148,7 +148,7 @@ public class LibMediaInfoParser {
 						media.setFrameRateOriginal(MI.Get(StreamType.Video, i, "FrameRate_Original"));
 						media.setFrameRateMode(getFrameRateModeValue(MI.Get(StreamType.Video, i, "FrameRate_Mode")));
 						media.setFrameRateModeRaw(MI.Get(StreamType.Video, i, "FrameRate_Mode"));
-						media.setReferenceFrameCount(getReferenceFrameCount(MI.Get(StreamType.Video, i, "Format_Settings_RefFrames/String")));
+						media.setReferenceFrameCount(getReferenceFrameCount(MI.Get(StreamType.Video, i, "Format_Settings_RefFrames")));
 						media.setVideoTrackTitleFromMetadata(MI.Get(StreamType.Video, i, "Title"));
 						value = MI.Get(StreamType.Video, i, "Format_Settings_QPel");
 						if (isNotBlank(value)) {
@@ -200,7 +200,7 @@ public class LibMediaInfoParser {
 					}
 					currentAudioTrack.setLang(getLang(MI.Get(StreamType.Audio, i, "Language/String")));
 					currentAudioTrack.setAudioTrackTitleFromMetadata((MI.Get(StreamType.Audio, i, "Title")).trim());
-					currentAudioTrack.getAudioProperties().setNumberOfChannels(MI.Get(StreamType.Audio, i, "Channel(s)"));
+					currentAudioTrack.getAudioProperties().setNumberOfChannels(MI.Get(StreamType.Audio, i, "Channel(s) Original"));
 					currentAudioTrack.setSampleFrequency(getSampleFrequency(MI.Get(StreamType.Audio, i, "SamplingRate")));
 					currentAudioTrack.setBitRate(getBitrate(MI.Get(StreamType.Audio, i, "BitRate")));
 					currentAudioTrack.setSongname(MI.Get(StreamType.General, 0, "Track"));
@@ -857,21 +857,21 @@ public class LibMediaInfoParser {
 	}
 
 	/**
-	 * @param value {@code Format_Settings_RefFrames/String} value to parse.
-	 * @return reference frame count or {@code -1} if could not parse.
+	 * Parses the reference frame count.
+	 *
+	 * @param value the {@code Format_Settings_RefFrames} value to parse.
+	 * @return The reference frame count or {@code -1} if the parsing fails.
 	 */
-	public static byte getReferenceFrameCount(String value) {
+	public static int getReferenceFrameCount(String value) {
 		if (isBlank(value)) {
 			return -1;
 		}
 
 		try {
-			// Values like "16 frame3"
-			return Byte.parseByte(substringBefore(value, " "));
-		} catch (NumberFormatException ex) {
-			// Not parsed
-			LOGGER.warn("Could not parse ReferenceFrameCount value {}." , value);
-			LOGGER.warn("Exception: ", ex);
+			return Integer.parseInt(value);
+		} catch (NumberFormatException e) {
+			LOGGER.debug("Could not parse ReferenceFrameCount \"{}\": {}", value, e.getMessage());
+			LOGGER.trace("", e);
 			return -1;
 		}
 	}
@@ -1341,7 +1341,7 @@ public class LibMediaInfoParser {
 			first &= !appendString("FPS", MI.Get(StreamType.Video, idx, "FrameRate"), first, false, true);
 			first &= !appendString("FPS Orig", MI.Get(StreamType.Video, idx, "FrameRate_Original"), first, false, true);
 			first &= !appendString("Framerate Mode", MI.Get(StreamType.Video, idx, "FrameRate_Mode"), first, false, true);
-			first &= !appendString("RefFrames", MI.Get(StreamType.Video, idx, "Format_Settings_RefFrames/String"), first, false, true);
+			first &= !appendString("RefFrames", MI.Get(StreamType.Video, idx, "Format_Settings_RefFrames"), first, false, true);
 			first &= !appendString("QPel", MI.Get(StreamType.Video, idx, "Format_Settings_QPel"), first, true, true);
 			first &= !appendString("GMC", MI.Get(StreamType.Video, idx, "Format_Settings_GMC"), first, true, true);
 			first &= !appendString("GOP", MI.Get(StreamType.Video, idx, "Format_Settings_GOP"), first, true, true);
@@ -1391,7 +1391,7 @@ public class LibMediaInfoParser {
 			appendStringNextColumn(streamColumns, "FPS", MI.Get(StreamType.Video, idx, "FrameRate"), false, true);
 			appendStringNextColumn(streamColumns, "FPS Orig", MI.Get(StreamType.Video, idx, "FrameRate_Original"), false, true);
 			appendStringNextColumn(streamColumns, "Framerate Mode", MI.Get(StreamType.Video, idx, "FrameRate_Mode"), false, true);
-			appendStringNextColumn(streamColumns, "RefFrames", MI.Get(StreamType.Video, idx, "Format_Settings_RefFrames/String"), false, true);
+			appendStringNextColumn(streamColumns, "RefFrames", MI.Get(StreamType.Video, idx, "Format_Settings_RefFrames"), false, true);
 			appendStringNextColumn(streamColumns, "QPel", MI.Get(StreamType.Video, idx, "Format_Settings_QPel"), true, true);
 			appendStringNextColumn(streamColumns, "GMC", MI.Get(StreamType.Video, idx, "Format_Settings_GMC"), true, true);
 			appendStringNextColumn(streamColumns, "GOP", MI.Get(StreamType.Video, idx, "Format_Settings_GOP"), true, true);
@@ -1429,7 +1429,7 @@ public class LibMediaInfoParser {
 			first &= !appendString("BitRate Maximum", MI.Get(StreamType.Audio, idx, "BitRate_Maximum"), first, false, true);
 			first &= !appendString("Bitrate Encoded", MI.Get(StreamType.Audio, idx, "BitRate_Encoded"), first, false, true);
 			first &= !appendString("Lang", MI.Get(StreamType.Audio, idx, "Language"), first, true, true);
-			first &= !appendString("Channel(s)", MI.Get(StreamType.Audio, idx, "Channel(s)"), first, false, true);
+			first &= !appendString("Channel(s)", MI.Get(StreamType.Audio, idx, "Channel(s)_Original"), first, false, true);
 			first &= !appendString("Samplerate", MI.Get(StreamType.Audio, idx, "SamplingRate"), first, false, true);
 			first &= !appendString("Bitrate", MI.Get(StreamType.Audio, idx, "BitRate"), first, false, true);
 			first &= !appendString("Track", MI.Get(StreamType.General, idx, "Track/Position"), first, false, true);
