@@ -64,7 +64,7 @@ public class DLNAMediaDatabase implements Runnable {
 	 * The database version should be incremented when we change anything to
 	 * do with the database since the last released version.
 	 */
-	private final String latestVersion = "9";
+	private final String latestVersion = "10";
 
 	// Database column sizes
 	private final int SIZE_CODECV = 32;
@@ -239,7 +239,7 @@ public class DLNAMediaDatabase implements Runnable {
 				sb.append(", ASPECTRATIODVD          OTHER");
 				sb.append(", ASPECTRATIOCONTAINER    OTHER");
 				sb.append(", ASPECTRATIOVIDEOTRACK   OTHER");
-				sb.append(", REFRAMES                TINYINT");
+				sb.append(", REFRAMES                INT");
 				sb.append(", AVCLEVEL                VARCHAR2(").append(SIZE_AVC_LEVEL).append(')');
 				sb.append(", IMAGEINFO               OTHER");
 				sb.append(", THUMB                   OTHER");
@@ -378,7 +378,7 @@ public class DLNAMediaDatabase implements Runnable {
 					media.setAspectRatioDvdIso((Rational) rs.getObject("ASPECTRATIODVD"));
 					media.setAspectRatioContainer((Rational) rs.getObject("ASPECTRATIOCONTAINER"));
 					media.setAspectRatioVideoTrack((Rational) rs.getObject("ASPECTRATIOVIDEOTRACK"));
-					media.setReferenceFrameCount(rs.getByte("REFRAMES"));
+					media.setReferenceFrameCount(rs.getInt("REFRAMES"));
 					media.setAvcLevel(rs.getString("AVCLEVEL"));
 					media.setImageInfo((ImageInfo) rs.getObject("IMAGEINFO"));
 					media.setThumb((DLNAThumbnail) rs.getObject("THUMB"));
@@ -640,7 +640,7 @@ public class DLNAMediaDatabase implements Runnable {
 							updateSerialized(rs, media.getAspectRatioDvdIso(), "ASPECTRATIODVD");
 							updateSerialized(rs, media.getAspectRatioContainer(), "ASPECTRATIOCONTAINER");
 							updateSerialized(rs, media.getAspectRatioVideoTrack(), "ASPECTRATIOVIDEOTRACK");
-							rs.updateByte("REFRAMES", media.getReferenceFrameCount());
+							rs.updateInt("REFRAMES", media.getReferenceFrameCount());
 							rs.updateString("AVCLEVEL", left(media.getAvcLevel(), SIZE_AVC_LEVEL));
 							updateSerialized(rs, media.getImageInfo(), "IMAGEINFO");
 							updateSerialized(rs, media.getThumb(), "THUMB");
@@ -699,7 +699,7 @@ public class DLNAMediaDatabase implements Runnable {
 						insertSerialized(ps, media.getAspectRatioDvdIso(), 11);
 						insertSerialized(ps, media.getAspectRatioContainer(), 12);
 						insertSerialized(ps, media.getAspectRatioVideoTrack(), 13);
-						ps.setByte(14, media.getReferenceFrameCount());
+						ps.setInt(14, media.getReferenceFrameCount());
 						ps.setString(15, left(media.getAvcLevel(), SIZE_AVC_LEVEL));
 						insertSerialized(ps, media.getImageInfo(), 16);
 						insertSerialized(ps, media.getThumb(), 17);

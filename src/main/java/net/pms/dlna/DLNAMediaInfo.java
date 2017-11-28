@@ -197,7 +197,7 @@ public class DLNAMediaInfo implements Cloneable {
 	public int bitsPerPixel;
 
 	private final ReentrantReadWriteLock referenceFrameCountLock = new ReentrantReadWriteLock();
-	private byte referenceFrameCount = -1;
+	private int referenceFrameCount = -1;
 
 	private final ReentrantReadWriteLock avcLevelLock = new ReentrantReadWriteLock();
 	private String avcLevel = null;
@@ -2560,9 +2560,9 @@ public class DLNAMediaInfo implements Cloneable {
 	}
 
 	/**
-	 * @return reference frame count for video stream or {@code -1} if not parsed.
+	 * @return The reference frame count for the video stream or {@code -1}.
 	 */
-	public byte getReferenceFrameCount() {
+	public int getReferenceFrameCount() {
 		referenceFrameCountLock.readLock().lock();
 		try {
 			return referenceFrameCount;
@@ -2572,11 +2572,11 @@ public class DLNAMediaInfo implements Cloneable {
 	}
 
 	/**
-	 * Sets reference frame count for video stream or {@code -1} if not parsed.
+	 * Sets the reference frame count for video stream.
 	 *
-	 * @param referenceFrameCount reference frame count.
+	 * @param referenceFrameCount the reference frame count.
 	 */
-	public void setReferenceFrameCount(byte referenceFrameCount) {
+	public void setReferenceFrameCount(int referenceFrameCount) {
 		if (referenceFrameCount < -1) {
 			throw new IllegalArgumentException("referenceFrameCount must be >= -1.");
 		}
