@@ -1,4 +1,4 @@
-UMS sync with: cb335f716c275d18491e898d1f4e97e63c3f60f2 Fixed potential NPE from #1061 (#1421)
+UMS sync with: d899b06891b51418b245296ab3c4dae9af78c20b Created getYear(), isSameYear() and multiple variants of isEqual() in StringUtil
 
 Skipped:
 a4a099c7efcaf6dc8a28402a29eade757a2ce78d The ugly hack to solve problem when the TotalMatches are changed
