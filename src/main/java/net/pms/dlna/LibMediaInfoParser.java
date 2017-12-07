@@ -326,7 +326,7 @@ public class LibMediaInfoParser {
 			/*
 			 * Some container formats (like MP4/M4A) can represent both audio
 			 * and video media. DMS initially recognized this as video, but this
-			 * is corrected here it the content is only audio.
+			 * is corrected here if the content is only audio.
 			 */
 			if (media.isAudioOrVideoContainer() && media.isAudio()) {
 				media.setContainer(media.getAudioVariantFormatConfigurationString());
@@ -505,7 +505,7 @@ public class LibMediaInfoParser {
 			format = FormatConfiguration.MOV;
 		} else if (
 			value.contains("isom") ||
-			value.startsWith("mp4") && !value.startsWith("mp4a")||
+			streamType != StreamType.Audio && value.startsWith("mp4") && !value.startsWith("mp4a") ||
 			value.equals("20") ||
 			value.equals("isml") ||
 			value.startsWith("m4a") ||
@@ -548,8 +548,8 @@ public class LibMediaInfoParser {
 			value.equals("wmv2")
 		) {
 			format = FormatConfiguration.WMV;
-		} else if (streamType == StreamType.Video &&
-			(
+		} else if (
+			streamType == StreamType.Video && (
 				value.contains("mjpg") ||
 				value.contains("mjpeg") ||
 				value.equals("mjpa") ||
