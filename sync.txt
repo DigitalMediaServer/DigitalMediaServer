@@ -1,4 +1,4 @@
-UMS sync with: f936ef18484ed483063a75910335b0ed88c03493 Added 4k support to VLC for iOS
+UMS sync with: c175c2908ab9a431e45573e38e435d11a26a90a2 Added Bengali translation (empty) (#1429)
 
 Skipped:
 a4a099c7efcaf6dc8a28402a29eade757a2ce78d The ugly hack to solve problem when the TotalMatches are changed
@@ -13,3 +13,5 @@ d129c7d80839f3399868d061a8855a51bf9982af Add the fix to Reguest.java and update 
 299e309db866894887517c592b8cbb5c9f5275e6 Updated Surefire to fix compatibility with latest Maven
 915021eb74c2954fb3cb46e1e346caed20ea8e41 Create issue_template.md (#1408)
 d40d0c64ff3d90743a1a1f890618a3a402bb5ea1 Update wizard (#1412)
+dc7b860a2d04fc3a19b8c159672c0f5306f91408 Create Wizard class. (#1422)
+59de40d2a25be5d0a1c1e6a1add7ed88eb86c79d Revert "Updated Surefire to fix compatibility with latest Maven"
