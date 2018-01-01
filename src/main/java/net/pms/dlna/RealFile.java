@@ -26,11 +26,9 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import net.pms.PMS;
 import net.pms.configuration.FormatConfiguration;
-import net.pms.formats.Format;
 import net.pms.formats.FormatFactory;
 import net.pms.formats.FormatType;
 import net.pms.io.BasicSystemUtils;
-import net.pms.util.FileUtil;
 import net.pms.util.ProcessUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -71,15 +69,10 @@ public class RealFile extends MapFile {
 			// we need to resolve the DLNA resource now
 			run();
 
-			MediaType mediaType = getMediaType();
-			if (mediaType == MediaType.VIDEO && configuration.isAutoloadExternalSubtitles() && file.getName().length() > 4) {
-				setHasExternalSubtitles(FileUtil.isSubtitlesExists(file, null));
-			}
-
 			// Given that here getFormat() has already matched some (possibly plugin-defined) format:
 			//    Format.UNKNOWN + bad parse = inconclusive
 			//    known types    + bad parse = bad/encrypted file
-			if (mediaType != null && getMedia() != null && (getMedia().isEncrypted() || getMedia().getContainer() == null || getMedia().getContainer().equals(FormatConfiguration.UND))) {
+			if (getMediaType() != null && getMedia() != null && (getMedia().isEncrypted() || getMedia().getContainer() == null || getMedia().getContainer().equals(FormatConfiguration.UND))) {
 				valid = false;
 				if (getMedia().isEncrypted()) {
 					LOGGER.info("The file {} is encrypted. It will be hidden", file.getAbsolutePath());
@@ -220,9 +213,6 @@ public class RealFile extends MapFile {
 
 				if (getFormat() != null) {
 					getFormat().parse(getMedia(), input, parent == null ? null : parent.getDefaultRenderer());
-					if (getMedia() != null && getMedia().isSLS()) {
-						setFormat(getMedia().getAudioVariantFormat());
-					}
 				} else {
 					// Don't think that will ever happen
 					getMedia().parse(input, getFormat(), false, isResume(), parent == null ? null : parent.getDefaultRenderer());
@@ -252,6 +242,9 @@ public class RealFile extends MapFile {
 						}
 					}
 				}
+			}
+			if (getMedia() != null && getMedia().isSLS()) {
+				setFormat(getMedia().getAudioVariantFormat());
 			}
 		}
 	}
