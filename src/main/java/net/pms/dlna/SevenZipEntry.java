@@ -91,7 +91,6 @@ public class SevenZipEntry extends DLNAResource implements IPushOutput {
 	@Override
 	public boolean isValid() {
 		resolveFormat();
-		setHasExternalSubtitles(FileUtil.isSubtitlesExists(file, null));
 		return getFormat() != null;
 	}
 
@@ -160,6 +159,7 @@ public class SevenZipEntry extends DLNAResource implements IPushOutput {
 		new Thread(r, "7Zip Extractor").start();
 	}
 
+	@SuppressWarnings("deprecation")
 	@Override
 	public synchronized void resolve() {
 		if (getFormat() == null || !getFormat().isVideo()) {
@@ -193,9 +193,8 @@ public class SevenZipEntry extends DLNAResource implements IPushOutput {
 	public DLNAThumbnailInputStream getThumbnailInputStream() throws IOException {
 		if (getMedia() != null && getMedia().getThumb() != null) {
 			return getMedia().getThumbnailInputStream();
-		} else {
-			return super.getThumbnailInputStream();
 		}
+		return super.getThumbnailInputStream();
 	}
 
 	@Override
