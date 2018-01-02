@@ -1,4 +1,4 @@
-UMS sync with: c175c2908ab9a431e45573e38e435d11a26a90a2 Added Bengali translation (empty) (#1429)
+UMS sync with: ba46a0efec5031e5cc633353f0682d7cfc0baeb5 Added support for sending 4k MP4 videos to PS4 natively
 
 Skipped:
 a4a099c7efcaf6dc8a28402a29eade757a2ce78d The ugly hack to solve problem when the TotalMatches are changed
