@@ -1,4 +1,4 @@
-UMS sync with: ba46a0efec5031e5cc633353f0682d7cfc0baeb5 Added support for sending 4k MP4 videos to PS4 natively
+UMS sync with: ab49f0eba97ae8d46a93bbc278d0c13a4b72c462 Fixed detection of JRE 9 (#1414) (#1433)
 
 Skipped:
 a4a099c7efcaf6dc8a28402a29eade757a2ce78d The ugly hack to solve problem when the TotalMatches are changed
