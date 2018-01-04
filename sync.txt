@@ -1,4 +1,4 @@
-UMS sync with: b29ae8d541bb93bf438d078abc5b46e307d97f79 Fix Crowdin integration
+UMS sync with: d4e30cd0a93fe457a8ecaef6069c87522657c26b 6.8.0
 
 Skipped:
 a4a099c7efcaf6dc8a28402a29eade757a2ce78d The ugly hack to solve problem when the TotalMatches are changed
@@ -15,3 +15,5 @@ d129c7d80839f3399868d061a8855a51bf9982af Add the fix to Reguest.java and update 
 d40d0c64ff3d90743a1a1f890618a3a402bb5ea1 Update wizard (#1412)
 dc7b860a2d04fc3a19b8c159672c0f5306f91408 Create Wizard class. (#1422)
 59de40d2a25be5d0a1c1e6a1add7ed88eb86c79d Revert "Updated Surefire to fix compatibility with latest Maven"
+9b15dafdb7f4e8f6ccf0490eeaa05a4553aa65cd Sync translations with Crowdin
+3c1eaed9fa1231ec6c70af68f2959382dd180aa8 Enabled automatic updating to 6.8.0 on Windows
