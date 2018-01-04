@@ -182,7 +182,7 @@ public class FormatConfiguration {
 	/** Used as a "video codec" when sequences of raw, uncompressed YUV is used as a video stream in AVI, MP4 or MOV files */
 	public static final String YUV = "yuv";
 	public static final String MIMETYPE_AUTO = "MIMETYPE_AUTO";
-	public static final String und = "und";
+	public static final String UND = "und";
 
 	private static class SupportSpec {
 		private int iMaxBitrate = Integer.MAX_VALUE;

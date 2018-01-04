@@ -18,20 +18,13 @@
  */
 package net.pms.dlna;
 
-import net.pms.util.Iso639;
-import org.apache.commons.lang3.StringUtils;
+import javax.annotation.Nullable;
+import net.pms.util.ISO639;
 
 /**
  * This class keeps track of the language information for subtitles or audio.
- * 
- * TODO: Change all instance variables to private. For backwards compatibility
- * with external plugin code the variables have all been marked as deprecated
- * instead of changed to private, but this will surely change in the future.
- * When everything has been changed to private, the deprecated note can be
- * removed.
  */
 public class DLNAMediaLang {
-	public static final String UND = "und";
 
 	/**
 	 * @deprecated Use standard getter and setter to access this variable.
@@ -39,72 +32,41 @@ public class DLNAMediaLang {
 	@Deprecated
 	public int id;
 
-	/**
-	 * @deprecated Use standard getter and setter to access this variable.
-	 */
-	@Deprecated
-	public String lang;
+	/** The {@link ISO639} */
+	@Nullable
+	protected ISO639 lang;
 
 	/**
-	 * Returns the full language name for an audio or subtitle track based on a
-	 * translation from the ISO 639 language code. If no code has been set,
-	 * "Undetermined" is returned.
-	 * 
-	 * @return The language name
-	 * @since 1.50
-	 */
-	public String getLangFullName() {
-		if (StringUtils.isNotBlank(lang)) {
-			return Iso639.getLanguage(lang);
-		}
-		return Iso639.getLanguage(DLNAMediaLang.UND);
-	}
-
-	public boolean matchCode(String code) {
-		return Iso639.isCodesMatching(lang, code);
-	}
-
-	/**
-	 * Returns the unique id for this language object
-	 * 
-	 * @return The id.
-	 * @since 1.50
+	 * Returns the unique ID for this language object.
+	 *
+	 * @return The ID.
 	 */
 	public int getId() {
 		return id;
 	}
 
 	/**
-	 * Sets a unique id for this language object.
-	 * 
-	 * @param id The id to set.
-	 * @since 1.50
+	 * Sets a unique ID for this language object.
+	 *
+	 * @param id the ID to set.
 	 */
 	public void setId(int id) {
 		this.id = id;
 	}
 
 	/**
-	 * Returns the IS0 639 language code for this language object. If you
-	 * require the full language name, use {@link #getLangFullName()} instead.
-	 * Special return values are "und" (for "undetermined") and "off" 
-	 * (indicates an audio track or subtitle should be disabled).
-	 * 
-	 * @return The language code.
-	 * @since 1.50
+	 * @return The {@link ISO639} for this language object.
 	 */
-	public String getLang() {
+	@Nullable
+	public ISO639 getLang() {
 		return lang;
 	}
 	/**
-	 * Sets the ISO 639 language code for this language object. Special values
-	 * are "und" (for "undetermined") and "off" (indicates an audio track or
-	 * subtitle should be disabled).
-	 * 
-	 * @param lang The language code to set.
-	 * @since 1.50
+	 * Sets the {@link ISO639} this language object.
+	 *
+	 * @param lang The {@link ISO639} to set.
 	 */
-	public void setLang(String lang) {
+	public void setLang(@Nullable ISO639 lang) {
 		this.lang = lang;
 	}
 }

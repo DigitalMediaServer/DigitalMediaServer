@@ -25,6 +25,8 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import net.pms.PMS;
+import net.pms.configuration.FormatConfiguration;
+import net.pms.formats.Format;
 import net.pms.formats.FormatFactory;
 import net.pms.formats.FormatType;
 import net.pms.io.BasicSystemUtils;
@@ -77,7 +79,7 @@ public class RealFile extends MapFile {
 			// Given that here getFormat() has already matched some (possibly plugin-defined) format:
 			//    Format.UNKNOWN + bad parse = inconclusive
 			//    known types    + bad parse = bad/encrypted file
-			if (mediaType != null && getMedia() != null && (getMedia().isEncrypted() || getMedia().getContainer() == null || getMedia().getContainer().equals(DLNAMediaLang.UND))) {
+			if (mediaType != null && getMedia() != null && (getMedia().isEncrypted() || getMedia().getContainer() == null || getMedia().getContainer().equals(FormatConfiguration.UND))) {
 				valid = false;
 				if (getMedia().isEncrypted()) {
 					LOGGER.info("The file {} is encrypted. It will be hidden", file.getAbsolutePath());

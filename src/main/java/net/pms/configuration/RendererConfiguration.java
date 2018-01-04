@@ -15,6 +15,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import net.pms.Messages;
 import net.pms.PMS;
@@ -45,6 +46,7 @@ import net.pms.newgui.StatusTab;
 import net.pms.util.BasicPlayer;
 import net.pms.util.FileWatcher;
 import net.pms.util.FormattableColor;
+import net.pms.util.Language;
 import net.pms.util.PropertiesUtil;
 import net.pms.util.StringUtil;
 import org.apache.commons.configuration.Configuration;
@@ -401,7 +403,7 @@ public class RendererConfiguration extends UPNPHelper.Renderer {
 	 * @return The list of enabled renderers.
 	 */
 	public static ArrayList<RendererConfiguration> getEnabledRenderersConfigurations() {
-		return enabledRendererConfs != null ? new ArrayList(enabledRendererConfs) : null;
+		return enabledRendererConfs != null ? new ArrayList<>(enabledRendererConfs) : null;
 	}
 
 	/**
@@ -2761,7 +2763,8 @@ public class RendererConfiguration extends UPNPHelper.Renderer {
 		return buffer;
 	}
 
-	public String getSubLanguage() {
+	@Nonnull
+	public List<Language> getSubLanguages() {
 		return pmsConfiguration.getSubtitlesLanguages();
 	}
 

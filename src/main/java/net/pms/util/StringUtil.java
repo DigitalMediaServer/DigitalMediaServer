@@ -84,6 +84,12 @@ public class StringUtil {
 	/** A {@link Pattern} that matches whitespace */
 	public static final Pattern WHITESPACE = Pattern.compile("\\s+", Pattern.UNICODE_CHARACTER_CLASS);
 
+	/** A {@link Pattern} that matches semicolon {@code ";"} */
+	public static final Pattern SEMICOLON = Pattern.compile("\\s*;\\s*");
+
+	/** A {@link Pattern} that matches semicolon {@code ";"} */
+	public static final Pattern COMMA = Pattern.compile("\\s*,\\s*");
+
 	/**
 	 * Appends "&lt;<u>tag</u> " to the StringBuilder. This is a typical HTML/DIDL/XML tag opening.
 	 *

@@ -302,7 +302,17 @@ public class OpenSubtitle {
 		if (!login()) {
 			return result;
 		}
-		String languages = UMSUtils.getLangList(renderer, true);
+		StringBuilder sb = new StringBuilder();
+		boolean first = true;
+		for (Language language : UMSUtils.getLangList(renderer)) {
+			if (first) {
+				first = false;
+			} else {
+				sb.append(",");
+			}
+			sb.append(language.getCode());
+		}
+		String languages = sb.toString();
 		URL url = new URL(OPENSUBS_URL);
 		String hashRequest = "";
 		String imdbIdRequest = "";
@@ -438,7 +448,6 @@ public class OpenSubtitle {
 		if (!login()) {
 			return null;
 		}
-		String lang = UMSUtils.getLangList(renderer, true);
 		URL url = new URL(OPENSUBS_URL);
 		String hashStr = "";
 		String imdbStr = "";
@@ -467,10 +476,6 @@ public class OpenSubtitle {
 							"<array>\n" +
 								"<data>\n" +
 									"<value><struct>" +
-										"<member>" +
-											"<name>sublanguageid</name>" +
-												"<value><string>" + lang + "</string></value>" +
-										"</member>" +
 										hashStr +
 										imdbStr +
 										qStr + "\n" +

@@ -31,6 +31,7 @@ import net.pms.formats.v2.SubtitleType;
 import net.pms.image.ImageInfo;
 import net.pms.media.VideoLevel;
 import net.pms.service.Services;
+import net.pms.util.ISO639;
 import net.pms.util.Rational;
 import static org.apache.commons.lang3.StringUtils.*;
 import org.h2.api.ErrorCode;
@@ -384,7 +385,7 @@ public class DLNAMediaDatabase implements Runnable {
 						while (elements.next()) {
 							DLNAMediaAudio audio = new DLNAMediaAudio();
 							audio.setId(elements.getInt("ID"));
-							audio.setLang(elements.getString("LANG"));
+							audio.setLang(ISO639.get(elements.getString("LANG")));
 							audio.setAudioTrackTitleFromMetadata(elements.getString("TITLE"));
 							audio.setNumberOfChannels(elements.getInt("NRAUDIOCHANNELS"));
 							audio.setSampleFrequency(elements.getInt("SAMPLEFREQ"));
@@ -408,7 +409,7 @@ public class DLNAMediaDatabase implements Runnable {
 						while (elements.next()) {
 							DLNAMediaSubtitle sub = new DLNAMediaSubtitle();
 							sub.setId(elements.getInt("ID"));
-							sub.setLang(elements.getString("LANG"));
+							sub.setLang(ISO639.get(elements.getString("LANG")));
 							sub.setSubtitlesTrackTitleFromMetadata(elements.getString("TITLE"));
 							sub.setType(SubtitleType.valueOfStableIndex(elements.getInt("TYPE")));
 							media.getSubtitleTracksList().add(sub);
@@ -466,7 +467,7 @@ public class DLNAMediaDatabase implements Runnable {
 				updateStatment.setInt(2, subtitleTrack.getId());
 				try (ResultSet rs = updateStatment.executeQuery()) {
 					if (rs.next()) {
-						rs.updateString("LANG", left(subtitleTrack.getLang(), SIZE_LANG));
+						rs.updateString("LANG", left(subtitleTrack.getLang() != null ? subtitleTrack.getLang().getCode() : "", SIZE_LANG));
 						rs.updateString("TITLE", left(subtitleTrack.getSubtitlesTrackTitleFromMetadata(), SIZE_TITLE));
 						rs.updateInt("TYPE", subtitleTrack.getType().getStableIndex());
 						rs.updateRow();
@@ -474,7 +475,7 @@ public class DLNAMediaDatabase implements Runnable {
 						insertStatement.clearParameters();
 						insertStatement.setInt(1, fileId);
 						insertStatement.setInt(2, subtitleTrack.getId());
-						insertStatement.setString(3, left(subtitleTrack.getLang(), SIZE_LANG));
+						insertStatement.setString(3, left(subtitleTrack.getLang() != null ? subtitleTrack.getLang().getCode() : "", SIZE_LANG));
 						insertStatement.setString(4, left(subtitleTrack.getSubtitlesTrackTitleFromMetadata(), SIZE_TITLE));
 						insertStatement.setInt(5, subtitleTrack.getType().getStableIndex());
 						insertStatement.executeUpdate();
@@ -521,7 +522,7 @@ public class DLNAMediaDatabase implements Runnable {
 				updateStatment.setInt(2, audioTrack.getId());
 				try (ResultSet rs = updateStatment.executeQuery()) {
 					if (rs.next()) {
-						rs.updateString("LANG", left(audioTrack.getLang(), SIZE_LANG));
+						rs.updateString("LANG", left(audioTrack.getLang() != null ? audioTrack.getLang().getCode() : "", SIZE_LANG));
 						rs.updateString("TITLE", left(audioTrack.getAudioTrackTitleFromMetadata(), SIZE_TITLE));
 						rs.updateInt("NRAUDIOCHANNELS", audioTrack.getNumberOfChannelsRaw());
 						rs.updateInt("SAMPLEFREQ", audioTrack.getSampleFrequencyRaw());
@@ -542,7 +543,7 @@ public class DLNAMediaDatabase implements Runnable {
 						insertStatement.clearParameters();
 						insertStatement.setInt(1, fileId);
 						insertStatement.setInt(2, audioTrack.getId());
-						insertStatement.setString(3, left(audioTrack.getLang(), SIZE_LANG));
+						insertStatement.setString(3, left(audioTrack.getLang() != null ? audioTrack.getLang().getCode() : "", SIZE_LANG));
 						insertStatement.setString(4, left(audioTrack.getAudioTrackTitleFromMetadata(), SIZE_TITLE));
 						insertStatement.setInt(5, audioTrack.getNumberOfChannelsRaw());
 						insertStatement.setInt(6, audioTrack.getSampleFrequencyRaw());

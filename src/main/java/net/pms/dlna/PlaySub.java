@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import net.pms.configuration.RendererConfiguration;
 import net.pms.formats.v2.SubtitleType;
+import net.pms.util.ISO639;
 import net.pms.util.OpenSubtitle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,7 +53,7 @@ public class PlaySub extends DLNAResource {
 		}
 		sub.setType(SubtitleType.SUBRIP);
 		sub.setId(1);
-		sub.setLang(lang);
+		sub.setLang(ISO639.get(lang));
 		real.setMediaSubtitle(sub);
 	}
 

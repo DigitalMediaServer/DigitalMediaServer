@@ -529,11 +529,11 @@ public class VLCVideo extends Player {
 		// Handle audio language
 		if (params.aid != null) {
 			// User specified language at the client, acknowledge it
-			if (params.aid.getLang() == null || params.aid.getLang().equals("und")) {
+			if (params.aid.getLang() == null || params.aid.getLang() == ISO639.UND) {
 				// VLC doesn't understand "und", so try to get audio track by ID
 				cmdList.add("--audio-track=" + params.aid.getId());
 			} else {
-				cmdList.add("--audio-language=" + params.aid.getLang());
+				cmdList.add("--audio-language=" + params.aid.getLang().getCode());
 			}
 		} else {
 			// Not specified, use language from GUI
@@ -565,7 +565,7 @@ public class VLCVideo extends Player {
 					cmdList.add("--sub-file");
 					cmdList.add(externalSubtitlesFileName);
 				}
-			} else if (params.sid.getLang() != null && !params.sid.getLang().equals("und")) { // Load by ID (better)
+			} else if (params.sid.getLang() != null && params.sid.getLang() != ISO639.UND) { // Load by ID (better)
 				cmdList.add("--sub-track=" + params.sid.getId());
 			} else { // VLC doesn't understand "und", but does understand a nonexistent track
 				cmdList.add("--sub-" + disableSuffix);

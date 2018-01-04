@@ -38,7 +38,7 @@ import net.pms.image.ImagesUtil.ScaleType;
 import net.pms.io.OutputParams;
 import net.pms.io.ProcessWrapperImpl;
 import net.pms.util.FileUtil;
-import net.pms.util.Iso639;
+import net.pms.util.ISO639;
 import net.pms.util.MPlayerDvdAudioStreamChannels;
 import net.pms.util.MPlayerDvdAudioStreamTypes;
 import net.pms.util.ProcessUtil;
@@ -406,8 +406,8 @@ public class DVDISOTitle extends DLNAResource {
 			audio.setNumberOfChannels(
 				MPlayerDvdAudioStreamChannels.typeOf(matcher.group("Channels")).getNumberOfChannels()
 			);
-			String languageCode = Iso639.getISOCode(matcher.group("Language"));
-			audio.setLang(isBlank(languageCode) ? DLNAMediaLang.UND : languageCode);
+			ISO639 language = ISO639.getCode(matcher.group("Language"));
+			audio.setLang(language == null ? ISO639.UND : language);
 			try {
 				audio.setId(Integer.parseInt(matcher.group("AID")));
 			} catch (NumberFormatException e) {
@@ -488,8 +488,8 @@ public class DVDISOTitle extends DLNAResource {
 				);
 				LOGGER.trace("", e);
 			}
-			String languageCode = Iso639.getISOCode(matcher.group("Language"));
-			subtitle.setLang(isBlank(languageCode) ? DLNAMediaLang.UND : languageCode);
+			ISO639 language = ISO639.get(matcher.group("Language"));
+			subtitle.setLang(language == null ? ISO639.UND : language);
 
 			return subtitle;
 		}

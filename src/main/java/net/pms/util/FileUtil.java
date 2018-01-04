@@ -1258,18 +1258,18 @@ public class FileUtil {
 							}
 
 							if (!exists) {
-								String forcedLang = null;
+								ISO639 forcedLang = null;
 								DLNAMediaSubtitle sub = new DLNAMediaSubtitle();
 								sub.setId(100 + (media == null ? 0 : media.getSubtitleTracksList().size())); // fake id, not used
-								if (code.length() == 0 || !Iso639.codeIsValid(code)) {
-									sub.setLang(DLNAMediaSubtitle.UND);
+								if (code.length() == 0 || ISO639.getCode(code) == null) {
+									sub.setLang(ISO639.UND);
 									sub.setType(SubtitleType.valueOfFileExtension(ext));
 									if (code.length() > 0) {
 										sub.setSubtitlesTrackTitleFromMetadata(code);
 										if (sub.getSubtitlesTrackTitleFromMetadata().contains("-")) {
-											String flavorLang = sub.getSubtitlesTrackTitleFromMetadata().substring(0, sub.getSubtitlesTrackTitleFromMetadata().indexOf('-'));
+											ISO639 flavorLang = ISO639.get(sub.getSubtitlesTrackTitleFromMetadata().substring(0, sub.getSubtitlesTrackTitleFromMetadata().indexOf('-')));
 											String flavorTitle = sub.getSubtitlesTrackTitleFromMetadata().substring(sub.getSubtitlesTrackTitleFromMetadata().indexOf('-') + 1);
-											if (Iso639.codeIsValid(flavorLang)) {
+											if (flavorLang != null) {
 												sub.setLang(flavorLang);
 												sub.setSubtitlesTrackTitleFromMetadata(flavorTitle);
 												forcedLang = flavorLang;
@@ -1277,9 +1277,9 @@ public class FileUtil {
 										}
 									}
 								} else {
-									sub.setLang(code);
+									forcedLang = ISO639.getCode(code);
+									sub.setLang(forcedLang);
 									sub.setType(SubtitleType.valueOfFileExtension(ext));
-									forcedLang = code;
 								}
 
 								try {

@@ -5,6 +5,8 @@ import java.util.*;
 import net.pms.configuration.RendererConfiguration;
 import net.pms.dlna.virtual.VirtualFolder;
 import net.pms.formats.v2.SubtitleType;
+import net.pms.util.ISO639;
+import net.pms.util.Language;
 import net.pms.util.OpenSubtitle;
 import net.pms.util.UMSUtils;
 import org.slf4j.Logger;
@@ -57,7 +59,7 @@ public class SubSelFile extends VirtualFolder {
 			String name = OpenSubtitle.getName(key);
 			sub.setType(SubtitleType.SUBRIP);
 			sub.setId(101);
-			sub.setLang(lang);
+			sub.setLang(ISO639.get(lang));
 			sub.setLiveSub((String) data.get(key), OpenSubtitle.subFile(name + "_" + lang));
 			DLNAResource nrf = orig.clone();
 			nrf.setMediaSubtitle(sub);
@@ -70,10 +72,12 @@ public class SubSelFile extends VirtualFolder {
 	}
 
 	private static class SubSort implements Comparator<String> {
-		private List<String> langs;
+		private List<String> langs = new ArrayList<>();
 
 		SubSort(RendererConfiguration r) {
-			langs = Arrays.asList(UMSUtils.getLangList(r, true).split(","));
+			for (Language language : UMSUtils.getLangList(r)) {
+				langs.add(language.getCode());
+			}
 		}
 
 		@Override

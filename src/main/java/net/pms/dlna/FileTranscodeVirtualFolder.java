@@ -27,6 +27,7 @@ import net.pms.configuration.RendererConfiguration;
 import net.pms.dlna.virtual.VirtualFolder;
 import net.pms.encoders.Player;
 import net.pms.encoders.PlayerFactory;
+import net.pms.util.ISO639;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -78,25 +79,21 @@ public class FileTranscodeVirtualFolder extends VirtualFolder {
 			this.players = players;
 		}
 
-		private static String getMediaAudioLanguage(DLNAResource dlna) {
+		private static ISO639 getMediaAudioLanguage(DLNAResource dlna) {
 			return dlna.getMediaAudio() == null ? null : dlna.getMediaAudio().getLang();
 		}
 
-		private static String getMediaSubtitleLanguage(DLNAResource dlna) {
+		private static ISO639 getMediaSubtitleLanguage(DLNAResource dlna) {
 			return dlna.getMediaSubtitle() == null ? null : dlna.getMediaSubtitle().getLang();
 		}
 
-		private static int compareLanguage(String lang1, String lang2) {
-			if (lang1 == null && lang2 == null) {
-				return 0;
-			} else if (lang1 != null && lang2 != null) {
-				return lang1.compareToIgnoreCase(lang2);
-			} else {
-				if (lang1 == null) {
-					return -1;
-				}
+		private static int compareLanguage(ISO639 lang1, ISO639 lang2) {
+			if (lang1 == null) {
+				return lang2 != null ? -1 : 0;
+			} else if (lang2 == null) {
 				return 1;
 			}
+			return lang1.compareTo(lang2);
 		}
 
 		@Override
