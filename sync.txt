@@ -1,4 +1,4 @@
-UMS sync with: d4e30cd0a93fe457a8ecaef6069c87522657c26b 6.8.0
+UMS sync with: 6b2f14be8c21e808c5b3edc4e69d15948df0001c Added Samsung 8 Series config
 
 Skipped:
 a4a099c7efcaf6dc8a28402a29eade757a2ce78d The ugly hack to solve problem when the TotalMatches are changed
