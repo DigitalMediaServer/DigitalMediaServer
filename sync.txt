@@ -1,4 +1,4 @@
-UMS sync with: 6b2f14be8c21e808c5b3edc4e69d15948df0001c Added Samsung 8 Series config
+UMS sync with: a394775aac7808a712be62786c7656a883514396 Updated FetchTV config
 
 Skipped:
 a4a099c7efcaf6dc8a28402a29eade757a2ce78d The ugly hack to solve problem when the TotalMatches are changed
