@@ -48,7 +48,6 @@ public class DLNAMediaSubtitle extends DLNAMediaLang implements Cloneable {
 
 	private String liveSubURL;
 	private String liveSubFile;
-	private boolean isStreamable = false;
 	private File convertedFile;
 
 	/**
@@ -299,14 +298,6 @@ public class DLNAMediaSubtitle extends DLNAMediaLang implements Cloneable {
 
 	public String getLiveSubFile() {
 		return liveSubFile;
-	}
-
-	public boolean isStreamable() {
-		return isExternal() && isStreamable;
-	}
-
-	public void setSubsStreamable(boolean isStreamable) {
-		this.isStreamable = isStreamable;
 	}
 
 	public void setConvertedFile (File convertedFile) {
