@@ -27,6 +27,7 @@ import java.io.UnsupportedEncodingException;
 import java.io.Writer;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.sql.Timestamp;
 import java.util.Calendar;
@@ -1237,6 +1238,8 @@ public class StringUtil {
 	 * Formats a XML string to be easier to read with newlines and indentations.
 	 *
 	 * @param xml the {@link String} to "prettify".
+	 * @param charset the {@link Charset} to use when reading {@code xml} or
+	 *            {@code null} for {@link StandardCharsets#UTF_8}.
 	 * @param indentWidth the width of one indentation in number of characters.
 	 * @return The "prettified" {@link String}.
 	 * @throws SAXException If a parsing error occurs.
@@ -1246,15 +1249,44 @@ public class StringUtil {
 	 */
 	public static String prettifyXML(
 		String xml,
+		Charset charset,
 		int indentWidth
 	) throws SAXException, ParserConfigurationException, XPathExpressionException, TransformerException {
+		if (isBlank(xml)) {
+			return "";
+		}
+		if (charset == null) {
+			charset = StandardCharsets.UTF_8;
+		}
+		// Turn XML string into a document
 		try {
-			// Turn XML string into a document
 			Document xmlDocument =
-				SafeDocumentBuilderFactory.newInstance().
-				newDocumentBuilder().
-				parse(new InputSource(new ByteArrayInputStream(xml.getBytes("utf-8"))));
+				SafeDocumentBuilderFactory.newInstance()
+				.newDocumentBuilder()
+				.parse(new InputSource(new ByteArrayInputStream(xml.getBytes(charset))));
+			return prettifyXML(xmlDocument, indentWidth);
+		} catch (IOException e) {
+			LOGGER.warn("Failed to read XML document, returning the source document: {}", e.getMessage());
+			LOGGER.trace("", e);
+			return xml;
+		}
+	}
 
+	/**
+	 * Formats a XML string to be easier to read with newlines and indentations.
+	 *
+	 * @param xmlDocument the {@link Document} to "prettify".
+	 * @param indentWidth the width of one indentation in number of characters.
+	 * @return The "prettified" {@link String}.
+	 * @throws SAXException If a parsing error occurs.
+	 * @throws ParserConfigurationException If a parsing error occurs.
+	 * @throws XPathExpressionException If a parsing error occurs.
+	 * @throws TransformerException If a parsing error occurs.
+	 */
+	public static String prettifyXML(
+		Document xmlDocument,
+		int indentWidth
+	) throws SAXException, ParserConfigurationException, XPathExpressionException, TransformerException {
 			// Remove whitespaces outside tags
 			xmlDocument.normalize();
 			XPath xPath = XPathFactory.newInstance().newXPath();
@@ -1281,11 +1313,6 @@ public class StringUtil {
 			StringWriter stringWriter = new StringWriter();
 			transformer.transform(new DOMSource(xmlDocument), new StreamResult(stringWriter));
 			return stringWriter.toString();
-		} catch (IOException e) {
-			LOGGER.warn("Failed to read XML document, returning the source document: {}", e.getMessage());
-			LOGGER.trace("", e);
-			return xml;
-		}
 	}
 
 	/**
