@@ -27,12 +27,10 @@ import java.util.HashSet;
 import net.pms.PMS;
 import net.pms.configuration.FormatConfiguration;
 import net.pms.configuration.PmsConfiguration;
-import net.pms.configuration.RendererConfiguration;
 import net.pms.formats.FormatFactory;
 import net.pms.formats.FormatType;
 import net.pms.io.BasicSystemUtils;
 import net.pms.util.FileUtil;
-import net.pms.util.FullyPlayed;
 import net.pms.util.ProcessUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -351,8 +349,8 @@ public class RealFile extends MapFile {
 
 	@SuppressWarnings("deprecation")
 	@Override
-	protected String getDisplayNameBase(RendererConfiguration renderer, PmsConfiguration configuration) {
-		String displayName = super.getDisplayNameBase(renderer, configuration);
+	protected String getDisplayNameBase(PmsConfiguration configuration) {
+		String displayName = super.getDisplayNameBase(configuration);
 		if (isFolder()) {
 			return displayName;
 		}
@@ -368,7 +366,6 @@ public class RealFile extends MapFile {
 		} else if (configuration.isHideExtensions()) {
 			displayName = FileUtil.getFileNameWithoutExtension(displayName);
 		}
-		displayName = FullyPlayed.prefixDisplayName(displayName, this, renderer);
 
 		return displayName;
 	}

@@ -1553,12 +1553,11 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 	 * none should be displayed. The "base" name is the name of this
 	 * {@link DLNAResource} without any prefix or suffix.
 	 *
-	 * @param renderer the {@link RendererConfiguration} to use.
 	 * @param configuration the {@link PmsConfiguration} to use.
 	 * @return The base display name or {@code ""}.
 	 */
 	@SuppressWarnings("unused")
-	protected String getDisplayNameBase(RendererConfiguration renderer, PmsConfiguration configuration) {
+	protected String getDisplayNameBase(PmsConfiguration configuration) {
 		// this unescape trick is to solve the problem of a name containing
 		// unicode stuff like \u005e
 		// if it's done here it will fix this for all objects
@@ -1717,7 +1716,7 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 				DURATION_TIME_FORMAT)
 			);
 		} else {
-			sb.append(getDisplayNameBase(mediaRenderer, configurationSpecificToRenderer));
+			sb.append(getDisplayNameBase(configurationSpecificToRenderer));
 		}
 
 		// Suffix
@@ -2219,6 +2218,9 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 		String title = isFolder || subsAreValidForStreaming ?
 			getDisplayName(mediaRenderer, false) :
 			mediaRenderer.getUseSameExtension(getDisplayName(mediaRenderer, false));
+		if (!mediaRenderer.isThumbnails() && this instanceof RealFile && FullyPlayed.isFullyPlayedMark(((RealFile) this).getFile())) {
+			title = FullyPlayed.addFullyPlayedNamePrefix(title, this);
+		}
 
 		title = resumeStr(title);
 		addXMLTagAndAttribute(
