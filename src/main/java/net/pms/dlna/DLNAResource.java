@@ -2033,7 +2033,7 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 										matchedSub = params.sid;
 										String file = OpenSubtitle.fetchSubs(matchedSub.getLiveSubURL(), matchedSub.getLiveSubFile());
 										if (!StringUtils.isEmpty(file)) {
-											matchedSub.setExternalFile(new File(file), null);
+											matchedSub.setExternalFile(new File(file));
 											params.sid = matchedSub;
 											media_subtitle = params.sid;
 											finishedMatchingPreferences = true;
@@ -2174,7 +2174,7 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 															LOGGER.trace("Forced subtitles track: " + sub);
 
 															if (sub.getExternalFile() != null) {
-																LOGGER.trace("Found external forced file: " + sub.getExternalFile().getAbsolutePath());
+																LOGGER.trace("Found external forced file: " + sub.getExternalFile().getPath());
 															}
 
 															params.sid = sub;
@@ -2190,7 +2190,7 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 												} else {
 													LOGGER.trace("Found subtitles track: " + sub);
 													if (sub.getExternalFile() != null) {
-														LOGGER.trace("Found external file: " + sub.getExternalFile().getAbsolutePath());
+														LOGGER.trace("Found external file: " + sub.getExternalFile().getPath());
 														params.sid = sub;
 														media_subtitle = params.sid;
 														break;
@@ -2374,7 +2374,7 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 					mediaRenderer.isExternalSubtitlesFormatSupported(media_subtitle, media)
 				) {
 					subsAreValidForStreaming = true;
-					LOGGER.trace("Setting subsAreValidForStreaming to true for " + media_subtitle.getExternalFile().getName());
+					LOGGER.trace("Setting subsAreValidForStreaming to true for " + media_subtitle.getName());
 				} else {
 					LOGGER.trace("Not setting subsAreValidForStreaming and it is false for " + getName());
 				}

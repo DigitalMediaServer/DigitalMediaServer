@@ -197,7 +197,7 @@ public class FFMpegVideo extends Player {
 					} else if (!isSubsASS) { // When subs are not converted and they are not in the ASS format and video is 3D then subs need conversion to 3D
 						originalSubsFilename = SubtitleUtils.getSubtitles(dlna, media, params, configuration, SubtitleType.ASS).getAbsolutePath();
 					} else {
-						originalSubsFilename = params.sid.getExternalFile().getAbsolutePath();
+						originalSubsFilename = params.sid.getExternalFile().getPath();
 					}
 				} else if (params.sid.isExternal()) {
 					if (
@@ -205,7 +205,7 @@ public class FFMpegVideo extends Player {
 						!renderer.isExternalSubtitlesFormatSupported(params.sid, media)
 					) {
 						// Only transcode subtitles if they aren't streamable
-						originalSubsFilename = params.sid.getExternalFile().getAbsolutePath();
+						originalSubsFilename = params.sid.getExternalFile().getPath();
 					}
 				} else if (params.sid.isEmbedded()) {
 					originalSubsFilename = dlna.getFileName();
@@ -255,7 +255,7 @@ public class FFMpegVideo extends Player {
 				} else {
 					// External
 					videoFilterOptions.add("-i");
-					videoFilterOptions.add(params.sid.getExternalFile().getAbsolutePath());
+					videoFilterOptions.add(params.sid.getExternalFile().getPath());
 					subsFilter.append("[0:v][1:s]overlay"); // this assumes the sub file is single-language
 				}
 			}
