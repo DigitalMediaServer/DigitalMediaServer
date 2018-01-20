@@ -24,6 +24,8 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Locale;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import net.pms.formats.v2.SubtitleType;
 import static net.pms.formats.v2.SubtitleType.UNKNOWN;
 import static net.pms.util.Constants.CHARSET_UTF_8;
@@ -39,10 +41,12 @@ import org.slf4j.LoggerFactory;
  */
 public class DLNAMediaSubtitle extends DLNAMediaLang implements Cloneable {
 	private static final Logger LOGGER = LoggerFactory.getLogger(DLNAMediaSubtitle.class);
+	@Nonnull
 	private SubtitleType type = UNKNOWN;
 
 	private String subtitlesTrackTitleFromMetadata;
 
+	/** The external {@link File}, always in its "absolute" version */
 	private File externalFile;
 	private String subsCharacterSet;
 
@@ -53,8 +57,8 @@ public class DLNAMediaSubtitle extends DLNAMediaLang implements Cloneable {
 	/**
 	 * Returns whether or not the subtitles are embedded.
 	 *
-	 * @return True if the subtitles are embedded, false otherwise.
-	 * @since 1.51.0
+	 * @return {@code true} if the subtitles are embedded, {@code false}
+	 *         otherwise.
 	 */
 	public boolean isEmbedded() {
 		return (externalFile == null);
@@ -63,8 +67,8 @@ public class DLNAMediaSubtitle extends DLNAMediaLang implements Cloneable {
 	/**
 	 * Returns whether or not the subtitles are external.
 	 *
-	 * @return True if the subtitles are external file, false otherwise.
-	 * @since 1.70.0
+	 * @return {@code true} if the subtitles are external file, {@code false}
+	 *         otherwise.
 	 */
 	public boolean isExternal() {
 		return !isEmbedded();
@@ -73,9 +77,11 @@ public class DLNAMediaSubtitle extends DLNAMediaLang implements Cloneable {
 	@Override
 	public String toString() {
 		StringBuilder result = new StringBuilder();
-		result.append("id: ");
-		result.append(getId());
-		result.append(", type: ");
+		if (isEmbedded()) {
+			result.append("Embedded, id: ").append(getId()).append(", type: ");
+		} else {
+			result.append("External, type: ");
+		}
 		result.append(type);
 
 		if (isNotBlank(subtitlesTrackTitleFromMetadata)) {
@@ -86,9 +92,9 @@ public class DLNAMediaSubtitle extends DLNAMediaLang implements Cloneable {
 		result.append(", lang: ");
 		result.append(getLang());
 
-		if (externalFile != null) {
+		if (isExternal()) {
 			result.append(", externalFile: ");
-			result.append(externalFile.toString());
+			result.append(externalFile);
 			result.append(", external file character set: ");
 			result.append(subsCharacterSet);
 		}
@@ -101,29 +107,25 @@ public class DLNAMediaSubtitle extends DLNAMediaLang implements Cloneable {
 		return result.toString();
 	}
 
-	/**
-	 * @deprecated charset is autodetected for text subtitles after setExternalFile()
-	 */
-	@Deprecated
-	public void checkUnicode() {
-	}
-
 	@Override
 	protected Object clone() throws CloneNotSupportedException {
 		return super.clone();
 	}
 
 	/**
-	 * @return the type
+	 * @return The {@link SubtitleType}.
 	 */
+	@Nonnull
 	public SubtitleType getType() {
 		return type;
 	}
 
 	/**
-	 * @param type the type to set
+	 * Sets the {@link SubtitleType} for this instance.
+	 *
+	 * @param type the {@link SubtitleType} to set.
 	 */
-	public void setType(SubtitleType type) {
+	public void setType(@Nonnull SubtitleType type) {
 		if (type == null) {
 			throw new IllegalArgumentException("Can't set null SubtitleType.");
 		}
@@ -131,153 +133,152 @@ public class DLNAMediaSubtitle extends DLNAMediaLang implements Cloneable {
 	}
 
 	/**
-	 * @deprecated use getSubtitlesTrackTitleFromMetadata()
+	 * @return The subtitles title if parsed.
 	 */
-	@Deprecated
-	public String getFlavor() {
-		return getSubtitlesTrackTitleFromMetadata();
-	}
-
-	/**
-	 * @deprecated use setSubtitlesTrackTitleFromMetadata()
-	 */
-	@Deprecated
-	public void setFlavor(String value) {
-		setSubtitlesTrackTitleFromMetadata(value);
-	}
-
+	@Nullable
 	public String getSubtitlesTrackTitleFromMetadata() {
 		return subtitlesTrackTitleFromMetadata;
 	}
 
-	public void setSubtitlesTrackTitleFromMetadata(String value) {
+	/**
+	 * Sets the parsed subtitles title.
+	 *
+	 * @param value the subtitles title.
+	 */
+	public void setSubtitlesTrackTitleFromMetadata(@Nullable String value) {
 		this.subtitlesTrackTitleFromMetadata = value;
 	}
 
 	/**
-	 * @deprecated use {@link #FileUtil.convertFileFromUtf16ToUtf8()} for UTF-16 -> UTF-8 conversion.
+	 * @return The absolute external {@link File} or {@code null}.
 	 */
-	@Deprecated
-	public File getPlayableExternalFile() {
-		return getExternalFile();
-	}
-
-	/**
-	 * @return the externalFile
-	 */
+	@Nullable
 	public File getExternalFile() {
 		return externalFile;
 	}
 
 	/**
-	 * Set external subs file, detect its Character Set and Language. When the {@code forcedLang} is not {@code null},
-	 * based on the language tag in the file name e.g {@code subsname.en.srt}, than it has priority over the detected language.
-	 *
-	 * @param externalFile the externalFile to set
-	 * @param forcedLang language forced by file name language tag
+	 * @return The file name of the subtitles file if applicable or an empty
+	 *         {@link String}.
 	 */
-	public void setExternalFile(File externalFile, ISO639 forcedLang) throws FileNotFoundException {
-		if (externalFile == null) {
-			throw new FileNotFoundException("Can't read file: no file supplied");
-		} else if (!FileUtil.getFilePermissions(externalFile).isReadable()) {
-			throw new FileNotFoundException("Insufficient permission to read " + externalFile.getAbsolutePath());
-		}
-
-		this.externalFile = externalFile;
-		setFileSubsCharacterSet(forcedLang);
+	@Nonnull
+	public String getName() {
+		return externalFile == null ? "" : externalFile.getName();
 	}
 
 	/**
-	 * Detects and set Character Set and language of the subs file. When the {@code forcedLang} is not {@code null}
-	 * than it as priority over the detected language.
+	 * Sets the external subtitles {@link File} and detect and sets its
+	 * character set. If the language isn't set/known and it is detected, the
+	 * language is also set.
 	 *
-	 * @param forcedLang forced language
+	 * @param externalFile the external {@link File} to set.
+	 * @throws FileNotFoundException If {@code externalFile} can't be read or is
+	 *             {@code null}.
 	 */
-	private void setFileSubsCharacterSet(ISO639 forcedLang) {
-		if (type.isPicture()) {
-			subsCharacterSet = null;
-		} else {
+	public void setExternalFile(@Nonnull File externalFile) throws FileNotFoundException {
+		if (externalFile == null) {
+			throw new FileNotFoundException("Can't read file: no file supplied");
+		}
+		this.externalFile = externalFile.getAbsoluteFile();
+		if (!FileUtil.getFilePermissions(this.externalFile).isReadable()) {
+			throw new FileNotFoundException("Insufficient permission to read " + externalFile.getAbsolutePath());
+		}
+
+		setFileSubsCharacterSet();
+	}
+
+	/**
+	 * Detects and sets the subtitles' character set. If the language isn't
+	 * set/known and it is detected, the language is also set.
+	 */
+	private void setFileSubsCharacterSet() {
+		if (externalFile != null && !type.isPicture()) {
 			try {
 				CharsetMatch match = FileUtil.getFileCharsetMatch(externalFile);
 				if (match != null) {
 					subsCharacterSet = match.getName().toUpperCase(Locale.ROOT);
-					// returned Charset can have additional info like ISO-8859-8-I but
+					// Returned Charset can have additional info like ISO-8859-8-I but
 					// FFmpeg video filter knows only ISO-8859-8 so extract the additional "-I".
 					if (subsCharacterSet.split("-").length > 3) {
 						subsCharacterSet = subsCharacterSet.substring(0, subsCharacterSet.lastIndexOf("-"));
 					}
 
-					if (forcedLang == null) { // set the detected language when the language is not specified in the filename
-						lang = ISO639.get(match.getLanguage());
+					// Set the detected language if is isn't already set
+					if (lang == null || lang == ISO639.UND) {
+						ISO639 tmpLanguage = ISO639.get(match.getLanguage());
+						if (tmpLanguage != null) {
+							lang = tmpLanguage;
+						}
 					}
 
-					LOGGER.debug("Set detected charset \"{}\" and language \"{}\" for {}", subsCharacterSet, lang, externalFile.getAbsolutePath());
+					LOGGER.debug("Set detected charset \"{}\" and language \"{}\" for {}", subsCharacterSet, lang, externalFile);
 				} else {
 					subsCharacterSet = null;
-					LOGGER.debug("No charset detected for {}", externalFile.getAbsolutePath());
+					LOGGER.debug("No charset detected for {}", externalFile);
 				}
 
 			} catch (IOException ex) {
-				subsCharacterSet = null;
-				LOGGER.warn("Exception during external file charset detection: ", ex.getMessage());
+				LOGGER.warn("Exception during external file charset detection: {}", ex.getMessage());
+				LOGGER.trace("", ex);
 			}
+		} else {
+			subsCharacterSet = null;
 		}
 	}
 
 	/**
-	 * @deprecated use {@link #setSubCharacterSet(String)}
+	 * Sets the subtitles character set.
+	 *
+	 * @param charSet the subtitles character set name.
 	 */
-	@Deprecated
-	public void setExternalFileCharacterSet(String charSet) {
-		setSubCharacterSet(charSet);
-	}
-
-	public void setSubCharacterSet(String charSet) {
+	public void setSubCharacterSet(@Nullable String charSet) {
 		subsCharacterSet = charSet;
 	}
 
 	/**
-	 * @deprecated use {@link #getSubCharacterSet()}
+	 * @return The subtitles character set name.
 	 */
-	@Deprecated
-	public String getExternalFileCharacterSet() {
-		return getSubCharacterSet();
-	}
-
+	@Nullable
 	public String getSubCharacterSet() {
 		return subsCharacterSet;
 	}
 
 	/**
-	 * @return true if subtitles is UTF-8 encoded, false otherwise.
+	 * @return {@code true} if the subtitles are {@code UTF-8} encoded,
+	 *         {@code false} otherwise.
 	 */
 	public boolean isSubsUtf8() {
 		return equalsIgnoreCase(subsCharacterSet, CHARSET_UTF_8);
 	}
 
 	/**
-	 * @return true if external subtitles file is UTF-8 encoded, false otherwise.
+	 * @return {@code true} if the external subtitles file is {@code UTF-8}
+	 *         encoded, {@code false} otherwise.
 	 */
 	public boolean isExternalFileUtf8() {
 		return FileUtil.isCharsetUTF8(subsCharacterSet);
 	}
 
 	/**
-	 * @return true if external subtitles file is UTF-16 encoded, false otherwise.
+	 * @return {@code true} if the external subtitles file is {@code UTF-16}
+	 *         encoded, {@code false} otherwise.
 	 */
 	public boolean isExternalFileUtf16() {
 		return FileUtil.isCharsetUTF16(subsCharacterSet);
 	}
 
 	/**
-	 * @return true if external subtitles file is UTF-32 encoded, false otherwise.
+	 * @return {@code true} if the external subtitles file is {@code UTF-32}
+	 *         encoded, {@code false} otherwise.
 	 */
 	public boolean isExternalFileUtf32() {
 		return FileUtil.isCharsetUTF32(subsCharacterSet);
 	}
 
 	/**
-	 * @return true if external subtitles file is UTF-8, UTF-16 or UTF-32 encoded, false otherwise.
+	 * @return {@code true} if the external subtitles file is {@code UTF-8},
+	 *         {@code UTF-16} or {@code UTF-32} encoded, {@code false}
+	 *         otherwise.
 	 */
 	public boolean isExternalFileUtf() {
 		return (isExternalFileUtf8() || isExternalFileUtf16() || isExternalFileUtf32());
@@ -300,10 +301,19 @@ public class DLNAMediaSubtitle extends DLNAMediaLang implements Cloneable {
 		return liveSubFile;
 	}
 
-	public void setConvertedFile (File convertedFile) {
+	/**
+	 * Sets the converted {@link File}.
+	 *
+	 * @param convertedFile the converted {@link File}.
+	 */
+	public void setConvertedFile(@Nullable File convertedFile) {
 		this.convertedFile = convertedFile;
 	}
 
+	/**
+	 * @return The converted {@link File} or {@code null}.
+	 */
+	@Nullable
 	public File getConvertedFile() {
 		return convertedFile;
 	}

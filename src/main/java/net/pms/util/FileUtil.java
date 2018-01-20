@@ -1378,7 +1378,7 @@ public class FileUtil {
 									} else if (equalsIgnoreCase(ext, "sub") && sub.getType() == SubtitleType.VOBSUB) {
 										// VOBSUB
 										try {
-											sub.setExternalFile(f, null);
+											sub.setExternalFile(f);
 										} catch (FileNotFoundException ex) {
 											LOGGER.warn("File not found during external subtitles scan: {}", ex.getMessage());
 											LOGGER.trace("", ex);
@@ -1390,7 +1390,6 @@ public class FileUtil {
 							}
 
 							if (!exists) {
-								ISO639 forcedLang = null;
 								DLNAMediaSubtitle sub = new DLNAMediaSubtitle();
 								sub.setId(100 + (media == null ? 0 : media.getSubtitleTracksList().size())); // fake id, not used
 								if (code.length() == 0 || ISO639.getCode(code) == null) {
@@ -1409,18 +1408,16 @@ public class FileUtil {
 											if (flavorLang != null) {
 												sub.setLang(flavorLang);
 												sub.setSubtitlesTrackTitleFromMetadata(flavorTitle);
-												forcedLang = flavorLang;
 											}
 										}
 									}
 								} else {
-									forcedLang = ISO639.getCode(code);
-									sub.setLang(forcedLang);
+									sub.setLang(ISO639.getCode(code));
 									sub.setType(SubtitleType.valueOfFileExtension(ext));
 								}
 
 								try {
-									sub.setExternalFile(f, forcedLang);
+									sub.setExternalFile(f);
 								} catch (FileNotFoundException ex) {
 									LOGGER.warn("File not found during external subtitles scan: {}", ex.getMessage());
 									LOGGER.trace("", ex);
@@ -1449,13 +1446,14 @@ public class FileUtil {
 	 *         match was found.
 	 * @throws IOException
 	 */
-	@Nonnull
+	@Nullable
 	public static CharsetMatch getFileCharsetMatch(@Nonnull File file) throws IOException {
 		InputStream in = new BufferedInputStream(new FileInputStream(file));
 		CharsetDetector detector = new CharsetDetector();
 		detector.setText(in);
 		// Results are sorted on descending confidence, so we're only after the first one.
-		return detector.detectAll()[0];
+		CharsetMatch[] matches = detector.detectAll();
+		return matches.length == 0 ? null : matches[0];
 	}
 
 	/**
@@ -1472,6 +1470,9 @@ public class FileUtil {
 			return null;
 		}
 		CharsetMatch match = getFileCharsetMatch(file);
+		if (match == null) {
+			return null;
+		}
 		try {
 			if (Charset.isSupported(match.getName())) {
 				LOGGER.debug("Detected charset \"{}\" in file \"{}\"", match.getName(), file.getAbsolutePath());
@@ -1505,6 +1506,9 @@ public class FileUtil {
 			return null;
 		}
 		CharsetMatch match = getFileCharsetMatch(file);
+		if (match == null) {
+			return null;
+		}
 		try {
 			if (Charset.isSupported(match.getName())) {
 				LOGGER.debug("Detected charset \"{}\" in file \"{}\"", match.getName(), file.getAbsolutePath());

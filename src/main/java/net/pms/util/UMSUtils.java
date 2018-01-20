@@ -305,7 +305,7 @@ public class UMSUtils {
 								sb.append(',');
 								if (sub.isExternal()) {
 									sb.append("file:");
-									sb.append(sub.getExternalFile().getAbsolutePath());
+									sb.append(sub.getExternalFile().getPath());
 								} else {
 									sb.append("id:");
 									sb.append("").append(sub.getId());
@@ -448,7 +448,7 @@ public class UMSUtils {
 							subData = tmp[1];
 							if (subData.startsWith("file:")) {
 								String sFile = subData.substring(5);
-								s.setExternalFile(new File(sFile), null);
+								s.setExternalFile(new File(sFile));
 								s.setId(100);
 								SubtitleType t = SubtitleType.valueOfFileExtension(FileUtil.getExtension(sFile));
 								s.setType(t);

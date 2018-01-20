@@ -46,7 +46,7 @@ public class PlaySub extends DLNAResource {
 		}
 		DLNAMediaSubtitle sub = new DLNAMediaSubtitle();
 		try {
-			sub.setExternalFile(subFile, null);
+			sub.setExternalFile(subFile);
 		} catch (FileNotFoundException e) {
 			LOGGER.info("Failed to download subtitle file: " + subFile.getName());
 			return;
