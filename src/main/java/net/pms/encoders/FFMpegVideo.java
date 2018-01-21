@@ -203,19 +203,32 @@ public class FFMpegVideo extends Player {
 					if (convertedSubs != null && convertedSubs.getConvertedFile() != null) { // subs are already converted to 3D so use them
 						originalSubsFilename = convertedSubs.getConvertedFile().getAbsolutePath();
 					} else if (!isSubsASS) { // When subs are not converted and they are not in the ASS format and video is 3D then subs need conversion to 3D
-						originalSubsFilename = SubtitleUtils.getSubtitles(dlna, media, params, configuration, SubtitleType.ASS).getAbsolutePath();
+						File subtitlesFile = SubtitleUtils.getSubtitles(dlna, media, params, configuration, SubtitleType.ASS);
+						if (subtitlesFile != null) {
+							originalSubsFilename = subtitlesFile.getAbsolutePath();
+						} else {
+							LOGGER.error("External subtitles file \"{}\" is unavailable", params.sid.getName());
+						}
 					} else {
-						originalSubsFilename = params.sid.getExternalFile().getPath();
+						if (params.sid.getExternalFile() != null) {
+							originalSubsFilename = params.sid.getExternalFile().getPath();
+						} else {
+							LOGGER.error("External subtitles file \"{}\" is unavailable", params.sid.getName());
+						}
 					}
 				} else if (params.sid.isExternal()) {
-					if (
-						!renderer.streamSubsForTranscodedVideo() ||
-						!renderer.isExternalSubtitlesFormatSupported(params.sid, media)
-					) {
-						// Only transcode subtitles if they aren't streamable
-						originalSubsFilename = params.sid.getExternalFile().getPath();
+					if (params.sid.getExternalFile() != null) {
+						if (
+							!renderer.streamSubsForTranscodedVideo() ||
+							!renderer.isExternalSubtitlesFormatSupported(params.sid, media)
+						) {
+							// Only transcode subtitles if they aren't streamable
+							originalSubsFilename = params.sid.getExternalFile().getPath();
+						}
+					} else {
+						LOGGER.error("External subtitles file \"{}\" is unavailable", params.sid.getName());
 					}
-				} else if (params.sid.isEmbedded()) {
+				} else {
 					originalSubsFilename = dlna.getFileName();
 				}
 
@@ -260,11 +273,13 @@ public class FFMpegVideo extends Player {
 					// Embedded
 					subsFilter.append("[0:v][0:s:").append(media.getSubtitleTracksList().indexOf(params.sid)).append("]overlay");
 					isSubsManualTiming = false;
-				} else {
+				} else if (params.sid.getExternalFile() != null) {
 					// External
 					videoFilterOptions.add("-i");
 					videoFilterOptions.add(params.sid.getExternalFile().getPath());
 					subsFilter.append("[0:v][1:s]overlay"); // this assumes the sub file is single-language
+				} else {
+					LOGGER.error("External subtitles file \"{}\" is unavailable", params.sid.getName());
 				}
 			}
 			if (isNotBlank(subsFilter)) {
@@ -1482,6 +1497,10 @@ public class FFMpegVideo extends Player {
 	protected boolean isContainerCompatible(@Nonnull DLNAResource resource) {
 		DLNAMediaInfo media = resource.getMedia();
 		String container = media == null ? null : media.getContainer();
+		if (!media.isMediaparsed()) {
+			// XXX Hack to allow the use of FFmpeg without MediaInfo until media parsing has been refactored
+			return true;
+		}
 		if (isBlank(container)) {
 			return false;
 		}

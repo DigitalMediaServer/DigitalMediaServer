@@ -905,7 +905,7 @@ public abstract class Player {
 						 */
 						if (configuration.isForceExternalSubtitles()) {
 							for (DLNAMediaSubtitle subPresent : media.getSubtitleTracksList()) {
-								if (subPresent.getExternalFile() != null) {
+								if (subPresent.isExternal()) {
 									matchedSub = subPresent;
 									matchedExternalSubtitles = true;
 									LOGGER.trace("Ignoring the \"off\" language because there are external subtitles");
@@ -920,7 +920,7 @@ public abstract class Player {
 					} else {
 						for (DLNAMediaSubtitle subPresent : media.getSubtitleTracksList()) {
 							if (subPresent.getLang() == sub || sub == Language.ANY) {
-								if (subPresent.getExternalFile() != null) {
+								if (subPresent.isExternal()) {
 									if (configuration.isAutoloadExternalSubtitles()) {
 										// Subtitle is external and we want external subtitles, look no further
 										matchedSub = subPresent;
@@ -958,7 +958,7 @@ public abstract class Player {
 		 */
 		if (matchedSub == null && configuration.isForceExternalSubtitles()) {
 			for (DLNAMediaSubtitle subPresent : media.getSubtitleTracksList()) {
-				if (subPresent.getExternalFile() != null) {
+				if (subPresent.isExternal()) {
 					matchedSub = subPresent;
 					LOGGER.trace("Matched external subtitles track that did not match language preferences: " + matchedSub);
 					break;
@@ -1009,8 +1009,8 @@ public abstract class Player {
 								);
 								LOGGER.trace("Forced subtitles track: " + sub);
 
-								if (sub.getExternalFile() != null) {
-									LOGGER.trace("Found external forced file: " + sub.getExternalFile());
+								if (sub.isExternal()) {
+									LOGGER.trace("Found external forced file: " + sub.getName());
 								}
 								params.sid = sub;
 								forcedSubsFound = true;
@@ -1023,8 +1023,8 @@ public abstract class Player {
 					} else {
 						LOGGER.trace("Found subtitles track: " + sub);
 
-						if (sub.getExternalFile() != null) {
-							LOGGER.trace("Found external file: " + sub.getExternalFile());
+						if (sub.isExternal()) {
+							LOGGER.trace("Found external file: " + sub.getName());
 							params.sid = sub;
 							break;
 						}
@@ -1046,7 +1046,7 @@ public abstract class Player {
 							sub.getLang() == lang &&
 							!(
 								!configuration.isAutoloadExternalSubtitles() &&
-								sub.getExternalFile() != null
+								sub.isExternal()
 							)
 						) {
 							params.sid = sub;
