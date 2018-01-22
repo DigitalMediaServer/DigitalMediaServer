@@ -41,7 +41,7 @@ import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
  * @author Nadahar
  */
 
-public final class TableMusicBrainzReleases extends Tables{
+public final class TableMusicBrainzReleases extends Tables {
 
 	/**
 	 * tableLock is used to synchronize database access on table level.
@@ -167,7 +167,7 @@ public final class TableMusicBrainzReleases extends Tables{
 	public static void writeMBID(final String mBID, final CoverArtArchiveTagInfo tagInfo) {
 		boolean trace = LOGGER.isTraceEnabled();
 
-		try (Connection connection = database.getConnection()) {
+		try (Connection connection = DATABASE.getConnection()) {
 			String query = "SELECT * FROM " + TABLE_NAME + constructTagWhere(tagInfo, true);
 			if (trace) {
 				LOGGER.trace("Searching for release MBID with \"{}\" before update", query);
@@ -262,7 +262,7 @@ public final class TableMusicBrainzReleases extends Tables{
 		boolean trace = LOGGER.isTraceEnabled();
 		MusicBrainzReleasesResult result;
 
-		try (Connection connection = database.getConnection()) {
+		try (Connection connection = DATABASE.getConnection()) {
 			String query = "SELECT MBID, MODIFIED FROM " + TABLE_NAME + constructTagWhere(tagInfo, false);
 
 			if (trace) {
@@ -309,7 +309,7 @@ public final class TableMusicBrainzReleases extends Tables{
 						throw new SQLException(
 							"Database table \"" + TABLE_NAME +
 							"\" is from a newer version of DMS. Please move, rename or delete database file \"" +
-							database.getDatabaseFilename() +
+							DATABASE.getDatabaseFilename() +
 							"\" before starting DMS"
 						);
 					}

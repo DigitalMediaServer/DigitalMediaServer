@@ -94,7 +94,7 @@ public final class TableCoverArtArchive extends Tables{
 	public static void writeMBID(final String mBID, final byte[] cover) {
 		boolean trace = LOGGER.isTraceEnabled();
 
-		try (Connection connection = database.getConnection()) {
+		try (Connection connection = DATABASE.getConnection()) {
 			String query = "SELECT * FROM " + TABLE_NAME + contructMBIDWhere(mBID);
 			if (trace) {
 				LOGGER.trace("Searching for Cover Art Archive cover with \"{}\" before update", query);
@@ -103,7 +103,7 @@ public final class TableCoverArtArchive extends Tables{
 			tableLock.writeLock().lock();
 			try (Statement statement = connection.createStatement(ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE)){
 				connection.setAutoCommit(false);
-				try (ResultSet result = statement.executeQuery(query)){
+				try (ResultSet result = statement.executeQuery(query)) {
 					if (result.next()) {
 						if (cover != null || result.getBlob("COVER") == null) {
 							if (trace) {
@@ -156,7 +156,7 @@ public final class TableCoverArtArchive extends Tables{
 		boolean trace = LOGGER.isTraceEnabled();
 		CoverArtArchiveResult result;
 
-		try (Connection connection = database.getConnection()) {
+		try (Connection connection = DATABASE.getConnection()) {
 			String query = "SELECT COVER, MODIFIED FROM " + TABLE_NAME + contructMBIDWhere(mBID);
 
 			if (trace) {
@@ -207,7 +207,7 @@ public final class TableCoverArtArchive extends Tables{
 						throw new SQLException(
 							"Database table \"" + TABLE_NAME +
 							"\" is from a newer version of DMS. Please move, rename or delete database file \"" +
-							database.getDatabaseFilename() +
+							DATABASE.getDatabaseFilename() +
 							"\" before starting DMS"
 						);
 					}
@@ -242,6 +242,7 @@ public final class TableCoverArtArchive extends Tables{
 		tableLock.writeLock().lock();
 		try {
 			for (int version = currentVersion;version < TABLE_VERSION; version++) {
+				LOGGER.trace("Upgrading table {} from version {} to {}", TABLE_NAME, version, version + 1);
 				switch (version) {
 					//case 1: Alter table to version 2
 					default:
@@ -258,7 +259,7 @@ public final class TableCoverArtArchive extends Tables{
 	}
 
 	/**
-	 * Must be called in inside a table lock
+	 * Must be called from inside a table lock
 	 */
 	private static void createCoverArtArchiveTable(final Connection connection) throws SQLException {
 		LOGGER.debug("Creating database table \"{}\"", TABLE_NAME);
