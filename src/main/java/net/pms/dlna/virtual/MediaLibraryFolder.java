@@ -90,7 +90,7 @@ public class MediaLibraryFolder extends VirtualFolder {
 		return sql;
 	}
 
-	private String transformName(String name) {
+	private static String transformName(String name) {
 		if (name.equals(DLNAMediaDatabase.NONAME)) {
 			name = "";
 		}

@@ -67,6 +67,8 @@ public class MediaMonitor extends VirtualFolder {
 			}
 			dumpFile();
 		} catch (IOException e) {
+			LOGGER.error("Error reading monitor file \"{}\": {}", f.getAbsolutePath(), e.getMessage());
+			LOGGER.trace("", e);
 		}
 	}
 

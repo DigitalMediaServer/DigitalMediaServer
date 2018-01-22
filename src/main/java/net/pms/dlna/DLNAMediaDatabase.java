@@ -28,7 +28,6 @@ import javax.swing.SwingUtilities;
 import net.pms.Messages;
 import net.pms.PMS;
 import net.pms.configuration.PmsConfiguration;
-import net.pms.dlna.DLNAThumbnail;
 import net.pms.formats.Format;
 import net.pms.formats.v2.SubtitleType;
 import net.pms.image.ImageInfo;
@@ -112,9 +111,9 @@ public class DLNAMediaDatabase implements Runnable {
 	}
 
 	/**
-	 * Gets the name of the database file
+	 * Gets the name of the database file.
 	 *
-	 * @return The filename
+	 * @return The filename.
 	 */
 	public String getDatabaseFilename() {
 		if (dbName == null || dbDir == null) {
@@ -125,17 +124,23 @@ public class DLNAMediaDatabase implements Runnable {
 
 	/**
 	 * Gets a new connection from the connection pool if one is available. If
-	 * not waits for a free slot until timeout.<br>
-	 * <br>
+	 * not waits for a free slot until timeout.
+	 * <p>
 	 * <strong>Important: Every connection must be closed after use</strong>
 	 *
-	 * @return the new connection
-	 * @throws SQLException
+	 * @return the new connection.
+	 * @throws SQLException If an SQL error occurs during the operation.
 	 */
 	public Connection getConnection() throws SQLException {
 		return cp.getConnection();
 	}
 
+	/**
+	 * Initializes the database for use, performing checks and creating a new
+	 * database if necessary.
+	 *
+	 * @param force whether to recreate the database even if it isn't necessary.
+	 */
 	@SuppressFBWarnings("SQL_NONCONSTANT_STRING_PASSED_TO_EXECUTE")
 	public synchronized void init(boolean force) {
 		dbCount = -1;
@@ -143,6 +148,7 @@ public class DLNAMediaDatabase implements Runnable {
 		Connection conn = null;
 		ResultSet rs = null;
 		Statement stmt = null;
+		boolean trace = LOGGER.isTraceEnabled();
 
 		try {
 			conn = getConnection();
@@ -212,16 +218,23 @@ public class DLNAMediaDatabase implements Runnable {
 			LOGGER.debug("Database will be (re)initialized");
 			try {
 				conn = getConnection();
+				LOGGER.trace("DROPPING TABLE FILES");
 				executeUpdate(conn, "DROP TABLE FILES");
+				LOGGER.trace("DROPPING TABLE METADATA");
 				executeUpdate(conn, "DROP TABLE METADATA");
+				LOGGER.trace("DROPPING TABLE REGEXP_RULES");
 				executeUpdate(conn, "DROP TABLE REGEXP_RULES");
+				LOGGER.trace("DROPPING TABLE AUDIOTRACKS");
 				executeUpdate(conn, "DROP TABLE AUDIOTRACKS");
+				LOGGER.trace("DROPPING TABLE SUBTRACKS");
 				executeUpdate(conn, "DROP TABLE SUBTRACKS");
 			} catch (SQLException se) {
 				if (se.getErrorCode() != 42102) { // Don't log exception "Table "FILES" not found" which will be corrected in following step
-					LOGGER.error(null, se);
+					LOGGER.error("SQL error while dropping tables: {}", se.getMessage());
+					LOGGER.trace("", se);
 				}
 			}
+
 			try {
 				StringBuilder sb = new StringBuilder();
 				sb.append("CREATE TABLE FILES (");
@@ -257,7 +270,11 @@ public class DLNAMediaDatabase implements Runnable {
 				sb.append(", SCANTYPE                OTHER");
 				sb.append(", SCANORDER               OTHER");
 				sb.append(", constraint PK1 primary key (FILENAME, MODIFIED, ID))");
+				if (trace) {
+					LOGGER.trace("Creating table FILES with:\n\n{}\n", sb.toString());
+				}
 				executeUpdate(conn, sb.toString());
+
 				sb = new StringBuilder();
 				sb.append("CREATE TABLE AUDIOTRACKS (");
 				sb.append("  FILEID            INT              NOT NULL");
@@ -278,7 +295,11 @@ public class DLNAMediaDatabase implements Runnable {
 				sb.append(", MUXINGMODE        VARCHAR2(").append(SIZE_MUXINGMODE).append(')');
 				sb.append(", BITRATE           INT");
 				sb.append(", constraint PKAUDIO primary key (FILEID, ID))");
+				if (trace) {
+					LOGGER.trace("Creating table AUDIOTRACKS with:\n\n{}\n", sb.toString());
+				}
 				executeUpdate(conn, sb.toString());
+
 				sb = new StringBuilder();
 				sb.append("CREATE TABLE SUBTRACKS (");
 				sb.append("  FILEID   INT              NOT NULL");
@@ -287,14 +308,28 @@ public class DLNAMediaDatabase implements Runnable {
 				sb.append(", TITLE    VARCHAR2(").append(SIZE_TITLE).append(')');
 				sb.append(", TYPE     INT");
 				sb.append(", constraint PKSUB primary key (FILEID, ID))");
-
+				if (trace) {
+					LOGGER.trace("Creating table SUBTRACKS with:\n\n{}\n", sb.toString());
+				}
 				executeUpdate(conn, sb.toString());
+
+				LOGGER.trace("Creating table METADATA");
 				executeUpdate(conn, "CREATE TABLE METADATA (KEY VARCHAR2(255) NOT NULL, VALUE VARCHAR2(255) NOT NULL)");
 				executeUpdate(conn, "INSERT INTO METADATA VALUES ('VERSION', '" + latestVersion + "')");
+
+				LOGGER.trace("Creating index IDXARTIST");
 				executeUpdate(conn, "CREATE INDEX IDXARTIST on AUDIOTRACKS (ARTIST asc);");
+
+				LOGGER.trace("Creating index IDXALBUM");
 				executeUpdate(conn, "CREATE INDEX IDXALBUM on AUDIOTRACKS (ALBUM asc);");
+
+				LOGGER.trace("Creating index IDXGENRE");
 				executeUpdate(conn, "CREATE INDEX IDXGENRE on AUDIOTRACKS (GENRE asc);");
+
+				LOGGER.trace("Creating index IDXYEAR");
 				executeUpdate(conn, "CREATE INDEX IDXYEAR on AUDIOTRACKS (YEAR asc);");
+
+				LOGGER.trace("Creating table REGEXP_RULES");
 				executeUpdate(conn, "CREATE TABLE REGEXP_RULES ( ID VARCHAR2(255) PRIMARY KEY, RULE VARCHAR2(255), ORDR NUMERIC);");
 				executeUpdate(conn, "INSERT INTO REGEXP_RULES VALUES ( '###', '(?i)^\\W.+', 0 );");
 				executeUpdate(conn, "INSERT INTO REGEXP_RULES VALUES ( '0-9', '(?i)^\\d.+', 1 );");
@@ -309,7 +344,8 @@ public class DLNAMediaDatabase implements Runnable {
 
 				LOGGER.debug("Database initialized");
 			} catch (SQLException se) {
-				LOGGER.info("Error in table creation: " + se.getMessage());
+				LOGGER.error("Error creating tables: " + se.getMessage());
+				LOGGER.trace("", se);
 			} finally {
 				close(conn);
 			}
@@ -327,6 +363,15 @@ public class DLNAMediaDatabase implements Runnable {
 		}
 	}
 
+	/**
+	 * Checks whether a row representing a {@link DLNAMediaInfo} instance for
+	 * the given media exists in the database.
+	 *
+	 * @param name the full path of the media.
+	 * @param modified the current {@code lastModified} value of the media file.
+	 * @return {@code true} if the data exists for this media, {@code false}
+	 *         otherwise.
+	 */
 	public synchronized boolean isDataExists(String name, long modified) {
 		boolean found = false;
 		Connection conn = null;
@@ -342,7 +387,8 @@ public class DLNAMediaDatabase implements Runnable {
 				found = true;
 			}
 		} catch (SQLException se) {
-			LOGGER.error(null, se);
+			LOGGER.error("An SQL error occurred when trying to check if data exists for \"{}\": {}", name, se.getMessage());
+			LOGGER.trace("", se);
 			return false;
 		} finally {
 			close(rs);
@@ -352,6 +398,17 @@ public class DLNAMediaDatabase implements Runnable {
 		return found;
 	}
 
+	/**
+	 * Gets rows of {@link DLNAMediaDatabase} from the database and returns them
+	 * as a {@link List} of {@link DLNAMediaInfo} instances.
+	 *
+	 * @param name the full path of the media.
+	 * @param modified the current {@code lastModified} value of the media file.
+	 * @return The {@link List} of {@link DLNAMediaInfo} instances matching
+	 *         {@code name} and {@code modified}.
+	 * @throws SQLException if an SQL error occurs during the operation.
+	 * @throws IOException if an IO error occurs during the operation.
+	 */
 	public synchronized ArrayList<DLNAMediaInfo> getData(String name, long modified) throws IOException, SQLException {
 		ArrayList<DLNAMediaInfo> list = new ArrayList<>();
 		try (
@@ -593,6 +650,19 @@ public class DLNAMediaDatabase implements Runnable {
 		}
 	}
 
+	/**
+	 * Inserts or updates a database row representing an {@link DLNAMediaInfo}
+	 * instance. If the row already exists, it will be updated with the
+	 * information given in {@code media}. If it doesn't exist, a new will row
+	 * be created using the same information.
+	 *
+	 * @param name the full path of the media.
+	 * @param modified the current {@code lastModified} value of the media file.
+	 * @param type the integer constant from {@link Format} indicating the type
+	 *            of media.
+	 * @param media the {@link DLNAMediaInfo} row to update.
+	 * @throws SQLException if an SQL error occurs during the operation.
+	 */
 	public synchronized void insertOrUpdateData(String name, long modified, int type, DLNAMediaInfo media) throws SQLException {
 		try (
 			Connection connection = getConnection()
@@ -779,7 +849,6 @@ public class DLNAMediaDatabase implements Runnable {
 				"UPDATE FILES SET THUMB = ? WHERE FILENAME = ? AND MODIFIED = ?"
 			);
 		) {
-
 			ps.setString(2, name);
 			ps.setTimestamp(3, new Timestamp(modified));
 			if (media != null && media.getThumb() != null) {
@@ -796,12 +865,12 @@ public class DLNAMediaDatabase implements Runnable {
 
 	public synchronized ArrayList<String> getStrings(String sql) {
 		ArrayList<String> list = new ArrayList<>();
-		Connection conn = null;
+		Connection connection = null;
 		ResultSet rs = null;
 		PreparedStatement ps = null;
 		try {
-			conn = getConnection();
-			ps = conn.prepareStatement(sql);
+			connection = getConnection();
+			ps = connection.prepareStatement(sql);
 			rs = ps.executeQuery();
 			while (rs.next()) {
 				String str = rs.getString(1);
@@ -819,7 +888,7 @@ public class DLNAMediaDatabase implements Runnable {
 		} finally {
 			close(rs);
 			close(ps);
-			close(conn);
+			close(connection);
 		}
 		return list;
 	}
