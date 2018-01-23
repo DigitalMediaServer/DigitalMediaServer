@@ -2732,7 +2732,9 @@ public class MEncoderVideo extends Player {
 						);
 					} else {
 						result.errorType(ExecutableErrorType.GENERAL);
-						result.errorText(String.format(Messages.getString("Engine.Error"), this) + Messages.getString("General.3"));
+						result.errorText(
+							String.format(Messages.getString("Engine.Error"), this) + Messages.getString("Generic.UnknownError")
+						);
 					}
 				}
 				result.available(Boolean.FALSE);
