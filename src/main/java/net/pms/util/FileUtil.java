@@ -507,7 +507,7 @@ public class FileUtil {
 	 * Capitalize the first letter of each word if the string contains no
 	 * capital letters.
 	 */
-	private static String convertFormattedNameToTitleCaseParts(String formattedName) {
+	private static String convertFormattedNameToTitleCaseParts(String formattedName) { //TODO: (Nad) Remove
 		if (formattedName.equals(formattedName.toLowerCase())) {
 			StringBuilder formattedNameBuilder = new StringBuilder();
 			for (String part : formattedName.split(" - ")) {
@@ -525,7 +525,7 @@ public class FileUtil {
 	 * Capitalize the first letter of each word if the string contains no
 	 * capital letters.
 	 */
-	private static String convertFormattedNameToTitleCase(String formattedName) {
+	private static String convertFormattedNameToTitleCase(String formattedName) { //TODO: (Nad) Remove
 		if (formattedName.equals(formattedName.toLowerCase())) {
 			formattedName = convertLowerCaseStringToTitleCase(formattedName);
 		}
@@ -955,7 +955,7 @@ public class FileUtil {
 	 *
 	 * @return the converted string
 	 */
-	public static String convertLowerCaseStringToTitleCase(String value) {
+	public static String convertLowerCaseStringToTitleCase(String value) { //TODO: (Nad) Remove
 		if (isBlank(value)) {
 			return value;
 		}
