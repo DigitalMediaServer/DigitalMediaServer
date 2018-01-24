@@ -249,7 +249,7 @@ public class OpenSubtitle {
 
 	public static String getHash(File file) throws IOException {
 		LOGGER.trace("Getting OpenSubtitles hash for \"{}\"", file);
-		String hash = ImdbUtil.extractOSHash(file);
+		String hash = ImdbUtil.extractOSHash(file.toPath());
 		if (!StringUtils.isEmpty(hash)) {
 			return hash;
 		}
@@ -263,7 +263,7 @@ public class OpenSubtitle {
 	public static Map<String, Object> findSubs(File file, RendererConfiguration renderer) throws IOException {
 		Map<String, Object> result = findSubs(getHash(file), file.length(), null, null, renderer);
 		if (result.isEmpty()) { // no good on hash! try imdb
-			String imdb = ImdbUtil.extractImdb(file);
+			String imdb = ImdbUtil.extractImdbId(file.toPath(), false);
 			if (StringUtils.isEmpty(imdb)) {
 				imdb = fetchImdbId(file);
 			}
@@ -406,7 +406,7 @@ public class OpenSubtitle {
 	public static String[] getInfo(File file, String formattedName, RendererConfiguration renderer) throws IOException {
 		String[] res = getInfo(getHash(file), file.length(), null, null, renderer);
 		if (res == null || res.length == 0) { // no good on hash! try imdb
-			String imdb = ImdbUtil.extractImdb(file);
+			String imdb = ImdbUtil.extractImdbId(file.toPath(), false);
 			if (isNotBlank(imdb)) {
 				res = getInfo(null, 0, imdb, null, renderer);
 			}
