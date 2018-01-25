@@ -41,6 +41,7 @@ import net.pms.configuration.ProgramExecutableType.DefaultExecutableType;
 import net.pms.configuration.RendererConfiguration;
 import net.pms.configuration.ExecutableInfo.ExecutableInfoBuilder;
 import net.pms.dlna.DLNAMediaInfo;
+import net.pms.dlna.DLNAMediaLang;
 import net.pms.dlna.DLNAMediaOnDemandSubtitle;
 import net.pms.dlna.DLNAResource;
 import net.pms.formats.Format;
@@ -766,7 +767,7 @@ public abstract class Player {
 			params.aid = resource.resolveAudioStream(params.mediaRenderer);
 		}
 
-		if (params.sid != null && params.sid.getId() == -1) {
+		if (params.sid != null && params.sid.getId() == DLNAMediaLang.DUMMY_ID) {
 			LOGGER.trace("Don't want subtitles!");
 			params.sid = null;
 		} else if (params.sid instanceof DLNAMediaOnDemandSubtitle) {
