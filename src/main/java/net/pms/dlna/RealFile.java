@@ -181,6 +181,7 @@ public class RealFile extends MapFile {
 
 						if (medias.size() == 1) {
 							setMedia(medias.get(0));
+							setExternalSubtitlesParsed();
 							getMedia().postParse(input);
 							found = true;
 						} else if (medias.size() > 1) {
@@ -223,6 +224,15 @@ public class RealFile extends MapFile {
 
 					if (database != null) {
 						try {
+							/*
+							 * Even though subtitles will be resolved later in
+							 * DLNAResource.syncResolve, we must make sure that
+							 * they are resolved before insertion into the
+							 * database
+							 */
+							if (getMedia() != null && getMedia().isVideo()) {
+								registerExternalSubtitles(false);
+							}
 							database.insertOrUpdateData(fileName, file.lastModified(), getFormat() == null ? null : getFormat().getType(), getMedia());
 						} catch (SQLException e) {
 							LOGGER.error(
