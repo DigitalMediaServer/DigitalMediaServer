@@ -27,10 +27,12 @@ import net.pms.util.ISO639;
 public class DLNAMediaLang {
 
 	/**
-	 * @deprecated Use standard getter and setter to access this variable.
+	 * A special ID value that indicates that the instance is just a placeholder
+	 * that shouldn't be used.
 	 */
-	@Deprecated
-	public int id;
+	public static final int DUMMY_ID = Integer.MIN_VALUE;
+
+	private int id;
 
 	/** The {@link ISO639} */
 	@Nullable
@@ -61,6 +63,7 @@ public class DLNAMediaLang {
 	public ISO639 getLang() {
 		return lang;
 	}
+
 	/**
 	 * Sets the {@link ISO639} this language object.
 	 *

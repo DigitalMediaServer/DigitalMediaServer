@@ -1617,7 +1617,7 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 
 				if (
 					media_subtitle != null &&
-					media_subtitle.getId() != -1 &&
+					media_subtitle.getId() != DLNAMediaLang.DUMMY_ID &&
 					!configuration.hideSubsInfo()
 				) {
 					if (nameSuffixBuilder.length() > 0) {
@@ -3462,7 +3462,7 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 	 */
 	@Nullable
 	public BufferedImageFilterChain addSubtitlesFlagFilter(@Nullable BufferedImageFilterChain filterChain) {
-		ISO639 subtitlesLanguage = media_subtitle != null && media_subtitle.getId() != -1 ?
+		ISO639 subtitlesLanguage = media_subtitle != null && media_subtitle.getId() != DLNAMediaLang.DUMMY_ID ?
 			media_subtitle.getLang() :
 			null;
 
