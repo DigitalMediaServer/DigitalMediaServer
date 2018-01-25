@@ -7,6 +7,7 @@ Current Developers
 ------------------
 
 * Nadahar
+* Sami32
 
 Links
 -----
