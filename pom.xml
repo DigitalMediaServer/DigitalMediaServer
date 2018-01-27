@@ -100,6 +100,7 @@
 				- su.litvak.chromecast:api-v2
 				- fm.last:coverartarchive-api
 				- com.github.oshi:oshi-core
+				- com.rometools:rome
 
 			Check the org.slf4j:slf4j-api version of the other libraries before upgrading
 		-->
@@ -213,17 +214,25 @@
 			<version>3.10.6.Final</version>
 			<scope>compile</scope>
 		</dependency>
-
-		<!-- maven replacement for nsisant-1.2.jar -->
 		<dependency>
-			<groupId>maven</groupId>
-			<artifactId>maven-nsis-plugin</artifactId>
-			<version>2.1</version>
-		</dependency>
-		<dependency>
-			<groupId>net.java.dev.rome</groupId>
+			<groupId>com.rometools</groupId>
 			<artifactId>rome</artifactId>
-			<version>1.0.0</version>
+			<!--
+				org.slf4j:slf4j-api is shared with
+					- ch.qos.logback:logback-classic
+					- su.litvak.chromecast
+					- fm.last:coverartarchive-api
+					- com.github.oshi:oshi-core
+
+				Check the org.slf4j:slf4j-api version of the other libraries before upgrading
+			-->
+			<version>1.9.0</version>
+			<exclusions>
+				<exclusion>
+					<groupId>org.slf4j</groupId>
+					<artifactId>slf4j-api</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 		<dependency>
 			<groupId>net.coobird</groupId>
@@ -426,6 +435,7 @@
 					- ch.qos.logback:logback-classic
 					- fm.last:coverartarchive-api
 					- com.github.oshi:oshi-core
+					- com.rometools:rome
 
 				Check the org.slf4j:slf4j-api version of the other libraries before upgrading
 			-->
@@ -449,6 +459,7 @@
 					- ch.qos.logback:logback-classic
 					- su.litvak.chromecast
 					- com.github.oshi:oshi-core
+					- com.rometools:rome
 
 				Check the org.slf4j:slf4j-api version of the other libraries before upgrading
 
@@ -484,6 +495,7 @@
 					- ch.qos.logback:logback-classic
 					- su.litvak.chromecast
 					- fm.last:coverartarchive-api
+					- com.rometools:rome
 
 				Check the org.slf4j:slf4j-api version of the other libraries before upgrading
 
