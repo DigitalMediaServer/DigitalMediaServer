@@ -15,7 +15,7 @@ pms.iml
 *.sublime-*
 Thumbs.db
 extras/
-plugins/
+/src/main/external-resources/plugins/
 target/
 /web/
 win32/

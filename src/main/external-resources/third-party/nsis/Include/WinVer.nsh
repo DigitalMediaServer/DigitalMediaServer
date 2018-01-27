@@ -12,7 +12,8 @@
 ;     DetailPrint "Not running on NT. Installing ANSI application."
 ;   ${EndIf}
 ;
-; IsServer checks if the installer is running on a server version of Windows (NT4, 2003, 2008, etc.)
+; IsServerOS checks if the installer is running on a server version of Windows (2000, 2003, 2008, etc.)
+; IsDomainController checks if the server is a domain controller
 ;
 ; AtLeastWin<version> checks if the installer is running on Windows version at least as specified.
 ; IsWin<version> checks if the installer is running on Windows version exactly as specified.
@@ -34,6 +35,11 @@
 ;   2008R2
 ;   8
 ;   2012
+;   8.1
+;   2012R2
+;   10
+;
+;   Note: Windows 8.1 and later will be detected as Windows 8 unless ManifestSupportedOS is set correctly!
 ;
 ; AtLeastServicePack checks if the installer is running on Windows service pack version at least as specified.
 ; IsServicePack checks if the installer is running on Windows service pack version exactly as specified.
@@ -103,15 +109,15 @@
 
 # masks for our variables
 
-!define _WINVER_VERXBIT  0x00000001
-!define _WINVER_MASKVMAJ 0x7F000000
-!define _WINVER_MASKVMIN 0x00FF0000
-
-!define _WINVER_NTBIT    0x80000000
-!define _WINVER_NTMASK   0x7FFFFFFF
-!define _WINVER_NTSRVBIT 0x40000000
-!define _WINVER_MASKVBLD 0x0000FFFF
-!define _WINVER_MASKSP   0x000F0000
+!define _WINVER_VERXBIT  0x00000001 ; Used to boost $__WINVERV
+!define _WINVER_MASKVMAJ 0x7F000000 ; $__WINVERV mask
+!define _WINVER_MASKVMIN 0x00FF0000 ; $__WINVERV mask
+!define _WINVER_NTMASK   0x7FFFFFFF ; $__WINVERV mask used by AtMost/AtLeast
+!define _WINVER_NTBIT    0x80000000 ; $__WINVERV bit used by Is and $__WINVERSP bit used by IsNT
+!define _WINVER_NTSRVBIT 0x40000000 ; $__WINVERSP bit for !VER_NT_WORKSTATION
+!define _WINVER_NTDCBIT  0x20000000 ; $__WINVERSP bit for VER_NT_DOMAIN_CONTROLLER
+!define _WINVER_MASKVBLD 0x0000FFFF ; $__WINVERSP mask for OS build number
+!define _WINVER_MASKSP   0x000F0000 ; $__WINVERSP mask for OS service pack
 
 # possible variable values for different versions
 
@@ -122,7 +128,7 @@
 ;define WINVER_98SE      0x040a0000 ;4.10.2222
 !define WINVER_ME_NT     0x045a0000 ;4.90.3000
 !define WINVER_ME        0x045a0000 ;4.90.3000
-;define WINVER_NT3d51               ;3.51.1057
+;define WINVER_NT3.51               ;3.51.1057
 !define WINVER_NT4_NT    0x84000000 ;4.00.1381
 !define WINVER_NT4       0x04000000 ;4.00.1381
 !define WINVER_2000_NT   0x85000000 ;5.00.2195
@@ -144,23 +150,32 @@
 !define WINVER_8         0x06020000 ;6.02.9200
 !define WINVER_2012_NT   0x86020001 ;6.02.9200
 !define WINVER_2012      0x06020001 ;6.02.9200
+!define WINVER_8.1_NT    0x86030000 ;6.03.9600
+!define WINVER_8.1       0x06030000 ;6.03.9600
+!define WINVER_2012R2_NT 0x86030001 ;6.03.9600
+!define WINVER_2012R2    0x06030001 ;6.03.9600
+!define WINVER_10_NT     0x8A000000 ;10.0.10240
+!define WINVER_10        0x0A000000 ;10.0.10240
+!define WINVER_2016_NT   0x8A000001 ;10.0.14393
+!define WINVER_2016      0x0A000001 ;10.0.14393
 
 
 # use this to make all nt > 9x
 
 !ifdef WINVER_NT4_OVER_W95
-  !define __WINVERTMP ${WINVER_NT4}
-  !undef WINVER_NT4
-  !define /math WINVER_NT4 ${__WINVERTMP} | ${_WINVER_VERXBIT}
-  !undef __WINVERTMP
+  !define /redef /math WINVER_NT4 ${WINVER_NT4} | ${_WINVER_VERXBIT}
 !endif
 
 # some definitions from header files
 
+!define OSVERSIONINFOW_SIZE   276
+!define OSVERSIONINFOEXW_SIZE 284
 !define OSVERSIONINFOA_SIZE   148
 !define OSVERSIONINFOEXA_SIZE 156
-!define VER_PLATFORM_WIN32_NT 2
-!define VER_NT_WORKSTATION    1
+!define /ifndef VER_PLATFORM_WIN32_NT 2
+!define /ifndef VER_NT_WORKSTATION       1
+!define /ifndef VER_NT_DOMAIN_CONTROLLER 2
+!define /ifndef VER_NT_SERVER            3
 
 !define SM_TABLETPC    86
 !define SM_MEDIACENTER 87
@@ -189,7 +204,7 @@
   !macro __WinVer_Call_GetVersionEx STRUCT_SIZE
 
     System::Call '*$0(i ${STRUCT_SIZE})'
-    System::Call kernel32::GetVersionEx(ir0)i.r3
+    System::Call kernel32::GetVersionEx(pr0)i.r3
 
   !macroend
 
@@ -211,16 +226,24 @@
   Push $3 ;bld
   Push $R0 ;temp
 
+  # a plugin call will lock the Unicode mode, it is now safe to set the struct size
+  !ifdef NSIS_UNICODE
+  !define /redef OSVERSIONINFO_SIZE ${OSVERSIONINFOW_SIZE}
+  !define /redef OSVERSIONINFOEX_SIZE ${OSVERSIONINFOEXW_SIZE}
+  !else
+  !define /redef OSVERSIONINFO_SIZE ${OSVERSIONINFOA_SIZE}
+  !define /redef OSVERSIONINFOEX_SIZE ${OSVERSIONINFOEXA_SIZE}
+  !endif
+
   # allocate memory
-  System::Alloc ${OSVERSIONINFOEXA_SIZE}
-  Pop $0
+  System::Call '*(&i${OSVERSIONINFOEX_SIZE})p.r0'
 
   # use OSVERSIONINFOEX
-  !insertmacro __WinVer_Call_GetVersionEx ${OSVERSIONINFOEXA_SIZE}
+  !insertmacro __WinVer_Call_GetVersionEx ${OSVERSIONINFOEX_SIZE}
 
   IntCmp $3 0 "" _winver_ex _winver_ex
     # OSVERSIONINFOEX not allowed (Win9x or NT4 w/SP < 6), use OSVERSIONINFO
-    !insertmacro __WinVer_Call_GetVersionEx ${OSVERSIONINFOA_SIZE}
+    !insertmacro __WinVer_Call_GetVersionEx ${OSVERSIONINFO_SIZE}
   _winver_ex:
 
   # get results from struct
@@ -243,7 +266,8 @@
     IntOp $__WINVERSP $__WINVERSP | ${_WINVER_NTBIT}
     IntOp $__WINVERV  $__WINVERV  | ${_WINVER_NTBIT}
   _winver_notnt:
-
+!ifndef NSIS_UNICODE
+!if "${NSIS_PTR_SIZE}" <= 4
   # get service pack information
   IntCmp $0 ${VER_PLATFORM_WIN32_NT} _winver_nt "" _winver_nt  # win9x
 
@@ -271,8 +295,9 @@
     Goto _winver_sp_done
 
   _winver_nt: # nt
-
-    IntCmp $R0 ${OSVERSIONINFOEXA_SIZE} "" _winver_sp_noex _winver_sp_noex
+!endif #~ 32-bit
+!endif #~ ANSI
+    IntCmp $R0 ${OSVERSIONINFOEX_SIZE} "" _winver_sp_noex _winver_sp_noex
 
       # discard szCSDVersion
       Pop $0
@@ -282,9 +307,12 @@
       Pop $0
 
       # is server?
-      IntCmp $0 ${VER_NT_WORKSTATION} _winver_noserver _winver_noserver ""
+      IntCmp $0 ${VER_NT_WORKSTATION} _winver_nt_notsrv
         IntOp $__WINVERSP $__WINVERSP | ${_WINVER_NTSRVBIT}
-      _winver_noserver:
+        IntCmp $0 ${VER_NT_DOMAIN_CONTROLLER} "" _winver_nt_notdc _winver_nt_notdc
+          IntOp $__WINVERSP $__WINVERSP | ${_WINVER_NTDCBIT}
+        _winver_nt_notdc:
+      _winver_nt_notsrv:
 
       # get wServicePackMajor
       Pop $0
@@ -295,7 +323,7 @@
     _winver_sp_noex: # OSVERSIONINFO, not OSVERSIONINFOEX
 
       ####  TODO
-      ## For IsServer to support < NT4SP6, we need to check the registry
+      ## For IsServerOS to support < NT4SP6, we need to check the registry
       ## here to see if we are a server and/or DC
 
       # get szCSDVersion
@@ -313,7 +341,7 @@
         StrCpy $0 0 # no service pack
 
 !ifdef WINVER_NT4_OVER_W95
-      IntOp $__WINVERV $__WINVERV | ${_WINVER_VERXBIT}
+      IntOp $__WINVERV $__WINVERV | ${_WINVER_VERXBIT} ; change NT 4.0.reserved.0 to 4.0.reserved.1
 !endif
 
   _winver_sp_done:
@@ -395,6 +423,10 @@
   !insertmacro __WinVer_DefineOSTest ${Test} 2008R2 '${Suffix}'
   !insertmacro __WinVer_DefineOSTest ${Test} 8      '${Suffix}'
   !insertmacro __WinVer_DefineOSTest ${Test} 2012   '${Suffix}'
+  !insertmacro __WinVer_DefineOSTest ${Test} 8.1    '${Suffix}'
+  !insertmacro __WinVer_DefineOSTest ${Test} 2012R2 '${Suffix}'
+  !insertmacro __WinVer_DefineOSTest ${Test} 10     '${Suffix}'
+  !insertmacro __WinVer_DefineOSTest ${Test} 2016   '${Suffix}'
 !macroend
 
 !insertmacro __WinVer_DefineOSTests AtLeast ""
@@ -403,21 +435,16 @@
 
 # version feature LogicLib macros
 
-!macro _IsNT _a _b _t _f
+!macro __WinVer_LL_IsBitSet _v _b _t _f
   !insertmacro _LOGICLIB_TEMP
   ${CallArtificialFunction} __WinVer_InitVars
-  IntOp $_LOGICLIB_TEMP $__WINVERSP & ${_WINVER_NTBIT}
+  IntOp $_LOGICLIB_TEMP ${_v} & ${_b}
   !insertmacro _!= $_LOGICLIB_TEMP 0 `${_t}` `${_f}`
 !macroend
-!define IsNT `"" IsNT ""`
 
-!macro _IsServerOS _a _b _t _f
-  !insertmacro _LOGICLIB_TEMP
-  ${CallArtificialFunction} __WinVer_InitVars
-  IntOp $_LOGICLIB_TEMP $__WINVERSP & ${_WINVER_NTSRVBIT}
-  !insertmacro _!= $_LOGICLIB_TEMP 0 `${_t}` `${_f}`
-!macroend
-!define IsServerOS `"" IsServerOS ""`
+!define IsNT `$__WINVERSP _WinVer_LL_IsBitSet ${_WINVER_NTBIT}`
+!define IsServerOS `$__WINVERSP _WinVer_LL_IsBitSet ${_WINVER_NTSRVBIT}`
+!define IsDomainController `$__WINVERSP _WinVer_LL_IsBitSet ${_WINVER_NTDCBIT}`
 
 # service pack macros
 
