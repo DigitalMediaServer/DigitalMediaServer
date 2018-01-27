@@ -1869,7 +1869,7 @@ public class PMS {
 
 		// Set JNA "jnidispatch" resolution rules
 		if (
-			windows && windowsVersion != Double.NaN && windowsVersion < 5.2
+			windows && !Double.isNaN(windowsVersion) && windowsVersion < 5.2
 		) {
 			String developmentPath = "src\\main\\external-resources\\lib\\winxp";
 			if (new File(developmentPath).exists()) {

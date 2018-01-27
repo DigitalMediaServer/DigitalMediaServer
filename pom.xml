@@ -18,7 +18,7 @@
 			mvn clean package
 
 		After building, the "target" directory will contain the binary.
-		To generate a full source code report, do:
+		To generate a full source code report, run:
 
 			mvn site
 
@@ -90,8 +90,8 @@
 		<project.binaries-base>http://universalmediaserver.com/svn/binaries</project.binaries-base>
 		<binary-revision>67</binary-revision>
 
-		<maven-javadoc-plugin-version>2.10.4</maven-javadoc-plugin-version>
-		<git-commit-id-plugin-version>2.2.3</git-commit-id-plugin-version>
+		<maven-javadoc-plugin-version>3.0.0</maven-javadoc-plugin-version>
+		<git-commit-id-plugin-version>2.2.4</git-commit-id-plugin-version>
 		<maven-assembly-plugin-version>3.1.0</maven-assembly-plugin-version>
 		<maven-enforcer-plugin-version>1.4.1</maven-enforcer-plugin-version>
 
@@ -760,6 +760,8 @@
 					<dateFormat>yyyy-MM-dd</dateFormat>
 					<verbose>false</verbose>
 					<generateGitPropertiesFile>false</generateGitPropertiesFile>
+					<failOnNoGitDirectory>false</failOnNoGitDirectory>
+					<failOnUnableToExtractRepoInfo>false</failOnUnableToExtractRepoInfo>
 				</configuration>
 			</plugin>
 
@@ -855,13 +857,6 @@
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-site-plugin</artifactId>
 				<version>3.6</version>
-				<dependencies>
-					<dependency>
-						<groupId>org.apache.maven.doxia</groupId>
-						<artifactId>doxia-module-docbook-simple</artifactId>
-						<version>1.7</version>
-					</dependency>
-				</dependencies>
 			</plugin>
 		</plugins>
 	</build>
@@ -1029,7 +1024,7 @@
 									<manifest>
 										<mainClass>net.pms.PMS</mainClass>
 										<!--
-											this is required to make the ImageIo image "plugins" provided by jai-imageio-core-standalone work.
+											This is required to make the ImageIo image "plugins" provided by jai-imageio-core-standalone work.
 											without it, the following exception is thrown when DMS starts:
 
 											Configuration error: java.util.ServiceConfigurationError: javax.imageio.spi.ImageInputStreamSpi:
