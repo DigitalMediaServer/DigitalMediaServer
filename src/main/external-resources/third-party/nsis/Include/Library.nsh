@@ -121,11 +121,15 @@
   ;------------------------
   ;Setup RegTool
 
+  !if ! /FileExists "${NSISDIR}\Bin\RegTool-${NSIS_CPU}.bin"
+    !error "Missing RegTool for ${NSIS_CPU}!"
+  !endif
+
   ReadRegStr $R3 HKLM "Software\Microsoft\Windows\CurrentVersion\RunOnce" "${REGTOOL_KEY}"
   StrCpy $R3 $R3 -4 1
   IfFileExists $R3 +3
 
-    File /oname=$R2\${REGTOOL_KEY}.$__INSTALLLLIB_SESSIONGUID.exe "${NSISDIR}\Bin\RegTool.bin"
+    File /oname=$R2\${REGTOOL_KEY}.$__INSTALLLLIB_SESSIONGUID.exe "${NSISDIR}\Bin\RegTool-${NSIS_CPU}.bin"
     WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\RunOnce" \
       "${REGTOOL_KEY}" '"$R2\${REGTOOL_KEY}.$__INSTALLLLIB_SESSIONGUID.exe" /S'
 
@@ -145,27 +149,37 @@
 ### Get library version
 !macro __InstallLib_Helper_GetVersion TYPE FILE
 
-  !tempfile LIBRARY_TEMP_NSH
+  !ifdef LIBRARY_USELIBRARYLOCALHELPER
+    !tempfile LIBRARY_TEMP_NSH
 
-  !ifdef NSIS_WIN32_MAKENSIS
+    !ifdef NSIS_WIN32_MAKENSIS
+      !execute '"${NSISDIR}\Bin\LibraryLocal.exe" "${TYPE}" "${FILE}" "${LIBRARY_TEMP_NSH}"'
+    !else
+      !execute 'LibraryLocal "${TYPE}" "${FILE}" "${LIBRARY_TEMP_NSH}"'
+    !endif
 
-    !execute '"${NSISDIR}\Bin\LibraryLocal.exe" "${TYPE}" "${FILE}" "${LIBRARY_TEMP_NSH}"'
+    !include "${LIBRARY_TEMP_NSH}"
+    !delfile "${LIBRARY_TEMP_NSH}"
+    !undef LIBRARY_TEMP_NSH
 
   !else
 
-    !execute 'LibraryLocal "${TYPE}" "${FILE}" "${LIBRARY_TEMP_NSH}"'
+    !if "${TYPE}" == "D"
+     !getdllversion /NoErrors /Packed "${FILE}" LIBRARY_VERSION_
+    !else if "${TYPE}" == "T"
+      !gettlbversion /NoErrors /Packed "${FILE}" LIBRARY_VERSION_
+    !endif
 
-    !if ${TYPE} == 'T'
-
-      !warning "LibraryLocal currently supports TypeLibs version detection on Windows only"
-
+    ; Emulate the old LibraryLocal defines
+    !ifndef LIBRARY_VERSION_HIGH
+      !define LIBRARY_VERSION_FILENOTFOUND
+    !else if "${LIBRARY_VERSION_HIGH}" == ""
+      !define LIBRARY_VERSION_NONE
+      !undef LIBRARY_VERSION_HIGH
+      !undef LIBRARY_VERSION_LOW
     !endif
 
   !endif
-
-  !include "${LIBRARY_TEMP_NSH}"
-  !delfile "${LIBRARY_TEMP_NSH}"
-  !undef LIBRARY_TEMP_NSH
 
 !macroend
 
