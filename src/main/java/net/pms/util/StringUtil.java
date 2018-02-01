@@ -940,22 +940,110 @@ public class StringUtil {
 	/**
 	 * Creates a "readable" string by combining the objects in {@code elements}
 	 * while inserting "{@code ,}" and "{@code and}" as appropriate. The
-	 * resulting {@link String} is in the form "
-	 * {@code element 1, element2 and element3}".
+	 * resulting {@link String} is in the form
+	 * {@code "element 1, element2 and element3"}.
+	 *
+	 * @param elements the {@link Collection} of {@link String} to combine.
+	 * @return The combined "readable" {@link String}.
+	 */
+	public static String createReadableCombinedString(Collection<Object> elements) {
+		return createReadableCombinedString(elements, false, null, null);
+	}
+
+	/**
+	 * Creates a "readable" string by combining the objects in {@code elements}
+	 * while inserting "{@code ,}" and "{@code and}" as appropriate. The
+	 * resulting {@link String} is in the form
+	 * {@code "element 1, element2 and element3"}.
+	 *
+	 * @param elements the {@link Collection} of {@link Object} to combine.
+	 * @param quote if {@code true}, all elements will be quoted in
+	 *            double-quotes.
+	 * @return The combined "readable" {@link String}.
+	 */
+	public static String createReadableCombinedString(Collection<Object> elements, boolean quote) {
+		return createReadableCombinedString(elements, quote, null, null);
+	}
+
+	/**
+	 * Creates a "readable" string by combining the objects in {@code elements}
+	 * while inserting {@code separator} and {@code lastSeparator} as
+	 * appropriate. The resulting {@link String} is in the form
+	 * {@code "element 1<separator> element2 <lastSeparator> element3"}.
+	 *
+	 * @param elements the {@link Collection} of {@link Object} to combine.
+	 * @param separator the "normal" separator used everywhere except between
+	 *            the last two elements.
+	 * @param lastSeparator the separator used between the last two elements.
+	 * @return The combined "readable" {@link String}.
+	 */
+	public static String createReadableCombinedString(Collection<Object> elements, String separator, String lastSeparator) {
+		if (elements == null || elements.isEmpty()) {
+			return "";
+		}
+		return createReadableCombinedString(elements.toArray(new Object[elements.size()]), false, separator, lastSeparator);
+	}
+
+	/**
+	 * Creates a "readable" string by combining the objects in {@code elements}
+	 * while inserting {@code separator} and {@code lastSeparator} as
+	 * appropriate. The resulting {@link String} is in the form
+	 * {@code "element 1<separator> element2 <lastSeparator> element"}.
+	 *
+	 * @param elements the {@link Collection} of {@link Object} to combine.
+	 * @param quote if {@code true}, all elements will be quoted in
+	 *            double-quotes.
+	 * @param separator the "normal" separator used everywhere except between
+	 *            the last two elements.
+	 * @param lastSeparator the separator used between the last two elements.
+	 * @return The combined "readable" {@link String}.
+	 */
+	public static String createReadableCombinedString(
+		Collection<Object> elements,
+		boolean quote,
+		String separator,
+		String lastSeparator
+	) {
+		if (elements == null || elements.isEmpty()) {
+			return "";
+		}
+		return createReadableCombinedString(quote, separator, lastSeparator, elements.toArray(new Object[elements.size()]));
+	}
+
+	/**
+	 * Creates a "readable" string by combining the objects in {@code elements}
+	 * while inserting "{@code ,}" and "{@code and}" as appropriate. The
+	 * resulting {@link String} is in the form
+	 * {@code "element 1, element2 and element3}.
 	 *
 	 * @param elements the elements to combine.
 	 * @return The combined "readable" {@link String}.
 	 */
 	@Nonnull
 	public static String createReadableCombinedString(@Nullable Object... elements) {
-		return createReadableCombinedString(null, null, elements);
+		return createReadableCombinedString(false, null, null, elements);
+	}
+
+	/**
+	 * Creates a "readable" string by combining the objects in {@code elements}
+	 * while inserting "{@code ,}" and "{@code and}" as appropriate. The
+	 * resulting {@link String} is in the form
+	 * {@code "element 1, element2 and element3"}.
+	 *
+	 * @param quote if {@code true}, all elements will be quoted in
+	 *            double-quotes.
+	 * @param elements the elements to combine.
+	 * @return The combined "readable" {@link String}.
+	 */
+	public static String createReadableCombinedString(boolean quote, @Nullable Object... elements) {
+		return createReadableCombinedString(quote, null, null, elements);
 	}
 
 	/**
 	 * Creates a "readable" string by combining the objects in {@code elements}
 	 * while inserting {@code separator} and {@code lastSeparator} as
-	 * appropriate. The resulting {@link String} is in the form "
-	 * {@code element 1<separator> element2 <lastSeparator> element3}".
+	 * appropriate. The resulting {@link String} is in the form
+	 * {@code "element 1<separator> element2 <lastSeparator> element3"}.
 	 *
 	 * @param separator the "normal" separator used everywhere except between
 	 *            the last two elements.
@@ -965,6 +1053,30 @@ public class StringUtil {
 	 */
 	@Nonnull
 	public static String createReadableCombinedString(
+		@Nullable String separator,
+		@Nullable String lastSeparator,
+		@Nullable Object... elements
+	) {
+		return createReadableCombinedString(false, separator, lastSeparator, elements);
+	}
+
+	/**
+	 * Creates a "readable" string by combining the objects in {@code elements}
+	 * while inserting {@code separator} and {@code lastSeparator} as
+	 * appropriate. The resulting {@link String} is in the form
+	 * {@code "element 1<separator> element2 <lastSeparator> element3"}.
+	 *
+	 * @param quote if {@code true}, all elements will be quoted in
+	 *            double-quotes.
+	 * @param separator the "normal" separator used everywhere except between
+	 *            the last two elements.
+	 * @param lastSeparator the separator used between the last two elements.
+	 * @param elements the elements to combine.
+	 * @return The combined "readable" {@link String}.
+	 */
+	@Nonnull
+	public static String createReadableCombinedString(
+		boolean quote,
 		@Nullable String separator,
 		@Nullable String lastSeparator,
 		@Nullable Object... elements
@@ -981,9 +1093,9 @@ public class StringUtil {
 		} else {
 			separator += " ";
 		}
-		if (lastSeparator == null) {
+		if (isBlank(lastSeparator)) {
 			lastSeparator = " and ";
-		} else if (!isBlank(lastSeparator)) {
+		} else {
 			if (!lastSeparator.substring(0, 1).equals(" ")) {
 				lastSeparator = " " + lastSeparator;
 			}
@@ -994,13 +1106,17 @@ public class StringUtil {
 		StringBuilder sb = new StringBuilder();
 		for (int i = 0; i < elements.length; i++) {
 			if (i > 0) {
-				if (i == elements.length) {
+				if (i == elements.length - 1) {
 					sb.append(lastSeparator);
 				} else {
 					sb.append(separator);
 				}
 			}
-			sb.append(elements[i]);
+			if (quote) {
+				sb.append("\"").append(elements[i]).append("\"");
+			} else {
+				sb.append(elements[i]);
+			}
 		}
 		return sb.toString();
 	}
