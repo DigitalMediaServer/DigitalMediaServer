@@ -446,7 +446,7 @@ public abstract class Player {
 			return String.format(Messages.getString("Engine.Disabled"), name());
 		}
 		if (executableInfo.getErrorText() == null) {
-			return Messages.getString("General.3");
+			return Messages.getString("Generic.UnknownError");
 		}
 		return fullText ? executableInfo.getErrorText() : String.format(Messages.getString("Engine.ErrorShort"), name());
 	}

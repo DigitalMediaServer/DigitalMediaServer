@@ -34,6 +34,7 @@ import net.pms.Messages;
 import net.pms.PMS;
 import net.pms.configuration.FormatConfiguration;
 import net.pms.configuration.PmsConfiguration;
+import net.pms.configuration.PmsConfiguration.SubtitlesInfoLevel;
 import net.pms.configuration.RendererConfiguration;
 import net.pms.dlna.DLNAImageProfile.HypotheticalResult;
 import net.pms.dlna.virtual.TranscodeVirtualFolder;
@@ -1619,10 +1620,18 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 						.append("}");
 				}
 
+				SubtitlesInfoLevel subsInfoLevel;
+				if (parent instanceof ChapterFileTranscodeVirtualFolder) {
+					subsInfoLevel = SubtitlesInfoLevel.NONE;
+				} else if (parent instanceof FileTranscodeVirtualFolder) {
+					subsInfoLevel = SubtitlesInfoLevel.FULL;
+				} else {
+					subsInfoLevel = configuration.getSubtitlesInfoLevel();
+				}
 				if (
 					media_subtitle != null &&
 					media_subtitle.getId() != DLNAMediaLang.DUMMY_ID &&
-					!configuration.hideSubsInfo()
+					subsInfoLevel != SubtitlesInfoLevel.NONE
 				) {
 					if (nameSuffixBuilder.length() > 0) {
 						nameSuffixBuilder.append(" ");
@@ -1632,32 +1641,41 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 					if (subtitleLanguage == null) {
 						subtitleLanguage = ISO639.UND;
 					}
-					if (subsAreValidForStreaming) {
-						nameSuffixBuilder.append(Messages.getString("DLNAResource.3")).append(" ");
-					}
+					if (subsInfoLevel == SubtitlesInfoLevel.BASIC) {
+						if (subtitleLanguage == ISO639.UND) {
+							nameSuffixBuilder.append(Messages.getString("Generic.Unknown"));
+						} else {
+							nameSuffixBuilder.append(subtitleLanguage.getLocalizedNameFallback());
+						}
+						nameSuffixBuilder.append(" ").append(Messages.getString("Subtitles.LowerCase"));
+					} else if (subsInfoLevel == SubtitlesInfoLevel.FULL) {
+						if (subsAreValidForStreaming) {
+							nameSuffixBuilder.append(Messages.getString("DLNAResource.3")).append(" ");
+						}
 
-					if (media_subtitle.isExternal()) {
-						nameSuffixBuilder.append(Messages.getString("Subtitles.ExternalShort")).append(" ");
-					} else if (media_subtitle.isEmbedded()) {
-						nameSuffixBuilder.append(Messages.getString("Subtitles.InternalShort")).append(" ");
-					}
-					nameSuffixBuilder.append(Messages.getString("DLNAResource.2"));
-					nameSuffixBuilder.append(media_subtitle.getType().getShortName()).append("/");
+						if (media_subtitle.isExternal()) {
+							nameSuffixBuilder.append(Messages.getString("Subtitles.ExternalShort")).append(" ");
+						} else if (media_subtitle.isEmbedded()) {
+							nameSuffixBuilder.append(Messages.getString("Subtitles.InternalShort")).append(" ");
+						}
+						nameSuffixBuilder.append(Messages.getString("DLNAResource.2"));
+						nameSuffixBuilder.append(media_subtitle.getType().getShortName()).append("/");
 
-					if (subtitleLanguage == ISO639.UND) {
-						nameSuffixBuilder.append(Messages.getString("Subtitles.UnknownShort"));
-					} else {
-						nameSuffixBuilder.append(subtitleLanguage.getLocalizedNameFallback());
-					}
+						if (subtitleLanguage == ISO639.UND) {
+							nameSuffixBuilder.append(Messages.getString("Subtitles.UnknownShort"));
+						} else {
+							nameSuffixBuilder.append(subtitleLanguage.getLocalizedNameFallback());
+						}
 
-					if (
-						renderer != null &&
-						media_subtitle.getSubtitlesTrackTitleFromMetadata() != null &&
-						isNotBlank(media_subtitle.getSubtitlesTrackTitleFromMetadata()) &&
-						renderer.isShowSubMetadata()
-					) {
-						nameSuffixBuilder
-							.append(" (").append(media_subtitle.getSubtitlesTrackTitleFromMetadata()).append(")");
+						if (
+							renderer != null &&
+							media_subtitle.getSubtitlesTrackTitleFromMetadata() != null &&
+							isNotBlank(media_subtitle.getSubtitlesTrackTitleFromMetadata()) &&
+							renderer.isShowSubMetadata()
+						) {
+							nameSuffixBuilder
+								.append(" (").append(media_subtitle.getSubtitlesTrackTitleFromMetadata()).append(")");
+						}
 					}
 					nameSuffixBuilder.append("}");
 				}
