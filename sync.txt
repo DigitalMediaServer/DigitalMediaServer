@@ -1,4 +1,4 @@
-UMS sync with: 9c91cd69cf2728561e299ec3ab695f36a143ae16 Formatting and logging from 7.0.0
+UMS sync with: 4438c424702ab330fdc857e3db6e73c31973a87d Fixed a couple of NPE's in DLNAResource.getDlnaOrgPnFlags()
 
 Skipped:
 a4a099c7efcaf6dc8a28402a29eade757a2ce78d The ugly hack to solve problem when the TotalMatches are changed
@@ -19,3 +19,9 @@ dc7b860a2d04fc3a19b8c159672c0f5306f91408 Create Wizard class. (#1422)
 3c1eaed9fa1231ec6c70af68f2959382dd180aa8 Enabled automatic updating to 6.8.0 on Windows
 9c9b0047c7c1327bd82febf55362c5ece1b4fab8 Match 7.0.0 changelog
 bbaf1e4791d72263a547f187bb076fc7a1e842a0 Updated h2database to 1.4.196
+a6c0d95184c8985423331fe916edee59378f61fe 7.0.0
+cede0c88fafcd59229f25666b0dbb871e65eea57 Fixed "By Date" virtual folders on joined folders, and changed order to be more useful
+9a23204c49cb11c9e0e22a3f5b434c19778a0b20 Fix the mistyping in the DLNAMediaDatabase
+b9268bbd67a332054b898fcfc03e55e12e8e9d5e Order the "By date" folders from newest to oldest
+2d0dacd6b9231197a3df4d73ac773520ca275072 Fix bug in updating the database when is not created.
+1e6b1151faa47e0687d6ff6bce5bacf1d857aed4 Bump to 7.0.0-SNAPSHOT
