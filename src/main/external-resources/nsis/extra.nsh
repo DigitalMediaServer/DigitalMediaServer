@@ -7,3 +7,4 @@
 !define PROJECT_VERSION_SHORT "${project.version.short}"
 !define PROJECT_BINARIES "${project.binaries}"
 !define PROJECT_NAME_SHORT "${project.name.short}"
+!define PROJECT_NAME_CAMEL "${project.name.camel}"

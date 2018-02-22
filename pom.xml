@@ -69,6 +69,7 @@
 	</issueManagement>
 	<properties>
 		<project.name.short>DMS</project.name.short>
+		<project.name.camel>DigitalMediaServer</project.name.camel>
 		<!-- NSIS needs a version without "-SNAPSHOT" or "-b1" -->
 		<project.version.short>0.0.1</project.version.short>
 		<cuelib-version>1.2.1-2008-06-13</cuelib-version>
