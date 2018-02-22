@@ -190,14 +190,14 @@ Section "!Media Server" sec1
 	File /r /x "*.conf" /x "*.zip" /x "*.dll" /x "third-party" "${PROJECT_BASEDIR}\src\main\external-resources\plugins"
 	File /r "${PROJECT_BASEDIR}\src\main\external-resources\documentation"
 	File /r "${PROJECT_BASEDIR}\src\main\external-resources\renderers"
-	File /r /x "ffmpeg*.exe" /x "avisynth" "${PROJECT_BASEDIR}\target\bin\win32"
+	File /r /x "ffmpeg*.exe" /x "avisynth" /x "MediaInfo64.dll "${PROJECT_BASEDIR}\target\bin\win32"
 	File "${PROJECT_BUILD_DIR}\${PROJECT_NAME_SHORT}.exe"
 	File "${PROJECT_BASEDIR}\src\main\external-resources\${PROJECT_NAME_SHORT}.bat"
 	File /r "${PROJECT_BASEDIR}\src\main\external-resources\web"
 	File "${PROJECT_BUILD_DIR}\${PROJECT_ARTIFACT_ID}.jar"
-	File "${PROJECT_BASEDIR}\MediaInfo-License.html"
-	File "${PROJECT_BASEDIR}\UMS_CHANGELOG.txt"
+	; File "${PROJECT_BASEDIR}\CHANGELOG.txt"
 	File "${PROJECT_BASEDIR}\README.md"
+	File "${PROJECT_BASEDIR}\README.txt"
 	File "${PROJECT_BASEDIR}\LICENSE.txt"
 	File "${PROJECT_BASEDIR}\src\main\external-resources\logback.xml"
 	File "${PROJECT_BASEDIR}\src\main\external-resources\logback.headless.xml"
@@ -205,14 +205,24 @@ Section "!Media Server" sec1
 	File "${PROJECT_BASEDIR}\src\main\external-resources\DummyInput.ass"
 	File "${PROJECT_BASEDIR}\src\main\external-resources\DummyInput.jpg"
 
-	; The user may have set the installation dir as the profile directory, so we can't clobber this
+	SetOutPath "$INSTDIR\win32\service"
+	File "${PROJECT_BASEDIR}\src\main\external-resources\third-party\wrapper\*.*"
+
+	SetOutPath "$INSTDIR\win32"
+	File "${PROJECT_BASEDIR}\src\main\external-resources\lib\ctrlsender\ctrlsender.exe"
+	${If} ${IsWinXP}
+		File /r "${PROJECT_BASEDIR}\src\main\external-resources\lib\winxp"
+	${EndIf}
+
+	; The user may have set the installation dir as the profile dir, so we can't clobber this
+	SetOutPath "$INSTDIR"
 	SetOverwrite off
 	File "${PROJECT_BASEDIR}\src\main\external-resources\${PROJECT_NAME_SHORT}.conf"
 	File "${PROJECT_BASEDIR}\src\main\external-resources\WEB.conf"
 	File "${PROJECT_BASEDIR}\src\main\external-resources\ffmpeg.webfilters"
 	File "${PROJECT_BASEDIR}\src\main\external-resources\VirtualFolders.conf"
 
-	; Remove old renderers version files to prevent conflicts
+	; Remove old renderer files to prevent conflicts
 	Delete /REBOOTOK "$INSTDIR\renderers\AirPlayer.conf"
 	Delete /REBOOTOK "$INSTDIR\renderers\Android.conf"
 	Delete /REBOOTOK "$INSTDIR\renderers\AndroidChromecast.conf"
@@ -275,7 +285,7 @@ Section "!Media Server" sec1
 	Delete /REBOOTOK "$INSTDIR\renderers\YamahaRXV671.conf"
 	Delete /REBOOTOK "$INSTDIR\renderers\YamahaRXV3900.conf"
 
-; Store install folder
+	; Store install folder
 	WriteRegStr HKCU "${REG_KEY_SOFTWARE}" "" $INSTDIR
 
 	; Create uninstaller
@@ -296,10 +306,10 @@ Section "!Media Server" sec1
 	WriteUninstaller "$INSTDIR\uninst.exe"
 
 	ReadENVStr $R0 "ALLUSERSPROFILE"
-	SetOutPath "$R0\${PROJECT_NAME_SHORT}"
-	CreateDirectory "$R0\${PROJECT_NAME_SHORT}\data"
-	AccessControl::GrantOnFile "$R0\${PROJECT_NAME_SHORT}" "(S-1-5-32-545)" "FullAccess"
-;	AccessControl::GrantOnFile "$R0\${PROJECT_NAME_SHORT}\data" "(BU)" "FullAccess"
+	SetOutPath "$R0\${PROJECT_NAME_CAMEL}"
+	CreateDirectory "$R0\${PROJECT_NAME_CAMEL}\data"
+	AccessControl::GrantOnFile "$R0\${PROJECT_NAME_CAMEL}" "(S-1-5-32-545)" "FullAccess"
+;	AccessControl::GrantOnFile "$R0\${PROJECT_NAME_CAMEL}\data" "(BU)" "FullAccess"
 	File "${PROJECT_BASEDIR}\src\main\external-resources\${PROJECT_NAME_SHORT}.conf"
 	File "${PROJECT_BASEDIR}\src\main\external-resources\WEB.conf"
 	File "${PROJECT_BASEDIR}\src\main\external-resources\ffmpeg.webfilters"
@@ -320,25 +330,21 @@ Section "-32-bit" sec11
 	SetOverwrite on
 	SetOutPath "$INSTDIR\win32"
 	File "${PROJECT_BASEDIR}\target\bin\win32\ffmpeg.exe"
-	SetOutPath "$INSTDIR"
-	File "${PROJECT_BASEDIR}\MediaInfo.dll"
-	LockedList::AddModule "$INSTDIR\MediaInfo.dll"
+	LockedList::AddModule "$INSTDIR\win32\MediaInfo.dll"
 SectionEnd
 
 Section "-64-bit" sec12
 	SetOverwrite on
 	SetOutPath "$INSTDIR\win32"
 	File "${PROJECT_BASEDIR}\target\bin\win32\ffmpeg64.exe"
-	SetOutPath "$INSTDIR"
-	File "${PROJECT_BASEDIR}\MediaInfo.dll"
-	LockedList::AddModule "$INSTDIR\MediaInfo.dll"
-	File "${PROJECT_BASEDIR}\MediaInfo64.dll"
-	LockedList::AddModule "$INSTDIR\MediaInfo64.dll"
+	LockedList::AddModule "$INSTDIR\win32\MediaInfo.dll"
+	File "${PROJECT_BASEDIR}\target\bin\win32\MediaInfo64.dll"
+	LockedList::AddModule "$INSTDIR\win32\MediaInfo64.dll"
 SectionEnd
 
 Section /o "Clean install" sec5
 	ReadENVStr $R1 "ALLUSERSPROFILE"
-	RMDir /r $R1\${PROJECT_NAME_SHORT}
+	RMDir /r $R1\${PROJECT_NAME_CAMEL}
 	RMDir /r $TEMP\fontconfig
 	RMDir /r $LOCALAPPDATA\fontconfig
 	RMDir /r $INSTDIR
@@ -737,17 +743,12 @@ Section Uninstall
 	RMDir /r /REBOOTOK "$INSTDIR\data"
 	RMDir /r /REBOOTOK "$INSTDIR\web"
 	RMDir /r /REBOOTOK "$INSTDIR\win32"
-	RMDir /r /REBOOTOK "$INSTDIR\renderers"
+	RMDir /REBOOTOK "$INSTDIR\renderers"
 
 	Delete /REBOOTOK "$INSTDIR\${PROJECT_NAME_SHORT}.exe"
 	Delete /REBOOTOK "$INSTDIR\${PROJECT_NAME_SHORT}.bat"
 	Delete /REBOOTOK "$INSTDIR\${PROJECT_ARTIFACT_ID}.jar"
-	${If} ${RunningX64}
-		Delete /REBOOTOK "$INSTDIR\MediaInfo64.dll"
-	${EndIf}
-	Delete /REBOOTOK "$INSTDIR\MediaInfo.dll"
-	Delete /REBOOTOK "$INSTDIR\MediaInfo-License.html"
-	Delete /REBOOTOK "$INSTDIR\UMS_CHANGELOG.txt"
+	; Delete /REBOOTOK "$INSTDIR\CHANGELOG.txt"
 	Delete /REBOOTOK "$INSTDIR\WEB.conf"
 	Delete /REBOOTOK "$INSTDIR\README.md"
 	Delete /REBOOTOK "$INSTDIR\README.txt"
@@ -761,7 +762,7 @@ Section Uninstall
 	Delete /REBOOTOK "$INSTDIR\DummyInput.ass"
 	Delete /REBOOTOK "$INSTDIR\DummyInput.jpg"
 	Delete /REBOOTOK "$INSTDIR\new-version.exe"
-	Delete /REBOOTOK "$INSTDIR\pms.pid"
+	Delete /REBOOTOK "$INSTDIR\${PROJECT_ARTIFACT_ID}.pid"
 	Delete /REBOOTOK "$INSTDIR\${PROJECT_NAME_SHORT}.conf"
 	Delete /REBOOTOK "$INSTDIR\VirtualFolders.conf"
 	RMDir /REBOOTOK "$INSTDIR"
