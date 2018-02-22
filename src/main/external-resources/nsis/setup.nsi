@@ -1,5 +1,4 @@
 ﻿Unicode "true"
-Unicode "true"
 ; LogSet on
 ManifestDPIAware true
 
@@ -33,7 +32,6 @@ SetCompressorDictSize 64
 !define /utcdate BUILD_YEAR "%Y"
 
 Name "${PROJECT_NAME}"
-InstallDir "$PROGRAMFILES\${PROJECT_NAME}"
 BrandingText "$CopyLeft"
 
 XPStyle on
@@ -179,6 +177,17 @@ Var RAM
 
 ; ComponentText "Select the components you want to install."
 
+Section /o "-Cleaning" sec0
+	ReadENVStr $R1 "ALLUSERSPROFILE"
+	RMDir /r $R1\${PROJECT_NAME_CAMEL}
+	RMDir /r $TEMP\fontconfig
+	RMDir /r $LOCALAPPDATA\fontconfig
+	RMDir /r $INSTDIR\plugins
+	RMDir /r $INSTDIR\renderers
+	RMDir /r $INSTDIR\win32
+	RMDir $INSTDIR
+SectionEnd
+
 Section "!Media Server" sec1
 	SectionIn RO
 
@@ -190,7 +199,7 @@ Section "!Media Server" sec1
 	File /r /x "*.conf" /x "*.zip" /x "*.dll" /x "third-party" "${PROJECT_BASEDIR}\src\main\external-resources\plugins"
 	File /r "${PROJECT_BASEDIR}\src\main\external-resources\documentation"
 	File /r "${PROJECT_BASEDIR}\src\main\external-resources\renderers"
-	File /r /x "ffmpeg*.exe" /x "avisynth" /x "MediaInfo64.dll "${PROJECT_BASEDIR}\target\bin\win32"
+	File /r /x "ffmpeg*.exe" /x "avisynth" /x "MediaInfo64.dll" "${PROJECT_BASEDIR}\target\bin\win32"
 	File "${PROJECT_BUILD_DIR}\${PROJECT_NAME_SHORT}.exe"
 	File "${PROJECT_BASEDIR}\src\main\external-resources\${PROJECT_NAME_SHORT}.bat"
 	File /r "${PROJECT_BASEDIR}\src\main\external-resources\web"
@@ -210,9 +219,6 @@ Section "!Media Server" sec1
 
 	SetOutPath "$INSTDIR\win32"
 	File "${PROJECT_BASEDIR}\src\main\external-resources\lib\ctrlsender\ctrlsender.exe"
-	${If} ${IsWinXP}
-		File /r "${PROJECT_BASEDIR}\src\main\external-resources\lib\winxp"
-	${EndIf}
 
 	; The user may have set the installation dir as the profile dir, so we can't clobber this
 	SetOutPath "$INSTDIR"
@@ -319,10 +325,10 @@ SectionEnd
 Section "Start Menu Shortcuts" sec7
 	SetShellVarContext all
 	CreateDirectory "$SMPROGRAMS\${PROJECT_NAME}"
-	CreateShortCut "$SMPROGRAMS\${PROJECT_NAME}\Select a profile.lnk" "$INSTDIR\${PROJECT_NAME_SHORT}.exe" "profiles" "" "" SW_SHOWNORMAL CONTROL|SHIFT|P "Select a profile"
-	CreateShortCut "$SMPROGRAMS\${PROJECT_NAME}\'${PROJECT_NAME}.lnk" "$INSTDIR\${PROJECT_NAME_SHORT}.exe" "" "" "" SW_SHOWNORMAL ALT|F9 "Start ${PROJECT_NAME}"
+	CreateShortCut "$SMPROGRAMS\${PROJECT_NAME}\${PROJECT_NAME_SHORT} (Select Profile).lnk" "$INSTDIR\${PROJECT_NAME_SHORT}.exe" "profiles" "" "" SW_SHOWNORMAL CONTROL|SHIFT|P "Select a profile"
+	CreateShortCut "$SMPROGRAMS\${PROJECT_NAME}\${PROJECT_NAME}.lnk" "$INSTDIR\${PROJECT_NAME_SHORT}.exe" "" "" "" SW_SHOWNORMAL ALT|F9 "Start ${PROJECT_NAME}"
 	${If} ${IsWinXP}
-		CreateShortCut "$SMPROGRAMS\${PROJECT_NAME}\Uninstall.lnk" "$INSTDIR\uninst.exe" "" "" "" SW_SHOWNORMAL CONTROL|SHIFT|U "Unistall ${PROJECT_NAME}"
+		CreateShortCut "$SMPROGRAMS\${PROJECT_NAME}\Uninstall.lnk" "$INSTDIR\uninst.exe" "" "" "" SW_SHOWNORMAL CONTROL|SHIFT|U "Uninstall ${PROJECT_NAME}"
 	${EndIf}
 SectionEnd
 
@@ -342,12 +348,13 @@ Section "-64-bit" sec12
 	LockedList::AddModule "$INSTDIR\win32\MediaInfo64.dll"
 SectionEnd
 
+Section /o "-XP" sec13
+	SetOverwrite on
+	SetOutPath "$INSTDIR\win32"
+	File /r "${PROJECT_BASEDIR}\src\main\external-resources\lib\winxp"
+SectionEnd
+
 Section /o "Clean install" sec5
-	ReadENVStr $R1 "ALLUSERSPROFILE"
-	RMDir /r $R1\${PROJECT_NAME_CAMEL}
-	RMDir /r $TEMP\fontconfig
-	RMDir /r $LOCALAPPDATA\fontconfig
-	RMDir /r $INSTDIR
 SectionEnd
 
 Section /o "Windows firewall configuration" sec2
@@ -480,6 +487,12 @@ Function .onSelChange
 		ShowWindow $1 ${SW_SHOW}
 	${EndIf}
 
+	
+	SectionGetFlags ${sec5} $1
+	${If} $1 != 0
+		SectionSetFlags ${sec0} ${SF_SELECTED}
+	${EndIf}
+
 	; Heap memory size section group radio buttons
 	StrCpy $2 0
 
@@ -539,7 +552,9 @@ FunctionEnd
 Function .onInit
 	${If} ${RunningX64}
 		SetRegView 64
-		${EnableX64FSRedirection}
+		StrCpy "$INSTDIR" "$PROGRAMFILES64\${PROJECT_NAME}"
+	${Else}
+		StrCpy "$INSTDIR" "$PROGRAMFILES\${PROJECT_NAME}"
 	${EndIf}
 
 	InitPluginsDir
@@ -589,6 +604,10 @@ Function .onInit
 	${AndIfNot} ${AtLeastServicePack} 3
 		MessageBox MB_OK|MB_ICONEXCLAMATION "Windows XP SP3 and above is required"
 		Quit
+	${EndIf}
+
+	${If} ${IsWinXP}
+		SectionSetFlags ${sec13} ${SF_SELECTED}
 	${EndIf}
 
 	!insertmacro MUI_LANGDLL_DISPLAY
