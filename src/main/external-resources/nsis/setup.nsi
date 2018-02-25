@@ -1,5 +1,4 @@
 Unicode "true"
-; LogSet on
 ManifestDPIAware true
 
 !pragma warning disable 9000
@@ -26,7 +25,7 @@ SetCompressorDictSize 64
 !define PRODUCT_NAME "${PROJECT_NAME}"
 !define PRODUCT_VERSION "v${PROJECT_VERSION_SHORT}"
 !define PRODUCT_PUBLISHER "${PROJECT_NAME} Team"
-!define PRODUCT_WEB_SITE "https://github.com/DigitalMediaServer/DigitalMediaServer"
+!define PRODUCT_WEB_SITE "${PROJECT_ORGANIZATION_URL}"
 !define REG_KEY_UNINSTALL "SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\${PROJECT_NAME}"
 !define REG_KEY_SOFTWARE "SOFTWARE\${PROJECT_NAME}"
 !define /utcdate BUILD_YEAR "%Y"
@@ -40,6 +39,8 @@ SetDatablockOptimize on
 SetDateSave on
 CRCCheck force
 RequestExecutionLevel admin
+AllowSkipFiles off
+ManifestSupportedOS all ;Left here to remember to add GUI ID in case Windows 11 or above appear before NSIS add their support by default
 
 ; Get install folder from registry for updates
 
@@ -56,7 +57,7 @@ InstallDirRegKey HKCU "${REG_KEY_SOFTWARE}" ""
 !define MUI_BGCOLOR FFFFFF
 !define MUI_HEADER_TRANSPARENT_TEXT
 !define MUI_LANGDLL_ALLLANGUAGES
-; Remember the installer language (Language Selection in Dialog Settings)
+; Remember the installer language (Language selection in dialog settings)
 !define MUI_LANGDLL_REGISTRY_ROOT "HKCU"
 !define MUI_LANGDLL_REGISTRY_KEY "${REG_KEY_SOFTWARE}"
 !define MUI_LANGDLL_REGISTRY_VALUENAME "Installer Language"
@@ -72,8 +73,8 @@ InstallDirRegKey HKCU "${REG_KEY_SOFTWARE}" ""
 !define MUI_PAGE_CUSTOMFUNCTION_SHOW showHiDPI
 !define MUI_FINISHPAGE_TITLE_3LINES
 !define MUI_FINISHPAGE_LINK_COLOR 1E90FF
-!define MUI_FINISHPAGE_LINK "Click here to access our Github project"
-!define MUI_FINISHPAGE_LINK_LOCATION "https://github.com/DigitalMediaServer/DigitalMediaServer"
+!define MUI_FINISHPAGE_LINK "Click here to access our Website"
+!define MUI_FINISHPAGE_LINK_LOCATION "${PROJECT_ORGANIZATION_URL}"
 !define MUI_FINISHPAGE_NOAUTOCLOSE
 !define MUI_FINISHPAGE_RUN
 !define MUI_FINISHPAGE_RUN_FUNCTION RunDMS
@@ -96,7 +97,7 @@ ShowUninstDetails show
 
 ; Languages
 
-!insertmacro MUI_LANGUAGE "English" ;first language is the default language
+!insertmacro MUI_LANGUAGE "English" ; First language is the default language
 !insertmacro MUI_LANGUAGE "French"
 !insertmacro MUI_LANGUAGE "German"
 !insertmacro MUI_LANGUAGE "Spanish"
@@ -182,10 +183,7 @@ Section /o "-Cleaning" sec0
 	RMDir /r $R1\${PROJECT_NAME_CAMEL}
 	RMDir /r $TEMP\fontconfig
 	RMDir /r $LOCALAPPDATA\fontconfig
-	RMDir /r $INSTDIR\plugins
-	RMDir /r $INSTDIR\renderers
-	RMDir /r $INSTDIR\win32
-	RMDir $INSTDIR
+	RMDir /r $INSTDIR
 SectionEnd
 
 Section "!Media Server" sec1
@@ -196,7 +194,7 @@ Section "!Media Server" sec1
 
 	CreateDirectory "$INSTDIR\plugins"
 	AccessControl::GrantOnFile "$INSTDIR\plugins" "(S-1-5-32-545)" "FullAccess"
-	File /r /x "*.conf" /x "*.zip" /x "*.dll" /x "third-party" "${PROJECT_BASEDIR}\src\main\external-resources\plugins"
+	File /r /x "*.conf" /x "*.zip" /x "*.rar" /x "*.7z" /x "*.dll" /x "third-party" "${PROJECT_BASEDIR}\src\main\external-resources\plugins"
 	File /r "${PROJECT_BASEDIR}\src\main\external-resources\documentation"
 	File /r "${PROJECT_BASEDIR}\src\main\external-resources\renderers"
 	File /r /x "ffmpeg*.exe" /x "avisynth" /x "MediaInfo64.dll" "${PROJECT_BASEDIR}\target\bin\win32"
@@ -215,12 +213,12 @@ Section "!Media Server" sec1
 	File "${PROJECT_BASEDIR}\src\main\external-resources\DummyInput.jpg"
 
 	SetOutPath "$INSTDIR\win32\service"
-	File "${PROJECT_BASEDIR}\src\main\external-resources\third-party\wrapper\*.*"
+	File /r "${PROJECT_BASEDIR}\src\main\external-resources\third-party\wrapper"
 
 	SetOutPath "$INSTDIR\win32"
 	File "${PROJECT_BASEDIR}\src\main\external-resources\lib\ctrlsender\ctrlsender.exe"
 
-	; The user may have set the installation dir as the profile dir, so we can't clobber this
+	; The user may have set the installation directory as the profile directory, so we can't clobber this
 	SetOutPath "$INSTDIR"
 	SetOverwrite off
 	File "${PROJECT_BASEDIR}\src\main\external-resources\${PROJECT_NAME_SHORT}.conf"
@@ -375,7 +373,7 @@ Section /o "Windows firewall configuration" sec2
 		nsExec::Exec 'netsh firewall add portopening protocol=All port=1900 name="Digital Media Server - TCP/UDP 1900" mode=enable profile=standard'
 		nsExec::Exec 'netsh firewall add portopening protocol=all port=1900 name="Digital Media Server - TCP/UDP 1900" mode=enable profile=domain'
 	${EndIf}
-	; Future Windows 10 or later versions should not accept anymore "netsh" use for the firewall configuration, so a powershell script or plugin or code should be used [${AtLeastWin10},${AtLeastServicePack},${IsWin10}]
+	; Future Windows 10 or later versions should not accept anymore "netsh" use for the firewall configuration, so a powershell script or plugin or code should be used
 	; To check if other firewalls are blocking ports: netstat -ano | findstr -i "5001" or portqry.exe -n x.x.x.x -e 5001
 SectionEnd
 
@@ -547,6 +545,8 @@ Function onGUIInit
 FunctionEnd
 
 Function .onInit
+	; LogSet on
+
 	${If} ${RunningX64}
 		SetRegView 64
 		StrCpy "$INSTDIR" "$PROGRAMFILES64\${PROJECT_NAME}"
