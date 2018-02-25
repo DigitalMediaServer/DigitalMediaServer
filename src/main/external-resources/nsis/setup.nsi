@@ -403,19 +403,14 @@ Section /o "Install Java" sec3 ; http://www.oracle.com/technetwork/java/javase/w
 		StrCpy $0 "javadl.oracle.com/webapps/download/AutoDL?BundleId=227552_e758a0de34e24606bca991d704f6dcbf"
 		StrCpy $1 "jre-8u151-windows-x64.exe"
 	${EndIf}
-	System::Call 'ole32::CoCreateGuid(g .s)'
-	Pop $2
-	StrCpy $2 "$TEMP\$2"
-	CreateDirectory "$2"
-	inetc::get /WEAKSECURITY /RESUME "" /CONNECTTIMEOUT 30 /POPUP "$1" /CAPTION "Official Oracle Java 8" /QUESTION "" /USERAGENT "Mozilla/5.0 (Windows NT 6.3; rv:48.0) Gecko/20100101 Firefox/48.0" /HEADER "Cookie: oraclelicense=accept-securebackup-cookie" /NOCOOKIES "$0" "$2\$1" /END
+	inetc::get /WEAKSECURITY /RESUME "" /CONNECTTIMEOUT 30 /POPUP "$1" /CAPTION "Official Oracle Java 8" /QUESTION "" /USERAGENT "Mozilla/5.0 (Windows NT 6.3; rv:48.0) Gecko/20100101 Firefox/48.0" /HEADER "Cookie: oraclelicense=accept-securebackup-cookie" /NOCOOKIES "$0" "$PLUGINSDIR\$1" /END
 	; /TRANSLATE $(downloading) $(downloadconnecting) $(downloadsecond) $(downloadminute) $(downloadhour) $(downloadplural) "%dkB (%d%%) of %dkB @ %d.%01dkB/s" " (%d %s%s $(downloadremaining))"
 	Pop $0
-	StrCmpS $0 "OK" +3 0
+	StrCmpS $0 "OK" +3
 	MessageBox MB_ICONEXCLAMATION "HTTP download error ($0).$\r$\n$\r$\nVerify your firewall configuration and your Internet connection, or download Java manually."
 	Goto end
 
-	ExecWait "$2\$1" ; '"$2\$1 /s /v$\"/qn ADDLOCAL=ALL REBOOT=Suppress /L C:\setup.log$\""'
-	RMDir /REBOOTOK $TEMP\$2
+	ExecWait "$PLUGINSDIR\$1" ; '"$PLUGINSDIR\$1 /s /v$\"/qn ADDLOCAL=ALL REBOOT=Suppress /L C:\setup.log$\""'
 
 	end:
 SectionEnd
