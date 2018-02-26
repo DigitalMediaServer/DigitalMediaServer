@@ -545,7 +545,7 @@ Function onGUIInit
 FunctionEnd
 
 Function .onInit
-	; LogSet on
+	; LogSet on ; http://nsis.sourceforge.net/Special_Builds
 
 	${If} ${RunningX64}
 		SetRegView 64
@@ -752,36 +752,36 @@ FunctionEnd
 Section Uninstall
 	SetShellVarContext all
 	SetOutPath $TEMP ; Make sure $InstDir is not the current directory so we can remove it
+	ClearErrors
+	FileOpen $0 "$INSTDIR\install.log" r
+	IfErrors 0 looping
+	MessageBox MB_ICONSTOP 'Cannot open the file "install.log".$\r$\nThe uninstaller ¨cannot work correctly.'
+	Quit
 
-	Delete /REBOOTOK "$INSTDIR\uninst.exe"
-	RMDir /r /REBOOTOK "$INSTDIR\plugins"
-	RMDir /r /REBOOTOK "$INSTDIR\documentation"
-	RMDir /r /REBOOTOK "$INSTDIR\data"
-	RMDir /r /REBOOTOK "$INSTDIR\web"
-	RMDir /r /REBOOTOK "$INSTDIR\win32"
-	RMDir /REBOOTOK "$INSTDIR\renderers"
+	looping:
+		ClearErrors
+		FileReadUTF16LE $0 $1
+		IfErrors EOF
+		${WordFindS} "$1" "File: wrote" "E+1" $3
+		IfErrors looping
+		${WordFind2X} "$1" "$\"" "$\"" "E+1" $3
+		IfErrors looping
+		Delete /REBOOTOK $3
+		${WordFind} "$3" "\" "-1{" $4
+		RMDir /REBOOTOK $4
+		Goto looping
 
-	Delete /REBOOTOK "$INSTDIR\${PROJECT_NAME_SHORT}.exe"
-	Delete /REBOOTOK "$INSTDIR\${PROJECT_NAME_SHORT}.bat"
-	Delete /REBOOTOK "$INSTDIR\${PROJECT_ARTIFACT_ID}.jar"
-	; Delete /REBOOTOK "$INSTDIR\CHANGELOG.txt"
-	Delete /REBOOTOK "$INSTDIR\WEB.conf"
-	Delete /REBOOTOK "$INSTDIR\README.md"
-	Delete /REBOOTOK "$INSTDIR\README.txt"
-	Delete /REBOOTOK "$INSTDIR\LICENSE.txt"
-	Delete /REBOOTOK "$INSTDIR\debug.log"
-	Delete /REBOOTOK "$INSTDIR\debug.log.prev"
-	Delete /REBOOTOK "$INSTDIR\ffmpeg.webfilters"
-	Delete /REBOOTOK "$INSTDIR\logback.xml"
-	Delete /REBOOTOK "$INSTDIR\logback.headless.xml"
-	Delete /REBOOTOK "$INSTDIR\icon.ico"
-	Delete /REBOOTOK "$INSTDIR\DummyInput.ass"
-	Delete /REBOOTOK "$INSTDIR\DummyInput.jpg"
-	Delete /REBOOTOK "$INSTDIR\new-version.exe"
-	Delete /REBOOTOK "$INSTDIR\${PROJECT_ARTIFACT_ID}.pid"
-	Delete /REBOOTOK "$INSTDIR\${PROJECT_NAME_SHORT}.conf"
-	Delete /REBOOTOK "$INSTDIR\VirtualFolders.conf"
-	RMDir /REBOOTOK "$INSTDIR"
+	EOF:
+		FileClose $0
+		Delete /REBOOTOK "$INSTDIR\install.log"
+		Delete /REBOOTOK "$INSTDIR\uninst.exe"
+		RMDir /REBOOTOK "$INSTDIR\documentation"
+		RMDir /REBOOTOK "$INSTDIR\web\bump"
+		RMDir /REBOOTOK "$INSTDIR\web"
+		RMDir /REBOOTOK "$INSTDIR\win32\fonts\conf.avail"
+		RMDir /REBOOTOK "$INSTDIR\win32\fonts"
+		RMDir /REBOOTOK "$INSTDIR\win32"
+		RMDir /REBOOTOK "$INSTDIR"
 
 	Delete /REBOOTOK "$DESKTOP\${PROJECT_NAME}.lnk"
 	Delete /REBOOTOK "$SMPROGRAMS\${PROJECT_NAME}\${PROJECT_NAME}.lnk"
@@ -794,7 +794,7 @@ Section Uninstall
 
 	!insertmacro SERVICE "running" "${PROJECT_NAME}" ""
 	Pop $0
-	StrCmpS $0 "false" Done 0
+	StrCmpS $0 "false" Done
 
 	ServiceStop:
 		!insertmacro SERVICE "stop" "${PROJECT_NAME}" ""
