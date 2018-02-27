@@ -226,69 +226,6 @@ Section "!Media Server" sec1
 	File "${PROJECT_BASEDIR}\src\main\external-resources\ffmpeg.webfilters"
 	File "${PROJECT_BASEDIR}\src\main\external-resources\VirtualFolders.conf"
 
-	; Remove old renderer files to prevent conflicts
-	Delete /REBOOTOK "$INSTDIR\renderers\AirPlayer.conf"
-	Delete /REBOOTOK "$INSTDIR\renderers\Android.conf"
-	Delete /REBOOTOK "$INSTDIR\renderers\AndroidChromecast.conf"
-	Delete /REBOOTOK "$INSTDIR\renderers\BlackBerryPlayBook-KalemSoftMP.conf"
-	Delete /REBOOTOK "$INSTDIR\renderers\Bravia4500.conf"
-	Delete /REBOOTOK "$INSTDIR\renderers\Bravia5500.conf"
-	Delete /REBOOTOK "$INSTDIR\renderers\BraviaBX305.conf"
-	Delete /REBOOTOK "$INSTDIR\renderers\BraviaEX.conf"
-	Delete /REBOOTOK "$INSTDIR\renderers\BraviaEX620.conf"
-	Delete /REBOOTOK "$INSTDIR\renderers\BraviaHX.conf"
-	Delete /REBOOTOK "$INSTDIR\renderers\BraviaW.conf"
-	Delete /REBOOTOK "$INSTDIR\renderers\BraviaXBR.conf"
-	Delete /REBOOTOK "$INSTDIR\renderers\CambridgeAudioAzur752BD.conf"
-	Delete /REBOOTOK "$INSTDIR\renderers\DirecTVHR.conf"
-	Delete /REBOOTOK "$INSTDIR\renderers\Dlink510.conf"
-	Delete /REBOOTOK "$INSTDIR\renderers\DLinkDSM510.conf"
-	Delete /REBOOTOK "$INSTDIR\renderers\FreeboxHD.conf"
-	Delete /REBOOTOK "$INSTDIR\renderers\FreecomMusicPal.conf"
-	Delete /REBOOTOK "$INSTDIR\renderers\iPad-iPhone.conf"
-	Delete /REBOOTOK "$INSTDIR\renderers\Kuro.conf"
-	Delete /REBOOTOK "$INSTDIR\renderers\LG-42LA644V.conf"
-	Delete /REBOOTOK "$INSTDIR\renderers\LGST600.conf"
-	Delete /REBOOTOK "$INSTDIR\renderers\N900.conf"
-	Delete /REBOOTOK "$INSTDIR\renderers\NetgearNeoTV.conf"
-	Delete /REBOOTOK "$INSTDIR\renderers\OnkyoTX-NR717.conf"
-	Delete /REBOOTOK "$INSTDIR\renderers\OPPOBDP83.conf"
-	Delete /REBOOTOK "$INSTDIR\renderers\OPPOBDP93.conf"
-	Delete /REBOOTOK "$INSTDIR\renderers\Panasonic.conf"
-	Delete /REBOOTOK "$INSTDIR\renderers\Panasonic-SC-BTT.conf"
-	Delete /REBOOTOK "$INSTDIR\renderers\Panasonic-TH-P-U30Z.conf"
-	Delete /REBOOTOK "$INSTDIR\renderers\PanasonicTX-L32V10E.conf"
-	Delete /REBOOTOK "$INSTDIR\renderers\Panasonic-VT60.conf"
-	Delete /REBOOTOK "$INSTDIR\renderers\Philips.conf"
-	Delete /REBOOTOK "$INSTDIR\renderers\PhilipsPFL.conf"
-	Delete /REBOOTOK "$INSTDIR\renderers\PS3.conf"
-	Delete /REBOOTOK "$INSTDIR\renderers\Roku-Roku3.conf"
-	Delete /REBOOTOK "$INSTDIR\renderers\SamsungAllShare.conf"
-	Delete /REBOOTOK "$INSTDIR\renderers\SamsungAllShare-CD.conf"
-	Delete /REBOOTOK "$INSTDIR\renderers\SamsungAllShare-D7000.conf"
-	Delete /REBOOTOK "$INSTDIR\renderers\SamsungMobile.conf"
-	Delete /REBOOTOK "$INSTDIR\renderers\Samsung-HT-E3.conf"
-	Delete /REBOOTOK "$INSTDIR\renderers\Samsung-SMT-G7400.conf"
-	Delete /REBOOTOK "$INSTDIR\renderers\Samsung-UE-ES6575.conf"
-	Delete /REBOOTOK "$INSTDIR\renderers\SamsungWiseLink.conf"
-	Delete /REBOOTOK "$INSTDIR\renderers\SharpAquos.conf"
-	Delete /REBOOTOK "$INSTDIR\renderers\SMP-N100.conf"
-	Delete /REBOOTOK "$INSTDIR\renderers\SonyBluray.conf"
-	Delete /REBOOTOK "$INSTDIR\renderers\SonyHomeTheatreSystem.conf"
-	Delete /REBOOTOK "$INSTDIR\renderers\SonySTR-5800ES.conf"
-	Delete /REBOOTOK "$INSTDIR\renderers\SonyXperia.conf"
-	Delete /REBOOTOK "$INSTDIR\renderers\Streamium.conf"
-	Delete /REBOOTOK "$INSTDIR\renderers\TelstraTbox.conf"
-	Delete /REBOOTOK "$INSTDIR\renderers\VideoWebTV.conf"
-	Delete /REBOOTOK "$INSTDIR\renderers\VizioSmartTV.conf"
-	Delete /REBOOTOK "$INSTDIR\renderers\WDTVLive.conf"
-	Delete /REBOOTOK "$INSTDIR\renderers\WMP.conf"
-	Delete /REBOOTOK "$INSTDIR\renderers\XBOX360.conf"
-	Delete /REBOOTOK "$INSTDIR\renderers\XboxOne.conf"
-	Delete /REBOOTOK "$INSTDIR\renderers\YamahaRXA1010.conf"
-	Delete /REBOOTOK "$INSTDIR\renderers\YamahaRXV671.conf"
-	Delete /REBOOTOK "$INSTDIR\renderers\YamahaRXV3900.conf"
-
 	; Store install folder
 	WriteRegStr HKCU "${REG_KEY_SOFTWARE}" "" $INSTDIR
 
@@ -377,7 +314,7 @@ Section /o "Windows firewall configuration" sec2
 	; To check if other firewalls are blocking ports: netstat -ano | findstr -i "5001" or portqry.exe -n x.x.x.x -e 5001
 SectionEnd
 
-Section /o "Install Java" sec3 ; http://www.oracle.com/technetwork/java/javase/windows-diskspace-140460.html
+Section /o "Java" sec3 ; http://www.oracle.com/technetwork/java/javase/windows-diskspace-140460.html
 	${If} ${AtLeastWinVista}
 		inetc::get /NOCANCEL /CONNECTTIMEOUT 30 /SILENT /WEAKSECURITY /NOCOOKIES /TOSTACK "https://lv.binarybabel.org/catalog-api/java/jdk8.txt?p=downloads.exe" "" /END
 		Pop $1
@@ -403,16 +340,16 @@ Section /o "Install Java" sec3 ; http://www.oracle.com/technetwork/java/javase/w
 		StrCpy $0 "javadl.oracle.com/webapps/download/AutoDL?BundleId=227552_e758a0de34e24606bca991d704f6dcbf"
 		StrCpy $1 "jre-8u151-windows-x64.exe"
 	${EndIf}
-	inetc::get /WEAKSECURITY /RESUME "" /CONNECTTIMEOUT 30 /POPUP "$1" /CAPTION "Official Oracle Java 8" /QUESTION "" /USERAGENT "Mozilla/5.0 (Windows NT 6.3; rv:48.0) Gecko/20100101 Firefox/48.0" /HEADER "Cookie: oraclelicense=accept-securebackup-cookie" /NOCOOKIES "$0" "$PLUGINSDIR\$1" /END
-	; /TRANSLATE $(downloading) $(downloadconnecting) $(downloadsecond) $(downloadminute) $(downloadhour) $(downloadplural) "%dkB (%d%%) of %dkB @ %d.%01dkB/s" " (%d %s%s $(downloadremaining))"
+	inetc::get /WEAKSECURITY /RESUME "" /CONNECTTIMEOUT 30 /MODERNPOPUP "$1" /CAPTION "Official Oracle Java 8" /QUESTION "" /USERAGENT "Mozilla/5.0 (Windows NT 6.3; rv:48.0) Gecko/20100101 Firefox/48.0" /HEADER "Cookie: oraclelicense=accept-securebackup-cookie" /NOCOOKIES "$0" "$PLUGINSDIR\$1" /END
 	Pop $0
-	StrCmpS $0 "OK" +3
+	StrCmpS $0 "OK" JavaDownloadOK
 	MessageBox MB_ICONEXCLAMATION "HTTP download error ($0).$\r$\n$\r$\nVerify your firewall configuration and your Internet connection, or download Java manually."
-	Goto end
+	Goto End
 
+	JavaDownloadOK:
 	ExecWait "$PLUGINSDIR\$1" ; '"$PLUGINSDIR\$1 /s /v$\"/qn ADDLOCAL=ALL REBOOT=Suppress /L C:\setup.log$\""'
 
-	end:
+	End:
 SectionEnd
 
 SectionGroup "Maximum Java heap size" sec4
