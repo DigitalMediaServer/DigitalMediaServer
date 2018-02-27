@@ -213,12 +213,12 @@ Section "!Media Server" sec1
 	File "${PROJECT_BASEDIR}\src\main\external-resources\DummyInput.jpg"
 
 	SetOutPath "$INSTDIR\win32\service"
-	File /r "${PROJECT_BASEDIR}\src\main\external-resources\third-party\wrapper"
+	File "${PROJECT_BASEDIR}\src\main\external-resources\third-party\wrapper\*.*"
 
 	SetOutPath "$INSTDIR\win32"
 	File "${PROJECT_BASEDIR}\src\main\external-resources\lib\ctrlsender\ctrlsender.exe"
 
-	; The user may have set the installation directory as the profile directory, so we can't clobber this
+	; The user may have set the installation folder as the profile folder, so we can't clobber this
 	SetOutPath "$INSTDIR"
 	SetOverwrite off
 	File "${PROJECT_BASEDIR}\src\main\external-resources\${PROJECT_NAME_SHORT}.conf"
@@ -751,7 +751,7 @@ FunctionEnd
 
 Section Uninstall
 	SetShellVarContext all
-	SetOutPath $TEMP ; Make sure $InstDir is not the current directory so we can remove it
+	SetOutPath $TEMP ; Make sure $InstDir is not the current folder so we can remove it
 	ClearErrors
 	FileOpen $0 "$INSTDIR\install.log" r
 	IfErrors 0 looping
