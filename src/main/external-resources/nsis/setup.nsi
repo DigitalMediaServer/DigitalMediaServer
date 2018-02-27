@@ -281,7 +281,7 @@ Section /o $(SectionDownloadJava) sec3 ; http://www.oracle.com/technetwork/java/
 	Goto End
 
 	JavaDownloadOK:
-	ExecWait "$PLUGINSDIR\$1" ; '"$PLUGINSDIR\$1 /s /v$\"/qn ADDLOCAL=ALL REBOOT=Suppress /L C:\setup.log$\""'
+		ExecWait "$PLUGINSDIR\$1" ; '"$PLUGINSDIR\$1 /s /v$\"/qn ADDLOCAL=ALL REBOOT=Suppress /L C:\setup.log$\""'
 
 	End:
 SectionEnd
@@ -416,7 +416,7 @@ Function onGUIInit
 FunctionEnd
 
 Function .onInit
-	; LogSet on ; http://nsis.sourceforge.net/Special_Builds
+	LogSet on ; http://nsis.sourceforge.net/Special_Builds
 
 	${If} ${RunningX64}
 		SetRegView 64
@@ -621,21 +621,33 @@ Function un.showHiDPI
 FunctionEnd
 
 Section Uninstall
+	LogSet off
 	SetShellVarContext all
 	SetOutPath $TEMP ; Make sure $InstDir is not the current folder so we can remove it
 	ClearErrors
 	FileOpen $0 "$INSTDIR\install.log" r
 	IfErrors 0 looping
-	MessageBox MB_ICONSTOP 'Cannot open the file "install.log".$\r$\nThe uninstaller ¨cannot work correctly.' ; TODO: TRANSLATE
+	MessageBox MB_ICONEXCLAMATION|MB_YESNO 'Cannot open the file "install.log".$\r$\nThe uninstaller cannot work correctly.$\r$\nDo you want force the uninstall anyway?' IDYES +2 ; TODO: TRANSLATE
 	Quit
+	ReadENVStr $R1 "ALLUSERSPROFILE"
+	RMDir /r /REBOOTOK $R1\${PROJECT_NAME_CAMEL}
+	RMDir /r /REBOOTOK $TEMP\fontconfig
+	RMDir /r /REBOOTOK $LOCALAPPDATA\fontconfig
+	RMDir /r /REBOOTOK $INSTDIR
+	Delete /REBOOTOK "$DESKTOP\${PROJECT_NAME}.lnk"
+	RMDir /r /REBOOTOK "$SMPROGRAMS\${PROJECT_NAME}"
+	Goto final
 
 	looping:
 		ClearErrors
 		FileReadUTF16LE $0 $1
 		IfErrors EOF
 		${WordFindS} "$1" "File: wrote" "E+1" $3
+		IfErrors 0 secondPass
+		ClearErrors
+		${WordFindS} "$1" "CreateShortcut: out:" "E+1" $3
 		IfErrors looping
-		${WordFind2X} "$1" "$\"" "$\"" "E+1" $3
+		secondPass: ${WordFind2X} "$1" "$\"" "$\"" "E+1" $3
 		IfErrors looping
 		Delete /REBOOTOK $3
 		${WordFind} "$3" "\" "-1{" $4
@@ -651,17 +663,13 @@ Section Uninstall
 		RMDir /REBOOTOK "$INSTDIR\web"
 		RMDir /REBOOTOK "$INSTDIR\win32\fonts\conf.avail"
 		RMDir /REBOOTOK "$INSTDIR\win32\fonts"
+		RMDir /REBOOTOK "$INSTDIR\win32\service"
 		RMDir /REBOOTOK "$INSTDIR\win32"
 		RMDir /REBOOTOK "$INSTDIR"
 
-	Delete /REBOOTOK "$DESKTOP\${PROJECT_NAME}.lnk"
-	Delete /REBOOTOK "$SMPROGRAMS\${PROJECT_NAME}\${PROJECT_NAME}.lnk"
-	Delete /REBOOTOK "$SMPROGRAMS\${PROJECT_NAME}\${PROJECT_NAME_SHORT} (Select Profile).lnk"
-	Delete /REBOOTOK "$SMPROGRAMS\${PROJECT_NAME}\Uninstall.lnk"
-	RMDir "$SMPROGRAMS\${PROJECT_NAME}"
-
-	DeleteRegKey HKEY_LOCAL_MACHINE "${REG_KEY_UNINSTALL}"
-	DeleteRegKey HKCU "${REG_KEY_SOFTWARE}"
+	final:
+		DeleteRegKey HKEY_LOCAL_MACHINE "${REG_KEY_UNINSTALL}"
+		DeleteRegKey HKCU "${REG_KEY_SOFTWARE}"
 
 	!insertmacro SERVICE "running" "${PROJECT_NAME}" ""
 	Pop $0
