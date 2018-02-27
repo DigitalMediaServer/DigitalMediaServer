@@ -337,16 +337,20 @@ Section /o "Java" sec3 ; http://www.oracle.com/technetwork/java/javase/windows-d
 		StrCpy $0 "http://javadl.oracle.com/webapps/download/AutoDL?BundleId=227552_e758a0de34e24606bca991d704f6dcbf"
 		StrCpy $1 "jre-8u151-windows-x64.exe"
 	${EndIf}
-	inetc::get /WEAKSECURITY /RESUME "" /CONNECTTIMEOUT 30 /POPUP "$1" /CAPTION "Official Oracle Java 8" /QUESTION "" /USERAGENT "Mozilla/5.0 (Windows NT 6.3; rv:48.0) Gecko/20100101 Firefox/48.0" /HEADER "Cookie: oraclelicense=accept-securebackup-cookie" /NOCOOKIES "$0" "$PLUGINSDIR\$1" /END
-	; /TRANSLATE $(downloading) $(downloadconnecting) $(downloadsecond) $(downloadminute) $(downloadhour) $(downloadplural) "%dkB (%d%%) of %dkB @ %d.%01dkB/s" " (%d %s%s $(downloadremaining))"
+	${If} ${IsWinXP}
+		inetc::get /NOSSL /RESUME "" /CONNECTTIMEOUT 30 /RECEIVETIMEOUT 30 /MODERNPOPUP "$1" /CAPTION "Official Oracle Java 8" /QUESTION "" /USERAGENT "Mozilla/5.0 (Windows NT 6.3; rv:48.0) Gecko/20100101 Firefox/48.0" /HEADER "Cookie: oraclelicense=accept-securebackup-cookie" /NOCOOKIES "$0" "$PLUGINSDIR\$1" /END
+	${Else}
+		inetc::get /WEAKSECURITY /RESUME "" /CONNECTTIMEOUT 30 /RECEIVETIMEOUT 30 /MODERNPOPUP "$1" /CAPTION "Official Oracle Java 8" /QUESTION "" /USERAGENT "Mozilla/5.0 (Windows NT 6.3; rv:48.0) Gecko/20100101 Firefox/48.0" /HEADER "Cookie: oraclelicense=accept-securebackup-cookie" /NOCOOKIES "$0" "$PLUGINSDIR\$1" /END
+	${EndIf}
 	Pop $0
-	StrCmpS $0 "OK" +3
+	StrCmpS $0 "OK" JavaDownloadOK
 	MessageBox MB_ICONEXCLAMATION "HTTP download error ($0).$\r$\n$\r$\nVerify your firewall configuration and your Internet connection, or download Java manually."
-	Goto end
+	Goto End
 
-	ExecWait "$PLUGINSDIR\$1" ; '"$PLUGINSDIR\$1 /s /v$\"/qn ADDLOCAL=ALL REBOOT=Suppress /L C:\setup.log$\""'
+	JavaDownloadOK:
+		ExecWait "$PLUGINSDIR\$1" ; '"$PLUGINSDIR\$1 /s /v$\"/qn ADDLOCAL=ALL REBOOT=Suppress /L C:\setup.log$\""'
 
-	end:
+	End:
 SectionEnd
 
 SectionGroup "Maximum Java heap size" sec4 ; http://www.oracle.com/technetwork/java/hotspotfaq-138619.html#gc_heap_32bit
