@@ -2,7 +2,6 @@
 ManifestDPIAware true
 ShowUninstDetails show
 
-!pragma warning disable 9000
 !pragma warning disable 6010
 
 SetCompressor /FINAL lzma
@@ -57,6 +56,7 @@ ManifestSupportedOS all ; Left here to remember to add GUI ID in case Windows 11
 !define MUI_HEADERIMAGE_BITMAP_STRETCH AspectFitHeight
 !define MUI_HEADER_TRANSPARENT_TEXT
 !define MUI_BGCOLOR FFFFFF
+!define MUI_LANGDLL_ALWAYSSHOW
 !define MUI_LANGDLL_ALLLANGUAGES
 ; Remember the installer language (Language selection in dialog settings)
 !define MUI_LANGDLL_REGISTRY_ROOT "HKLM"
@@ -77,14 +77,14 @@ ManifestSupportedOS all ; Left here to remember to add GUI ID in case Windows 11
 !define MUI_PAGE_CUSTOMFUNCTION_SHOW showHiDPI
 !define MUI_FINISHPAGE_TITLE_3LINES
 !define MUI_FINISHPAGE_LINK_COLOR 1E90FF
-!define MUI_FINISHPAGE_LINK "Click here to access our Website"
+!define MUI_FINISHPAGE_LINK $(OpenWebSite)
 !define MUI_FINISHPAGE_LINK_LOCATION "${PROJECT_ORGANIZATION_URL}"
 !define MUI_FINISHPAGE_NOAUTOCLOSE
 !define MUI_FINISHPAGE_RUN
 !define MUI_FINISHPAGE_RUN_FUNCTION RunDMS
 !define MUI_FINISHPAGE_SHOWREADME ""
 !define MUI_FINISHPAGE_SHOWREADME_NOTCHECKED
-!define MUI_FINISHPAGE_SHOWREADME_TEXT "Create Desktop Shortcut"
+!define MUI_FINISHPAGE_SHOWREADME_TEXT $(DesktopShortcut)
 !define MUI_FINISHPAGE_SHOWREADME_FUNCTION CreateDesktopShortcut
 !insertmacro MUI_PAGE_FINISH
 
@@ -104,74 +104,7 @@ ManifestSupportedOS all ; Left here to remember to add GUI ID in case Windows 11
 !define MUI_UNFINISHPAGE_NOAUTOCLOSE
 !insertmacro MUI_UNPAGE_FINISH
 
-; Languages
-
-!insertmacro MUI_LANGUAGE "English" ; First language is the default language
-!insertmacro MUI_LANGUAGE "French"
-!insertmacro MUI_LANGUAGE "German"
-!insertmacro MUI_LANGUAGE "Spanish"
-!insertmacro MUI_LANGUAGE "SpanishInternational"
-!insertmacro MUI_LANGUAGE "SimpChinese"
-!insertmacro MUI_LANGUAGE "TradChinese"
-!insertmacro MUI_LANGUAGE "Japanese"
-!insertmacro MUI_LANGUAGE "Korean"
-!insertmacro MUI_LANGUAGE "Italian"
-!insertmacro MUI_LANGUAGE "Dutch"
-!insertmacro MUI_LANGUAGE "Danish"
-!insertmacro MUI_LANGUAGE "Swedish"
-!insertmacro MUI_LANGUAGE "Tatar"
-!insertmacro MUI_LANGUAGE "Norwegian"
-!insertmacro MUI_LANGUAGE "NorwegianNynorsk"
-!insertmacro MUI_LANGUAGE "Finnish"
-!insertmacro MUI_LANGUAGE "Greek"
-!insertmacro MUI_LANGUAGE "Russian"
-!insertmacro MUI_LANGUAGE "Portuguese"
-!insertmacro MUI_LANGUAGE "PortugueseBR"
-!insertmacro MUI_LANGUAGE "ScotsGaelic"
-!insertmacro MUI_LANGUAGE "Polish"
-!insertmacro MUI_LANGUAGE "Ukrainian"
-!insertmacro MUI_LANGUAGE "Czech"
-!insertmacro MUI_LANGUAGE "Slovak"
-!insertmacro MUI_LANGUAGE "Croatian"
-!insertmacro MUI_LANGUAGE "Bulgarian"
-!insertmacro MUI_LANGUAGE "Hungarian"
-!insertmacro MUI_LANGUAGE "Thai"
-!insertmacro MUI_LANGUAGE "Romanian"
-!insertmacro MUI_LANGUAGE "Latvian"
-!insertmacro MUI_LANGUAGE "Macedonian"
-!insertmacro MUI_LANGUAGE "Estonian"
-!insertmacro MUI_LANGUAGE "Turkish"
-!insertmacro MUI_LANGUAGE "Lithuanian"
-!insertmacro MUI_LANGUAGE "Slovenian"
-!insertmacro MUI_LANGUAGE "Serbian"
-!insertmacro MUI_LANGUAGE "SerbianLatin"
-!insertmacro MUI_LANGUAGE "Arabic"
-!insertmacro MUI_LANGUAGE "Farsi"
-!insertmacro MUI_LANGUAGE "Hebrew"
-!insertmacro MUI_LANGUAGE "Indonesian"
-!insertmacro MUI_LANGUAGE "Mongolian"
-!insertmacro MUI_LANGUAGE "Luxembourgish"
-!insertmacro MUI_LANGUAGE "Albanian"
-!insertmacro MUI_LANGUAGE "Breton"
-!insertmacro MUI_LANGUAGE "Belarusian"
-!insertmacro MUI_LANGUAGE "Icelandic"
-!insertmacro MUI_LANGUAGE "Malay"
-!insertmacro MUI_LANGUAGE "Bosnian"
-!insertmacro MUI_LANGUAGE "Kurdish"
-!insertmacro MUI_LANGUAGE "Irish"
-!insertmacro MUI_LANGUAGE "Uzbek"
-!insertmacro MUI_LANGUAGE "Galician"
-!insertmacro MUI_LANGUAGE "Afrikaans"
-!insertmacro MUI_LANGUAGE "Catalan"
-!insertmacro MUI_LANGUAGE "Esperanto"
-!insertmacro MUI_LANGUAGE "Asturian"
-!insertmacro MUI_LANGUAGE "Basque"
-!insertmacro MUI_LANGUAGE "Pashto"
-!insertmacro MUI_LANGUAGE "Georgian"
-!insertmacro MUI_LANGUAGE "Vietnamese"
-!insertmacro MUI_LANGUAGE "Welsh"
-!insertmacro MUI_LANGUAGE "Armenian"
-!insertmacro MUI_LANGUAGE "Corsican"
+!include setupLanguages.nsh
 
 ; Reserve Files
 
@@ -211,7 +144,7 @@ Section /o "-CleanDelegate" secCleanDelegate
 	RMDir /r "$INSTDIR"
 SectionEnd
 
-Section "!Media Server" sectionServer
+Section "!$(SectionServer)" sectionServer
 	SetDetailsPrint both
 
 	SetOutPath "$INSTDIR"
@@ -270,7 +203,7 @@ Section "!Media Server" sectionServer
 	SetOverwrite on
 SectionEnd
 
-Section "Start Menu Shortcuts" sectionShortcuts
+Section $(SectionShortcuts) sectionShortcuts
 	SetShellVarContext all
 	CreateDirectory "$SMPROGRAMS\${PROJECT_NAME}"
 	CreateShortCut "$SMPROGRAMS\${PROJECT_NAME}\${PROJECT_NAME_SHORT} (Select Profile).lnk" "$INSTDIR\${PROJECT_NAME_SHORT}.exe" "profiles" "" "" SW_SHOWNORMAL
@@ -299,10 +232,10 @@ Section /o "-XP" secXP
 	File /r "${PROJECT_BASEDIR}\src\main\external-resources\lib\winxp"
 SectionEnd
 
-Section /o "Clean install" sectionCleanInstall
+Section /o $(SectionCleanInstall) sectionCleanInstall
 SectionEnd
 
-Section /o "Windows firewall configuration" sectionFirewall
+Section /o $(SectionWindowsFirewall) sectionFirewall
 	StrCpy $FirewallStatus "1" ; Will be used later by the uninstaller
 
 	${IfNot} ${IsWinXP}
@@ -322,7 +255,7 @@ Section /o "Windows firewall configuration" sectionFirewall
 	; To check if other firewalls are blocking ports: netstat -ano | findstr -i "5252" or portqry.exe -n x.x.x.x -e 5252
 SectionEnd
 
-Section /o "Java" sectionInstallJava ; http://www.oracle.com/technetwork/java/javase/windows-diskspace-140460.html
+Section /o $(SectionDownloadJava) sectionInstallJava ; http://www.oracle.com/technetwork/java/javase/windows-diskspace-140460.html
 	${If} ${AtLeastWinVista}
 		inetc::get /NOCANCEL /CONNECTTIMEOUT 30 /SILENT /WEAKSECURITY /NOCOOKIES /TOSTACK "https://lv.binarybabel.org/catalog-api/java/jdk8.txt?p=downloads.exe" "" /END
 		Pop $1
@@ -348,14 +281,16 @@ Section /o "Java" sectionInstallJava ; http://www.oracle.com/technetwork/java/ja
 		StrCpy $0 "http://javadl.oracle.com/webapps/download/AutoDL?BundleId=227552_e758a0de34e24606bca991d704f6dcbf"
 		StrCpy $1 "jre-8u151-windows-x64.exe"
 	${EndIf}
+	${WordReplaceS} $(Downloading) "%s" "Oracle Java 8" "+1" $2
 	${If} ${IsWinXP}
-		inetc::get /NOSSL /RESUME "" /CONNECTTIMEOUT 30 /RECEIVETIMEOUT 30 /MODERNPOPUP "$1" /CAPTION "Official Oracle Java 8" /QUESTION "" /USERAGENT "Mozilla/5.0 (Windows NT 6.3; rv:48.0) Gecko/20100101 Firefox/48.0" /HEADER "Cookie: oraclelicense=accept-securebackup-cookie" /NOCOOKIES "$0" "$PLUGINSDIR\$1" /END
+		inetc::get /NOSSL /RESUME "" /CONNECTTIMEOUT 30 /RECEIVETIMEOUT 30 /MODERNPOPUP "$1" /CAPTION "$2" /QUESTION $(ConfirmCancel) /TRANSLATE $(DownloadingFile) $(Downloaded) $(TimeRemaining) $(Speed) $(CancelButton) /USERAGENT "Mozilla/5.0 (Windows NT 6.3; rv:48.0) Gecko/20100101 Firefox/48.0" /HEADER "Cookie: oraclelicense=accept-securebackup-cookie" /NOCOOKIES "$0" "$PLUGINSDIR\$1" /END
 	${Else}
-		inetc::get /WEAKSECURITY /RESUME "" /CONNECTTIMEOUT 30 /RECEIVETIMEOUT 30 /MODERNPOPUP "$1" /CAPTION "Official Oracle Java 8" /QUESTION "" /USERAGENT "Mozilla/5.0 (Windows NT 6.3; rv:48.0) Gecko/20100101 Firefox/48.0" /HEADER "Cookie: oraclelicense=accept-securebackup-cookie" /NOCOOKIES "$0" "$PLUGINSDIR\$1" /END
+		inetc::get /WEAKSECURITY /RESUME "" /CONNECTTIMEOUT 30 /RECEIVETIMEOUT 30 /MODERNPOPUP "$1" /CAPTION "$2" /QUESTION $(ConfirmCancel) /TRANSLATE $(DownloadingFile) $(Downloaded) $(TimeRemaining) $(Speed) $(CancelButton) /USERAGENT "Mozilla/5.0 (Windows NT 6.3; rv:48.0) Gecko/20100101 Firefox/48.0" /HEADER "Cookie: oraclelicense=accept-securebackup-cookie" /NOCOOKIES "$0" "$PLUGINSDIR\$1" /END
 	${EndIf}
 	Pop $0
 	StrCmpS $0 "OK" JavaDownloadOK
-	MessageBox MB_ICONEXCLAMATION "HTTP download error ($0).$\r$\n$\r$\nVerify your firewall configuration and your Internet connection, or download Java manually."
+	${WordReplaceS} $(DownloadError) "%s" $0 "+1" $0
+	MessageBox MB_ICONEXCLAMATION $0
 	Goto End
 
 	JavaDownloadOK:
@@ -364,7 +299,7 @@ Section /o "Java" sectionInstallJava ; http://www.oracle.com/technetwork/java/ja
 	End:
 SectionEnd
 
-SectionGroup "Maximum Java heap size" sectionHeapSize ; http://www.oracle.com/technetwork/java/hotspotfaq-138619.html#gc_heap_32bit
+SectionGroup $(SectionHeapSize) sectionHeapSize ; http://www.oracle.com/technetwork/java/hotspotfaq-138619.html#gc_heap_32bit
 	Section /o "512 MB" sectionHeapSize_1
 		WriteRegStr HKLM "${REG_KEY_SOFTWARE}" "HeapMem" "512M"
 	SectionEnd
@@ -415,19 +350,19 @@ Section "-EstimatedSize" sectionEstimatedSize
 SectionEnd
 
 !insertmacro MUI_FUNCTION_DESCRIPTION_BEGIN
-	!insertmacro MUI_DESCRIPTION_TEXT ${sectionServer} "Digital Media Server core"
-	!insertmacro MUI_DESCRIPTION_TEXT ${sectionShortcuts} "Create Start menu shortcuts"
-	!insertmacro MUI_DESCRIPTION_TEXT ${sectionFirewall} "Configure your Windows built-in firewall. This will open the incoming TCP ports 1900/5001/9001 and the UDP port 1900."
-	!insertmacro MUI_DESCRIPTION_TEXT ${sectionInstallJava} "Download Oracle Java 8 latest version because you don't have the necessary Java requierement for DMS to run."
-	!insertmacro MUI_DESCRIPTION_TEXT ${sectionHeapSize} " IF YOU DON'T UNDERSTAND IT, DON'T CHANGE IT !$\r$\n The default value is recommended."
-	!insertmacro MUI_DESCRIPTION_TEXT ${sectionHeapSize_1} "$\r$\n   IF YOU DON'T UNDERSTAND IT, DON'T CHANGE IT !"
-	!insertmacro MUI_DESCRIPTION_TEXT ${sectionHeapSize_2} "$\r$\n   IF YOU DON'T UNDERSTAND IT, DON'T CHANGE IT !"
-	!insertmacro MUI_DESCRIPTION_TEXT ${sectionHeapSize_3} "$\r$\n   IF YOU DON'T UNDERSTAND IT, DON'T CHANGE IT !"
-	!insertmacro MUI_DESCRIPTION_TEXT ${sectionHeapSize_4} "$\r$\n   IF YOU DON'T UNDERSTAND IT, DON'T CHANGE IT !"
-	!insertmacro MUI_DESCRIPTION_TEXT ${sectionHeapSize_5} "$\r$\n   IF YOU DON'T UNDERSTAND IT, DON'T CHANGE IT !"
-	!insertmacro MUI_DESCRIPTION_TEXT ${sectionHeapSize_6} "$\r$\n   IF YOU DON'T UNDERSTAND IT, DON'T CHANGE IT !"
-	!insertmacro MUI_DESCRIPTION_TEXT ${sectionCleanInstall} "Replace the configuration with the default configuration. Allows you to take advantage of improved defaults by cleaning all the DMS old data."
-	!insertmacro MUI_DESCRIPTION_TEXT ${sectionInstallAviSynth} "AviSynth 2.6.0 multithread. It adds frames in between possibility to make the motion smoother and more realistic. It will also need VSfilter and codecs pack install."
+	!insertmacro MUI_DESCRIPTION_TEXT ${sectionServer} $(SectionDescriptionServer)
+	!insertmacro MUI_DESCRIPTION_TEXT ${sectionShortcuts} $(SectionDescriptionShortcuts)
+	!insertmacro MUI_DESCRIPTION_TEXT ${sectionCleanInstall} $(SectionDescriptionCleanInstall)
+	!insertmacro MUI_DESCRIPTION_TEXT ${sectionFirewall} $(SectionDescriptionWindowsFirewall)
+	!insertmacro MUI_DESCRIPTION_TEXT ${sectionInstallJava} $(SectionDescriptionInstallJava)
+	!insertmacro MUI_DESCRIPTION_TEXT ${sectionHeapSize} $(SectionDescriptionHeapSize)
+	!insertmacro MUI_DESCRIPTION_TEXT ${sectionHeapSize_1} $(SectionDescriptionHeapSize)
+	!insertmacro MUI_DESCRIPTION_TEXT ${sectionHeapSize_2} $(SectionDescriptionHeapSize)
+	!insertmacro MUI_DESCRIPTION_TEXT ${sectionHeapSize_3} $(SectionDescriptionHeapSize)
+	!insertmacro MUI_DESCRIPTION_TEXT ${sectionHeapSize_4} $(SectionDescriptionHeapSize)
+	!insertmacro MUI_DESCRIPTION_TEXT ${sectionHeapSize_5} $(SectionDescriptionHeapSize)
+	!insertmacro MUI_DESCRIPTION_TEXT ${sectionHeapSize_6} $(SectionDescriptionHeapSize)
+	!insertmacro MUI_DESCRIPTION_TEXT ${sectionInstallAviSynth} $(SectionDescriptionAviSynth)
 !insertmacro MUI_FUNCTION_DESCRIPTION_END
 
 Function .onSelChange
@@ -463,7 +398,7 @@ Function .onSelChange
 	SectionGetFlags ${sectionCleanInstall} $1
 	${If} $1 != $Clean
 		${If} $1 != 0
-			MessageBox MB_ICONEXCLAMATION|MB_YESNO|MB_DEFBUTTON2 "Are you sure that you want to delete the media library, any custom files in the program folder and all configuration files permanently?" IDYES +3
+			MessageBox MB_ICONEXCLAMATION|MB_YESNO|MB_DEFBUTTON2 $(CleanInstallWarning) IDYES +3
 			SectionSetFlags ${sectionCleanInstall} 0
 			StrCpy $1 0
 		${EndIf}
@@ -585,18 +520,18 @@ Function .onInit
 	${EndIf}
 
 	${IfNot} ${AtLeastWinXP}
-		MessageBox MB_OK|MB_ICONEXCLAMATION "Windows XP and above is required"
+		MessageBox MB_OK|MB_ICONEXCLAMATION $(TooLowVersion)
 		Quit
 	${EndIf}
 	${If} ${IsWinXP}
 		${If} ${RunningX64}
 			${IfNot} ${AtLeastServicePack} 2
-				MessageBox MB_OK|MB_ICONEXCLAMATION "Windows XP SP2 and above is required"
+				MessageBox MB_OK|MB_ICONEXCLAMATION $(TooLowSP64)
 				Quit
 			${EndIf}
 		${Else}
 			${IfNot} ${AtLeastServicePack} 3
-				MessageBox MB_OK|MB_ICONEXCLAMATION "Windows XP SP3 and above is required"
+				MessageBox MB_OK|MB_ICONEXCLAMATION $(TooLowSP)
 				Quit
 			${EndIf}
 		${EndIf}
@@ -796,7 +731,7 @@ FunctionEnd
 Section /o "-un.RemoveDataAndSettings" sectionRemoveDataAndSettings
 SectionEnd
 
-Section "un.Standard uninstall" sectionUnStandard
+Section "un.${PROJECT_NAME}" sectionUnStandard
 	SectionIn RO
 	SetShellVarContext all
 	ReadEnvStr $R0 "ALLUSERSPROFILE"
@@ -807,7 +742,7 @@ Section "un.Standard uninstall" sectionUnStandard
 	IfErrors error reading
 
 	error:
-		MessageBox MB_ICONEXCLAMATION|MB_YESNO 'Cannot open the file "install.log".$\r$\nThe uninstaller cannot work correctly.$\r$\nDo you want force the uninstall anyway?' IDYES +2
+		MessageBox MB_ICONEXCLAMATION|MB_YESNO "$(CannotOpen)" IDYES +2
 		Quit
 		Delete "$DESKTOP\${PROJECT_NAME}.lnk"
 		RMDir /r /REBOOTOK "$INSTDIR"
@@ -874,20 +809,20 @@ Section "un.Standard uninstall" sectionUnStandard
 		!insertmacro SERVICE "stop" "${PROJECT_NAME}" ""
 		Pop $0
 		StrCmpS $0 "false" 0 ServiceDelete
-		MessageBox MB_ABORTRETRYIGNORE|MB_ICONEXCLAMATION "Failure stopping the ${PROJECT_NAME} service ($0)." IDIGNORE ServiceDelete IDRETRY ServiceStop
+		MessageBox MB_ABORTRETRYIGNORE|MB_ICONEXCLAMATION $(ServiceStopError) IDIGNORE ServiceDelete IDRETRY ServiceStop
 		Abort
 
 	ServiceDelete:
 		!insertmacro SERVICE "delete" "${PROJECT_NAME}" ""
 		Pop $0
 		StrCmpS $0 "false" 0 Done
-		MessageBox MB_ABORTRETRYIGNORE|MB_ICONSTOP "Failure deleting the ${PROJECT_NAME} service ($0)." IDIGNORE Done IDRETRY ServiceDelete
+		MessageBox MB_ABORTRETRYIGNORE|MB_ICONSTOP $(ServiceUninstallError) IDIGNORE Done IDRETRY ServiceDelete
 		Abort
 
 	Done:
 SectionEnd
 
-Section /o "un.Configuration and database files" sectionUnComplete
+Section /o "un.$(SectionUninstallComplete)" sectionUnComplete
 SectionEnd
 
 Function un.onInit
@@ -913,8 +848,8 @@ Function un.onInit
 FunctionEnd
 
 !insertmacro MUI_UNFUNCTION_DESCRIPTION_BEGIN
-	!insertmacro MUI_DESCRIPTION_TEXT ${sectionUnStandard} "Only uninstall the files installed into the program folder."
-	!insertmacro MUI_DESCRIPTION_TEXT ${sectionUnComplete} "Also remove all the configuration, database, logs, registry keys files having been created by Digital Media Server."
+	!insertmacro MUI_DESCRIPTION_TEXT ${sectionUnStandard} $(SectionDescriptionStandardUninstall)
+	!insertmacro MUI_DESCRIPTION_TEXT ${sectionUnComplete} $(SectionDescriptionCompleteUninstall)
 !insertmacro MUI_UNFUNCTION_DESCRIPTION_END
 
 Function un.showHiDPI
@@ -962,7 +897,7 @@ Function un.onSelChange
 	SectionGetFlags ${sectionUnComplete} $1
 	${If} $1 != $Clean
 		${If} $1 != 0
-			MessageBox MB_ICONEXCLAMATION|MB_YESNO|MB_DEFBUTTON2 "Are you sure that you want to delete the media library, any custom files in the program folder and all configuration files permanently?" IDYES +3
+			MessageBox MB_ICONEXCLAMATION|MB_YESNO|MB_DEFBUTTON2 $(CleanInstallWarning) IDYES +3
 			SectionSetFlags ${sectionUnComplete} 0
 			StrCpy $1 0
 		${EndIf}
