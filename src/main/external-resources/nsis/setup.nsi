@@ -3,6 +3,7 @@ ManifestDPIAware true
 
 !pragma warning disable 9000
 !pragma warning disable 6010
+!pragma warning disable 6040
 
 SetCompressor /SOLID /FINAL lzma
 SetCompressorDictSize 64
@@ -40,7 +41,7 @@ SetDateSave on
 CRCCheck force
 RequestExecutionLevel admin
 AllowSkipFiles off
-ManifestSupportedOS all ;Left here to remember to add GUI ID in case Windows 11 or above appear before NSIS add their support by default
+ManifestSupportedOS all ; Left here to remember to add GUI ID in case Windows 11 or above appear before NSIS add their support by default
 
 ; Get install folder from registry for updates
 
@@ -247,7 +248,7 @@ Section /o $(SectionWindowsFirewall) sec2
 	; To check if other firewalls are blocking ports: netstat -ano | findstr -i "5001" or portqry.exe -n x.x.x.x -e 5001
 SectionEnd
 
-Section /o "Java" sec3 ; http://www.oracle.com/technetwork/java/javase/windows-diskspace-140460.html
+Section /o "${U+2B8B} Java Runtime" sec3 ; http://www.oracle.com/technetwork/java/javase/windows-diskspace-140460.html
 	${If} ${AtLeastWinVista}
 		inetc::get /NOCANCEL /CONNECTTIMEOUT 30 /SILENT /WEAKSECURITY /NOCOOKIES /TOSTACK "https://lv.binarybabel.org/catalog-api/java/jdk8.txt?p=downloads.exe" "" /END
 		Pop $1
@@ -412,10 +413,6 @@ Function CreateDesktopShortcut
 	CreateShortCut "$DESKTOP\${PROJECT_NAME}.lnk" "$INSTDIR\${PROJECT_NAME_SHORT}.exe" "" "" "" SW_SHOWNORMAL ALT|F9 "Start ${PROJECT_NAME}"
 FunctionEnd
 
-Function onGUIInit
-	Aero::Apply ; Apply Aero if available
-FunctionEnd
-
 Function .onInit
 	LogSet on ; http://nsis.sourceforge.net/Special_Builds
 
@@ -480,6 +477,18 @@ Function .onInit
 	${EndIf}
 
 	!insertmacro MUI_LANGDLL_DISPLAY
+	StrCmp $LANGUAGE "1033" fallback
+	SectionGetText ${sec1} $0
+	StrCmp $0 "" fallback
+	SectionGetText ${sec7} $0
+	StrCmp $0 "" fallback
+	SectionGetText ${sec5} $0
+	StrCmp $0 "" fallback
+	SectionGetText ${sec2} $0
+	StrCmp $0 "" fallback
+	SectionGetText ${sec4} $0
+	StrCmp $0 "" fallback +2
+	fallback: StrCpy $LANGUAGE "1033"
 
 	; Get the amount of total physical memory
 	; https://nsis-dev.github.io/NSIS-Forums/html/t-242501.html
@@ -539,6 +548,10 @@ Function .onInit
 	File "${PROJECT_BASEDIR}\src\main\external-resources\third-party\nsis\Contrib\Graphics\Wizard\Installer@144.bmp"
 	File "${PROJECT_BASEDIR}\src\main\external-resources\third-party\nsis\Contrib\Graphics\Wizard\Installer@120.bmp"
 	File "${PROJECT_BASEDIR}\src\main\external-resources\third-party\nsis\Contrib\Graphics\Wizard\Installer@96.bmp"
+FunctionEnd
+
+Function onGUIInit
+	Aero::Apply ; Apply Aero if available
 FunctionEnd
 
 Function downloadJavaPreselection
@@ -622,7 +635,6 @@ Function un.showHiDPI
 FunctionEnd
 
 Section Uninstall
-	LogSet off
 	SetShellVarContext all
 	SetOutPath $TEMP ; Make sure $InstDir is not the current folder so we can remove it
 	ClearErrors
@@ -631,11 +643,11 @@ Section Uninstall
 	MessageBox MB_ICONEXCLAMATION|MB_YESNO 'Cannot open the file "install.log".$\r$\nThe uninstaller cannot work correctly.$\r$\nDo you want force the uninstall anyway?' IDYES +2
 	Quit
 	ReadENVStr $R1 "ALLUSERSPROFILE"
+	Delete /REBOOTOK "$DESKTOP\${PROJECT_NAME}.lnk"
 	RMDir /r /REBOOTOK $R1\${PROJECT_NAME_CAMEL}
 	RMDir /r /REBOOTOK $TEMP\fontconfig
 	RMDir /r /REBOOTOK $LOCALAPPDATA\fontconfig
 	RMDir /r /REBOOTOK $INSTDIR
-	Delete /REBOOTOK "$DESKTOP\${PROJECT_NAME}.lnk"
 	RMDir /r /REBOOTOK "$SMPROGRAMS\${PROJECT_NAME}"
 	Goto final
 
