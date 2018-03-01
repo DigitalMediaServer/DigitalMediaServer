@@ -14,6 +14,7 @@ SetCompressorDictSize 64
 !include "SearchJava.nsh"
 !include "Sections.nsh"
 !include "serviceLib.nsh"
+!include "TextFunc.nsh"
 !include "WinVer.nsh"
 !include "WordFunc.nsh"
 !include "x64.nsh"
@@ -248,7 +249,7 @@ Section /o $(SectionWindowsFirewall) sec2
 	; To check if other firewalls are blocking ports: netstat -ano | findstr -i "5001" or portqry.exe -n x.x.x.x -e 5001
 SectionEnd
 
-Section /o "${U+2B8B} Java Runtime" sec3 ; http://www.oracle.com/technetwork/java/javase/windows-diskspace-140460.html
+Section /o "${U+031F} Java Runtime" sec3 ; http://www.oracle.com/technetwork/java/javase/windows-diskspace-140460.html
 	${If} ${AtLeastWinVista}
 		inetc::get /NOCANCEL /CONNECTTIMEOUT 30 /SILENT /WEAKSECURITY /NOCOOKIES /TOSTACK "https://lv.binarybabel.org/catalog-api/java/jdk8.txt?p=downloads.exe" "" /END
 		Pop $1
@@ -258,7 +259,7 @@ Section /o "${U+2B8B} Java Runtime" sec3 ; http://www.oracle.com/technetwork/jav
 		${IfNot} ${RunningX64}
 			${WordReplaceS} "$0" "-x64" "-i586" "+1" $0
 		${EndIf}
-		${WordFind} $0 "/" "-1}" $1
+		${WordFind} "$0" "/" "-1}" $1
 	${EndIf}
 	${If} ${IsWinXP}
 	${AndIfNot} ${RunningX64}
@@ -477,20 +478,20 @@ Function .onInit
 	${EndIf}
 
 	!insertmacro MUI_LANGDLL_DISPLAY
-	StrCmp $LANGUAGE "1033" fallback
-	SectionGetText ${sec1} $0
-	StrCmp $0 "" fallback
-	SectionGetText ${sec7} $0
-	StrCmp $0 "" fallback
-	SectionGetText ${sec5} $0
-	StrCmp $0 "" fallback
-	SectionGetText ${sec2} $0
-	StrCmp $0 "" fallback
-	SectionGetText ${sec4} $0
-	StrCmp $0 "" fallback +2
-	fallback: StrCpy $LANGUAGE "1033"
+	StrCmp $LANGUAGE "1033" memoryTest
+	System::Call 'kernel32::GetLocaleInfo(i $LANGUAGE, i 89, t .r0, i 9'
+	System::Call 'kernel32::GetLocaleInfo(i $LANGUAGE, i 90, t .r2, i 9'
+	StrCpy $3 "$0-$2"
+	ClearErrors
+	${Locate} "${PROJECT_BASEDIR}\src\main\external-resources\nsis\I18N" "/L=F /G=0 /M=setup$3*.nsh" "LanguageFileSearch"
+	IfErrors 0 +3
+	StrCpy $3 $0
+	Goto -4
+	${LineFind} "$R0" "/NUL" "15:19" "LanguageFileCheck"
+	StrCmp $R1 $R3 +2
+	StrCpy $LANGUAGE "1033"
 
-	; Get the amount of total physical memory
+	memoryTest: ; Get the amount of total physical memory
 	; https://nsis-dev.github.io/NSIS-Forums/html/t-242501.html
 	; https://msdn.microsoft.com/fr-fr/library/windows/desktop/aa366589(v=vs.85).aspx
 	System::Alloc 64
@@ -548,6 +549,20 @@ Function .onInit
 	File "${PROJECT_BASEDIR}\src\main\external-resources\third-party\nsis\Contrib\Graphics\Wizard\Installer@144.bmp"
 	File "${PROJECT_BASEDIR}\src\main\external-resources\third-party\nsis\Contrib\Graphics\Wizard\Installer@120.bmp"
 	File "${PROJECT_BASEDIR}\src\main\external-resources\third-party\nsis\Contrib\Graphics\Wizard\Installer@96.bmp"
+FunctionEnd
+
+Function LanguageFileSearch
+	StrCpy $R0 $R9
+	StrCpy $0 StopLocate
+	Push $0
+FunctionEnd
+
+Function LanguageFileCheck
+	StrCpy $R1 $R9
+	${WordFind} "$R9" "$\"$\"" "+1}" $R3
+	StrCmp $R9 $R3 +2
+	StrCpy $0 StopLineFind
+	Push $0
 FunctionEnd
 
 Function onGUIInit
