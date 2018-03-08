@@ -60,6 +60,7 @@ InstallDirRegKey HKCU "${REG_KEY_SOFTWARE}" ""
 !define MUI_HEADER_TRANSPARENT_TEXT
 !define MUI_LANGDLL_ALLLANGUAGES
 ; Remember the installer language (Language selection in dialog settings)
+!define MUI_LANGDLL_ALWAYSSHOW
 !define MUI_LANGDLL_REGISTRY_ROOT "HKCU"
 !define MUI_LANGDLL_REGISTRY_KEY "${REG_KEY_SOFTWARE}"
 !define MUI_LANGDLL_REGISTRY_VALUENAME "Installer Language"
