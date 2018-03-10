@@ -71,6 +71,7 @@ public class RemotePlayHandler implements HttpHandler {
 
 	private String mkPage(String id, HttpExchange t) throws IOException, InterruptedException {
 		HashMap<String, Object> vars = new HashMap<>();
+		vars.put("favicons", RemoteUtil.FAVICONS_HEADER);
 		vars.put("serverName", configuration.getServerDisplayName());
 
 		LOGGER.debug("Make play page " + id);

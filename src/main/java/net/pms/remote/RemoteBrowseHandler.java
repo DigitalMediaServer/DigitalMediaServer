@@ -197,6 +197,7 @@ public class RemoteBrowseHandler implements HttpHandler {
 		}
 
 		HashMap<String, Object> vars = new HashMap<>();
+		vars.put("favicons", RemoteUtil.FAVICONS_HEADER);
 		vars.put("name", id.equals("0") ? configuration.getServerDisplayName() :
 			StringEscapeUtils.escapeHtml3(root.getDLNAResource(id, null).getDisplayName()));
 		vars.put("hasFile", hasFile);
