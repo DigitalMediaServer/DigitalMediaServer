@@ -48,8 +48,8 @@ ManifestSupportedOS all ; Left here to remember to add GUI ID in case Windows 11
 !define MUI_ABORTWARNING
 !define MUI_CUSTOMFUNCTION_GUIINIT onGUIInit
 !define MUI_UI "${PROJECT_BASEDIR}\src\main\external-resources\third-party\nsis\Contrib\UIs\modern.exe" ; UltraModern.exe
-!define MUI_ICON "Images\${PROJECT_ARTIFACT_ID}.ico"
-!define MUI_UNICON "Images\${PROJECT_ARTIFACT_ID}.ico"
+!define MUI_ICON "${PROJECT_BASEDIR}\src\main\resources\images\logo.ico"
+!define MUI_UNICON "${PROJECT_BASEDIR}\src\main\resources\images\logo.ico"
 !define MUI_WELCOMEFINISHPAGE_BITMAP_STRETCH AspectFitHeight
 !define MUI_HEADERIMAGE
 !define MUI_HEADERIMAGE_RIGHT
@@ -162,7 +162,7 @@ Section "!$(SectionServer)" sectionServer
 	File "${PROJECT_BASEDIR}\README.*"
 	File "${PROJECT_BASEDIR}\LICENSE.txt"
 	File "${PROJECT_BASEDIR}\src\main\external-resources\logba*.xml"
-	File "${PROJECT_BASEDIR}\src\main\external-resources\icon.ico"
+	File /oname=${PROJECT_ARTIFACT_ID}.ico "${PROJECT_BASEDIR}\src\main\resources\images\logo.ico"
 	File "${PROJECT_BASEDIR}\src\main\external-resources\DummyInput.*"
 
 	SetOutPath "$INSTDIR\win32"
@@ -180,7 +180,7 @@ Section "!$(SectionServer)" sectionServer
 
 	; Create uninstaller
 	WriteRegStr HKLM "${REG_KEY_UNINSTALL}" "DisplayName" "${PROJECT_NAME}"
-	WriteRegStr HKLM "${REG_KEY_UNINSTALL}" "DisplayIcon" "$INSTDIR\icon.ico"
+	WriteRegStr HKLM "${REG_KEY_UNINSTALL}" "DisplayIcon" "$INSTDIR\${PROJECT_ARTIFACT_ID}.ico"
 	WriteRegStr HKLM "${REG_KEY_UNINSTALL}" "DisplayVersion" "${PROJECT_VERSION}"
 	WriteRegStr HKLM "${REG_KEY_UNINSTALL}" "Publisher" "${PROJECT_ORGANIZATION_NAME}"
 	WriteRegStr HKLM "${REG_KEY_UNINSTALL}" "URLInfoAbout" "${PROJECT_ORGANIZATION_URL}"
