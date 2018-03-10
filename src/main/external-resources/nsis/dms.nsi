@@ -23,7 +23,7 @@ ShowInstDetails nevershow
 
 Name "${PROJECT_NAME_SHORT}"
 Caption "${PROJECT_NAME}"
-Icon "${PROJECT_BASEDIR}\src\main\external-resources\icon.ico"
+Icon "${PROJECT_BASEDIR}\src\main\resources\images\logo.ico"
 
 VIAddVersionKey "ProductName" "${PROJECT_NAME}"
 VIAddVersionKey "Comments" "Media server"

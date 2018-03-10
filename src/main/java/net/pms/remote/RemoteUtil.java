@@ -1,5 +1,6 @@
 package net.pms.remote;
 
+import static org.apache.commons.lang3.StringUtils.isBlank;
 import com.samskivert.mustache.Mustache;
 import com.samskivert.mustache.Template;
 import com.sun.net.httpserver.Headers;
@@ -12,6 +13,8 @@ import java.net.URLClassLoader;
 import java.net.URLConnection;
 import java.nio.charset.Charset;
 import java.util.*;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import net.pms.Messages;
 import net.pms.PMS;
 import net.pms.configuration.IpFilter;
@@ -42,6 +45,15 @@ public class RemoteUtil {
 	public static final String MIME_WAV = "audio/wav";
 	public static final String MIME_PNG = "image/png";
 	public static final String MIME_JPG = "image/jpeg";
+	public static final String FAVICONS_HEADER =
+		"<link rel=\"apple-touch-icon\" sizes=\"180x180\" href=\"/apple-touch-icon.png\">\n" +
+		"<link rel=\"icon\" type=\"image/png\" sizes=\"32x32\" href=\"/favicon-32x32.png\">\n" +
+		"<link rel=\"icon\" type=\"image/png\" sizes=\"16x16\" href=\"/favicon-16x16.png\">\n" +
+		"<link rel=\"manifest\" href=\"/site.webmanifest\">\n" +
+		"<link rel=\"mask-icon\" href=\"/safari-pinned-tab.svg\" color=\"#5bbad5\">\n" +
+		"<meta name=\"msapplication-TileColor\" content=\"#603cba\">\n" +
+		"<meta name=\"msapplication-TileImage\" content=\"/mstile-144x144.png\">\n" +
+		"<meta name=\"theme-color\" content=\"#ffffff\">\n";
 
 	public static void respond(HttpExchange t, String response, int status, String mime) {
 		if (response != null) {
@@ -167,6 +179,43 @@ public class RemoteUtil {
 		long start = Long.parseLong(tmp[0]);
 		long end = tmp.length == 1 ? len : Long.parseLong(tmp[1]);
 		return new Range.Byte(start, end);
+	}
+
+	/**
+	 * Checks if the request is for one of the "favicon-files" and sends the
+	 * appropriate file as a response if that is the case.
+	 *
+	 * @param exchange the HttpExchange to use.
+	 * @param resourceManager the {@link ResourceManager} to use.
+	 * @return {@code true} if a response has been sent, {@code false}
+	 *         otherwise.
+	 * @throws IOException If an I/O error occurs during the operation.
+	 */
+	public static boolean handleFavIcon(
+		@Nonnull HttpExchange exchange,
+		@Nullable ResourceManager resourceManager
+	) throws IOException {
+		if (resourceManager == null) {
+			return false;
+		}
+		String path = exchange.getRequestURI().getPath();
+		if (isBlank(path) || path.length() < 2) {
+			return false;
+		}
+		path = path.substring(1);
+		File file = resourceManager.getFavIcons().get(path);
+		if (file != null) {
+			try {
+				FileInputStream in = new FileInputStream(file);
+				exchange.sendResponseHeaders(200, 0);
+				dump(in, exchange.getResponseBody());
+				return true;
+			} catch (FileNotFoundException e) {
+				LOGGER.error("Couldn't get stream for \"{}\": {}", path, e.getMessage());
+				LOGGER.trace("", e);
+			}
+		}
+		return false;
 	}
 
 	public static void sendLogo(HttpExchange t) throws IOException {
@@ -359,9 +408,10 @@ public class RemoteUtil {
 	 * - A template manager.
 	 */
 	public static class ResourceManager extends URLClassLoader {
-		private HashSet<File> files;
-		private HashMap<String, Template> templates;
+		private final HashSet<File> files = new HashSet<>();
+		private final HashMap<String, Template> templates = new HashMap<>();
 		private final String[] searchPaths;
+		private final Map<String, File> favIcons;
 
 		public ResourceManager(String... urls) {
 			super(new URL[]{}, null);
@@ -377,9 +427,40 @@ public class RemoteUtil {
 					LOGGER.debug("Error adding resource url: " + e);
 				}
 			}
+
+			//Register favicon files
+			File favIconsFolder = null;
+			for (String folder : searchPathsList) {
+				if (folder == null) {
+					continue;
+				}
+				File tempfavIconsFolder = new File(folder, "favicons");
+				if (tempfavIconsFolder.isDirectory()) {
+					favIconsFolder = tempfavIconsFolder;
+					break;
+				}
+			}
+			if (favIconsFolder != null) {
+				HashMap<String, File> tempFavIcons = null;
+				File[] files = favIconsFolder.listFiles();
+				if (files != null) {
+					tempFavIcons = new HashMap<>();
+					for (File file : files) {
+						if (file.isFile()) {
+							tempFavIcons.put(file.getName(), file);
+						}
+					}
+				}
+				if (tempFavIcons == null || tempFavIcons.isEmpty()) {
+					favIcons = null;
+				} else {
+					favIcons = Collections.unmodifiableMap(tempFavIcons);
+				}
+			} else {
+				favIcons = null;
+			}
+
 			searchPaths = searchPathsList.toArray(new String[searchPathsList.size()]);
-			files = new HashSet<>();
-			templates = new HashMap<>();
 		}
 
 		public InputStream getInputStream(String filename) {
@@ -404,6 +485,11 @@ public class RemoteUtil {
 				LOGGER.debug("Using resource: " + url);
 			}
 			return url;
+		}
+
+		@Nullable
+		public Map<String, File> getFavIcons() {
+			return favIcons;
 		}
 
 		/**
@@ -475,7 +561,7 @@ public class RemoteUtil {
 				if (url != null) {
 					t = compile(getInputStream(filename));
 					templates.put(filename, t);
-					PMS.getFileWatcher().add(new FileWatcher.Watch(url.getFile(), recompiler));
+					FileWatcher.add(new FileWatcher.Watch(url.getFile(), recompiler));
 				} else {
 					LOGGER.warn("Couldn't find web template \"{}\"", filename);
 				}
