@@ -365,6 +365,7 @@ public class RemoteWeb {
 						if (file != null) {
 							filename = file.getName();
 							HashMap<String, Object> vars = new HashMap<>();
+							vars.put("favicons", RemoteUtil.FAVICONS_HEADER);
 							vars.put("title", filename);
 							vars.put("brush", filename.endsWith("debug.log") ? "debug_log" :
 								filename.endsWith(".log") ? "log" : "conf");
@@ -417,12 +418,12 @@ public class RemoteWeb {
 				if (RemoteUtil.deny(t)) {
 					throw new IOException("Access denied");
 				}
-				if (t.getRequestURI().getPath().contains("favicon")) {
-					RemoteUtil.sendLogo(t);
+				if (RemoteUtil.handleFavIcon(t, parent.getResources())) {
 					return;
 				}
 
 				HashMap<String, Object> vars = new HashMap<>();
+				vars.put("favicons", RemoteUtil.FAVICONS_HEADER);
 				vars.put("serverName", configuration.getServerDisplayName());
 
 				try {
@@ -467,12 +468,12 @@ public class RemoteWeb {
 				if (RemoteUtil.deny(t)) {
 					throw new IOException("Access denied");
 				}
-				if (t.getRequestURI().getPath().contains("favicon")) {
-					RemoteUtil.sendLogo(t);
+				if (RemoteUtil.handleFavIcon(t, parent.getResources())) {
 					return;
 				}
 
 				HashMap<String, Object> vars = new HashMap<>();
+				vars.put("favicons", RemoteUtil.FAVICONS_HEADER);
 				vars.put("logs", getLogs(true));
 				if (configuration.getUseCache()) {
 					vars.put("cache", "http://" + PMS.get().getServer().getHost() + ":" + PMS.get().getServer().getPort() + "/console/home");

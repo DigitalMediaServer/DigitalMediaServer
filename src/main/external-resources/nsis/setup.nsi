@@ -48,8 +48,8 @@ InstallDirRegKey HKCU "${REG_KEY_SOFTWARE}" ""
 !define MUI_ABORTWARNING
 !define MUI_CUSTOMFUNCTION_GUIINIT onGUIInit
 !define MUI_UI "${PROJECT_BASEDIR}\src\main\external-resources\third-party\nsis\Contrib\UIs\modern.exe" ; UltraModern.exe
-!define MUI_ICON "Images\${PROJECT_ARTIFACT_ID}.ico"
-!define MUI_UNICON "Images\${PROJECT_ARTIFACT_ID}.ico"
+!define MUI_ICON "${PROJECT_BASEDIR}\src\main\resources\images\logo.ico"
+!define MUI_UNICON "${PROJECT_BASEDIR}\src\main\resources\images\logo.ico"
 !define MUI_PAGE_CUSTOMFUNCTION_SHOW showHiDPI
 !define MUI_HEADERIMAGE
 !define MUI_HEADERIMAGE_RIGHT
@@ -141,7 +141,7 @@ Section "!$(SectionServer)" sec1
 	File "${PROJECT_BASEDIR}\LICENSE.txt"
 	File "${PROJECT_BASEDIR}\src\main\external-resources\logback.xml"
 	File "${PROJECT_BASEDIR}\src\main\external-resources\logback.headless.xml"
-	File "${PROJECT_BASEDIR}\src\main\external-resources\icon.ico"
+	File /oname=${PROJECT_ARTIFACT_ID}.ico "${PROJECT_BASEDIR}\src\main\resources\images\logo.ico"
 	File "${PROJECT_BASEDIR}\src\main\external-resources\DummyInput.ass"
 	File "${PROJECT_BASEDIR}\src\main\external-resources\DummyInput.jpg"
 
@@ -164,7 +164,7 @@ Section "!$(SectionServer)" sec1
 
 	; Create uninstaller
 	WriteRegStr HKEY_LOCAL_MACHINE "${REG_KEY_UNINSTALL}" "DisplayName" "${PROJECT_NAME}"
-	WriteRegStr HKEY_LOCAL_MACHINE "${REG_KEY_UNINSTALL}" "DisplayIcon" "$INSTDIR\icon.ico"
+	WriteRegStr HKEY_LOCAL_MACHINE "${REG_KEY_UNINSTALL}" "DisplayIcon" "$INSTDIR\${PROJECT_ARTIFACT_ID}.ico"
 	WriteRegStr HKEY_LOCAL_MACHINE "${REG_KEY_UNINSTALL}" "DisplayVersion" "${PROJECT_VERSION}"
 	WriteRegStr HKEY_LOCAL_MACHINE "${REG_KEY_UNINSTALL}" "Publisher" "${PROJECT_ORGANIZATION_NAME}"
 	WriteRegStr HKEY_LOCAL_MACHINE "${REG_KEY_UNINSTALL}" "URLInfoAbout" "${PROJECT_ORGANIZATION_URL}"
