@@ -359,6 +359,7 @@ public class RemoteWeb {
 					if (file != null) {
 						filename = file.getName();
 						HashMap<String, Object> vars = new HashMap<>();
+						vars.put("favicons", RemoteUtil.FAVICONS_HEADER);
 						vars.put("title", filename);
 						vars.put("brush", filename.endsWith("debug.log") || filename.endsWith("debug.log.prev") ? "debug_log" :
 							filename.endsWith(".log") ? "log" : "conf");
@@ -411,12 +412,12 @@ public class RemoteWeb {
 				if (RemoteUtil.deny(t)) {
 					throw new IOException("Access denied");
 				}
-				if (t.getRequestURI().getPath().contains("favicon")) {
-					RemoteUtil.sendLogo(t);
+				if (RemoteUtil.handleFavIcon(t, parent.getResources())) {
 					return;
 				}
 
 				HashMap<String, Object> vars = new HashMap<>();
+				vars.put("favicons", RemoteUtil.FAVICONS_HEADER);
 				vars.put("serverName", configuration.getServerDisplayName());
 
 				try {
@@ -459,12 +460,12 @@ public class RemoteWeb {
 				if (RemoteUtil.deny(exchange)) {
 					throw new IOException("Access denied");
 				}
-				if (exchange.getRequestURI().getPath().contains("favicon")) {
-					RemoteUtil.sendLogo(exchange);
+				if (RemoteUtil.handleFavIcon(exchange, parent.getResources())) {
 					return;
 				}
 
 				HashMap<String, Object> vars = new HashMap<>();
+				vars.put("favicons", RemoteUtil.FAVICONS_HEADER);
 				vars.put("logs", getLogs());
 				if (configuration.getUseCache()) {
 					HTTPServer server = PMS.get().getServer();
@@ -484,7 +485,7 @@ public class RemoteWeb {
 
 		private ArrayList<HashMap<String, String>> getLogs() {
 			Set<File> files = LoggingConfig.getDebugFiles(false);
-			ArrayList<HashMap<String, String>> logs = new ArrayList<HashMap<String, String>>();
+			ArrayList<HashMap<String, String>> logs = new ArrayList<>();
 			for (File file : files) {
 				String id = String.valueOf(parent.getResources().add(file));
 				HashMap<String, String> item = new HashMap<>();
