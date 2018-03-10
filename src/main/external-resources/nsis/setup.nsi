@@ -51,8 +51,8 @@ InstallDirRegKey HKCU "${REG_KEY_SOFTWARE}" ""
 !define MUI_ABORTWARNING
 !define MUI_CUSTOMFUNCTION_GUIINIT onGUIInit
 !define MUI_UI "${PROJECT_BASEDIR}\src\main\external-resources\third-party\nsis\Contrib\UIs\modern.exe" ; UltraModern.exe
-!define MUI_ICON "${PROJECT_BASEDIR}\src\main\external-resources\third-party\nsis\Contrib\Graphics\Icons\${PROJECT_ARTIFACT_ID}.ico"
-!define MUI_UNICON "${PROJECT_BASEDIR}\src\main\external-resources\third-party\nsis\Contrib\Graphics\Icons\${PROJECT_ARTIFACT_ID}.ico"
+!define MUI_ICON "Images\${PROJECT_ARTIFACT_ID}.ico"
+!define MUI_UNICON "Images\${PROJECT_ARTIFACT_ID}.ico"
 !define MUI_PAGE_CUSTOMFUNCTION_SHOW showHiDPI
 !define MUI_HEADERIMAGE
 !define MUI_HEADERIMAGE_RIGHT
@@ -541,15 +541,15 @@ Function .onInit
 
 	SetOutPath "$PLUGINSDIR\Header"
 	SetOverwrite on
-	File "${PROJECT_BASEDIR}\src\main\external-resources\third-party\nsis\Contrib\Graphics\Header\Installer@192.bmp"
-	File "${PROJECT_BASEDIR}\src\main\external-resources\third-party\nsis\Contrib\Graphics\Header\Installer@144.bmp"
-	File "${PROJECT_BASEDIR}\src\main\external-resources\third-party\nsis\Contrib\Graphics\Header\Installer@120.bmp"
-	File "${PROJECT_BASEDIR}\src\main\external-resources\third-party\nsis\Contrib\Graphics\Header\Installer@96.bmp"
+	File "Images\InstallerHeader@192.bmp"
+	File "Images\InstallerHeader@144.bmp"
+	File "Images\InstallerHeader@120.bmp"
+	File "Images\InstallerHeader@96.bmp"
 	SetOutPath "$PLUGINSDIR\Wizard"
-	File "${PROJECT_BASEDIR}\src\main\external-resources\third-party\nsis\Contrib\Graphics\Wizard\Installer@192.bmp"
-	File "${PROJECT_BASEDIR}\src\main\external-resources\third-party\nsis\Contrib\Graphics\Wizard\Installer@144.bmp"
-	File "${PROJECT_BASEDIR}\src\main\external-resources\third-party\nsis\Contrib\Graphics\Wizard\Installer@120.bmp"
-	File "${PROJECT_BASEDIR}\src\main\external-resources\third-party\nsis\Contrib\Graphics\Wizard\Installer@96.bmp"
+	File "Images\Installer@192.bmp"
+	File "Images\Installer@144.bmp"
+	File "Images\Installer@120.bmp"
+	File "Images\Installer@96.bmp"
 FunctionEnd
 
 Function LanguageFileSearch
@@ -601,46 +601,50 @@ FunctionEnd
 Function showHiDPI
 	SysCompImg::GetSysDpi ; http://forums.winamp.com/showthread.php?t=443754
 	${If} $0 > 144
+	StrCpy $R6 "InstallerHeader@192.bmp"
 	StrCpy $R7 "Installer@192.bmp"
 	${ElseIf} $0 > 120
+	StrCpy $R6 "InstallerHeader@144.bmp"
 	StrCpy $R7 "Installer@144.bmp"
 	${ElseIf} $0 > 96
+	StrCpy $R6 "InstallerHeader@120.bmp"
 	StrCpy $R7 "Installer@120.bmp"
 	${Else}
+	StrCpy $R6 "InstallerHeader@96.bmp"
 	StrCpy $R7 "Installer@96.bmp"
 	${EndIf}
-	SysCompImg::SetCustom "$PLUGINSDIR\Header\$R7" ; SetClassic, SetFlat, SetThemed
+	SysCompImg::SetCustom "$PLUGINSDIR\Header\$R6" ; SetClassic, SetFlat, SetThemed
 	SysCompImg::SetCustom "$PLUGINSDIR\Wizard\$R7"
 	${NSD_SetImage} $mui.WelcomePage.Image "$PLUGINSDIR\Wizard\$R7" $mui.WelcomePage.Image.Bitmap
 	${NSD_SetImage} $mui.FinishPage.Image "$PLUGINSDIR\Wizard\$R7" $mui.FinishPage.Image.Bitmap
-	SetBrandingImage /IMGID=1046 "$PLUGINSDIR\Header\$R7"
+	SetBrandingImage /IMGID=1046 "$PLUGINSDIR\Header\$R6"
 FunctionEnd
 
 Function un.showHiDPI
 	SetOutPath "$PLUGINSDIR\Header"
 	SetOverwrite on
-	File "${PROJECT_BASEDIR}\src\main\external-resources\third-party\nsis\Contrib\Graphics\Header\Installer@192.bmp"
-	File "${PROJECT_BASEDIR}\src\main\external-resources\third-party\nsis\Contrib\Graphics\Header\Installer@144.bmp"
-	File "${PROJECT_BASEDIR}\src\main\external-resources\third-party\nsis\Contrib\Graphics\Header\Installer@120.bmp"
-	File "${PROJECT_BASEDIR}\src\main\external-resources\third-party\nsis\Contrib\Graphics\Header\Installer@96.bmp"
+	File "Images\InstallerHeader@192.bmp"
+	File "Images\InstallerHeader@144.bmp"
+	File "Images\InstallerHeader@120.bmp"
+	File "Images\InstallerHeader@96.bmp"
 	SetOutPath "$PLUGINSDIR\Wizard"
-	File "${PROJECT_BASEDIR}\src\main\external-resources\third-party\nsis\Contrib\Graphics\Wizard\Uninstaller@192.bmp"
-	File "${PROJECT_BASEDIR}\src\main\external-resources\third-party\nsis\Contrib\Graphics\Wizard\Uninstaller@144.bmp"
-	File "${PROJECT_BASEDIR}\src\main\external-resources\third-party\nsis\Contrib\Graphics\Wizard\Uninstaller@120.bmp"
-	File "${PROJECT_BASEDIR}\src\main\external-resources\third-party\nsis\Contrib\Graphics\Wizard\Uninstaller@96.bmp"
+	File "Images\Uninstaller@192.bmp"
+	File "Images\Uninstaller@144.bmp"
+	File "Images\Uninstaller@120.bmp"
+	File "Images\Uninstaller@96.bmp"
 
 	SysCompImg::GetSysDpi ; http://forums.winamp.com/showthread.php?t=443754
 	${If} $0 > 144
-	StrCpy $R6 "Installer@192.bmp"
+	StrCpy $R6 "InstallerHeader@192.bmp"
 	StrCpy $R7 "Uninstaller@192.bmp"
 	${ElseIf} $0 > 120
-	StrCpy $R6 "Installer@144.bmp"
+	StrCpy $R6 "InstallerHeader@144.bmp"
 	StrCpy $R7 "Uninstaller@144.bmp"
 	${ElseIf} $0 > 96
-	StrCpy $R6 "Installer@120.bmp"
+	StrCpy $R6 "InstallerHeader@120.bmp"
 	StrCpy $R7 "Uninstaller@120.bmp"
 	${Else}
-	StrCpy $R6 "Installer@96.bmp"
+	StrCpy $R6 "InstallerHeader@96.bmp"
 	StrCpy $R7 "Uninstaller@96.bmp"
 	${EndIf}
 	SysCompImg::SetCustom "$PLUGINSDIR\Header\$R6" ; SetClassic, SetFlat, SetThemed
