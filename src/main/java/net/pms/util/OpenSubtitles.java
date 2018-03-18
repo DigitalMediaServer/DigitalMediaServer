@@ -107,6 +107,9 @@ public class OpenSubtitles {
 	/** The duration in milliseconds until a {@link Token} expires */
 	private static final long TOKEN_EXPIRATION_TIME = 10 * 60 * 1000; // 10 minutes
 
+	/** The minimum Jaro–Winkler title distance for IMDB guesses to be valid */
+	private static final double MIN_IMDB_GUESS_JW_DISTANCE = 0.65;
+
 	/** The {@link Path} where downloaded OpenSubtitles subtitles are stored */
 	public static final Path SUBTITLES_FOLDER = Paths.get(PMS.getConfiguration().getDataFile("subtitles"));
 
@@ -1302,14 +1305,21 @@ public class OpenSubtitles {
 		// The score calculation isn't extensively tested and might need to be tweaked
 		for (GuessItem guess : guesses) { //TODO: (Nad) Guess Scoring
 			double score = 0.0;
+			if (isBlank(prettifier.getName()) || isBlank(guess.getTitle())) {
+				continue;
+			}
+			score += new JaroWinklerDistance().apply(prettifier.getName(), guess.getTitle());
+			if (score < MIN_IMDB_GUESS_JW_DISTANCE) { //TODO: (Nad) Parameterize threshold...?
+				continue;
+			}
 			if (prettifier.getYear() > 0) {
 				int guessYear = StringUtil.getYear(guess.getYear());
 				if (prettifier.getYear() == guessYear) {
-					score += 0.5;
+					score += 0.4;
 				}
 			}
 			if (classification != null && classification == guess.getVideoClassification()) {
-				score += 0.7;
+				score += 0.5;
 				if (classification == VideoClassification.SERIES && guess instanceof CheckMovieHashItem) {
 					CheckMovieHashItem item = (CheckMovieHashItem) guess;
 					if (
@@ -1320,11 +1330,8 @@ public class OpenSubtitles {
 					}
 				}
 			}
-			if (isNotBlank(prettifier.getName()) && isNotBlank(guess.getTitle())) {
-				score += new JaroWinklerDistance().apply(prettifier.getName(), guess.getTitle());
-			}
 			if (guess instanceof BestGuess) {
-				score += 0.3;
+				score += 0.2;
 			}
 			candidates.add(new GuessCandidate(score, guess));
 		}
