@@ -98,6 +98,9 @@ public class OpenSubtitle {
 	private static final String UA = "Digital Media Server v1";
 	private static final long TOKEN_EXPIRATION_TIME = 10 * 60 * 1000; // 10 minutes
 
+	/** The minimum Jaro–Winkler title distance for IMDB guesses to be valid */
+	private static final double MIN_IMDB_GUESS_JW_DISTANCE = 0.65;
+
 	/** The {@link Path} where downloaded OpenSubtitles subtitles are stored */
 	public static final Path SUBTITLES_FOLDER = Paths.get(PMS.getConfiguration().getDataFile(SUB_DIR));
 
@@ -1323,20 +1326,24 @@ public class OpenSubtitle {
 		// The score calculation isn't extensively tested and might need to be tweaked
 		for (GuessItem guess : guesses) {
 			double score = 0.0;
+			if (isBlank(prettifier.getName()) || isBlank(guess.getTitle())) {
+				continue;
+			}
+			score += new JaroWinklerDistance().apply(prettifier.getName(), guess.getTitle());
+			if (score < MIN_IMDB_GUESS_JW_DISTANCE) {
+				continue;
+			}
 			if (prettifier.getYear() > 0) {
 				int guessYear = StringUtil.getYear(guess.getYear());
 				if (prettifier.getYear() == guessYear) {
-					score += 0.5;
+					score += 0.4;
 				}
 			}
 			if (classification != null && classification == guess.getVideoClassification()) {
-				score += 0.7;
-			}
-			if (isNotBlank(prettifier.getName()) && isNotBlank(guess.getTitle())) {
-				score += new JaroWinklerDistance().apply(prettifier.getName(), guess.getTitle());
+				score += 0.5;
 			}
 			if (bestGuess) {
-				score += 0.3;
+				score += 0.2;
 			}
 			candidates.put(score, guess);
 		}
