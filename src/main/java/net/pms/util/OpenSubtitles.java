@@ -1035,7 +1035,7 @@ public class OpenSubtitles {
 			return null;
 		}
 		ArrayList<GuessCandidate> candidates = new ArrayList<>();
-		addGuesses(candidates, items, prettifier, prettifier.getClassification());
+		addGuesses(candidates, items, prettifier, prettifier.getClassification(), PMS.getLocale());
 		if (candidates.isEmpty()) {
 			LOGGER.debug(
 				"OpenSubtitles CheckMovieHash2 returned no usable IMDB ID for \"{}\" using file hash \"{}\"",
@@ -1300,7 +1300,8 @@ public class OpenSubtitles {
 		List<GuessCandidate> candidates,
 		Collection<? extends GuessItem> guesses,
 		FileNamePrettifier prettifier,
-		VideoClassification classification
+		VideoClassification classification,
+		Locale locale
 	) {
 		// The score calculation isn't extensively tested and might need to be tweaked
 		for (GuessItem guess : guesses) { //TODO: (Nad) Guess Scoring
@@ -1308,8 +1309,17 @@ public class OpenSubtitles {
 			if (isBlank(prettifier.getName()) || isBlank(guess.getTitle())) {
 				continue;
 			}
-			score += new JaroWinklerDistance().apply(prettifier.getName(), guess.getTitle());
+			score += new JaroWinklerDistance().apply(
+				prettifier.getName().toLowerCase(locale),
+				guess.getTitle().toLowerCase(locale)
+			);
 			if (score < MIN_IMDB_GUESS_JW_DISTANCE) { //TODO: (Nad) Parameterize threshold...?
+				LOGGER.trace(
+					"OpenSubtitles: Excluding IMDB guess because the similarity ({}) is under the threshold ({}): {}",
+					score,
+					MIN_IMDB_GUESS_JW_DISTANCE,
+					guess
+				);
 				continue;
 			}
 			if (prettifier.getYear() > 0) {
@@ -1529,15 +1539,16 @@ public class OpenSubtitles {
 					classification = prettifier.getClassification();
 				}
 
+				Locale locale = PMS.getLocale();
 				ArrayList<GuessCandidate> candidates = new ArrayList<>();
 				if (movieGuess.getGuessesFromString().size() > 0) {
-					addGuesses(candidates, movieGuess.getGuessesFromString().values(), prettifier, classification);
+					addGuesses(candidates, movieGuess.getGuessesFromString().values(), prettifier, classification, locale);
 				}
 				if (movieGuess.getImdbSuggestions().size() > 0) {
-					addGuesses(candidates, movieGuess.getImdbSuggestions().values(), prettifier, classification);
+					addGuesses(candidates, movieGuess.getImdbSuggestions().values(), prettifier, classification, locale);
 				}
 				if (movieGuess.getBestGuess() != null) {
-					addGuesses(candidates, Collections.singletonList(movieGuess.getBestGuess()), prettifier, classification);
+					addGuesses(candidates, Collections.singletonList(movieGuess.getBestGuess()), prettifier, classification, locale);
 				}
 				if (candidates.size() > 0) {
 					Collections.sort(candidates);
@@ -4034,12 +4045,16 @@ public class OpenSubtitles {
 				}
 			}
 			if (prettifier != null) {
+				Locale locale = PMS.getLocale();
 				if (isNotBlank(prettifier.getFileNameWithoutExtension())) {
 					String subFileNameWithoutExtension = FileUtil.getFileNameWithoutExtension(subFileName);
 					if (isNotBlank(subFileNameWithoutExtension)) {
 						// 0.6 and below gives a score of 0, 1.0 give a score of 40.
 						tmpScore += 40d * 2.5 * Math.max(
-							new JaroWinklerDistance().apply(prettifier.getFileNameWithoutExtension(), subFileNameWithoutExtension) - 0.6,
+							new JaroWinklerDistance().apply(
+								prettifier.getFileNameWithoutExtension().toLowerCase(locale),
+								subFileNameWithoutExtension.toLowerCase(Locale.ENGLISH)
+							) - 0.6,
 							0
 						);
 					}
@@ -4047,10 +4062,16 @@ public class OpenSubtitles {
 				if (isNotBlank(prettifier.getName()) && (isNotBlank(movieName) || isNotBlank(movieNameEng))) {
 					double nameScore = isBlank(movieName) ?
 						0.0 :
-						new JaroWinklerDistance().apply(prettifier.getName(), movieName);
-					nameScore = Math.max(
-						nameScore,
-						isBlank(movieNameEng) ? 0.0 : new JaroWinklerDistance().apply(prettifier.getName(), movieNameEng)
+						new JaroWinklerDistance().apply(
+							prettifier.getName().toLowerCase(locale),
+							movieName.toLowerCase(locale)
+						);
+					nameScore = Math.max(nameScore, isBlank(movieNameEng) ?
+						0.0 :
+						new JaroWinklerDistance().apply(
+							prettifier.getName().toLowerCase(Locale.ENGLISH),
+							movieNameEng.toLowerCase(Locale.ENGLISH)
+						)
 					);
 					// 0.5 and below gives a score of 0, 1 give a score of 30
 					tmpScore += 30d * 2 * Math.max(nameScore - 0.5, 0);
