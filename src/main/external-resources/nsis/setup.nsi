@@ -113,16 +113,16 @@ Var RAM
 
 Section /o "-Cleaning" sec0
 	ReadENVStr $R1 "ALLUSERSPROFILE"
-	RMDir /r $R1\${PROJECT_NAME_CAMEL}
-	RMDir /r $TEMP\fontconfig
-	RMDir /r $LOCALAPPDATA\fontconfig
+	RMDir /r "$R1\${PROJECT_NAME_CAMEL}"
+	RMDir /r "$TEMP\fontconfig"
+	RMDir /r "$LOCALAPPDATA\fontconfig"
 	RMDir /r $INSTDIR
 SectionEnd
 
 Section "!$(SectionServer)" sec1
 	SectionIn RO
 
-	SetOutPath "$INSTDIR"
+	SetOutPath $INSTDIR
 	SetOverwrite on
 
 	CreateDirectory "$INSTDIR\plugins"
@@ -152,7 +152,7 @@ Section "!$(SectionServer)" sec1
 	File "${PROJECT_BASEDIR}\src\main\external-resources\lib\ctrlsender\ctrlsender.exe"
 
 	; The user may have set the installation folder as the profile folder, so we can't clobber this
-	SetOutPath "$INSTDIR"
+	SetOutPath $INSTDIR
 	SetOverwrite off
 	File "${PROJECT_BASEDIR}\src\main\external-resources\${PROJECT_NAME_SHORT}.conf"
 	File "${PROJECT_BASEDIR}\src\main\external-resources\WEB.conf"
@@ -177,7 +177,7 @@ Section "!$(SectionServer)" sec1
 	IntFmt $0 "0x%08x" $0 ; https://msdn.microsoft.com/en-us/library/windows/desktop/ms647550(v=vs.85).aspx
 	WriteRegDWORD HKLM "${REG_KEY_UNINSTALL}" "EstimatedSize" "$0"
 
-	SetOutPath "$INSTDIR"
+	SetOutPath $INSTDIR
 	SetOverwrite on
 	WriteUninstaller "$INSTDIR\uninst.exe"
 
@@ -287,8 +287,7 @@ Section /o $(SectionDownloadJava) sec3 ; http://www.oracle.com/technetwork/java/
 	End:
 SectionEnd
 
-SectionGroup $(SectionHeapSize) sec4
-		; http://www.oracle.com/technetwork/java/hotspotfaq-138619.html#gc_heap_32bit
+SectionGroup $(SectionHeapSize) sec4 ; http://www.oracle.com/technetwork/java/hotspotfaq-138619.html#gc_heap_32bit
 	Section /o "512 MB" sec41
 		WriteRegStr HKCU "${REG_KEY_SOFTWARE}" "HeapMem" "512M"
 	SectionEnd
@@ -551,6 +550,10 @@ Function downloadJavaPreselection
 	${EndIf}
 FunctionEnd
 
+Function .onGUIEnd
+	RMDir /r /REBOOTOK $PLUGINSDIR
+FunctionEnd
+
 Function un.onInit
 	!insertmacro MUI_UNGETLANGUAGE
 
@@ -635,9 +638,9 @@ Section Uninstall
 	Quit
 	ReadENVStr $R1 "ALLUSERSPROFILE"
 	Delete /REBOOTOK "$DESKTOP\${PROJECT_NAME}.lnk"
-	RMDir /r /REBOOTOK $R1\${PROJECT_NAME_CAMEL}
-	RMDir /r /REBOOTOK $TEMP\fontconfig
-	RMDir /r /REBOOTOK $LOCALAPPDATA\fontconfig
+	RMDir /r /REBOOTOK "$R1\${PROJECT_NAME_CAMEL}"
+	RMDir /r /REBOOTOK "$TEMP\fontconfig"
+	RMDir /r /REBOOTOK "$LOCALAPPDATA\fontconfig"
 	RMDir /r /REBOOTOK $INSTDIR
 	RMDir /r /REBOOTOK "$SMPROGRAMS\${PROJECT_NAME}"
 	Goto final
@@ -648,7 +651,6 @@ Section Uninstall
 		IfErrors EOF
 		${WordFindS} "$1" "File: wrote" "E+1" $3
 		IfErrors 0 secondPass
-		ClearErrors
 		${WordFindS} "$1" "CreateShortcut: out:" "E+1" $3
 		IfErrors looping
 		secondPass: ${WordFind2X} "$1" "$\"" "$\"" "E+1" $3
