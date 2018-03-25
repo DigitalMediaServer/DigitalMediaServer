@@ -72,6 +72,7 @@ InstallDirRegKey HKCU "${REG_KEY_SOFTWARE}" ""
 !define MUI_COMPONENTSPAGE
 !define MUI_COMPONENTSPAGE_SMALLDESC
 !define MUI_COMPONENTSPAGE_TEXT_TOP " "
+!define MUI_PAGE_CUSTOMFUNCTION_SHOW windowsResizing
 !define MUI_CUSTOMFUNCTION_ONMOUSEOVERSECTION hideRequiredSize
 !insertmacro MUI_COMPONENTSPAGE_INTERFACE
 !insertmacro MUI_PAGEDECLARATION_COMPONENTS
@@ -190,6 +191,18 @@ Var FirewallStatus
 Var RAM
 Var X64
 Var XP
+
+;https://msdn.microsoft.com/en-us/library/ms645502(v=vs.85).aspx
+!macro WindowSize x y cx cy
+	IntOp $0 ${x} * $4
+	IntOp $0 $0 / 4
+	IntOp $1 ${y} * $5
+	IntOp $1 $1 / 8
+	IntOp $2 ${cx} * $4
+	IntOp $2 $2 / 4
+	IntOp $3 ${cy} * $5
+	IntOp $3 $3 / 8
+!macroend
 
 ; ComponentText "Select the components you want to install."
 
@@ -716,6 +729,35 @@ Function DumpLog
 		Pop $1
 		Pop $0
 		Exch $5
+FunctionEnd
+
+Function windowsResizing
+	FindWindow $mui.ComponentsPage "#32770" "" $HWNDPARENT
+	System::Call "*(i 0, i 0, i 4, i 8) i .r1"
+	System::Call "User32::MapDialogRect(i $mui.ComponentsPage, i r1) i .r2"
+	System::Call "*$1(i .r2, i.r3, i.r4, i.r5)"
+	System::Free $1
+	GetDlgItem $mui.ComponentsPage.Text $mui.ComponentsPage 1006
+	ShowWindow $mui.ComponentsPage.Text ${SW_HIDE}
+	GetDlgItem $mui.ComponentsPage.InstTypesText $mui.ComponentsPage 1021
+	ShowWindow $mui.ComponentsPage.InstTypesText ${SW_HIDE}
+	GetDlgItem $mui.ComponentsPage.InstTypes $mui.ComponentsPage 1017
+	ShowWindow $mui.ComponentsPage.InstTypes ${SW_HIDE}
+	GetDlgItem $mui.ComponentsPage.ComponentsText $mui.ComponentsPage 1022
+	GetDlgItem $mui.ComponentsPage.SpaceRequired $mui.ComponentsPage 1023
+	GetDlgItem $mui.ComponentsPage.Components $mui.ComponentsPage 1032
+	GetDlgItem $mui.ComponentsPage.DescriptionTitle $mui.ComponentsPage 1042
+	GetDlgItem $mui.ComponentsPage.DescriptionText $mui.ComponentsPage 1043
+	!insertmacro WindowSize 0 4 95 65
+	System::Call "User32::SetWindowPos(i $mui.ComponentsPage.ComponentsText, i 0, i $0, i $1, i $2, i $3, i 0x0040)" ; 1022
+	!insertmacro WindowSize 0 90 95 28
+	System::Call "User32::SetWindowPos(i $mui.ComponentsPage.SpaceRequired, i 0, i $0, i $1, i $2, i $3, i 0x0040)" ; 1023
+	!insertmacro WindowSize 102 0 195 85
+	System::Call "User32::SetWindowPos(i $mui.ComponentsPage.Components, i 0, i $0, i $1, i $2, i $3, i 0x0040)" ; 1032
+	!insertmacro WindowSize 102 85 195 50
+	System::Call "User32::SetWindowPos(i $mui.ComponentsPage.DescriptionTitle, i 0, i $0, i $1, i $2, i $3, i 0x0040)" ; 1042
+	!insertmacro WindowSize 108 97 183 33
+	System::Call "User32::SetWindowPos(i $mui.ComponentsPage.DescriptionText, i 0, i $0, i $1, i $2, i $3, i 0x0040)" ; 1043
 FunctionEnd
 
 Function showHiDPI
