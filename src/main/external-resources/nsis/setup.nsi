@@ -525,15 +525,15 @@ Function .onInit
 
 	SetOutPath "$PLUGINSDIR\Header"
 	SetOverwrite on
-	File "Images\InstallerHeader@192.bmp"
-	File "Images\InstallerHeader@144.bmp"
-	File "Images\InstallerHeader@120.bmp"
-	File "Images\InstallerHeader@96.bmp"
+	File /nonfatal "Images\Header@192.bmp"
+	File /nonfatal "Images\Header@144.bmp"
+	File /nonfatal "Images\Header@120.bmp"
+	File /nonfatal "Images\Header@96.bmp"
 	SetOutPath "$PLUGINSDIR\Wizard"
-	File "Images\Installer@192.bmp"
-	File "Images\Installer@144.bmp"
-	File "Images\Installer@120.bmp"
-	File "Images\Installer@96.bmp"
+	File /nonfatal "Images\Installer@192.bmp"
+	File /nonfatal "Images\Installer@144.bmp"
+	File /nonfatal "Images\Installer@120.bmp"
+	File /nonfatal "Images\Installer@96.bmp"
 FunctionEnd
 
 Function onGUIInit
@@ -575,16 +575,16 @@ FunctionEnd
 Function showHiDPI
 	SysCompImg::GetSysDpi ; http://forums.winamp.com/showthread.php?t=443754
 	${If} $0 > 144
-	StrCpy $R6 "InstallerHeader@192.bmp"
+	StrCpy $R6 "Header@192.bmp"
 	StrCpy $R7 "Installer@192.bmp"
 	${ElseIf} $0 > 120
-	StrCpy $R6 "InstallerHeader@144.bmp"
+	StrCpy $R6 "Header@144.bmp"
 	StrCpy $R7 "Installer@144.bmp"
 	${ElseIf} $0 > 96
-	StrCpy $R6 "InstallerHeader@120.bmp"
+	StrCpy $R6 "Header@120.bmp"
 	StrCpy $R7 "Installer@120.bmp"
 	${Else}
-	StrCpy $R6 "InstallerHeader@96.bmp"
+	StrCpy $R6 "Header@96.bmp"
 	StrCpy $R7 "Installer@96.bmp"
 	${EndIf}
 	SysCompImg::SetCustom "$PLUGINSDIR\Header\$R6" ; SetClassic, SetFlat, SetThemed
@@ -597,28 +597,28 @@ FunctionEnd
 Function un.showHiDPI
 	SetOutPath "$PLUGINSDIR\Header"
 	SetOverwrite on
-	File "Images\InstallerHeader@192.bmp"
-	File "Images\InstallerHeader@144.bmp"
-	File "Images\InstallerHeader@120.bmp"
-	File "Images\InstallerHeader@96.bmp"
+	File /nonfatal "Images\Header@192.bmp"
+	File /nonfatal "Images\Header@144.bmp"
+	File /nonfatal "Images\Header@120.bmp"
+	File /nonfatal "Images\Header@96.bmp"
 	SetOutPath "$PLUGINSDIR\Wizard"
-	File "Images\Uninstaller@192.bmp"
-	File "Images\Uninstaller@144.bmp"
-	File "Images\Uninstaller@120.bmp"
-	File "Images\Uninstaller@96.bmp"
+	File /nonfatal "Images\Uninstaller@192.bmp"
+	File /nonfatal "Images\Uninstaller@144.bmp"
+	File /nonfatal "Images\Uninstaller@120.bmp"
+	File /nonfatal "Images\Uninstaller@96.bmp"
 
 	SysCompImg::GetSysDpi ; http://forums.winamp.com/showthread.php?t=443754
 	${If} $0 > 144
-	StrCpy $R6 "InstallerHeader@192.bmp"
+	StrCpy $R6 "Header@192.bmp"
 	StrCpy $R7 "Uninstaller@192.bmp"
 	${ElseIf} $0 > 120
-	StrCpy $R6 "InstallerHeader@144.bmp"
+	StrCpy $R6 "Header@144.bmp"
 	StrCpy $R7 "Uninstaller@144.bmp"
 	${ElseIf} $0 > 96
-	StrCpy $R6 "InstallerHeader@120.bmp"
+	StrCpy $R6 "Header@120.bmp"
 	StrCpy $R7 "Uninstaller@120.bmp"
 	${Else}
-	StrCpy $R6 "InstallerHeader@96.bmp"
+	StrCpy $R6 "Header@96.bmp"
 	StrCpy $R7 "Uninstaller@96.bmp"
 	${EndIf}
 	SysCompImg::SetCustom "$PLUGINSDIR\Header\$R6" ; SetClassic, SetFlat, SetThemed
