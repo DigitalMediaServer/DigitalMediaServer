@@ -3,7 +3,7 @@ ManifestDPIAware true
 
 !pragma warning disable 6010
 
-SetCompressor /SOLID /FINAL lzma
+SetCompressor /FINAL lzma
 SetCompressorDictSize 64
 
 !include "MUI2.nsh"
@@ -36,7 +36,7 @@ XPStyle on
 InstProgressFlags Smooth colored
 SetDatablockOptimize on
 SetDateSave on
-CRCCheck force
+;CRCCheck force
 RequestExecutionLevel admin
 AllowSkipFiles off
 ManifestSupportedOS all ; Left here to remember to add GUI ID in case Windows 11 or above appear before NSIS add their support by default
@@ -162,13 +162,17 @@ Section "!$(SectionServer)" sec1
 	; Store install folder
 	WriteRegStr HKCU "${REG_KEY_SOFTWARE}" "" $INSTDIR
 
+	;Workaround until Crowdin support $\r$\n special characters
+	${WordReplace} "$(CannotOpen)" "%%" "$\r$\n" "+" $0
+	WriteRegStr HKCU "${REG_KEY_UNINSTALL}" "CannotOpen" "$0"
+
 	; Create uninstaller
 	WriteRegStr HKLM "${REG_KEY_UNINSTALL}" "DisplayName" "${PROJECT_NAME}"
 	WriteRegStr HKLM "${REG_KEY_UNINSTALL}" "DisplayIcon" "$INSTDIR\${PROJECT_ARTIFACT_ID}.ico"
 	WriteRegStr HKLM "${REG_KEY_UNINSTALL}" "DisplayVersion" "${PROJECT_VERSION}"
 	WriteRegStr HKLM "${REG_KEY_UNINSTALL}" "Publisher" "${PROJECT_ORGANIZATION_NAME}"
 	WriteRegStr HKLM "${REG_KEY_UNINSTALL}" "URLInfoAbout" "${PROJECT_ORGANIZATION_URL}"
-	WriteRegStr HKLM "${REG_KEY_UNINSTALL}" "UninstallString" '"$INSTDIR\uninst.exe"'
+	WriteRegStr HKLM "${REG_KEY_UNINSTALL}" "UninstallString" "$INSTDIR\uninst.exe"
 	WriteRegDWORD HKLM "${REG_KEY_UNINSTALL}" "NoModify" 0x00000001
 	WriteRegDWORD HKLM "${REG_KEY_UNINSTALL}" "NoRepair" 0x00000001
 	WriteRegStr HKLM "${REG_KEY_UNINSTALL}" "FirewallSettings" "$FirewallStatus"
@@ -635,7 +639,9 @@ Section Uninstall
 	ClearErrors
 	FileOpen $0 "$INSTDIR\install.log" r
 	IfErrors 0 looping
-	MessageBox MB_ICONEXCLAMATION|MB_YESNO 'Cannot open the file "install.log".$\r$\nThe uninstaller cannot work correctly.$\r$\nDo you want force the uninstall anyway?' IDYES +2 ; TODO: TRANSLATE
+	ReadRegStr $1 HKCU "${REG_KEY_UNINSTALL}" "CannotOpen"
+	Pop $1
+	MessageBox MB_ICONEXCLAMATION|MB_YESNO "$1" IDYES +2
 	Quit
 	Delete /REBOOTOK "$DESKTOP\${PROJECT_NAME}.lnk"
 	RMDir /r /REBOOTOK $INSTDIR

@@ -1,3 +1,4 @@
+${LangFileString} CannotOpen "Cannot open the file $\"install.log$\".%%The uninstaller cannot work correctly.%%Do you want force the uninstall anyway?"
 ${LangFileString} DownloadingFile "Downloading file:"
 ${LangFileString} Downloaded "Downloaded:"
 ${LangFileString} TimeRemaining "Time remaining:"
