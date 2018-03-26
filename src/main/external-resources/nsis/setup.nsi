@@ -55,9 +55,9 @@ InstallDirRegKey HKCU "${REG_KEY_SOFTWARE}" ""
 !define MUI_HEADERIMAGE_RIGHT
 !define MUI_BGCOLOR FFFFFF
 !define MUI_HEADER_TRANSPARENT_TEXT
+!define MUI_LANGDLL_ALWAYSSHOW
 !define MUI_LANGDLL_ALLLANGUAGES
 ; Remember the installer language (Language selection in dialog settings)
-!define MUI_LANGDLL_ALWAYSSHOW
 !define MUI_LANGDLL_REGISTRY_ROOT "HKCU"
 !define MUI_LANGDLL_REGISTRY_KEY "${REG_KEY_SOFTWARE}"
 !define MUI_LANGDLL_REGISTRY_VALUENAME "Installer Language"
@@ -163,15 +163,15 @@ Section "!$(SectionServer)" sec1
 	WriteRegStr HKCU "${REG_KEY_SOFTWARE}" "" $INSTDIR
 
 	; Create uninstaller
-	WriteRegStr HKEY_LOCAL_MACHINE "${REG_KEY_UNINSTALL}" "DisplayName" "${PROJECT_NAME}"
-	WriteRegStr HKEY_LOCAL_MACHINE "${REG_KEY_UNINSTALL}" "DisplayIcon" "$INSTDIR\${PROJECT_ARTIFACT_ID}.ico"
-	WriteRegStr HKEY_LOCAL_MACHINE "${REG_KEY_UNINSTALL}" "DisplayVersion" "${PROJECT_VERSION}"
-	WriteRegStr HKEY_LOCAL_MACHINE "${REG_KEY_UNINSTALL}" "Publisher" "${PROJECT_ORGANIZATION_NAME}"
-	WriteRegStr HKEY_LOCAL_MACHINE "${REG_KEY_UNINSTALL}" "URLInfoAbout" "${PROJECT_ORGANIZATION_URL}"
-	WriteRegStr HKEY_LOCAL_MACHINE "${REG_KEY_UNINSTALL}" "UninstallString" '"$INSTDIR\uninst.exe"'
-	WriteRegDWORD HKEY_LOCAL_MACHINE "${REG_KEY_UNINSTALL}" "NoModify" 0x00000001
-	WriteRegDWORD HKEY_LOCAL_MACHINE "${REG_KEY_UNINSTALL}" "NoRepair" 0x00000001
-	WriteRegStr HKEY_LOCAL_MACHINE "${REG_KEY_UNINSTALL}" "FirewallSettings" "$FirewallStatus"
+	WriteRegStr HKLM "${REG_KEY_UNINSTALL}" "DisplayName" "${PROJECT_NAME}"
+	WriteRegStr HKLM "${REG_KEY_UNINSTALL}" "DisplayIcon" "$INSTDIR\${PROJECT_ARTIFACT_ID}.ico"
+	WriteRegStr HKLM "${REG_KEY_UNINSTALL}" "DisplayVersion" "${PROJECT_VERSION}"
+	WriteRegStr HKLM "${REG_KEY_UNINSTALL}" "Publisher" "${PROJECT_ORGANIZATION_NAME}"
+	WriteRegStr HKLM "${REG_KEY_UNINSTALL}" "URLInfoAbout" "${PROJECT_ORGANIZATION_URL}"
+	WriteRegStr HKLM "${REG_KEY_UNINSTALL}" "UninstallString" '"$INSTDIR\uninst.exe"'
+	WriteRegDWORD HKLM "${REG_KEY_UNINSTALL}" "NoModify" 0x00000001
+	WriteRegDWORD HKLM "${REG_KEY_UNINSTALL}" "NoRepair" 0x00000001
+	WriteRegStr HKLM "${REG_KEY_UNINSTALL}" "FirewallSettings" "$FirewallStatus"
 
 	${GetSize} "$INSTDIR" "/S=0B" $0 $1 $2
 	IntFmt $0 "0x%08x" $0 ; https://msdn.microsoft.com/en-us/library/windows/desktop/ms647550(v=vs.85).aspx
@@ -551,6 +551,7 @@ Function downloadJavaPreselection
 FunctionEnd
 
 Function .onGUIEnd
+	LogSet off
 	RMDir /r /REBOOTOK $PLUGINSDIR
 FunctionEnd
 
@@ -636,11 +637,7 @@ Section Uninstall
 	IfErrors 0 looping
 	MessageBox MB_ICONEXCLAMATION|MB_YESNO 'Cannot open the file "install.log".$\r$\nThe uninstaller cannot work correctly.$\r$\nDo you want force the uninstall anyway?' IDYES +2 ; TODO: TRANSLATE
 	Quit
-	ReadENVStr $R1 "ALLUSERSPROFILE"
 	Delete /REBOOTOK "$DESKTOP\${PROJECT_NAME}.lnk"
-	RMDir /r /REBOOTOK "$R1\${PROJECT_NAME_CAMEL}"
-	RMDir /r /REBOOTOK "$TEMP\fontconfig"
-	RMDir /r /REBOOTOK "$LOCALAPPDATA\fontconfig"
 	RMDir /r /REBOOTOK $INSTDIR
 	RMDir /r /REBOOTOK "$SMPROGRAMS\${PROJECT_NAME}"
 	Goto final
@@ -674,7 +671,7 @@ Section Uninstall
 		RMDir /REBOOTOK "$INSTDIR"
 
 	final:
-		DeleteRegKey HKEY_LOCAL_MACHINE "${REG_KEY_UNINSTALL}"
+		DeleteRegKey HKLM "${REG_KEY_UNINSTALL}"
 		DeleteRegKey HKCU "${REG_KEY_SOFTWARE}"
 
 	!insertmacro SERVICE "running" "${PROJECT_NAME}" ""
