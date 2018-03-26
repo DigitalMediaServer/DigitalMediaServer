@@ -184,8 +184,7 @@ Function JavaInPath
 	${GetFileVersion} $R9 $FileVersion
 
 	${WordFind} "$FileVersion" "8.0." "E+1}" $R0
-	IfErrors 0 +4
-	ClearErrors
+	IfErrors 0 +3
 	StrCpy $R0 ""
 	Goto seven
 	StrCpy $R4 $R9 ; For Java 8
@@ -193,8 +192,7 @@ Function JavaInPath
 
 	seven:
 		${WordFind} "$FileVersion" "7.0." "E+1}" $R0
-		IfErrors 0 +4
-		ClearErrors
+		IfErrors 0 +3
 		StrCpy $R0 ""
 		Goto nine
 		StrCpy $R3 $R9 ; For Java 7
@@ -206,7 +204,6 @@ Function JavaInPath
 			IfErrors +3
 			StrCpy $R5 $R9 ; For Java 9 and above
 			${Break}
-			ClearErrors
 			StrCpy $R0 ""
 		${Next}
 
@@ -240,8 +237,7 @@ Function JavaHomeParsing
 	${EndIf}
 
 	${WordFind} "$FileVersion" "8.0." "E+1}" $R0
-	IfErrors 0 +4
-	ClearErrors
+	IfErrors 0 +3
 	StrCpy $R0 ""
 	Goto seven
 	StrCpy $JavaLocation $R9 ; For Java 8
@@ -249,8 +245,7 @@ Function JavaHomeParsing
 
 	seven:
 		${WordFind} "$FileVersion" "7.0." "E+1}" $R0
-		IfErrors 0 +4
-		ClearErrors
+		IfErrors 0 +3
 		StrCpy $R0 ""
 		Goto nine
 		StrCpy $JavaLocation $R9 ; For Java 7
@@ -262,7 +257,6 @@ Function JavaHomeParsing
 			IfErrors +3
 			StrCpy $JavaLocation $R9 ; For Java 9 and above
 			${Break}
-			ClearErrors
 			StrCpy $R0 ""
 		${Next}
 
