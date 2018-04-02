@@ -1,5 +1,6 @@
 Unicode "true"
 ManifestDPIAware true
+ShowUninstDetails show
 
 !pragma warning disable 6010
 
@@ -20,6 +21,9 @@ SetCompressorDictSize 64
 !include "..\..\..\..\target\project.nsh"
 !include "${PROJECT_BUILD_DIR}\extra.nsh"
 
+!define UninstallLog "uninstall.log"
+!define UninstallEXE "uninstall.exe"
+
 !define INSTALLERMUTEXNAME "$(^Name)"
 !define PRODUCT_NAME "${PROJECT_NAME}"
 !define PRODUCT_VERSION "v${PROJECT_VERSION_SHORT}"
@@ -36,7 +40,7 @@ XPStyle on
 InstProgressFlags Smooth colored
 SetDatablockOptimize on
 SetDateSave on
-;CRCCheck force
+CRCCheck force
 RequestExecutionLevel admin
 AllowSkipFiles off
 ManifestSupportedOS all ; Left here to remember to add GUI ID in case Windows 11 or above appear before NSIS add their support by default
@@ -63,6 +67,7 @@ InstallDirRegKey HKCU "${REG_KEY_SOFTWARE}" ""
 !define MUI_LANGDLL_REGISTRY_VALUENAME "Installer Language"
 !define MUI_WELCOMEPAGE_TITLE_3LINES
 !insertmacro MUI_PAGE_WELCOME
+!insertmacro MUI_PAGE_DIRECTORY
 !define MUI_CUSTOMFUNCTION_ONMOUSEOVERSECTION downloadJavaPreselection
 !define MUI_COMPONENTSPAGE
 !define MUI_COMPONENTSPAGE_SMALLDESC
@@ -88,7 +93,10 @@ InstallDirRegKey HKCU "${REG_KEY_SOFTWARE}" ""
 !define MUI_PAGE_CUSTOMFUNCTION_SHOW "un.showHiDPI"
 !define MUI_UNWELCOMEPAGE_TITLE_3LINES
 !insertmacro MUI_UNPAGE_WELCOME
-ShowUninstDetails show
+!define MUI_UNCOMPONENTSPAGE
+!define MUI_UNCOMPONENTSPAGE_SMALLDESC
+!define MUI_UNCOMPONENTSPAGE_TEXT_TOP " "
+!insertmacro MUI_UNPAGE_COMPONENTS
 !insertmacro MUI_UNPAGE_INSTFILES
 !define MUI_PAGE_CUSTOMFUNCTION_SHOW "un.showHiDPI"
 !define MUI_UNFINISHPAGE_TITLE_3LINES
@@ -112,17 +120,19 @@ Var RAM
 ; ComponentText "Select the components you want to install."
 
 Section /o "-Cleaning" sec0
-	ReadENVStr $R1 "ALLUSERSPROFILE"
+	SetDetailsPrint textonly
+	ReadEnvStr $R1 "ALLUSERSPROFILE"
 	RMDir /r "$R1\${PROJECT_NAME_CAMEL}"
 	RMDir /r "$TEMP\fontconfig"
 	RMDir /r "$LOCALAPPDATA\fontconfig"
-	RMDir /r $INSTDIR
+	RMDir /r "$INSTDIR"
 SectionEnd
 
 Section "!$(SectionServer)" sec1
+	SetDetailsPrint both
 	SectionIn RO
 
-	SetOutPath $INSTDIR
+	SetOutPath "$INSTDIR"
 	SetOverwrite on
 
 	CreateDirectory "$INSTDIR\plugins"
@@ -135,7 +145,7 @@ Section "!$(SectionServer)" sec1
 	File "${PROJECT_BASEDIR}\src\main\external-resources\${PROJECT_NAME_SHORT}.bat"
 	File /r "${PROJECT_BASEDIR}\src\main\external-resources\web"
 	File "${PROJECT_BUILD_DIR}\${PROJECT_ARTIFACT_ID}.jar"
-	; File "${PROJECT_BASEDIR}\CHANGELOG.txt"
+;	File "${PROJECT_BASEDIR}\CHANGELOG.txt"
 	File "${PROJECT_BASEDIR}\README.md"
 	File "${PROJECT_BASEDIR}\README.txt"
 	File "${PROJECT_BASEDIR}\LICENSE.txt"
@@ -145,14 +155,14 @@ Section "!$(SectionServer)" sec1
 	File "${PROJECT_BASEDIR}\src\main\external-resources\DummyInput.ass"
 	File "${PROJECT_BASEDIR}\src\main\external-resources\DummyInput.jpg"
 
-	SetOutPath "$INSTDIR\win32\service"
-	File "${PROJECT_BASEDIR}\src\main\external-resources\third-party\wrapper\*.*"
-
 	SetOutPath "$INSTDIR\win32"
 	File "${PROJECT_BASEDIR}\src\main\external-resources\lib\ctrlsender\ctrlsender.exe"
 
+	SetOutPath "$INSTDIR\win32\service"
+	File "${PROJECT_BASEDIR}\src\main\external-resources\third-party\wrapper\*.*"
+
 	; The user may have set the installation folder as the profile folder, so we can't clobber this
-	SetOutPath $INSTDIR
+	SetOutPath "$INSTDIR"
 	SetOverwrite off
 	File "${PROJECT_BASEDIR}\src\main\external-resources\${PROJECT_NAME_SHORT}.conf"
 	File "${PROJECT_BASEDIR}\src\main\external-resources\WEB.conf"
@@ -160,7 +170,7 @@ Section "!$(SectionServer)" sec1
 	File "${PROJECT_BASEDIR}\src\main\external-resources\VirtualFolders.conf"
 
 	; Store install folder
-	WriteRegStr HKCU "${REG_KEY_SOFTWARE}" "" $INSTDIR
+	WriteRegStr HKCU "${REG_KEY_SOFTWARE}" "" "$INSTDIR"
 
 	;Workaround until Crowdin support $\r$\n special characters
 	${WordReplace} "$(CannotOpen)" "%%" "$\r$\n" "+" $0
@@ -172,7 +182,7 @@ Section "!$(SectionServer)" sec1
 	WriteRegStr HKLM "${REG_KEY_UNINSTALL}" "DisplayVersion" "${PROJECT_VERSION}"
 	WriteRegStr HKLM "${REG_KEY_UNINSTALL}" "Publisher" "${PROJECT_ORGANIZATION_NAME}"
 	WriteRegStr HKLM "${REG_KEY_UNINSTALL}" "URLInfoAbout" "${PROJECT_ORGANIZATION_URL}"
-	WriteRegStr HKLM "${REG_KEY_UNINSTALL}" "UninstallString" "$INSTDIR\uninst.exe"
+	WriteRegStr HKLM "${REG_KEY_UNINSTALL}" "UninstallString" "$INSTDIR\${UninstallEXE}"
 	WriteRegDWORD HKLM "${REG_KEY_UNINSTALL}" "NoModify" 0x00000001
 	WriteRegDWORD HKLM "${REG_KEY_UNINSTALL}" "NoRepair" 0x00000001
 	WriteRegStr HKLM "${REG_KEY_UNINSTALL}" "FirewallSettings" "$FirewallStatus"
@@ -181,11 +191,11 @@ Section "!$(SectionServer)" sec1
 	IntFmt $0 "0x%08x" $0 ; https://msdn.microsoft.com/en-us/library/windows/desktop/ms647550(v=vs.85).aspx
 	WriteRegDWORD HKLM "${REG_KEY_UNINSTALL}" "EstimatedSize" "$0"
 
-	SetOutPath $INSTDIR
+	SetOutPath "$INSTDIR"
 	SetOverwrite on
-	WriteUninstaller "$INSTDIR\uninst.exe"
+	WriteUninstaller "$INSTDIR\${UninstallEXE}"
 
-	ReadENVStr $R0 "ALLUSERSPROFILE"
+	ReadEnvStr $R0 "ALLUSERSPROFILE"
 	SetOutPath "$R0\${PROJECT_NAME_CAMEL}"
 	CreateDirectory "$R0\${PROJECT_NAME_CAMEL}\data"
 	AccessControl::GrantOnFile "$R0\${PROJECT_NAME_CAMEL}" "(S-1-5-32-545)" "FullAccess"
@@ -201,9 +211,7 @@ Section $(SectionShortcuts) sec7
 	CreateDirectory "$SMPROGRAMS\${PROJECT_NAME}"
 	CreateShortCut "$SMPROGRAMS\${PROJECT_NAME}\${PROJECT_NAME_SHORT} (Select Profile).lnk" "$INSTDIR\${PROJECT_NAME_SHORT}.exe" "profiles" "" "" SW_SHOWNORMAL CONTROL|SHIFT|P "Select a profile"
 	CreateShortCut "$SMPROGRAMS\${PROJECT_NAME}\${PROJECT_NAME}.lnk" "$INSTDIR\${PROJECT_NAME_SHORT}.exe" "" "" "" SW_SHOWNORMAL ALT|F9 "Start ${PROJECT_NAME}"
-	${If} ${IsWinXP}
-		CreateShortCut "$SMPROGRAMS\${PROJECT_NAME}\Uninstall.lnk" "$INSTDIR\uninst.exe" "" "" "" SW_SHOWNORMAL CONTROL|SHIFT|U "Uninstall ${PROJECT_NAME}"
-	${EndIf}
+	CreateShortCut "$SMPROGRAMS\${PROJECT_NAME}\Uninstall.lnk" "$INSTDIR\${UninstallEXE}" "" "" "" SW_SHOWNORMAL CONTROL|SHIFT|U "Uninstall ${PROJECT_NAME}"
 SectionEnd
 
 Section "-32-bit" sec11
@@ -329,6 +337,12 @@ Section /o "AviSynth" sec6
 	ExecWait "$INSTDIR\win32\avisynth\avisynth.exe"
 SectionEnd
 
+Section "-CreatingInstallLog" sec8
+	StrCpy $0 "$INSTDIR\${UninstallLog}"
+	Push $0
+	Call DumpLog
+SectionEnd
+
 !insertmacro MUI_FUNCTION_DESCRIPTION_BEGIN
 	!insertmacro MUI_DESCRIPTION_TEXT ${sec1} $(SectionDescriptionServer)
 	!insertmacro MUI_DESCRIPTION_TEXT ${sec7} $(SectionDescriptionShortcuts)
@@ -411,19 +425,24 @@ Function RunDMS ; http://mdb-blog.blogspot.ru/2013/01/nsis-lunch-program-as-user
 	Exec '"$WINDIR\explorer.exe" "$INSTDIR\${PROJECT_NAME_SHORT}.exe"'
 FunctionEnd
 
-Function CreateDesktopShortcut
+Function CreateDesktopShortcut ; Done here to avoid having a shortcut with administrator rights
 	CreateShortCut "$DESKTOP\${PROJECT_NAME}.lnk" "$INSTDIR\${PROJECT_NAME_SHORT}.exe" "" "" "" SW_SHOWNORMAL ALT|F9 "Start ${PROJECT_NAME}"
 FunctionEnd
 
 Function .onInit
-	LogSet on ; http://nsis.sourceforge.net/Special_Builds
-
 	${If} ${RunningX64}
 		SetRegView 64
 		StrCpy "$INSTDIR" "$PROGRAMFILES64\${PROJECT_NAME}"
 	${Else}
 		StrCpy "$INSTDIR" "$PROGRAMFILES\${PROJECT_NAME}"
 	${EndIf}
+
+	Push $INSTDIR
+	ReadEnvStr $1 "ALLUSERSPROFILE"
+	CreateDirectory "$1\${PROJECT_NAME_CAMEL}"
+	StrCpy $INSTDIR "$1\${PROJECT_NAME_CAMEL}"
+	LogSet on ; http://nsis.sourceforge.net/Special_Builds
+	Pop $INSTDIR
 
 	InitPluginsDir
 
@@ -538,6 +557,8 @@ Function .onInit
 	File /nonfatal "Images\Installer@144.bmp"
 	File /nonfatal "Images\Installer@120.bmp"
 	File /nonfatal "Images\Installer@96.bmp"
+
+	SectionSetFlags ${sec8} ${SF_SELECTED}
 FunctionEnd
 
 Function onGUIInit
@@ -557,6 +578,47 @@ FunctionEnd
 Function .onGUIEnd
 	LogSet off
 	RMDir /r /REBOOTOK $PLUGINSDIR
+FunctionEnd
+
+Function DumpLog
+	Exch $5
+	Push $0
+	Push $1
+	Push $2
+	Push $3
+	Push $4
+	Push $6
+	FindWindow $0 "#32770" "" $HWNDPARENT
+	GetDlgItem $0 $0 1016
+	StrCmp $0 0 exit
+	FileOpen $5 $5 w
+	StrCmp $5 "" exit
+	SendMessage $0 ${LVM_GETITEMCOUNT} 0 0 $6
+	System::Alloc ${NSIS_MAX_STRLEN}
+	Pop $3
+	StrCpy $2 0
+	System::Call "*(i, i, i, i, i, i, i, i, i) i (0, 0, 0, 0, 0, r3, ${NSIS_MAX_STRLEN}) .r1"
+
+	loop: StrCmp $2 $6 done
+		System::Call "User32::SendMessage(i, i, i, i) i ($0, ${LVM_GETITEMTEXT}, $2, r1)"
+		System::Call "*$3(&t${NSIS_MAX_STRLEN} .r4)"
+		FileWrite $5 "$4$\r$\n"
+		IntOp $2 $2 + 1
+		Goto loop
+
+	done:
+		FileClose $5
+		System::Free $1
+		System::Free $3
+
+	exit:
+		Pop $6
+		Pop $4
+		Pop $3
+		Pop $2
+		Pop $1
+		Pop $0
+		Exch $5
 FunctionEnd
 
 Function un.onInit
@@ -633,53 +695,77 @@ Function un.showHiDPI
 	SetBrandingImage /IMGID=1046 "$PLUGINSDIR\Header\$R6"
 FunctionEnd
 
-Section Uninstall
+Section /o "un.$(SectionUninstallComplete)" sec100
+SectionEnd
+
+Section "un.$(SectionUninstallStandard)" sec101
+	SectionIn RO
 	SetShellVarContext all
+	ReadEnvStr $R0 "ALLUSERSPROFILE"
+	SectionGetFlags ${sec100} $R1
 	SetOutPath $TEMP ; Make sure $InstDir is not the current folder so we can remove it
 	ClearErrors
-	FileOpen $0 "$INSTDIR\install.log" r
-	IfErrors 0 looping
-	ReadRegStr $1 HKCU "${REG_KEY_UNINSTALL}" "CannotOpen"
-	Pop $1
-	MessageBox MB_ICONEXCLAMATION|MB_YESNO "$1" IDYES +2
-	Quit
-	Delete /REBOOTOK "$DESKTOP\${PROJECT_NAME}.lnk"
-	RMDir /r /REBOOTOK $INSTDIR
+	SetFileAttributes "$INSTDIR\${UninstallLog}" NORMAL
+	IfErrors error reading
+
+	error:
+		ReadRegStr $1 HKCU "${REG_KEY_UNINSTALL}" "CannotOpen"
+		Pop $1
+		MessageBox MB_ICONEXCLAMATION|MB_YESNO "$1" IDYES +2
+		Quit
+		Delete /REBOOTOK "$DESKTOP\${PROJECT_NAME}.lnk"
+		RMDir /r /REBOOTOK "$INSTDIR"
+		RMDir /r /REBOOTOK "$SMPROGRAMS\${PROJECT_NAME}"
+		Goto serviceRunningTest
+
+	reading:
+		FileOpen $0 "$INSTDIR\${UninstallLog}" r
+		IfErrors error
+		StrCpy $5 0
+		loop:
+			FileRead $0 $1
+			IfErrors EOF
+			${WordFind} "$1" ": " "+1}" $2
+			StrCmp $R1 0 0 complete
+			${WordFind} "$2" "$R0" "E+1" $9
+			IfErrors 0 loop
+			complete: ${WordFind} "$2" ":\" "E+1}" $3
+			IfErrors file
+			StrCpy $R2 $2 -2
+			${WordFind} "$2" ".exe$\r$\n" "E+1}" $3
+			IfErrors 0 +3
+			${WordFind} "$2" ".lnk$\r$\n" "E+1}" $3
+			IfErrors +3
+			Delete /REBOOTOK "$R2"
+			Goto loop
+			Push $R2
+			IntOp $5 $5 + 1
+			Goto loop
+			file:
+				${WordFind2X} "$1" ": " "... 100%" "E+1" $4
+				IfErrors 0 delete
+				${WordFind2X} "$1" ": " "$\r$\n" "+1" $4
+				delete: Delete /REBOOTOK "$R2\$4"
+				Goto loop
+		EOF: FileClose $0
+
+	Delete /REBOOTOK "$INSTDIR\${UninstallLog}"
+	${DoUntil} $5 = 0
+		RMDir "$R2"
+		Pop $R2
+		IntOp $5 $5 - 1
+	${Loop}
+	Delete "$DESKTOP\${PROJECT_NAME}.lnk"
+	StrCmp $R1 0 serviceRunningTest
 	RMDir /r /REBOOTOK "$SMPROGRAMS\${PROJECT_NAME}"
-	Goto final
+	RMDir /r /REBOOTOK "$R0\${PROJECT_NAME_CAMEL}"
+	RMDir /r /REBOOTOK "$TEMP\fontconfig"
+	RMDir /r /REBOOTOK "$LOCALAPPDATA\fontconfig"
+	DeleteRegKey HKCU "${REG_KEY_UNINSTALL}"
+	DeleteRegKey HKLM "${REG_KEY_UNINSTALL}"
+	DeleteRegKey HKCU "${REG_KEY_SOFTWARE}"
 
-	looping:
-		ClearErrors
-		FileReadUTF16LE $0 $1
-		IfErrors EOF
-		${WordFindS} "$1" "File: wrote" "E+1" $3
-		IfErrors 0 secondPass
-		${WordFindS} "$1" "CreateShortcut: out:" "E+1" $3
-		IfErrors looping
-		secondPass: ${WordFind2X} "$1" "$\"" "$\"" "E+1" $3
-		IfErrors looping
-		Delete /REBOOTOK $3
-		${WordFind} "$3" "\" "-1{" $4
-		RMDir /REBOOTOK $4
-		Goto looping
-
-	EOF:
-		FileClose $0
-		Delete /REBOOTOK "$INSTDIR\install.log"
-		Delete /REBOOTOK "$INSTDIR\uninst.exe"
-		RMDir /REBOOTOK "$INSTDIR\documentation"
-		RMDir /REBOOTOK "$INSTDIR\web\bump"
-		RMDir /REBOOTOK "$INSTDIR\web"
-		RMDir /REBOOTOK "$INSTDIR\win32\fonts\conf.avail"
-		RMDir /REBOOTOK "$INSTDIR\win32\fonts"
-		RMDir /REBOOTOK "$INSTDIR\win32\service"
-		RMDir /REBOOTOK "$INSTDIR\win32"
-		RMDir /REBOOTOK "$INSTDIR"
-
-	final:
-		DeleteRegKey HKLM "${REG_KEY_UNINSTALL}"
-		DeleteRegKey HKCU "${REG_KEY_SOFTWARE}"
-
+	serviceRunningTest:
 	!insertmacro SERVICE "running" "${PROJECT_NAME}" ""
 	Pop $0
 	StrCmpS $0 "false" Done
@@ -700,3 +786,8 @@ Section Uninstall
 
 	Done:
 SectionEnd
+
+!insertmacro MUI_UNFUNCTION_DESCRIPTION_BEGIN
+	!insertmacro MUI_DESCRIPTION_TEXT ${sec100} $(SectionDescriptionCompleteUninstall)
+	!insertmacro MUI_DESCRIPTION_TEXT ${sec101} $(SectionDescriptionStandardUninstall)
+!insertmacro MUI_UNFUNCTION_DESCRIPTION_END

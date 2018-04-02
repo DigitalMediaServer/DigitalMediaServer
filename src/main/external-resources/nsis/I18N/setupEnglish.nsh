@@ -1,4 +1,4 @@
-${LangFileString} CannotOpen "Cannot open the file $\"install.log$\".%%The uninstaller cannot work correctly.%%Do you want force the uninstall anyway?"
+${LangFileString} CannotOpen "Cannot read the file $\"uninstall.log$\".%%The uninstaller cannot work correctly.%%Do you want force the uninstall anyway?"
 ${LangFileString} DownloadingFile "Downloading file:"
 ${LangFileString} Downloaded "Downloaded:"
 ${LangFileString} TimeRemaining "Time remaining:"
@@ -26,3 +26,7 @@ ${LangFileString} SectionDescriptionWindowsFirewall "Installs firewall rules in 
 ${LangFileString} SectionDescriptionInstallJava "Downloads and installs the latest version of Oracle Java 8. This is required to use Digital Media Server unless you already have a compatible version of Java installed."
 ${LangFileString} SectionDescriptionHeapSize "Sets the maximum amount of memory Digital Media Server is allowed to use. The default value is recommended for standard installations."
 ${LangFileString} SectionDescriptionAviSynth "Installs AviSynth 2.6.0 MT for use when transcoding. AviSynth can used among others to enable InterFrame for increased frame rates resulting in smoother video playback."
+${LangFileString} SectionUninstallStandard "Standard uninstall"
+${LangFileString} SectionUninstallComplete "Remove everything"
+${LangFileString} SectionDescriptionCompleteUninstall "Also remove all the configuration, database, logs, registry keys files having been created by Digital Media Server."
+${LangFileString} SectionDescriptionStandardUninstall "Only uninstall the files installed into the program folder."
