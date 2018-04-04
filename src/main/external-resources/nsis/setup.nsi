@@ -549,9 +549,13 @@ Function .onInit
 	SetOutPath "$PLUGINSDIR\Header"
 	SetOverwrite on
 	File /nonfatal "Images\Header@192.bmp"
+	File /nonfatal "Images\Header@RTL@192.bmp"
 	File /nonfatal "Images\Header@144.bmp"
+	File /nonfatal "Images\Header@RTL@144.bmp"
 	File /nonfatal "Images\Header@120.bmp"
+	File /nonfatal "Images\Header@RTL@120.bmp"
 	File /nonfatal "Images\Header@96.bmp"
+	File /nonfatal "Images\Header@RTL@96.bmp"
 	SetOutPath "$PLUGINSDIR\Wizard"
 	File /nonfatal "Images\Installer@192.bmp"
 	File /nonfatal "Images\Installer@144.bmp"
@@ -654,7 +658,9 @@ Function showHiDPI
 	StrCpy $R6 "Header@96.bmp"
 	StrCpy $R7 "Installer@96.bmp"
 	${EndIf}
-	SysCompImg::SetCustom "$PLUGINSDIR\Header\$R6" ; SetClassic, SetFlat, SetThemed
+	StrCmp "$(^RTL)" "1" 0 header
+	${WordReplace} "$R6" "@" "@RTL@" "+1" $R6
+	header: SysCompImg::SetCustom "$PLUGINSDIR\Header\$R6" ; SetClassic, SetFlat, SetThemed
 	SysCompImg::SetCustom "$PLUGINSDIR\Wizard\$R7"
 	${NSD_SetImage} $mui.WelcomePage.Image "$PLUGINSDIR\Wizard\$R7" $mui.WelcomePage.Image.Bitmap
 	${NSD_SetImage} $mui.FinishPage.Image "$PLUGINSDIR\Wizard\$R7" $mui.FinishPage.Image.Bitmap
@@ -665,9 +671,13 @@ Function un.showHiDPI
 	SetOutPath "$PLUGINSDIR\Header"
 	SetOverwrite on
 	File /nonfatal "Images\Header@192.bmp"
+	File /nonfatal "Images\Header@RTL@192.bmp"
 	File /nonfatal "Images\Header@144.bmp"
+	File /nonfatal "Images\Header@RTL@144.bmp"
 	File /nonfatal "Images\Header@120.bmp"
+	File /nonfatal "Images\Header@RTL@120.bmp"
 	File /nonfatal "Images\Header@96.bmp"
+	File /nonfatal "Images\Header@RTL@96.bmp"
 	SetOutPath "$PLUGINSDIR\Wizard"
 	File /nonfatal "Images\Uninstaller@192.bmp"
 	File /nonfatal "Images\Uninstaller@144.bmp"
@@ -688,7 +698,9 @@ Function un.showHiDPI
 	StrCpy $R6 "Header@96.bmp"
 	StrCpy $R7 "Uninstaller@96.bmp"
 	${EndIf}
-	SysCompImg::SetCustom "$PLUGINSDIR\Header\$R6" ; SetClassic, SetFlat, SetThemed
+	StrCmp "$(^RTL)" "1" 0 header
+	${WordReplace} "$R6" "@" "@RTL@" "+1" $R6
+	header: SysCompImg::SetCustom "$PLUGINSDIR\Header\$R6" ; SetClassic, SetFlat, SetThemed
 	SysCompImg::SetCustom "$PLUGINSDIR\Wizard\$R7"
 	${NSD_SetImage} $mui.WelcomePage.Image "$PLUGINSDIR\Wizard\$R7" $mui.WelcomePage.Image.Bitmap
 	${NSD_SetImage} $mui.FinishPage.Image "$PLUGINSDIR\Wizard\$R7" $mui.FinishPage.Image.Bitmap
