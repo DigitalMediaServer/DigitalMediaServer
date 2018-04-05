@@ -142,6 +142,12 @@ public class RendererConfigurationTest {
 		);
 
 		testHeaders(
+			"Roku TV (NSP 8)",
+			"User-Agent: Roku/DVP-8.0 (308.00E04156A)",
+			"User-Agent: Roku/DVP-8.1 (508.01E04018A)"
+		);
+
+		testHeaders(
 			"Samsung C/D Series",
 			"User-Agent: SEC_HHP_[HT]D5500/1.0",
 			"User-Agent: SEC_HHP_[TV]UE32D5000/1.0",
