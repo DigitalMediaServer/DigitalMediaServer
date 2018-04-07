@@ -20,14 +20,27 @@
 
 package net.pms.util;
 
+import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.DataOutputStream;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.LongBuffer;
+import java.nio.channels.FileChannel;
+import java.nio.channels.FileChannel.MapMode;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -59,40 +72,55 @@ public class OpenSubtitle {
 	private static String token = null;
 	private static long tokenAge;
 
-	public static String computeHash(File file) throws IOException {
-		long size = file.length();
-		FileInputStream fis = new FileInputStream(file);
-		return computeHash(fis, size);
+	//TODO: (Nad) Remove
+	public static String getHash(File file) throws IOException {
+		return getHash(file.toPath());
 	}
 
-	public static String computeHash(InputStream inputStream, long length) throws IOException {
-		int chunkSizeForFile = (int) Math.min(HASH_CHUNK_SIZE, length);
-
-		// Buffer that will contain the head and the tail chunk, chunks will overlap if length is smaller than two chunks
-		byte[] chunkBytes = new byte[(int) Math.min(2 * HASH_CHUNK_SIZE, length)];
-		long head;
-		long tail;
-		try (DataInputStream in = new DataInputStream(inputStream)) {
-			// First chunk
-			in.readFully(chunkBytes, 0, chunkSizeForFile);
-
-			long position = chunkSizeForFile;
-			long tailChunkPosition = length - chunkSizeForFile;
-
-			// Seek to position of the tail chunk, or not at all if length is smaller than two chunks
-			while (position < tailChunkPosition && (position += in.skip(tailChunkPosition - position)) >= 0) {
-				;
-			}
-
-			// Second chunk, or the rest of the data if length is smaller than two chunks
-			in.readFully(chunkBytes, chunkSizeForFile, chunkBytes.length - chunkSizeForFile);
-
-			head = computeHashForChunk(ByteBuffer.wrap(chunkBytes, 0, chunkSizeForFile));
-			tail = computeHashForChunk(ByteBuffer.wrap(chunkBytes, chunkBytes.length - chunkSizeForFile, chunkSizeForFile));
+	/**
+	 * Gets the <a href=
+	 * "http://trac.opensubtitles.org/projects/opensubtitles/wiki/HashSourceCodes"
+	 * >OpenSubtitles hash</a> for the specified {@link Path} by first trying to
+	 * extract it from the filename and if that doesn't work calculate it with
+	 * {@link #computeHash(Path)}.
+	 *
+	 * @param file the {@link Path} for which to get the hash.
+	 * @return The OpenSubtitles hash or {@code null}.
+	 * @throws IOException If an I/O error occurs during the operation.
+	 */
+	public static String getHash(Path file) throws IOException {
+		String hash = ImdbUtil.extractOSHash(file);
+		if (isBlank(hash)) {
+			hash = computeHash(file);
 		}
-		return String.format("%016x", length + head + tail);
+		LOGGER.debug("OpenSubtitles hash for \"{}\" is {}", file.getFileName(), hash);
+		return hash;
 	}
 
+	/**
+	 * Calculates the <a href=
+	 * "http://trac.opensubtitles.org/projects/opensubtitles/wiki/HashSourceCodes"
+	 * >OpenSubtitles hash</a> for the specified {@link Path}.
+	 *
+	 * @param file the {@link Path} for which to calculate the hash.
+	 * @return The calculated OpenSubtitles hash or {@code null}.
+	 * @throws IOException If an I/O error occurs during the operation.
+	 */
+	public static String computeHash(Path file) throws IOException {
+		if (!Files.isRegularFile(file)) {
+			return null;
+		}
+
+		long size = Files.size(file);
+		long chunkSizeForFile = Math.min(HASH_CHUNK_SIZE, size);
+
+		try (FileChannel fileChannel = FileChannel.open(file)) {
+			long head = computeHashForChunk(fileChannel.map(MapMode.READ_ONLY, 0, chunkSizeForFile));
+			long tail = computeHashForChunk(fileChannel.map(MapMode.READ_ONLY, Math.max(size - HASH_CHUNK_SIZE, 0), chunkSizeForFile));
+
+			return String.format("%016x", size + head + tail);
+		}
+	}
 	private static long computeHashForChunk(ByteBuffer buffer) {
 		LongBuffer longBuffer = buffer.order(ByteOrder.LITTLE_ENDIAN).asLongBuffer();
 		long hash = 0;
@@ -245,15 +273,6 @@ public class OpenSubtitle {
 		Pattern re = Pattern.compile("MovieImdbID.*?<string>([^<]+)</string>", Pattern.DOTALL);
 		LOGGER.debug("info is " + info);
 		return info;
-	}
-
-	public static String getHash(File file) throws IOException {
-		LOGGER.trace("Getting OpenSubtitles hash for \"{}\"", file);
-		String hash = ImdbUtil.extractOSHash(file.toPath());
-		if (!StringUtils.isEmpty(hash)) {
-			return hash;
-		}
-		return computeHash(file);
 	}
 
 	public static Map<String, Object> findSubs(File file) throws IOException {
