@@ -2834,7 +2834,7 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 						));
 					}
 					if (!DLNAImageProfile.JPEG_MED.isResolutionCorrect(imageInfo)) {
-						if (DLNAImageResElement.isImageProfileSupported(DLNAImageProfile.PNG_LRG, renderer)) {
+						if (DLNAImageResElement.isImageProfileSupported(DLNAImageProfile.JPEG_LRG, renderer)) {
 							resElements.add(new DLNAImageResElement(
 								DLNAImageProfile.JPEG_LRG, imageInfo,
 								DLNAImageProfile.JPEG_LRG.useThumbnailSource(imageInfo, thumbnailImageInfo)
@@ -2855,7 +2855,7 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 			if (DLNAImageResElement.isImageProfileSupported(DLNAImageProfile.PNG_LRG, renderer)) {
 				resElements.add(new DLNAImageResElement(DLNAImageProfile.PNG_LRG, null, false));
 			}
-			LOGGER.debug("Warning: Image \"{}\" isn't parsed when DIDL-Lite is generated", this.getName());
+			LOGGER.debug("Warning: Image \"{}\" wasn't parsed when DIDL-Lite was generated", this.getName());
 		}
 
 		// Sort the elements by priority
@@ -2877,7 +2877,6 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 			}
 		}
 	}
-
 
 	/**
 	 * Generate and append the thumbnail {@code res} and
