@@ -256,10 +256,11 @@ public class TsMuxeRVideo extends Player {
 				"-ss", params.timeseek > 0 ? "" + params.timeseek : "0",
 				"-i", filename,
 				"-c", "copy",
-				"-f", "rawvideo",
+				"-f", media.getCodecV().startsWith("h264") ? "h264" : "mpeg2video",
 				"-y",
 				ffVideoPipe.getInputPipe()
 			};
+			// .MPEG2 .H264 and .VC1 ("wmv3")
 
 			InputFile newInput = new InputFile();
 			newInput.setFilename(filename);
