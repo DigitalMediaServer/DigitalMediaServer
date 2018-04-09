@@ -1542,10 +1542,8 @@ public class PmsConfiguration extends RendererConfiguration {
 	 * @return The audio language priority string.
 	 */
 	public String getAudioLanguages() {
-		return configurationReader.getPossiblyBlankConfigurationString(
-				KEY_AUDIO_LANGUAGES,
-				Messages.getString("MEncoderVideo.126")
-		);
+		String result = getString(KEY_AUDIO_LANGUAGES, null);
+		return (isBlank(result)) ? Messages.getString("MEncoderVideo.126") : result;
 	}
 
 	/**
@@ -1558,10 +1556,8 @@ public class PmsConfiguration extends RendererConfiguration {
 	 * @return The subtitle language priority string.
 	 */
 	public String getSubtitlesLanguages() {
-		return configurationReader.getPossiblyBlankConfigurationString(
-				KEY_SUBTITLES_LANGUAGES,
-				Messages.getString("MEncoderVideo.127")
-		);
+		String result = getString(KEY_SUBTITLES_LANGUAGES, null);
+		return (isBlank(result)) ? Messages.getString("MEncoderVideo.127") : result;
 	}
 
 	/**
@@ -1597,10 +1593,8 @@ public class PmsConfiguration extends RendererConfiguration {
 	 * @return The audio and subtitle languages priority string.
 	 */
 	public String getAudioSubLanguages() {
-		return configurationReader.getPossiblyBlankConfigurationString(
-				KEY_AUDIO_SUB_LANGS,
-				Messages.getString("MEncoderVideo.128")
-		);
+		String result = getString(KEY_AUDIO_SUB_LANGS, null);
+		return (isBlank(result)) ? Messages.getString("MEncoderVideo.128") : result;
 	}
 
 	/**
