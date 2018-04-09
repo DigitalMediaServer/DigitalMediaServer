@@ -549,6 +549,14 @@ public class LibMediaInfoParser {
 			format = FormatConfiguration.CAF;
 		} else if (value.contains("aiff")) {
 			format = FormatConfiguration.AIFF;
+		} else if (FormatConfiguration.AIFF.equals(media.getContainer())) {
+			// Due to this bug: https://github.com/MediaArea/MediaInfoLib/issues/833
+			if (!value.equals("pcm") && !value.startsWith("big") && !value.startsWith("little")) {
+				media.setContainer(FormatConfiguration.AIFC);
+				format = FormatConfiguration.ADPCM;
+			} else {
+				format = FormatConfiguration.LPCM;
+			}
 		} else if (value.contains("atmos") || value.equals("131")) {
 			format = FormatConfiguration.ATMOS;
 		} else if (value.contains("ogg")) {
