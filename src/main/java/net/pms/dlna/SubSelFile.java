@@ -10,6 +10,7 @@ import net.pms.dlna.virtual.VirtualFolder;
 import net.pms.util.ISO639;
 import net.pms.util.Language;
 import net.pms.util.OpenSubtitles;
+import net.pms.util.OpenSubtitles.MatchedBy;
 import net.pms.util.OpenSubtitles.SubtitleItem;
 import net.pms.util.UMSUtils;
 import org.slf4j.Logger;
@@ -45,8 +46,9 @@ public class SubSelFile extends VirtualFolder {
 			if (subtitleItems == null || subtitleItems.isEmpty()) {
 				return;
 			}
-			Collections.sort(subtitleItems, new SubSort(getDefaultRenderer()));
-			reduceSubtitles(subtitleItems, configuration.getLiveSubtitlesLimit());
+			SubSort subSort = new SubSort(getDefaultRenderer());
+			Collections.sort(subtitleItems, subSort);
+			reduceSubtitles(subtitleItems, subSort.getConfiguredLanguages(), configuration.getLiveSubtitlesLimit());
 			if (LOGGER.isTraceEnabled()) {
 				LOGGER.trace(
 					"Discovery of OpenSubtitles subtitles for \"{}\" resulted in the following after sorting and reduction:\n{}",
@@ -76,19 +78,29 @@ public class SubSelFile extends VirtualFolder {
 		}
 	}
 
-	private static int removeLanguage(ArrayList<SubtitleItem> subtitles, LinkedHashMap<ISO639, Integer> languages, ISO639 language, int count) {
+	private static int removeLanguage(
+		ArrayList<SubtitleItem> subtitles,
+		HashMap<ISO639, Integer> languages,
+		ISO639 language,
+		int count,
+		EnumSet<MatchedBy> removeTypes
+	) {
 		ListIterator<SubtitleItem> iterator = subtitles.listIterator(subtitles.size());
 		int removed = 0;
 		while (removed != count && iterator.hasPrevious()) {
 			SubtitleItem subtitle = iterator.previous();
 			if (
 				(
+					removeTypes == null ||
+					removeTypes.contains(subtitle.getMatchedBy())
+				) &&
+				(
 					language == null &&
 					subtitle.getLanguage() == null
 				) ||
 				(
 					language != null &&
-					language.equals(subtitle.getLanguage())
+					language == subtitle.getLanguage()
 				)
 			) {
 				Integer langCount = languages.get(language);
@@ -106,13 +118,25 @@ public class SubSelFile extends VirtualFolder {
 		return removed;
 	}
 
-	private static void reduceSubtitles(ArrayList<SubtitleItem> subtitles, int limit) { //TODO: (Nad) Keep hash results
+	private static void reduceSubtitles(ArrayList<SubtitleItem> subtitles, List<Language> configuredLanguages, int limit) { //TODO: (Nad) Keep hash results
 		int remove = subtitles.size() - limit;
 		if (remove <= 0) {
 			return;
 		}
 
-		LinkedHashMap<ISO639, Integer> languages = new LinkedHashMap<>();
+		// Build a map with 30 points "benefit" for each step on the configured languages ladder
+		int benefit = 30;
+		HashMap<ISO639, Integer> languageBenefits = new HashMap<>();
+		for (int i = configuredLanguages.size() - 1; i >= 0; i--) {
+			Language language = configuredLanguages.get(i);
+			if (language instanceof ISO639 && language != ISO639.UND) {
+				languageBenefits.put((ISO639) language, Integer.valueOf(benefit));
+				benefit += 30;
+			}
+		}
+
+		// Build a map of the number of subtitles per language
+		HashMap<ISO639, Integer> languages = new HashMap<>();
 		for (SubtitleItem subtitle : subtitles) {
 			ISO639 language = subtitle.getLanguage();
 			if (!languages.containsKey(language)) {
@@ -122,39 +146,64 @@ public class SubSelFile extends VirtualFolder {
 			}
 		}
 
-		// Remove those without a specified language first
-		if (languages.containsKey(null)) {
-			remove -= removeLanguage(subtitles, languages, null, remove);
-		}
-
-		if (remove > 0) {
-			// Build a sorted map where each language gets 30 extra points per step in the priority
-			ArrayList<LanguageRankedItem> languageRankedSubtitles = new ArrayList<>();
-			int languagePreference = 0;
-			ISO639 language = null;
-			for (SubtitleItem subtitle : subtitles) {
-				if (language == null) {
-					language = subtitle.getLanguage();
-					languagePreference = languages.size() * 30;
-				} else if (!language.equals(subtitle.getLanguage())) {
-					language = subtitle.getLanguage();
-					languagePreference -= 30;
-				}
-				languageRankedSubtitles.add(new LanguageRankedItem(
-					subtitle.getScore() + languagePreference,
-					subtitle
-				));
+		// Build a sorted list with subtitles and their corresponding score + benefit
+		ArrayList<LanguageRankedSubtitleItem> languageRankedSubtitles = new ArrayList<>();
+		for (SubtitleItem subtitle : subtitles) {
+			double score = subtitle.getScore();
+			Integer add = languageBenefits.get(subtitle.getLanguage());
+			if (add != null) {
+				score += add.doubleValue();
 			}
-			Collections.sort(languageRankedSubtitles);
+			languageRankedSubtitles.add(new LanguageRankedSubtitleItem(score, subtitle));
+		}
+		Collections.sort(languageRankedSubtitles);
 
-			// Remove the entries with the lowest score
-			for (LanguageRankedItem languageRankedItem : languageRankedSubtitles) {
-				if (remove <= 0) {
-					break;
+		// Build a sorted list of removal phases
+		ArrayList<EnumSet<MatchedBy>> phases = new ArrayList<>();
+		phases.add(EnumSet.of(MatchedBy.FULL_TEXT, MatchedBy.IMDB_ID)); // These are considered the lowest match quality
+		phases.add(EnumSet.of(MatchedBy.TAG)); // These should generally have a better match quality
+		phases.add(EnumSet.of(MatchedBy.MOVIE_HASH)); // These should have the best match quality
+
+		// Iterate and remove
+		int phase = 0;
+		boolean[] removeLastArray = {false, true};
+		for (boolean removeLast : removeLastArray) {
+			if (remove <= 0) {
+				break;
+			}
+
+			while (remove > 0 && phase < phases.size()) {
+				EnumSet<MatchedBy> removeSet = phases.get(phase);
+				ListIterator<LanguageRankedSubtitleItem> iterator = languageRankedSubtitles.listIterator();
+				while (remove > 0 && iterator.hasNext()) {
+					LanguageRankedSubtitleItem item = iterator.next();
+					if (removeSet.contains(item.subtitleItem.getMatchedBy())) {
+						ISO639 language = item.subtitleItem.getLanguage();
+						Integer langCount = languages.get(language);
+						if (
+							!removeLast &&
+							langCount != null &&
+							langCount.intValue() == 1 &&
+							language != null &&
+							languageBenefits.containsKey(language)
+						) {
+							// Keep the last item of each configured language when removeLast is false
+							continue;
+						}
+						if (subtitles.remove(item.subtitleItem)) {
+							if (langCount != null) {
+								if (langCount.intValue() == 1) {
+									languages.remove(language);
+								} else {
+									languages.put(language, langCount.intValue() - 1);
+								}
+							}
+							remove--;
+							iterator.remove();
+						}
+					}
 				}
-				if (subtitles.remove(languageRankedItem.subtitleItem)) {
-					remove--;
-				}
+				phase++;
 			}
 		}
 	}
@@ -265,11 +314,11 @@ public class SubSelFile extends VirtualFolder {
 		return "{" + Messages.getString("Subtitles.LiveSubtitles") + "}";
 	}
 
-	private static class LanguageRankedItem implements Comparable<LanguageRankedItem> {
+	private static class LanguageRankedSubtitleItem implements Comparable<LanguageRankedSubtitleItem> {
 		private final Double score;
 		private final SubtitleItem subtitleItem;
 
-		public LanguageRankedItem(double score, SubtitleItem subtitleItem) {
+		public LanguageRankedSubtitleItem(double score, SubtitleItem subtitleItem) {
 			this.score = Double.valueOf(score);
 			this.subtitleItem = subtitleItem;
 		}
@@ -280,13 +329,13 @@ public class SubSelFile extends VirtualFolder {
 		}
 
 		@Override
-		public int compareTo(LanguageRankedItem o) {
+		public int compareTo(LanguageRankedSubtitleItem o) {
 			if (score == null || score.isNaN()) {
 				if (o.score != null && !o.score.isNaN()) {
-					return 1;
+					return -1;
 				}
 			} else if (o.score == null || o.score.isNaN()) {
-				return -1;
+				return 1;
 			} else {
 				int result = score.compareTo(o.score);
 				if (result != 0) {
@@ -295,12 +344,12 @@ public class SubSelFile extends VirtualFolder {
 			}
 			if (subtitleItem == null) {
 				if (o.subtitleItem != null) {
-					return 1;
+					return -1;
 				}
 			} else if (o.subtitleItem == null) {
-				return -1;
+				return 1;
 			}
-			return o.hashCode() - hashCode();
+			return 0;
 		}
 
 		@Override
@@ -320,10 +369,10 @@ public class SubSelFile extends VirtualFolder {
 			if (obj == null) {
 				return false;
 			}
-			if (!(obj instanceof LanguageRankedItem)) {
+			if (!(obj instanceof LanguageRankedSubtitleItem)) {
 				return false;
 			}
-			LanguageRankedItem other = (LanguageRankedItem) obj;
+			LanguageRankedSubtitleItem other = (LanguageRankedSubtitleItem) obj;
 			if (score == null) {
 				if (other.score != null) {
 					return false;
