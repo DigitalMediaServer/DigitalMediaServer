@@ -1,4 +1,4 @@
-UMS sync with: 4438c424702ab330fdc857e3db6e73c31973a87d Fixed a couple of NPE's in DLNAResource.getDlnaOrgPnFlags()
+UMS sync with: d9d1ee008625d6ee53689a4e30a1631e5c9bad07 Added extra prettifying test and helper functions
 
 Skipped:
 a4a099c7efcaf6dc8a28402a29eade757a2ce78d The ugly hack to solve problem when the TotalMatches are changed
