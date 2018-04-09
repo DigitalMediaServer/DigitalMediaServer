@@ -523,8 +523,15 @@ public class LibMediaInfoParser {
 			format = FormatConfiguration.MPEGTS;
 		} else if (value.equals("caf")) {
 			format = FormatConfiguration.CAF;
-		} else if (value.contains("aiff")) {
+		} else if (value.equals("aiff")) {
 			format = FormatConfiguration.AIFF;
+		} else if (FormatConfiguration.AIFF.equals(media.getContainer())) {
+			if (!value.equals("pcm") && !value.startsWith("big") && !value.startsWith("little")) { ; https://github.com/MediaArea/MediaInfoLib/issues/833
+				media.setContainer(FormatConfiguration.AIFC);
+				format = FormatConfiguration.ADPCM;
+			} else {
+				format = FormatConfiguration.LPCM;
+			}
 		} else if (value.startsWith("atmos") || value.equals("131")) {
 			format = FormatConfiguration.ATMOS;
 		} else if (value.contains("ogg")) {
@@ -579,7 +586,8 @@ public class LibMediaInfoParser {
 				value.startsWith("div") ||
 				value.equals("dx50") ||
 				value.equals("dvx1")
-			) && (
+			) &&
+			(
 				!FormatConfiguration.MPEG4ASP.equals(media.getCodecV()) &&
 				!FormatConfiguration.MPEG4SP.equals(media.getCodecV())
 			)
@@ -717,7 +725,16 @@ public class LibMediaInfoParser {
 			}
 		} else if (value.startsWith("adpcm")) {
 			format = FormatConfiguration.ADPCM;
-		} else if (value.equals("pcm") || (value.equals("1") && (audio.getCodecA() == null || !audio.getCodecA().equals(FormatConfiguration.DTS)))) {
+		} else if (
+				value.equals("pcm") ||
+				(
+					value.equals("1") &&
+					(
+						audio.getCodecA() == null ||
+						!audio.getCodecA().equals(FormatConfiguration.DTS)
+					)
+				)
+			) {
 			format = FormatConfiguration.LPCM;
 		} else if (value.equals("alac")) {
 			format = FormatConfiguration.ALAC;

@@ -153,7 +153,13 @@ public class DLNAMediaAudio extends DLNAMediaLang implements Cloneable {
 	 * @return True if the audio codec is AC-3.
 	 */
 	public boolean isAC3() {
-		return FormatConfiguration.AC3.equalsIgnoreCase(getCodecA()) || getCodecA() != null && getCodecA().contains("a52");
+		return FormatConfiguration.AC3.equalsIgnoreCase(getCodecA()) ||
+		getCodecA() != null &&
+		(
+			getCodecA().contains("ac3") &&
+			!getCodecA().contains("mac3") ||
+			getCodecA().contains("a52")
+		);
 	}
 
 	/**
@@ -168,13 +174,6 @@ public class DLNAMediaAudio extends DLNAMediaLang implements Cloneable {
 	 */
 	public boolean isADPCM() {
 		return FormatConfiguration.ADPCM.equalsIgnoreCase(getCodecA());
-	}
-
-	/**
-	 * @return True if the audio codec is AIFF.
-	 */
-	public boolean isAIFF() {
-		return FormatConfiguration.AIFF.equalsIgnoreCase(getCodecA());
 	}
 
 	/**
@@ -230,7 +229,12 @@ public class DLNAMediaAudio extends DLNAMediaLang implements Cloneable {
 	 * @return True if the audio codec is DTS.
 	 */
 	public boolean isDTS() {
-		return FormatConfiguration.DTS.equalsIgnoreCase(getCodecA()) || getCodecA() != null && getCodecA().contains("dca");
+		return FormatConfiguration.DTS.equalsIgnoreCase(getCodecA()) ||
+		getCodecA() != null &&
+		(
+			getCodecA().contains("dts") ||
+			getCodecA().contains("dca")
+		);
 	}
 
 	/**
@@ -314,7 +318,7 @@ public class DLNAMediaAudio extends DLNAMediaLang implements Cloneable {
 	 * @return True if the audio codec is PCM.
 	 */
 	public boolean isPCM() {
-		return FormatConfiguration.LPCM.equals(getCodecA()) || getCodecA() != null && getCodecA().startsWith("pcm");
+		return FormatConfiguration.LPCM.equals(getCodecA()) || getCodecA() != null && getCodecA().startsWith("pcm_");
 	}
 
 	/**
@@ -449,7 +453,7 @@ public class DLNAMediaAudio extends DLNAMediaLang implements Cloneable {
 	public boolean isLossless() {
 		return getCodecA() != null &&
 			(
-				isAIFF() || isALAC() || isALS() || isFLAC() || isMLP() ||
+				isALAC() || isALS() || isFLAC() || isMLP() ||
 				isMonkeysAudio() || isPCM() || isRALF() || isShorten() ||
 				isSLS() || isTrueHD() || isTTA() || isWAV() || isWavPack() ||
 				isWMALossless()
@@ -470,8 +474,6 @@ public class DLNAMediaAudio extends DLNAMediaLang implements Cloneable {
 			return "ACELP";
 		} else if (isADPCM()) {
 			return "ADPCM";
-		} else if (isAIFF()) {
-			return "AIFF";
 		} else if (isALAC()) {
 			return "ALAC";
 		} else if (isALS()) {
