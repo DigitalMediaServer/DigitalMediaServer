@@ -644,11 +644,19 @@ public class FormatConfigurationRegressionTest0 {
 	}
 
 	@Test
-	public void test80() throws Throwable {
+	public void testAIFF() throws Throwable {
 		String str0 = FormatConfiguration.AIFF;
 
 		// Regression assertion (captures the current behavior of the code)
 		assertTrue("'" + str0 + "' != '" + "aiff"+ "'", str0.equals("aiff"));
+	}
+
+	@Test
+	public void testAIFC() throws Throwable {
+		String str0 = FormatConfiguration.AIFC;
+
+		// Regression assertion (captures the current behavior of the code)
+		assertTrue("'" + str0 + "' != '" + "aifc"+ "'", str0.equals("aifc"));
 	}
 
 	@Test

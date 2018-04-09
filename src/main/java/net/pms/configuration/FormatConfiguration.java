@@ -53,6 +53,7 @@ public class FormatConfiguration {
 	public static final String ACELP = "acelp";
 	public static final String ADPCM = "adpcm";
 	public static final String ADTS = "adts";
+	public static final String AIFC = "aifc";
 	public static final String AIFF = "aiff";
 	public static final String ALAC = "alac";
 	public static final String ALS = "als";
