@@ -121,6 +121,7 @@ public class FileUtilTest {
 		// Video of a movie
 		assertThat(FileUtil.getFileNamePrettified("Digital.Media.Server.2015.720p.mkv")).isEqualTo("Digital Media Server (2015)");
 		//assertThat(FileUtil.getFileNamePrettified("Digital_Media_Server_(2015)_[720p,BluRay,flac,x264]_-_FANSUBBERS.mkv")).isEqualTo("Digital Media Server (2015)");
+		assertThat(FileUtil.getFileNamePrettified("Digital_Media_Server_(2018)_[720p,BluRay,flac,x264]_-_FANSUBBERS.mkv", null)).isEqualTo("Digital Media Server (2018)");
 
 		// Video of a special edition of a movie
 		assertThat(FileUtil.getFileNamePrettified("Digital.Media.Server.Special.Edition.2015.720p.mkv")).isEqualTo("Digital Media Server (2015) (Special Edition)");
