@@ -392,13 +392,6 @@ public class DLNAMediaAudio extends DLNAMediaLang implements Cloneable {
 	}
 
 	/**
-	 * @return True if the audio codec is Wav.
-	 */
-	public boolean isWAV() {
-		return FormatConfiguration.WAV.equalsIgnoreCase(getCodecA());
-	}
-
-	/**
 	 * @return True if the audio codec is WavPack.
 	 */
 	public boolean isWavPack() {
@@ -455,7 +448,7 @@ public class DLNAMediaAudio extends DLNAMediaLang implements Cloneable {
 			(
 				isALAC() || isALS() || isFLAC() || isMLP() ||
 				isMonkeysAudio() || isPCM() || isRALF() || isShorten() ||
-				isSLS() || isTrueHD() || isTTA() || isWAV() || isWavPack() ||
+				isSLS() || isTrueHD() || isTTA() || isWavPack() ||
 				isWMALossless()
 			);
 	}
@@ -534,8 +527,6 @@ public class DLNAMediaAudio extends DLNAMediaLang implements Cloneable {
 			return "TTA";
 		} else if (isVorbis()) {
 			return "Vorbis";
-		} else if (isWAV()) {
-			return "WAV";
 		} else if (isWavPack()) {
 			return "WavPack";
 		} else if (isWMA()) {
