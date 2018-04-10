@@ -54,11 +54,13 @@ InstallDirRegKey HKCU "${REG_KEY_SOFTWARE}" ""
 !define MUI_UI "${PROJECT_BASEDIR}\src\main\external-resources\third-party\nsis\Contrib\UIs\modern.exe" ; UltraModern.exe
 !define MUI_ICON "${PROJECT_BASEDIR}\src\main\resources\images\logo.ico"
 !define MUI_UNICON "${PROJECT_BASEDIR}\src\main\resources\images\logo.ico"
-!define MUI_PAGE_CUSTOMFUNCTION_SHOW showHiDPI
+!define MUI_WELCOMEFINISHPAGE_BITMAP_STRETCH AspectFitHeight
 !define MUI_HEADERIMAGE
 !define MUI_HEADERIMAGE_RIGHT
-!define MUI_BGCOLOR FFFFFF
+!define MUI_HEADERIMAGE_BITMAP_STRETCH AspectFitHeight
 !define MUI_HEADER_TRANSPARENT_TEXT
+!define MUI_BGCOLOR FFFFFF
+!define MUI_PAGE_CUSTOMFUNCTION_SHOW showHiDPI
 !define MUI_LANGDLL_ALWAYSSHOW
 !define MUI_LANGDLL_ALLLANGUAGES
 ; Remember the installer language (Language selection in dialog settings)
@@ -68,7 +70,7 @@ InstallDirRegKey HKCU "${REG_KEY_SOFTWARE}" ""
 !define MUI_WELCOMEPAGE_TITLE_3LINES
 !insertmacro MUI_PAGE_WELCOME
 !insertmacro MUI_PAGE_DIRECTORY
-!define MUI_CUSTOMFUNCTION_ONMOUSEOVERSECTION downloadJavaPreselection
+!define MUI_CUSTOMFUNCTION_ONMOUSEOVERSECTION hideRequiredSize
 !define MUI_COMPONENTSPAGE
 !define MUI_COMPONENTSPAGE_SMALLDESC
 !define MUI_COMPONENTSPAGE_TEXT_TOP " "
@@ -90,9 +92,11 @@ InstallDirRegKey HKCU "${REG_KEY_SOFTWARE}" ""
 !insertmacro MUI_PAGE_FINISH
 
 !define MUI_UNABORTWARNING
+!define MUI_UNWELCOMEFINISHPAGE_BITMAP_STRETCH AspectFitHeight
 !define MUI_PAGE_CUSTOMFUNCTION_SHOW "un.showHiDPI"
 !define MUI_UNWELCOMEPAGE_TITLE_3LINES
 !insertmacro MUI_UNPAGE_WELCOME
+!define MUI_CUSTOMFUNCTION_UNONMOUSEOVERSECTION un.hideRequiredSize
 !define MUI_UNCOMPONENTSPAGE
 !define MUI_UNCOMPONENTSPAGE_SMALLDESC
 !define MUI_UNCOMPONENTSPAGE_TEXT_TOP " "
@@ -189,7 +193,7 @@ Section "!$(SectionServer)" sec1
 
 	${GetSize} "$INSTDIR" "/S=0B" $0 $1 $2
 	IntFmt $0 "0x%08x" $0 ; https://msdn.microsoft.com/en-us/library/windows/desktop/ms647550(v=vs.85).aspx
-	WriteRegDWORD HKLM "${REG_KEY_UNINSTALL}" "EstimatedSize" "$0"
+	WriteRegDWORD HKLM "${REG_KEY_UNINSTALL}" "EstimatedSize" "$0" ; Used by Windows
 
 	SetOutPath "$INSTDIR"
 	SetOverwrite on
@@ -363,7 +367,7 @@ Function .onSelChange
 	SectionGetFlags ${sec3} $1
 	${If} $1 != 0
 		FindWindow $1 "#32770" "" $HWNDPARENT
-		GetDlgItem $1 $1 1023 ; Required space control
+		GetDlgItem $1 $1 1023 ; Required size space control
 		ShowWindow $1 ${SW_HIDE}
 	${Else}
 		FindWindow $1 "#32770" "" $HWNDPARENT
@@ -569,12 +573,12 @@ Function onGUIInit
 	Aero::Apply ; Apply Aero if available
 FunctionEnd
 
-Function downloadJavaPreselection
+Function hideRequiredSize
 	SectionGetFlags ${sec3} $1
 	${If} $DownloadJava == "1"
 	${AndIf} $1 != 0
 		FindWindow $1 "#32770" "" $HWNDPARENT
-		GetDlgItem $1 $1 1023 ; Required space control
+		GetDlgItem $1 $1 1023 ; Required size space control
 		ShowWindow $1 ${SW_HIDE}
 	${EndIf}
 FunctionEnd
@@ -625,24 +629,6 @@ Function DumpLog
 		Exch $5
 FunctionEnd
 
-Function un.onInit
-	!insertmacro MUI_UNGETLANGUAGE
-
-	ReadRegStr $0 HKLM "${REG_KEY_UNINSTALL}" "FirewallSettings"
-	Pop $0
-	StrCmp $0 "" noNeed
-	${IfNot} ${IsWinXP}
-		nsExec::Exec 'netsh advfirewall firewall delete rule name="Digital Media Server - Incoming port TCP 1900/5001/9001"'
-		nsExec::Exec 'netsh advfirewall firewall delete rule name="Digital Media Server - Incoming port UDP 1900"'
-	${ElseIf} ${IsWinXP}
-		nsExec::Exec 'netsh firewall set portopening protocol=tcp port=5001 mode=disable profile=all'
-		nsExec::Exec 'netsh firewall set portopening protocol=tcp port=9001 mode=disable profile=all'
-		nsExec::Exec 'netsh firewall set portopening protocol=all port=1900 mode=disable profile=all'
-	${EndIf}
-
-	noNeed:
-FunctionEnd
-
 Function showHiDPI
 	SysCompImg::GetSysDpi ; http://forums.winamp.com/showthread.php?t=443754
 	${If} $0 > 144
@@ -662,10 +648,130 @@ Function showHiDPI
 	${WordReplace} "$R6" "@" "@RTL@" "+1" $R6
 	header: SysCompImg::SetCustom "$PLUGINSDIR\Header\$R6" ; SetClassic, SetFlat, SetThemed
 	SysCompImg::SetCustom "$PLUGINSDIR\Wizard\$R7"
-	${NSD_SetImage} $mui.WelcomePage.Image "$PLUGINSDIR\Wizard\$R7" $mui.WelcomePage.Image.Bitmap
-	${NSD_SetImage} $mui.FinishPage.Image "$PLUGINSDIR\Wizard\$R7" $mui.FinishPage.Image.Bitmap
-	SetBrandingImage /IMGID=1046 "$PLUGINSDIR\Header\$R6"
+	${NSD_SetStretchedImage} $mui.WelcomePage.Image "$PLUGINSDIR\Wizard\$R7" $mui.WelcomePage.Image.Bitmap
+	${NSD_SetStretchedImage} $mui.FinishPage.Image "$PLUGINSDIR\Wizard\$R7" $mui.FinishPage.Image.Bitmap
+	SetBrandingImage /IMGID=1046 /RESIZETOFIT "$PLUGINSDIR\Header\$R6"
 FunctionEnd
+
+Section /o "-un.RemoveDataAndSettings" sec100
+SectionEnd
+
+Section "un.$(SectionUninstallStandard)" sec101
+	SectionIn RO
+	SetShellVarContext all
+	ReadEnvStr $R0 "ALLUSERSPROFILE"
+	SectionGetFlags ${sec100} $R1
+	SetOutPath $TEMP ; Make sure $InstDir is not the current folder so we can remove it
+	ClearErrors
+	SetFileAttributes "$INSTDIR\${UninstallLog}" NORMAL
+	IfErrors error reading
+
+	error:
+		ReadRegStr $1 HKCU "${REG_KEY_UNINSTALL}" "CannotOpen"
+		Pop $1
+		MessageBox MB_ICONEXCLAMATION|MB_YESNO "$1" IDYES +2
+		Quit
+		Delete "$DESKTOP\${PROJECT_NAME}.lnk"
+		RMDir /r /REBOOTOK "$INSTDIR"
+		RMDir /r /REBOOTOK "$SMPROGRAMS\${PROJECT_NAME}"
+		StrCmp "$R1" "1" removeDataAndSettings serviceRunningTest
+
+	reading:
+		FileOpen $0 "$INSTDIR\${UninstallLog}" r
+		IfErrors error
+		StrCpy $5 0
+		loop:
+			FileRead $0 $1
+			IfErrors EOF
+			${WordFind} "$1" ": " "+1}" $2
+			StrCmp "$R1" "1" complete
+			${WordFind} "$2" "$R0\${PROJECT_NAME_CAMEL}" "E+1" $9
+			IfErrors 0 loop
+			complete: ${WordFind} "$2" ":\" "E+1}" $3
+			IfErrors file
+			StrCpy $R2 $2 -2
+			${WordFind} "$2" ".exe$\r$\n" "E+1}" $3
+			IfErrors 0 +3
+			${WordFind} "$2" ".lnk$\r$\n" "E+1}" $3
+			IfErrors +3
+			Delete /REBOOTOK "$R2"
+			Goto loop
+			Push $R2
+			IntOp $5 $5 + 1
+			Goto loop
+			file:
+				${WordFind2X} "$1" ": " "... 100%" "E+1" $4
+				IfErrors 0 delete
+				${WordFind2X} "$1" ": " "$\r$\n" "+1" $4
+				delete: Delete /REBOOTOK "$R2\$4"
+				Goto loop
+		EOF: FileClose $0
+
+	Delete /REBOOTOK "$INSTDIR\${UninstallLog}"
+	${DoUntil} $5 = 0
+		RMDir "$R2"
+		Pop $R2
+		IntOp $5 $5 - 1
+	${Loop}
+	Delete "$DESKTOP\${PROJECT_NAME}.lnk"
+	StrCmp "$R1" "1" removeDataAndSettings serviceRunningTest
+
+	removeDataAndSettings:
+		RMDir /r /REBOOTOK "$SMPROGRAMS\${PROJECT_NAME}"
+		RMDir /r /REBOOTOK "$R0\${PROJECT_NAME_CAMEL}"
+		RMDir /r /REBOOTOK "$TEMP\fontconfig"
+		RMDir /r /REBOOTOK "$LOCALAPPDATA\fontconfig"
+		DeleteRegKey HKCU "${REG_KEY_UNINSTALL}"
+		DeleteRegKey HKLM "${REG_KEY_UNINSTALL}"
+		DeleteRegKey HKCU "${REG_KEY_SOFTWARE}"
+
+	serviceRunningTest:
+	!insertmacro SERVICE "running" "${PROJECT_NAME}" ""
+	Pop $0
+	StrCmpS $0 "false" Done
+
+	ServiceStop:
+		!insertmacro SERVICE "stop" "${PROJECT_NAME}" ""
+		Pop $0
+		StrCmpS $0 "false" 0 ServiceDelete
+		MessageBox MB_ABORTRETRYIGNORE|MB_ICONEXCLAMATION $(ServiceStopError) IDIGNORE ServiceDelete IDRETRY ServiceStop
+		Abort
+
+	ServiceDelete:
+		!insertmacro SERVICE "delete" "${PROJECT_NAME}" ""
+		Pop $0
+		StrCmpS $0 "false" 0 Done
+		MessageBox MB_ABORTRETRYIGNORE|MB_ICONSTOP $(ServiceUninstallError) IDIGNORE Done IDRETRY ServiceDelete
+		Abort
+
+	Done:
+SectionEnd
+
+Section /o "un.$(SectionUninstallComplete)" sec102
+SectionEnd
+
+Function un.onInit
+	!insertmacro MUI_UNGETLANGUAGE
+
+	ReadRegStr $0 HKLM "${REG_KEY_UNINSTALL}" "FirewallSettings"
+	Pop $0
+	StrCmp $0 "" noNeed
+	${IfNot} ${IsWinXP}
+		nsExec::Exec 'netsh advfirewall firewall delete rule name="Digital Media Server - Incoming port TCP 1900/5001/9001"'
+		nsExec::Exec 'netsh advfirewall firewall delete rule name="Digital Media Server - Incoming port UDP 1900"'
+	${ElseIf} ${IsWinXP}
+		nsExec::Exec 'netsh firewall set portopening protocol=tcp port=5001 mode=disable profile=all'
+		nsExec::Exec 'netsh firewall set portopening protocol=tcp port=9001 mode=disable profile=all'
+		nsExec::Exec 'netsh firewall set portopening protocol=all port=1900 mode=disable profile=all'
+	${EndIf}
+
+	noNeed:
+FunctionEnd
+
+!insertmacro MUI_UNFUNCTION_DESCRIPTION_BEGIN
+	!insertmacro MUI_DESCRIPTION_TEXT ${sec101} $(SectionDescriptionStandardUninstall)
+	!insertmacro MUI_DESCRIPTION_TEXT ${sec102} $(SectionDescriptionCompleteUninstall)
+!insertmacro MUI_UNFUNCTION_DESCRIPTION_END
 
 Function un.showHiDPI
 	SetOutPath "$PLUGINSDIR\Header"
@@ -702,104 +808,20 @@ Function un.showHiDPI
 	${WordReplace} "$R6" "@" "@RTL@" "+1" $R6
 	header: SysCompImg::SetCustom "$PLUGINSDIR\Header\$R6" ; SetClassic, SetFlat, SetThemed
 	SysCompImg::SetCustom "$PLUGINSDIR\Wizard\$R7"
-	${NSD_SetImage} $mui.WelcomePage.Image "$PLUGINSDIR\Wizard\$R7" $mui.WelcomePage.Image.Bitmap
-	${NSD_SetImage} $mui.FinishPage.Image "$PLUGINSDIR\Wizard\$R7" $mui.FinishPage.Image.Bitmap
-	SetBrandingImage /IMGID=1046 "$PLUGINSDIR\Header\$R6"
+	${NSD_SetStretchedImage} $mui.WelcomePage.Image "$PLUGINSDIR\Wizard\$R7" $mui.WelcomePage.Image.Bitmap
+	${NSD_SetStretchedImage} $mui.FinishPage.Image "$PLUGINSDIR\Wizard\$R7" $mui.FinishPage.Image.Bitmap
+	SetBrandingImage /IMGID=1046 /RESIZETOFIT "$PLUGINSDIR\Header\$R6"
 FunctionEnd
 
-Section /o "un.$(SectionUninstallComplete)" sec100
-SectionEnd
+Function un.onSelChange
+	SectionGetFlags ${sec102} $1
+	${If} $1 != 0
+		SectionSetFlags ${sec100} ${SF_SELECTED}
+	${EndIf}
+FunctionEnd
 
-Section "un.$(SectionUninstallStandard)" sec101
-	SectionIn RO
-	SetShellVarContext all
-	ReadEnvStr $R0 "ALLUSERSPROFILE"
-	SectionGetFlags ${sec100} $R1
-	SetOutPath $TEMP ; Make sure $InstDir is not the current folder so we can remove it
-	ClearErrors
-	SetFileAttributes "$INSTDIR\${UninstallLog}" NORMAL
-	IfErrors error reading
-
-	error:
-		ReadRegStr $1 HKCU "${REG_KEY_UNINSTALL}" "CannotOpen"
-		Pop $1
-		MessageBox MB_ICONEXCLAMATION|MB_YESNO "$1" IDYES +2
-		Quit
-		Delete /REBOOTOK "$DESKTOP\${PROJECT_NAME}.lnk"
-		RMDir /r /REBOOTOK "$INSTDIR"
-		RMDir /r /REBOOTOK "$SMPROGRAMS\${PROJECT_NAME}"
-		Goto serviceRunningTest
-
-	reading:
-		FileOpen $0 "$INSTDIR\${UninstallLog}" r
-		IfErrors error
-		StrCpy $5 0
-		loop:
-			FileRead $0 $1
-			IfErrors EOF
-			${WordFind} "$1" ": " "+1}" $2
-			StrCmp $R1 0 0 complete
-			${WordFind} "$2" "$R0" "E+1" $9
-			IfErrors 0 loop
-			complete: ${WordFind} "$2" ":\" "E+1}" $3
-			IfErrors file
-			StrCpy $R2 $2 -2
-			${WordFind} "$2" ".exe$\r$\n" "E+1}" $3
-			IfErrors 0 +3
-			${WordFind} "$2" ".lnk$\r$\n" "E+1}" $3
-			IfErrors +3
-			Delete /REBOOTOK "$R2"
-			Goto loop
-			Push $R2
-			IntOp $5 $5 + 1
-			Goto loop
-			file:
-				${WordFind2X} "$1" ": " "... 100%" "E+1" $4
-				IfErrors 0 delete
-				${WordFind2X} "$1" ": " "$\r$\n" "+1" $4
-				delete: Delete /REBOOTOK "$R2\$4"
-				Goto loop
-		EOF: FileClose $0
-
-	Delete /REBOOTOK "$INSTDIR\${UninstallLog}"
-	${DoUntil} $5 = 0
-		RMDir "$R2"
-		Pop $R2
-		IntOp $5 $5 - 1
-	${Loop}
-	Delete "$DESKTOP\${PROJECT_NAME}.lnk"
-	StrCmp $R1 0 serviceRunningTest
-	RMDir /r /REBOOTOK "$SMPROGRAMS\${PROJECT_NAME}"
-	RMDir /r /REBOOTOK "$R0\${PROJECT_NAME_CAMEL}"
-	RMDir /r /REBOOTOK "$TEMP\fontconfig"
-	RMDir /r /REBOOTOK "$LOCALAPPDATA\fontconfig"
-	DeleteRegKey HKCU "${REG_KEY_UNINSTALL}"
-	DeleteRegKey HKLM "${REG_KEY_UNINSTALL}"
-	DeleteRegKey HKCU "${REG_KEY_SOFTWARE}"
-
-	serviceRunningTest:
-	!insertmacro SERVICE "running" "${PROJECT_NAME}" ""
-	Pop $0
-	StrCmpS $0 "false" Done
-
-	ServiceStop:
-		!insertmacro SERVICE "stop" "${PROJECT_NAME}" ""
-		Pop $0
-		StrCmpS $0 "false" 0 ServiceDelete
-		MessageBox MB_ABORTRETRYIGNORE|MB_ICONEXCLAMATION $(ServiceStopError) IDIGNORE ServiceDelete IDRETRY ServiceStop
-		Abort
-
-	ServiceDelete:
-		!insertmacro SERVICE "delete" "${PROJECT_NAME}" ""
-		Pop $0
-		StrCmpS $0 "false" 0 Done
-		MessageBox MB_ABORTRETRYIGNORE|MB_ICONSTOP $(ServiceUninstallError) IDIGNORE Done IDRETRY ServiceDelete
-		Abort
-
-	Done:
-SectionEnd
-
-!insertmacro MUI_UNFUNCTION_DESCRIPTION_BEGIN
-	!insertmacro MUI_DESCRIPTION_TEXT ${sec100} $(SectionDescriptionCompleteUninstall)
-	!insertmacro MUI_DESCRIPTION_TEXT ${sec101} $(SectionDescriptionStandardUninstall)
-!insertmacro MUI_UNFUNCTION_DESCRIPTION_END
+Function un.hideRequiredSize
+	FindWindow $1 "#32770" "" $HWNDPARENT
+	GetDlgItem $1 $1 1023 ; Required size space control
+	ShowWindow $1 ${SW_HIDE}
+FunctionEnd
