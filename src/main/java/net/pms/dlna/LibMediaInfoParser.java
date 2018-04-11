@@ -523,7 +523,7 @@ public class LibMediaInfoParser {
 			format = FormatConfiguration.MPEGTS;
 		} else if (value.equals("caf")) {
 			format = FormatConfiguration.CAF;
-		} else if (value.equals("aiff")) {
+		} else if (FormatConfiguration.AIFF.equals("aiff")) {
 			format = FormatConfiguration.AIFF;
 		} else if (FormatConfiguration.AIFF.equals(media.getContainer())) {
 			if (!value.equals("pcm") && !value.startsWith("big") && !value.startsWith("little")) { ; https://github.com/MediaArea/MediaInfoLib/issues/833
