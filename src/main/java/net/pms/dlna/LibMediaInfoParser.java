@@ -726,15 +726,15 @@ public class LibMediaInfoParser {
 		} else if (value.startsWith("adpcm")) {
 			format = FormatConfiguration.ADPCM;
 		} else if (
-				value.equals("pcm") ||
+			value.equals("pcm") ||
+			(
+				value.equals("1") &&
 				(
-					value.equals("1") &&
-					(
-						audio.getCodecA() == null ||
-						!audio.getCodecA().equals(FormatConfiguration.DTS)
-					)
+					audio.getCodecA() == null ||
+					!audio.getCodecA().equals(FormatConfiguration.DTS)
 				)
-			) {
+			)
+		) {
 			format = FormatConfiguration.LPCM;
 		} else if (value.equals("alac")) {
 			format = FormatConfiguration.ALAC;
