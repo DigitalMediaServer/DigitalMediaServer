@@ -582,16 +582,9 @@ public class LibMediaInfoParser {
 			format = FormatConfiguration.VP8;
 		} else if (value.startsWith("vp9")) {
 			format = FormatConfiguration.VP9;
-		} else if (
-			(
-				value.startsWith("div") ||
-				value.equals("dx50") ||
-				value.equals("dvx1")
-			) &&
-			(
+		} else if ((value.startsWith("div") || value.equals("dx50") || value.equals("dvx1")) && (
 				!FormatConfiguration.MPEG4ASP.equals(media.getCodecV()) &&
-				!FormatConfiguration.MPEG4SP.equals(media.getCodecV())
-			)
+				!FormatConfiguration.MPEG4SP.equals(media.getCodecV()))
 		) {
 			format = FormatConfiguration.DIVX;
 		} else if (value.startsWith("indeo")) { // Intel Indeo Video: IV31, IV32, IV41 and IV50
