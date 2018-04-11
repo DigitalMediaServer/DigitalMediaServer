@@ -230,11 +230,7 @@ public class DLNAMediaAudio extends DLNAMediaLang implements Cloneable {
 	 */
 	public boolean isDTS() {
 		return FormatConfiguration.DTS.equalsIgnoreCase(getCodecA()) ||
-		getCodecA() != null &&
-		(
-			getCodecA().contains("dts") ||
-			getCodecA().contains("dca")
-		);
+		getCodecA() != null && (getCodecA().contains("dts") || getCodecA().contains("dca"));
 	}
 
 	/**
