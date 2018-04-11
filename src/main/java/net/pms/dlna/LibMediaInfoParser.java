@@ -526,7 +526,8 @@ public class LibMediaInfoParser {
 		} else if (FormatConfiguration.AIFF.equals("aiff")) {
 			format = FormatConfiguration.AIFF;
 		} else if (FormatConfiguration.AIFF.equals(media.getContainer())) {
-			if (!value.equals("pcm") && !value.startsWith("big") && !value.startsWith("little")) { ; https://github.com/MediaArea/MediaInfoLib/issues/833
+			// Du to this bug: https://github.com/MediaArea/MediaInfoLib/issues/833
+			if (!value.equals("pcm") && !value.startsWith("big") && !value.startsWith("little")) {
 				media.setContainer(FormatConfiguration.AIFC);
 				format = FormatConfiguration.ADPCM;
 			} else {
