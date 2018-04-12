@@ -28,6 +28,7 @@ import net.pms.dlna.RootFolder;
 import net.pms.image.ImageFormat;
 import net.pms.network.HTTPResource;
 import net.pms.newgui.DbgPacker;
+import net.pms.util.FileUtil;
 import net.pms.util.FullyPlayed;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.lang3.StringUtils;
@@ -37,9 +38,9 @@ import org.slf4j.LoggerFactory;
 @SuppressWarnings("restriction")
 public class RemoteWeb {
 	private static final Logger LOGGER = LoggerFactory.getLogger(RemoteWeb.class);
-	private KeyStore ks;
-	private KeyManagerFactory kmf;
-	private TrustManagerFactory tmf;
+	private KeyStore keyStore;
+	private KeyManagerFactory keyManagerFactory;
+	private TrustManagerFactory trustManagerFactory;
 	private HttpServer server;
 	private SSLContext sslContext;
 	private Map<String, RootFolder> roots;
@@ -83,7 +84,11 @@ public class RemoteWeb {
 				LOGGER.error("Failed to start WEB interface on HTTPS: {}", e.getMessage());
 				LOGGER.trace("", e);
 				if (e.getMessage().contains("DMS.jks")) {
-					LOGGER.info("To enable HTTPS please generate a self-signed keystore file called \"DMS.jks\" using the java 'keytool' commandline utility.");
+					LOGGER.info(
+						"To enable HTTPS please generate a self-signed keystore file " +
+						"called \"DMS.jks\" with password \"dmsdms\" using the java " +
+						"'keytool' commandline utility, and place it in the profile folder"
+					);
 				}
 			} catch (GeneralSecurityException e) {
 				LOGGER.error("Failed to start WEB interface on HTTPS due to a security error: {}", e.getMessage());
@@ -118,22 +123,26 @@ public class RemoteWeb {
 	private HttpServer httpsServer(InetSocketAddress address) throws IOException, GeneralSecurityException {
 		// Initialize the keystore
 		char[] password = "dmsdms".toCharArray();
-		ks = KeyStore.getInstance("JKS");
-		try (FileInputStream fis = new FileInputStream("DMS.jks")) {
-			ks.load(fis, password);
+		keyStore = KeyStore.getInstance("JKS");
+		try (
+			FileInputStream fis = new FileInputStream(
+				FileUtil.appendPathSeparator(configuration.getProfileFolder()) + "DMS.jks"
+			)
+		) {
+			keyStore.load(fis, password);
 		}
 
 		// Setup the key manager factory
-		kmf = KeyManagerFactory.getInstance("SunX509");
-		kmf.init(ks, password);
+		keyManagerFactory = KeyManagerFactory.getInstance("SunX509");
+		keyManagerFactory.init(keyStore, password);
 
 		// Setup the trust manager factory
-		tmf = TrustManagerFactory.getInstance("SunX509");
-		tmf.init(ks);
+		trustManagerFactory = TrustManagerFactory.getInstance("SunX509");
+		trustManagerFactory.init(keyStore);
 
 		HttpsServer server = HttpsServer.create(address, 0);
 		sslContext = SSLContext.getInstance("TLS");
-		sslContext.init(kmf.getKeyManagers(), tmf.getTrustManagers(), null);
+		sslContext.init(keyManagerFactory.getKeyManagers(), trustManagerFactory.getTrustManagers(), null);
 
 		server.setHttpsConfigurator(new HttpsConfigurator(sslContext) {
 			@Override
@@ -150,7 +159,8 @@ public class RemoteWeb {
 					SSLParameters defaultSSLParameters = c.getDefaultSSLParameters();
 					params.setSSLParameters(defaultSSLParameters);
 				} catch (Exception e) {
-					LOGGER.debug("https configure error  " + e);
+					LOGGER.error("HTTPS configuration error: {}", e.getMessage());
+					LOGGER.trace("", e);
 				}
 			}
 		});
