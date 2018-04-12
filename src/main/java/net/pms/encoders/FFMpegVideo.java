@@ -890,7 +890,7 @@ public class FFMpegVideo extends Player {
 			)
 		) {
 			LOGGER.trace("Switching from FFmpeg to MEncoder to transcode subtitles because the user setting is enabled.");
-			MEncoderVideo mv = new MEncoderVideo();
+			MEncoderVideo mv = (MEncoderVideo) PlayerFactory.getPlayer(MEncoderVideo.ID,  false, false);
 			return mv.launchTranscode(dlna, media, params);
 		}
 
