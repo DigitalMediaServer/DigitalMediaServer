@@ -1425,11 +1425,11 @@
 								<configuration>
 									<target>
 										<taskdef name="bundleapp" classname="com.oracle.appbundler.AppBundlerTask"
-											classpath="${basedir}/src/main/external-resources/lib/appbundler-1.3.DMS.jar"/>
+											classpath="${basedir}/src/main/external-resources/lib/appbundler-1.3.${project.name.short}.jar"/>
 										<bundleapp outputdirectory="${project.build.directory}/${project.build.finalName}-distribution"
 										           name="${project.name}"
 										           displayname="${project.name}"
-										           executableName="DMS"
+										           executableName="${project.name.short}"
 										           identifier="net.pms.PMS"
 										           shortversion="${project.version.short}"
 										           version="${project.version}"
@@ -1602,11 +1602,11 @@
 								<configuration>
 									<target>
 										<taskdef name="bundleapp" classname="com.oracle.appbundler.AppBundlerTask"
-											classpath="${basedir}/src/main/external-resources/lib/appbundler-1.3.DMS.jar"/>
+											classpath="${basedir}/src/main/external-resources/lib/appbundler-1.3.${project.name.short}.jar"/>
 										<bundleapp outputdirectory="${project.build.directory}/${project.build.finalName}-distribution"
 										           name="${project.name}"
 										           displayname="${project.name}"
-										           executableName="DMS"
+										           executableName="${project.name.short}"
 										           identifier="net.pms.PMS"
 										           shortversion="${project.version.short}"
 										           version="${project.version}"
