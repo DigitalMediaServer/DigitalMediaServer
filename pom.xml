@@ -1155,6 +1155,12 @@
 											<fileset dir="${project.external-resources}/third-party/wrapper" />
 										</copy>
 
+										<!-- Copy DCRaw and tsMuxeR -->
+										<mkdir dir="${project.basedir}/win32" />
+										<copy todir="${project.basedir}/win32" overwrite="true">
+											<fileset dir="${project.external-resources}/src/main/external-resources/Binaries/win" />
+										</copy>
+
 										<!-- Copy the custom jnidispatch.dll for Windows XP -->
 										<mkdir dir="${project.basedir}/win32/winxp" />
 										<copy file="${project.external-resources}/lib/winxp/jnidispatch.dll" todir="${project.basedir}/win32/winxp" />
