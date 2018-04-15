@@ -1095,13 +1095,11 @@
 										<get src="${project.binaries-base}/win32/LICENSE-dsnative.txt?p=${binary-revision}" dest="${project.binaries}/win32/LICENSE-dsnative.txt" usetimestamp="true" />
 										<get src="${project.binaries-base}/win32/LICENSE-mplayer.txt?p=${binary-revision}" dest="${project.binaries}/win32/LICENSE-mplayer.txt" usetimestamp="true" />
 										<get src="${project.binaries-base}/win32/builds.txt?p=${binary-revision}" dest="${project.binaries}/win32/builds.txt" usetimestamp="true" />
-										<get src="${project.binaries-base}/win32/dcrawMS.exe?p=${binary-revision}" dest="${project.binaries}/win32/dcrawMS.exe" usetimestamp="true" />
 										<get src="${project.binaries-base}/win32/ffmpeg.exe?p=${binary-revision}" dest="${project.binaries}/win32/ffmpeg.exe" usetimestamp="true" />
 										<get src="${project.binaries-base}/win32/ffmpeg64.exe?p=${binary-revision}" dest="${project.binaries}/win32/ffmpeg64.exe" usetimestamp="true" />
 										<get src="${project.binaries-base}/win32/flac.exe?p=${binary-revision}" dest="${project.binaries}/win32/flac.exe" usetimestamp="true" />
 										<get src="${project.binaries-base}/win32/mencoder.exe?p=${binary-revision}" dest="${project.binaries}/win32/mencoder.exe" usetimestamp="true" />
 										<get src="${project.binaries-base}/win32/mplayer.exe?p=${binary-revision}" dest="${project.binaries}/win32/mplayer.exe"  usetimestamp="true" />
-										<get src="${project.binaries-base}/win32/tsMuxeR-new.exe?p=${binary-revision}" dest="${project.binaries}/win32/tsMuxeR.exe" usetimestamp="true" />
 										<get src="${project.binaries-base}/win32/vcomp100.dll?p=${binary-revision}" dest="${project.binaries}/win32/vcomp100.dll" usetimestamp="true" />
 										<get src="${project.binaries-base}/win32/avisynth/avisynth.exe?p=${binary-revision}" dest="${project.binaries}/win32/avisynth/avisynth.exe" usetimestamp="true" />
 										<get src="${project.binaries-base}/win32/codecs/drv33260.dll?p=${binary-revision}" dest="${project.binaries}/win32/codecs/drv33260.dll" usetimestamp="true" />
@@ -1273,7 +1271,6 @@
 					<!--
 						Use the antrun plugin to:
 
-						Download the tsMuxeR binary to ${project.binaries}/tsMuxeR
 						Copy the dms-x.x.x-jar-with-dependencies.jar to dms.jar
 					-->
 					<plugin>
@@ -1296,8 +1293,7 @@
 										<!-- Download binaries -->
 										<get src="${project.binaries-base}/linux/ffmpeg?p=${binary-revision}" dest="${project.binaries}/linux/ffmpeg" usetimestamp="true" />
 										<get src="${project.binaries-base}/linux/ffmpeg64?p=${binary-revision}" dest="${project.binaries}/linux/ffmpeg64" usetimestamp="true" />
-										<get src="${project.binaries-base}/linux/tsMuxeR-new?p=${binary-revision}" dest="${project.binaries}/linux/tsMuxeR" usetimestamp="true" />
-										<get src="${project.binaries-base}/linux/tsMuxeR_licence.txt?p=${binary-revision}" dest="${project.binaries}/linux/tsMuxeR_license.txt" usetimestamp="true" />
+
 									</target>
 								</configuration>
 							</execution>
@@ -1372,15 +1368,12 @@
 										<mkdir dir="${project.binaries}/osx" />
 
 										<!-- Download binaries -->
-										<get src="${project.binaries-base}/osx/dcraw" dest="${project.binaries}/osx/dcraw" usetimestamp="true" />
 										<get src="${project.binaries-base}/osx/ffmpeg" dest="${project.binaries}/osx/ffmpeg" usetimestamp="true" />
 										<get src="${project.binaries-base}/osx/flac" dest="${project.binaries}/osx/flac" usetimestamp="true" />
 										<get src="${project.binaries-base}/osx/libmediainfo.dylib" dest="${project.binaries}/osx/libmediainfo.dylib" usetimestamp="true" />
 										<get src="${project.binaries-base}/MediaInfo-License.html" dest="${project.binaries}/osx/MediaInfo-License.html" usetimestamp="true" />
 										<get src="${project.binaries-base}/osx/mencoder" dest="${project.binaries}/osx/mencoder" usetimestamp="true" />
 										<get src="${project.binaries-base}/osx/mplayer" dest="${project.binaries}/osx/mplayer" usetimestamp="true" />
-										<!-- TODO: Update to a recent version that works on modern macOS versions -->
-										<get src="${project.binaries-base}/osx/tsMuxeR-new" dest="${project.binaries}/osx/tsMuxeR" usetimestamp="true" />
 
 										<!-- Make all downloaded binaries executable -->
 										<chmod dir="${project.binaries}/osx" perm="a+x" includes="*" />
@@ -1550,14 +1543,12 @@
 										<mkdir dir="${project.binaries}/osx" />
 
 										<!-- Download binaries -->
-										<get src="${project.binaries-base}/osx/dcraw" dest="${project.binaries}/osx/dcraw" usetimestamp="true" />
 										<get src="${project.binaries-base}/osx/ffmpeg" dest="${project.binaries}/osx/ffmpeg" usetimestamp="true" />
 										<get src="${project.binaries-base}/osx/flac" dest="${project.binaries}/osx/flac" usetimestamp="true" />
 										<get src="${project.binaries-base}/osx/libmediainfo.dylib" dest="${project.binaries}/osx/libmediainfo.dylib" usetimestamp="true" />
 										<get src="${project.binaries-base}/MediaInfo-License.html" dest="${project.binaries}/osx/MediaInfo-License.html" usetimestamp="true" />
 										<get src="${project.binaries-base}/osx/mencoder" dest="${project.binaries}/osx/mencoder" usetimestamp="true" />
 										<get src="${project.binaries-base}/osx/mplayer" dest="${project.binaries}/osx/mplayer" usetimestamp="true" />
-										<get src="${project.binaries-base}/osx/tsMuxeR-new" dest="${project.binaries}/osx/tsMuxeR" usetimestamp="true" />
 
 										<!-- Make all downloaded binaries executable -->
 										<chmod dir="${project.binaries}/osx" perm="a+x" includes="*" />
