@@ -1,6 +1,6 @@
 package net.pms.util;
 
-public class DmsKeysDb implements DbHandler {
+public class DmsKeysDb implements DbHandler { //TODO: (Nad) Remove
 	private FileDb db;
 
 	public DmsKeysDb() {

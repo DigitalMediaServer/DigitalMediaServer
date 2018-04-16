@@ -33,7 +33,7 @@ import static org.apache.commons.lang3.StringUtils.isBlank;
  * Enum with possible types of subtitle tracks and methods for determining them
  * by file extension or libmediainfo output.
  */
-public enum SubtitleType {
+public enum SubtitleType { //TODO: (Nad) Figure out how to handle untranscodable subtitles
 	// MediaInfo database of codec signatures https://github.com/MediaArea/MediaInfoLib/blob/master/Source/Resource/Text/DataBase/Codec.csv
 
 	//     int index, String description,        String shortName, List<String> fileExtensions, List<String> libMediaInfoCodecs,                         Category category

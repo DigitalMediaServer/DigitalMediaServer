@@ -4028,7 +4028,7 @@ public class OpenSubtitles {
 			this.openSubtitlesScore = openSubtitlesScore;
 
 			double tmpScore = 0.0;
-			if (matchedBy != null) {
+			if (matchedBy != null) { //TODO: (Nad) Match score
 				switch (matchedBy) {
 					case MOVIE_HASH:
 						tmpScore += 200d;
@@ -4052,7 +4052,7 @@ public class OpenSubtitles {
 						// 0.6 and below gives a score of 0, 1.0 give a score of 40.
 						tmpScore += 40d * 2.5 * Math.max(
 							new JaroWinklerDistance().apply(
-								prettifier.getFileNameWithoutExtension().toLowerCase(locale),
+								prettifier.getFileNameWithoutExtension().toLowerCase(locale), //TODO: (Nad) Major bug
 								subFileNameWithoutExtension.toLowerCase(Locale.ENGLISH)
 							) - 0.6,
 							0
@@ -4096,12 +4096,12 @@ public class OpenSubtitles {
 					tmpScore += 20d;
 				}
 			}
-			if (subLastTS > 0 && media != null && media.getDurationInSeconds() > 0) {
+			if (subLastTS > 0 && media != null && media.getDurationInSeconds() > 0) { //TODO: (Nad) More stuff
 				long mediaDuration = (long) (media.getDurationInSeconds() * 1000);
 				// Trying to guess the most likely time for the last subtitle
 				long mediaLastTS = mediaDuration - Math.min(Math.max((long) (mediaDuration * 0.02), 2000), 120000);
 				if (mediaLastTS > 0) {
-					long diff = Math.abs(subLastTS - mediaLastTS);
+					long diff = Math.abs(subLastTS - mediaLastTS); //TODO: (Nad) Verify
 					tmpScore += 30d * Math.max(0.5 - (double) diff / mediaLastTS, 0);
 				}
 			}

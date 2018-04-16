@@ -203,7 +203,7 @@ public class DLNAMediaSubtitle extends DLNAMediaLang implements Cloneable {
 	private void setFileSubsCharacterSet() {
 		if (externalFile != null && !type.isPicture()) {
 			try {
-				CharsetMatch match = FileUtil.getFileCharsetMatch(externalFile);
+				CharsetMatch match = FileUtil.getFileCharsetMatch(externalFile); //TODO: (Nad) BOM bug here?
 				if (match != null) {
 					subsCharacterSet = match.getName().toUpperCase(Locale.ROOT);
 					// Returned Charset can have additional info like ISO-8859-8-I but

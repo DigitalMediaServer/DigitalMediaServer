@@ -6,7 +6,7 @@ import net.pms.PMS;
 import net.pms.dlna.DLNAResource;
 import org.apache.commons.lang3.StringUtils;
 
-public class CodeDb implements DbHandler {
+public class CodeDb implements DbHandler { //TODO: (Nad) Remove
 	public static final String MASTER = "MASTER_CODE";
 
 	private FileDb db;

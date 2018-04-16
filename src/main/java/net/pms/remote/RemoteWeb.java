@@ -564,6 +564,9 @@ public class RemoteWeb {
 					throw new IOException("Access denied");
 				}
 				RootFolder root = parent.getRoot(RemoteUtil.userName(t), t);
+				if (root == null) { //TODO: (Nad) Ok?
+					return;
+				}
 				WebRender renderer = (WebRender) root.getDefaultRenderer();
 				String json = renderer.getPushData();
 				RemoteUtil.respond(t, json, 200, "text");
