@@ -122,14 +122,6 @@
 		 -->
 		<makensis-bin>${project.external-resources}/third-party/nsis/makensis.exe</makensis-bin>
 	</properties>
-	<pluginRepositories>
-		<pluginRepository>
-			<id>ossrh</id>
-			<name>Sonatype OSS Repository</name>
-			<url>https://oss.sonatype.org/content/repositories/snapshots</url>
-			<layout>default</layout>
-		</pluginRepository>
-	</pluginRepositories>
 	<repositories>
 		<repository>
 			<id>4thline-repo</id>
@@ -627,130 +619,9 @@
 						<projectName>Digital Media Server</projectName>
 					</configuration>
 				</plugin>
-
-				<!--
-					This plugin's configuration is used to store Eclipse m2e settings only.
-					It has no influence on the Maven build itself.
-				-->
-				<plugin>
-					<groupId>org.eclipse.m2e</groupId>
-					<artifactId>lifecycle-mapping</artifactId>
-					<version>1.0.0</version>
-					<configuration>
-						<lifecycleMappingMetadata>
-							<pluginExecutions>
-								<pluginExecution>
-									<pluginExecutionFilter>
-										<groupId>
-											org.apache.maven.plugins
-										</groupId>
-										<artifactId>
-											maven-antrun-plugin
-										</artifactId>
-										<versionRange>
-											[1.7,)
-										</versionRange>
-										<goals>
-											<goal>run</goal>
-										</goals>
-									</pluginExecutionFilter>
-									<action>
-										<ignore></ignore>
-									</action>
-								</pluginExecution>
-								<pluginExecution>
-									<pluginExecutionFilter>
-										<groupId>
-											pl.project13.maven
-										</groupId>
-										<artifactId>
-											git-commit-id-plugin
-										</artifactId>
-										<versionRange>
-											[${git-commit-id-plugin-version},)
-										</versionRange>
-										<goals>
-											<goal>revision</goal>
-										</goals>
-									</pluginExecutionFilter>
-									<action>
-										<ignore></ignore>
-									</action>
-								</pluginExecution>
-								<pluginExecution>
-									<pluginExecutionFilter>
-										<groupId>
-											com.universalmediaserver
-										</groupId>
-										<artifactId>
-											external-maven-plugin
-										</artifactId>
-										<versionRange>
-											[0.1,)
-										</versionRange>
-										<goals>
-											<goal>clean</goal>
-											<goal>deploy</goal>
-											<goal>install</goal>
-											<goal>resolve</goal>
-											<goal>localinstall</goal>
-										</goals>
-									</pluginExecutionFilter>
-									<action>
-										<execute></execute>
-									</action>
-								</pluginExecution>
-								<pluginExecution>
-									<pluginExecutionFilter>
-										<groupId>org.digitalmediaserver</groupId>
-										<artifactId>
-											crowdin-maven-plugin
-										</artifactId>
-										<versionRange>
-											[0.1,)
-										</versionRange>
-										<goals>
-											<goal>fetch</goal>
-											<goal>push</goal>
-											<goal>build</goal>
-											<goal>apply</goal>
-											<goal>pull</goal>
-										</goals>
-									</pluginExecutionFilter>
-									<action>
-										<execute></execute>
-									</action>
-								</pluginExecution>
-							</pluginExecutions>
-						</lifecycleMappingMetadata>
-					</configuration>
-				</plugin>
 			</plugins>
 		</pluginManagement>
 		<plugins>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-enforcer-plugin</artifactId>
-				<version>${maven-enforcer-plugin-version}</version>
-				<executions>
-					<execution>
-						<id>enforce</id>
-						<configuration>
-							<rules>
-								<dependencyConvergence/>
-								<!-- this is not required, but is recommended for plugin version checks -->
-								<requireMavenVersion>
-									<version>3.0.0</version>
-								</requireMavenVersion>
-							</rules>
-						</configuration>
-						<goals>
-							<goal>enforce</goal>
-						</goals>
-					</execution>
-				</executions>
-			</plugin>
-
 			<!--
 				Plugin to add git commit information properties.
 				These are used in the project.properties files.
@@ -998,18 +869,6 @@
 	</reporting>
 
 	<profiles>
-		<profile>
-			<id>system-makensis</id>
-			<activation>
-				<activeByDefault>false</activeByDefault>
-			</activation>
-
-			<properties>
-				<!-- if selected, use the system makensis on Linux, Mac OS X &c. -->
-				<makensis-bin>makensis</makensis-bin>
-			</properties>
-		</profile>
-
 		<!--
 			Windows profile: takes care of building the final package for Microsoft Windows
 		-->
@@ -1167,27 +1026,25 @@
 					</plugin>
 
 					<!--
-						Plugin to build a Windows installer using the nullsoft scriptable install system (NSIS)
-						The "generate-project" goal generates a file "target/project.nsh", which contains the
-						definitions for project variables like "${PROJECT_BASEDIR}" that can be used in the
-						"dms.nsi" and "setup.nsi" files.
+						Plugin to build a Windows installer using the nullsoft scriptable install system (NSIS).
+						The "generate-headerfile" goal generates a file "target/project.nsh".
 					-->
 					<plugin>
 						<groupId>org.codehaus.mojo</groupId>
 						<artifactId>nsis-maven-plugin</artifactId>
-						<version>1.0-SNAPSHOT</version>
+						<version>1.0-alpha-1</version>
 						<executions>
 							<execution>
 								<id>build-dms-windows</id>
 								<configuration>
 									<makensisBin>${makensis-bin}</makensisBin>
-									<outputFile>${project.build.directory}/DMS.exe</outputFile>
-									<setupScript>${project.external-resources}/nsis/dms.nsi</setupScript>
+									<outputFile>DMS.exe</outputFile>
+									<scriptFile>src/main/external-resources/nsis/dms.nsi</scriptFile>
 								</configuration>
 								<phase>package</phase>
 								<goals>
-									<goal>generate-project</goal>
-									<goal>compile</goal>
+									<goal>generate-headerfile</goal>
+									<goal>make</goal>
 								</goals>
 							</execution>
 
@@ -1195,13 +1052,13 @@
 								<id>build-setup-windows</id>
 								<configuration>
 									<makensisBin>${makensis-bin}</makensisBin>
-									<outputFile>${project.build.directory}/DMS-setup.exe</outputFile>
-									<setupScript>${project.external-resources}/nsis/setup.nsi</setupScript>
+									<outputFile>DMS-setup.exe</outputFile>
+									<scriptFile>src/main/external-resources/nsis/setup.nsi</scriptFile>
 								</configuration>
 								<phase>package</phase>
 								<goals>
-									<goal>generate-project</goal>
-									<goal>compile</goal>
+									<goal>generate-headerfile</goal>
+									<goal>make</goal>
 								</goals>
 							</execution>
 						</executions>
@@ -1220,7 +1077,7 @@
 				and is needed for the Hudson profile to work
 			-->
 			<activation>
-				<activeByDefault>true</activeByDefault>
+				<activeByDefault>false</activeByDefault>
 			</activation>
 
 			<build>
@@ -1321,214 +1178,16 @@
 		</profile>
 
 		<!--
-			Mac OSX Java 7 profile: takes care of building the final package for Mac OSX using Java 7.
-			Note: This does not make the .dmg you will have to do that manually. Use the open source dmgCreator
-		-->
-		<profile>
-			<id>osx-java7</id>
-			<activation>
-				<activeByDefault>false</activeByDefault>
-			</activation>
-			<build>
-				<plugins>
-					<plugin>
-						<groupId>org.apache.maven.plugins</groupId>
-						<artifactId>maven-enforcer-plugin</artifactId>
-						<version>${maven-enforcer-plugin-version}</version>
-						<executions>
-							<execution>
-								<id>enforce-java</id>
-								<goals>
-									<goal>enforce</goal>
-								</goals>
-								<configuration>
-									<rules>
-										<requireJavaVersion>
-											<version>[1.7.0-80,1.7.0-200]</version>
-										</requireJavaVersion>
-									</rules>
-								</configuration>
-							</execution>
-						</executions>
-					</plugin>
-					<!--
-						Plugin to download binaries before assembly
-					-->
-					<plugin>
-						<groupId>org.apache.maven.plugins</groupId>
-						<artifactId>maven-antrun-plugin</artifactId>
-						<version>1.8</version>
-						<executions>
-							<execution>
-								<id>process-resources-osx-java-7</id>
-								<phase>test</phase>
-								<goals>
-									<goal>run</goal>
-								</goals>
-								<configuration>
-									<target>
-										<!-- Make sure the binaries folder exists -->
-										<mkdir dir="${project.binaries}" />
-										<mkdir dir="${project.binaries}/osx" />
-
-										<!-- Download binaries -->
-										<get src="${project.binaries-base}/osx/dcraw" dest="${project.binaries}/osx/dcraw" usetimestamp="true" />
-										<get src="${project.binaries-base}/osx/ffmpeg" dest="${project.binaries}/osx/ffmpeg" usetimestamp="true" />
-										<get src="${project.binaries-base}/osx/flac" dest="${project.binaries}/osx/flac" usetimestamp="true" />
-										<get src="${project.binaries-base}/osx/libmediainfo.dylib" dest="${project.binaries}/osx/libmediainfo.dylib" usetimestamp="true" />
-										<get src="${project.binaries-base}/MediaInfo-License.html" dest="${project.binaries}/osx/MediaInfo-License.html" usetimestamp="true" />
-										<get src="${project.binaries-base}/osx/mencoder" dest="${project.binaries}/osx/mencoder" usetimestamp="true" />
-										<get src="${project.binaries-base}/osx/mplayer" dest="${project.binaries}/osx/mplayer" usetimestamp="true" />
-										<!-- TODO: Update to a recent version that works on modern macOS versions -->
-										<get src="${project.binaries-base}/osx/tsMuxeR-new" dest="${project.binaries}/osx/tsMuxeR" usetimestamp="true" />
-
-										<!-- Make all downloaded binaries executable -->
-										<chmod dir="${project.binaries}/osx" perm="a+x" includes="*" />
-									</target>
-								</configuration>
-							</execution>
-							<execution>
-								<id>prepare-package-osx-java-7</id>
-								<phase>prepare-package</phase>
-								<goals>
-									<goal>run</goal>
-								</goals>
-								<configuration>
-									<target>
-										<!-- Make sure the target folder exists -->
-										<mkdir dir="${project.build.directory}/${project.build.finalName}-distribution" />
-
-										<!-- Create the shortcut to the Applications folder -->
-										<exec executable="/usr/bin/osascript">
-											<arg value="-e" />
-											<arg value="tell application &quot;Finder&quot;" />
-											<arg value="-e" />
-											<arg value="set src to POSIX file &quot;/Applications&quot;" />
-											<arg value="-e" />
-											<arg value="set dest to POSIX file &quot;${project.build.directory}/${project.build.finalName}-distribution&quot;" />
-											<arg value="-e" />
-											<arg value="make new alias file to folder src at folder dest" />
-											<arg value="-e" />
-											<arg value="end tell" />
-										</exec>
-									</target>
-								</configuration>
-							</execution>
-							<execution>
-								<id>package app</id>
-								<phase>prepare-package</phase>
-								<goals>
-									<goal>run</goal>
-								</goals>
-								<configuration>
-									<target>
-										<taskdef name="bundleapp" classname="com.oracle.appbundler.AppBundlerTask"
-											classpath="${basedir}/src/main/external-resources/lib/appbundler-1.3.DMS.jar"/>
-										<bundleapp outputdirectory="${project.build.directory}/${project.build.finalName}-distribution"
-										           name="${project.name}"
-										           displayname="${project.name}"
-										           executableName="DMS"
-										           identifier="net.pms.PMS"
-										           shortversion="${project.version.short}"
-										           version="${project.version}"
-										           icon="${project.basedir}/src/main/resources/images/logo.icns"
-										           applicationCategory="public.app-category.entertainment"
-										           workingdirectory="$APP_ROOT/Contents/Resources"
-										           mainclassname="net.pms.PMS">
-											<!--<runtime dir="/Library/Java/JavaVirtualMachines/jdk1.7.0_21.jdk/Contents/Home"/>-->
-											<classpath file="${project.build.directory}/${project.build.finalName}-jar-with-dependencies.jar"/>
-											<option value="-Xmx768M"/>
-											<option value="-Xss16M"/>
-											<option value="-Dfile.encoding=UTF-8"/>
-											<option value="-Djava.net.preferIPv4Stack=true"/>
-											<option value="-Xdock:name=Digital Media Server"/>
-										</bundleapp>
-									</target>
-								</configuration>
-							</execution>
-						</executions>
-					</plugin>
-					<plugin>
-						<artifactId>maven-assembly-plugin</artifactId>
-						<version>${maven-assembly-plugin-version}</version>
-						<executions>
-							<!-- Assemble a jar with dependencies -->
-							<execution>
-								<id>make-jar-with-dependencies-osx-java-7</id>
-								<phase>package</phase>
-								<goals>
-									<goal>single</goal>
-								</goals>
-								<configuration>
-									<descriptors>
-										<descriptor>${project.basedir}/src/main/assembly/jar-with-dependencies.xml</descriptor>
-									</descriptors>
-									<archive>
-										<manifest>
-											<mainClass>net.pms.PMS</mainClass>
-											<addDefaultImplementationEntries>true</addDefaultImplementationEntries> <!-- see above for documentation -->
-										</manifest>
-									</archive>
-								</configuration>
-							</execution>
-							<!--
-								Assemble the DMS files in the right place before
-								moving them to the app Bundle.
-							-->
-							<execution>
-								<id>make-assembly-osx-java-7</id>
-								<phase>package</phase>
-								<goals>
-									<goal>single</goal>
-								</goals>
-								<configuration>
-									<descriptors>
-										<descriptor>${project.basedir}/src/main/assembly/assembly-osx_java7_8.xml</descriptor>
-									</descriptors>
-									<archive>
-										<manifest>
-											<mainClass>net.pms.PMS</mainClass>
-											<addDefaultImplementationEntries>true</addDefaultImplementationEntries> <!-- see above for documentation -->
-										</manifest>
-									</archive>
-								</configuration>
-							</execution>
-						</executions>
-					</plugin>
-				</plugins>
-			</build>
-		</profile>
-		<!--
 			Mac OSX Java 8 profile: takes care of building the final package for Mac OSX using Java 8.
 			Note: This does not make the .dmg you will have to do that manually. Use the open source dmgCreator
 		-->
 		<profile>
-			<id>osx-java8</id>
+			<id>osx</id>
 			<activation>
 				<activeByDefault>false</activeByDefault>
 			</activation>
 			<build>
 				<plugins>
-					<plugin>
-						<groupId>org.apache.maven.plugins</groupId>
-						<artifactId>maven-enforcer-plugin</artifactId>
-						<version>${maven-enforcer-plugin-version}</version>
-						<executions>
-							<execution>
-								<id>enforce-java</id>
-								<goals>
-									<goal>enforce</goal>
-								</goals>
-								<configuration>
-									<rules>
-										<requireJavaVersion>
-											<version>[1.8.0-51,1.8.0-200]</version>
-										</requireJavaVersion>
-									</rules>
-								</configuration>
-							</execution>
-						</executions>
-					</plugin>
 					<!--
 						Plugin to download binaries before assembly
 					-->
@@ -1538,7 +1197,7 @@
 						<version>1.8</version>
 						<executions>
 							<execution>
-								<id>process-resources-osx-java-8</id>
+								<id>process-resources-osx-java</id>
 								<phase>test</phase>
 								<goals>
 									<goal>run</goal>
@@ -1565,7 +1224,7 @@
 								</configuration>
 							</execution>
 							<execution>
-								<id>prepare-package-osx-java-8</id>
+								<id>prepare-package-osx-java</id>
 								<phase>prepare-package</phase>
 								<goals>
 									<goal>run</goal>
@@ -1630,7 +1289,7 @@
 						<executions>
 							<!-- Assemble a jar with dependencies -->
 							<execution>
-								<id>make-jar-with-dependencies-osx-java-8</id>
+								<id>make-jar-with-dependencies-osx-java</id>
 								<phase>package</phase>
 								<goals>
 									<goal>single</goal>
@@ -1652,7 +1311,7 @@
 								moving them to the app Bundle.
 							-->
 							<execution>
-								<id>make-assembly-osx-java-8</id>
+								<id>make-assembly-osx-java</id>
 								<phase>package</phase>
 								<goals>
 									<goal>single</goal>
@@ -1676,9 +1335,7 @@
 		</profile>
 		<!--
 			Hudson (windows-jar): minimal profile that builds dms.jar with the
-			Windows JNA. The POSIX JNA causes snapshot builds to crash the JVM on
-			Windows, whereas the Windows JNA only disables MediaInfo for Ubuntu
-			users, who can still use ffmpeg.
+			Windows JNA.
 
 			Another difference from the other profiles is that we don't download the
 			binaries or build the tarball.
@@ -1754,27 +1411,106 @@
 			(Requires a "mvn clean package" to download the binaries first)
 		-->
 		<profile>
-			<id>run-from-eclipse</id>
+			<id>eclipse</id>
+			<activation>
+				<activeByDefault>activeByDefault>false</activeByDefault>
+			</activation>
 			<build>
-				<plugins>
-					<plugin>
-						<groupId>org.codehaus.mojo</groupId>
-						<artifactId>exec-maven-plugin</artifactId>
-						<version>1.6.0</version>
-						<executions>
-							<execution>
-								<phase>test</phase>
-								<goals>
-									<goal>java</goal>
-								</goals>
-								<configuration>
-									<classpathScope>test</classpathScope>
-									<mainClass>net.pms.PMS</mainClass>
-								</configuration>
-							</execution>
-						</executions>
-					</plugin>
-				</plugins>
+				<pluginManagement>
+					<plugins>
+						<plugin>
+						<!--
+							This plugin's configuration is used to store Eclipse m2e settings only.
+						-->
+							<groupId>org.eclipse.m2e</groupId>
+							<artifactId>lifecycle-mapping</artifactId>
+							<version>1.0.0</version>
+							<configuration>
+								<lifecycleMappingMetadata>
+									<pluginExecutions>
+										<pluginExecution>
+											<pluginExecutionFilter>
+												<groupId>org.apache.maven.plugins</groupId>
+												<artifactId>maven-antrun-plugin</artifactId>
+												<versionRange>[1.7.0-80,)</versionRange>
+												<goals>
+													<goal>run</goal>
+												</goals>
+											</pluginExecutionFilter>
+											<action>
+												<ignore></ignore>
+											</action>
+										</pluginExecution>
+										<pluginExecution>
+											<pluginExecutionFilter>
+												<groupId>pl.project13.maven</groupId>
+												<artifactId>git-commit-id-plugin</artifactId>
+												<versionRange>[${git-commit-id-plugin-version},)</versionRange>
+												<goals>
+													<goal>revision</goal>
+												</goals>
+											</pluginExecutionFilter>
+											<action>
+												<ignore></ignore>
+											</action>
+										</pluginExecution>
+										<pluginExecution>
+											<pluginExecutionFilter>
+												<groupId>com.universalmediaserver</groupId>
+												<artifactId>external-maven-plugin</artifactId>
+												<versionRange>[0.1,)</versionRange>
+												<goals>
+													<goal>clean</goal>
+													<goal>deploy</goal>
+													<goal>install</goal>
+													<goal>resolve</goal>
+													<goal>localinstall</goal>
+												</goals>
+											</pluginExecutionFilter>
+											<action>
+												<execute></execute>
+											</action>
+										</pluginExecution>
+										<pluginExecution>
+											<pluginExecutionFilter>
+												<groupId>org.digitalmediaserver</groupId>
+												<artifactId>crowdin-maven-plugin</artifactId>
+												<versionRange>[0.1,)</versionRange>
+												<goals>
+													<goal>fetch</goal>
+													<goal>push</goal>
+													<goal>build</goal>
+													<goal>apply</goal>
+													<goal>pull</goal>
+												</goals>
+											</pluginExecutionFilter>
+											<action>
+												<execute></execute>
+											</action>
+										</pluginExecution>
+									</pluginExecutions>
+								</lifecycleMappingMetadata>
+							</configuration>
+						</plugin>
+						<plugin>
+							<groupId>org.codehaus.mojo</groupId>
+							<artifactId>exec-maven-plugin</artifactId>
+							<version>1.6.0</version>
+							<executions>
+								<execution>
+									<phase>test</phase>
+									<goals>
+										<goal>java</goal>
+									</goals>
+									<configuration>
+										<classpathScope>test</classpathScope>
+										<mainClass>net.pms.PMS</mainClass>
+									</configuration>
+								</execution>
+							</executions>
+						</plugin>
+					</plugins>
+				</pluginManagement>
 			</build>
 		</profile>
 	</profiles>
