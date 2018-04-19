@@ -28,5 +28,5 @@ ${LangFileString} SectionDescriptionHeapSize "Sets the maximum amount of memory 
 ${LangFileString} SectionDescriptionAviSynth "Installs AviSynth 2.6.0 MT for use when transcoding. AviSynth can used among others to enable InterFrame for increased frame rates resulting in smoother video playback."
 ${LangFileString} SectionUninstallStandard "Uninstall program files"
 ${LangFileString} SectionUninstallComplete "Remove data and settings"
-${LangFileString} SectionDescriptionCompleteUninstall "Also remove all the configuration, database, logs, registry keys files having been created by Digital Media Server."
+${LangFileString} SectionDescriptionCompleteUninstall "Remove everything."
 ${LangFileString} SectionDescriptionStandardUninstall "Only uninstall the files installed into the program folder."

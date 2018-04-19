@@ -6,7 +6,6 @@
 ; ======================================================================================
 
 !include "FileFunc.nsh"
-!include "StrContains.nsh"
 !include "WordFunc.nsh"
 !include "x64.nsh"
 
@@ -16,7 +15,47 @@ Var Java64bit
 Var JavaLocation
 
 !macro _SearchJava
+	Push $R9
+	Push $R8
+	Push $R7
+	Push $R6
+	Push $R5
+	Push $R4
+	Push $R3
+	Push $R2
+	Push $R1
+	Push $R0
+	Push $9
+	Push $8
+	Push $7
+	Push $6
+	Push $5
+	Push $4
+	Push $3
+	Push $2
+	Push $1
+	Push $0
 	Call findJava
+	Pop $0
+	Pop $1
+	Pop $2
+	Pop $3
+	Pop $4
+	Pop $5
+	Pop $6
+	Pop $7
+	Pop $8
+	Pop $9
+	Pop $R0
+	Pop $R1
+	Pop $R2
+	Pop $R3
+	Pop $R4
+	Pop $R5
+	Pop $R6
+	Pop $R7
+	Pop $R8
+	Pop $R9
 !macroend
 
 !define SearchJava "!insertmacro _SearchJava"
@@ -43,26 +82,26 @@ Function findJava
 			${Break}
 			IntOp $0 $0 + 1
 
-			${StrContains} $3 "1.8.0_" "$1"
-			StrCmp $3 "1.8.0_" 0 seven
-			${WordFind} $1 "_" "+1}" $8
+			${WordFind} "$1" "1.8.0_" "*" $3
+			StrCmp $3 $1 seven
+			${WordFind} "$1" "_" "+1}" $8
 			IntCmpU $8 $R1 seven seven
 			ReadRegStr $R8 HKLM "$2\$1" "JavaHome"
 			StrCpy $R1 $8
 
 			seven:
-				${StrContains} $3 "1.7.0_" "$1"
-				StrCmp $3 "1.7.0_" 0 nine
-				${WordFind} $1 "_" "+1}" $7
+				${WordFind} "$1" "1.7.0_" "*" $3
+				StrCmp $3 $1 nine
+				${WordFind} "$1" "_" "+1}" $7
 				IntCmpU $7 $R2 nine nine
 				ReadRegStr $R7 HKLM "$2\$1" "JavaHome"
 				StrCpy $R2 $7
 
 			nine:
 				${For} $4 9 15
-					${StrContains} $3 "$4${U+002E}0." "$1"
-					StrCmp $3 "$4${U+002E}0." 0 nextLoop
-					${WordFind} $1 ".0." "+1}" $R3
+					${WordFind} "$1" "$4${U+002E}0." "*" $3
+					StrCmp $3 $1 nextLoop
+					${WordFind} "$1" ".0." "+1}" $R3
 					IntCmpU $R3 $9 nextLoop nextLoop
 					ReadRegStr $R9 HKLM "$2\$4" "JavaHome"
 					StrCpy $9 $R3
@@ -94,16 +133,16 @@ Function findJava
 		${EndIf}
 
 	pass2: ; Check the environment variables
-	StrCmp $R8 "" 0 end
-	StrCmp $R7 "" 0 end
-	StrCmp $R9 "" 0 end
+		StrCmp $R8 "" 0 end
+		StrCmp $R7 "" 0 end
+		StrCmp $R9 "" 0 end
 
-	ExpandEnvStrings $4 "%JAVA_HOME%"
-	StrCmpS $4 "%JAVA_HOME%" searchInPath
-	${Locate} "$4" "/L=F /M=javaw.exe" "JavaHomeParsing"
-	IfErrors searchInPath
-	StrCmp $JavaLocation "" searchInPath
-	Goto done
+		ExpandEnvStrings $4 "%JAVA_HOME%"
+		StrCmpS $4 "%JAVA_HOME%" searchInPath
+		${Locate} "$4" "/L=F /M=javaw.exe" "JavaHomeParsing"
+		IfErrors searchInPath
+		StrCmp $JavaLocation "" searchInPath
+		Goto done
 
 	searchInPath:
 		ClearErrors
@@ -114,14 +153,15 @@ Function findJava
 		StrCmpS $4 "%PATH%" nothingFound
 		${Do}
 			StrCpy $2 $4
-			${WordFind} $2 ";" "+1{" $1
-			${WordFind} $2 ";" "+1}" $4
-			${StrContains} $5 "ProgramData\Oracle\Java\javapath" "$1"
-			StrCmp $5 "" 0 next
-			${StrContains} $5 "\system32" "$1"
-			StrCmp $5 "" 0 next
+			${WordFind} "$2" ";" "+1{" $1
+			${WordFind} "$2" ";" "+1}" $4
+			${WordFind} "$1" "ProgramData\Oracle\Java\javapath" "*" $5
+			StrCmp $1 $5 next
+			${WordFind} "$1" "\system32" "*" $5
+			StrCmp $1 $5 next
 			${Locate} "$1" "/L=F /G=0 /M=javaw.exe" "JavaInPath"
-			next:
+
+	next:
 		${LoopWhile} $4 != $2
 		${If} $R4 != ""
 			StrCmp $Java64bit "32" +3
@@ -215,8 +255,8 @@ Function JavaInPath
 			StrCmp $R5 "" 0 +3
 			StrCpy $Java64bit ""
 			Goto none
-			${StrContains} $R0 "x86" $R9
-			StrCmpS $R0 "x86" 0 +2
+			${WordFindS} "$R9" "x86" "*" $R0
+			StrCmpS $R9 $R0 +2
 			StrCpy $Java64bit "32"
 
 			none:
@@ -231,8 +271,8 @@ Function JavaHomeParsing
 	${GetFileVersion} $R9 $FileVersion
 
 	${If} ${RunningX64}
-		${StrContains} $Java64bit "x86" "$R9"
-		StrCmpS $Java64bit "x86" 0 +2
+		${WordFindS} "$R9" "x86" "*" $Java64bit
+		StrCmp $R9 $Java64bit +2
 		StrCpy $Java64bit "32" ; 32-bit JVM on a 64-bit OS
 	${EndIf}
 
