@@ -26,8 +26,9 @@ import java.io.OutputStream;
 import java.io.RandomAccessFile;
 import net.pms.formats.Format;
 import net.pms.util.FileUtil;
+import net.sf.sevenzipjbinding.ExtractOperationResult;
+import net.sf.sevenzipjbinding.IInArchive;
 import net.sf.sevenzipjbinding.ISequentialOutStream;
-import net.sf.sevenzipjbinding.ISevenZipInArchive;
 import net.sf.sevenzipjbinding.SevenZip;
 import net.sf.sevenzipjbinding.SevenZipException;
 import net.sf.sevenzipjbinding.impl.RandomAccessFileInStream;
@@ -35,13 +36,6 @@ import net.sf.sevenzipjbinding.simple.ISimpleInArchive;
 import net.sf.sevenzipjbinding.simple.ISimpleInArchiveItem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-public class SevenZipEntry extends DLNAResource implements IPushOutput {
-	private static final Logger LOGGER = LoggerFactory.getLogger(SevenZipEntry.class);
-	private File file;
-	private String zeName;
-	private long length;
-	private ISevenZipInArchive arc;
 
 	@Override
 	protected String getThumbnailURL(DLNAImageProfile profile) {
@@ -53,7 +47,16 @@ public class SevenZipEntry extends DLNAResource implements IPushOutput {
 		return super.getThumbnailURL(profile);
 	}
 
+	public class SevenZipEntry extends ZippedEntry implements IPushOutput {
+		private static final Logger LOGGER = LoggerFactory.getLogger(SevenZipEntry.class);
+		private File file;
+		private String zeName;
+		private long length;
+		private IInArchive arc;
+
+
 	public SevenZipEntry(File file, String zeName, long length) {
+		super(file, zeName, length);
 		this.zeName = zeName;
 		this.file = file;
 		this.length = length;
@@ -103,13 +106,13 @@ public class SevenZipEntry extends DLNAResource implements IPushOutput {
 	@Override
 	public void push(final OutputStream out) throws IOException {
 		Runnable r = new Runnable() {
-			InputStream in = null;
+			RandomAccessFile rf;
 
 			@Override
 			public void run() {
 				try {
 					//byte data[] = new byte[65536];
-					RandomAccessFile rf = new RandomAccessFile(file, "r");
+					rf = new RandomAccessFile(file, "r");
 
 					arc = SevenZip.openInArchive(null, new RandomAccessFileInStream(rf));
 					ISimpleInArchive simpleInArchive = arc.getSimpleInterface();
@@ -127,7 +130,7 @@ public class SevenZipEntry extends DLNAResource implements IPushOutput {
 						return;
 					}
 
-					realItem.extractSlow(new ISequentialOutStream() {
+					ExtractOperationResult result = realItem.extractSlow(new ISequentialOutStream() {
 						@Override
 						public int write(byte[] data) throws SevenZipException {
 							try {
@@ -139,19 +142,19 @@ public class SevenZipEntry extends DLNAResource implements IPushOutput {
 							return data.length;
 						}
 					});
+					if (result != ExtractOperationResult.OK)
+						LOGGER.error("Error extracting item: " + result);
 				} catch (FileNotFoundException | SevenZipException e) {
 					LOGGER.debug("Unpack error. Possibly harmless.", e.getMessage());
 				} finally {
 					try {
-						if (in != null) {
-							in.close();
+						if (rf != null) {
+							rf.close();
 						}
 						arc.close();
 						out.close();
 					} catch (IOException e) {
 						LOGGER.debug("Caught exception", e);
-					} catch (SevenZipException e) {
-						LOGGER.debug("Caught 7-Zip exception", e);
 					}
 				}
 			}
