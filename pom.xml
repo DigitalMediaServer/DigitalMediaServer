@@ -78,8 +78,7 @@
 		<!-- Version 2.7.0 is the last free version. The latest libraries are shipped only with the commercial JGoodies Smart Client -->
 		<jgoodies-looks-version>2.7.0</jgoodies-looks-version>
 
-		<!-- Skip 4.65-1.05-RC because it doesn't work, author is working on fixing it -->
-		<sevenzip-version>4.65-1.04-RC</sevenzip-version>
+		<sevenzip-version>9.20-2.00beta</sevenzip-version>
 
 		<twelvemonkeys-imageio-version>3.3.2</twelvemonkeys-imageio-version>
 
@@ -360,13 +359,13 @@
 			<version>1.2.11</version>
 		</dependency>
 		<dependency>
-			<groupId>sevenzip</groupId>
-			<artifactId>jbinding</artifactId>
+			<groupId>net.sf.sevenzipjbinding</groupId>
+			<artifactId>sevenzipjbinding</artifactId>
 			<version>${sevenzip-version}</version>
 		</dependency>
 		<dependency>
-			<groupId>sevenzip-allplatforms</groupId>
-			<artifactId>jbinding-allplatforms</artifactId>
+			<groupId>net.sf.sevenzipjbinding</groupId>
+			<artifactId>sevenzipjbinding-all-platforms</artifactId>
 			<version>${sevenzip-version}</version>
 		</dependency>
 		<dependency>
@@ -834,18 +833,6 @@
 					<stagingDirectory>${project.build.directory}/dependencies/</stagingDirectory>
 					<createChecksum>true</createChecksum>
 					<artifactItems>
-						<artifactItem>
-							<groupId>sevenzip</groupId>
-							<artifactId>jbinding</artifactId>
-							<version>${sevenzip-version}</version>
-							<downloadUrl>http://www.spirton.com/uploads/7-Zip-JBinding/7-Zip-JBinding-{version}.{packaging}</downloadUrl>
-						</artifactItem>
-						<artifactItem>
-							<groupId>sevenzip-allplatforms</groupId>
-							<artifactId>jbinding-allplatforms</artifactId>
-							<version>${sevenzip-version}</version>
-							<downloadUrl>http://www.spirton.com/uploads/7-Zip-JBinding/7-Zip-JBinding-AllPlatforms-{version}.{packaging}</downloadUrl>
-						</artifactItem>
 						<artifactItem>
 							<groupId>jwbroek.cuelib</groupId>
 							<artifactId>cuelib</artifactId>
