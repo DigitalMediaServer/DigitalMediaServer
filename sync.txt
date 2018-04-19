@@ -1,4 +1,4 @@
-UMS sync with: d9d1ee008625d6ee53689a4e30a1631e5c9bad07 Added extra prettifying test and helper functions
+UMS sync with: d45fa1e1e984f1ce1072d728b7cb14e1b5415eb2 Updated MediaInfo to 18.03.1
 
 Skipped:
 a4a099c7efcaf6dc8a28402a29eade757a2ce78d The ugly hack to solve problem when the TotalMatches are changed
@@ -25,6 +25,12 @@ cede0c88fafcd59229f25666b0dbb871e65eea57 Fixed "By Date" virtual folders on join
 b9268bbd67a332054b898fcfc03e55e12e8e9d5e Order the "By date" folders from newest to oldest
 2d0dacd6b9231197a3df4d73ac773520ca275072 Fix bug in updating the database when is not created.
 1e6b1151faa47e0687d6ff6bce5bacf1d857aed4 Bump to 7.0.0-SNAPSHOT
+761995b7de52fe3af76dbae68efe1891e16f719d Sync translations with Crowdin
+4d972a24341361e9ad25e31bf430f1aa24048959 Updated changelog
+420784dcca6ba8fc17fcfc4f77fc7e9b0417860d Updated changelog
+2fbf7f3212e993d3cb94892f888148efd0d843fc Synchronized translations with Crowdin
+e2000b4755973d0d92ea21eae778d239d3047224 7.0.0
+d3a045bdb3585f1fbf7cdc808236cac646461cb7 Bump to 7.0.1-SNAPSHOT
 a83d67c77df019c316eb253511202c2ffaf6ad03 Enabled automatic updating on Windows to 7.0.0
 79a4c750a4f3735127179dc0b156b15f74c0365a Added config for newer Roku devices
 60f8de4cd37e58f544588c89dbc359503019ee20 Create Roku-TV8.conf
@@ -35,4 +41,9 @@ e4524f079d1eea57ebdea872e06817b6f1c703c4 Post-7.0.0 updated to UMS.conf (partial
 401b94f671b07701908c373e7db7e2bbff97e0a6 Fixed bug with JPEG_LRG profile check
 1a15b38761b610b8cf10cceca1ea71024da9656d Faster hashing v2
 a8ea983105a88083d088e2138020591d5787af81 Drop experimental FFmpeg flag
-761995b7de52fe3af76dbae68efe1891e16f719d Sync translations with Crowdin
+9ff5b63fa9e8d72c9720835a1bfb35cedc29a21a Don't use global ID repository during cache scan
+76fa1b8de804cd596aa9a9256224d22a22b95a30 Synchronized translations with Crowdin
+185b243f371e47201bd78206743019f6b15028d0 7.0.1
+f6df7f873a51ae57533e1a2a129260f115d9b1b9 Bump to 7.0.2-SNAPSHOT
+a7fcf7108352314493dbd5cec5cb06df186da815 Bump Windows automatic updater to 7.0.1
+81e3215cc6a3f993626a1c9cc159ed96d98de2db Removed unnecessary logging
