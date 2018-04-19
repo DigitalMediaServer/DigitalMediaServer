@@ -755,7 +755,7 @@ Section "un.$(SectionUninstallStandard)" sec101
 
 	Delete /REBOOTOK "$INSTDIR\${UninstallLog}"
 	${DoUntil} $5 = 0
-		RMDir "$R2"
+		RMDir /REBOOTOK "$R2"
 		Pop $R2
 		IntOp $5 $5 - 1
 	${Loop}
