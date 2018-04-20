@@ -456,13 +456,19 @@ public class LibMediaInfoParser {
 	 * Sends the correct information to media.setContainer(),
 	 * media.setCodecV() or media.setCodecA, depending on streamType.
 	 *
-	 * TODO: Rename to something like setFormat - this is not a getter.
+	 * Note: A lot of these are types of MPEG-4 Audio and this can be a
+	 * good resource to make sense of that:
+	 * https://en.wikipedia.org/wiki/MPEG-4_Part_3#MPEG-4_Audio_Object_Types
+	 * There are also free samples of most of them at:
+	 * http://fileformats.archiveteam.org/wiki/MPEG-4_SLS
+	 * ftp://mpaudconf:adif2mp4@ftp.iis.fhg.de/mpeg4audio-conformance/compressedMp4/
 	 *
 	 * @param streamType
 	 * @param media
 	 * @param audio
 	 * @param value
 	 * @param file
+	 * @todo Refactor this pain of a method
 	 */
 	private static void getFormat(
 		StreamType streamType,
@@ -501,7 +507,7 @@ public class LibMediaInfoParser {
 			streamType != StreamType.Audio && value.startsWith("mp4") && !value.startsWith("mp4a") ||
 			value.equals("20") ||
 			value.equals("isml") ||
-			value.startsWith("m4a") ||
+			(value.startsWith("m4a") && !value.startsWith("m4ae")) ||
 			value.startsWith("m4v") ||
 			value.equals("mpeg-4 visual") ||
 			value.equals("xavc")
@@ -682,11 +688,17 @@ public class LibMediaInfoParser {
 				FormatConfiguration.AVI.equals(media.getContainer())
 			)
 		) {
+			// mp4a-40-2, enca-67-2
 			format = FormatConfiguration.AAC_LC;
 		} else if (value.equals("ltp")) {
 			format = FormatConfiguration.AAC_LTP;
 		} else if (value.contains("he-aac")) {
 			format = FormatConfiguration.HE_AAC;
+		} else if (
+			value.equals("er bsac") ||
+			value.equals("mp4a-40-22")
+		) {
+			format = FormatConfiguration.ER_BSAC;
 		} else if (value.equals("main")) {
 			format = FormatConfiguration.AAC_MAIN;
 		} else if (value.equals("ssr")) {
@@ -728,6 +740,7 @@ public class LibMediaInfoParser {
 		} else if (value.equals("shorten")) {
 			format = FormatConfiguration.SHORTEN;
 		} else if (value.equals("sls") || value.equals("SLS non-core")) {
+			// m4ae-40-37 || mp4a-40-38
 			format = FormatConfiguration.SLS;
 		} else if (value.equals("acelp")) {
 			format = FormatConfiguration.ACELP;
