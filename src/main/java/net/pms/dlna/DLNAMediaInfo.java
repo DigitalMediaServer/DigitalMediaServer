@@ -2349,7 +2349,7 @@ public class DLNAMediaInfo implements Cloneable {
 	}
 
 	/**
-	 * The aspect ratio for a DVD ISO video track.
+	 * The aspect ratio for a {@code DVD ISO} video track.
 	 *
 	 * @return the aspect ratio.
 	 * @since 1.50.0
@@ -2359,18 +2359,30 @@ public class DLNAMediaInfo implements Cloneable {
 	}
 
 	/**
-	 * Sets the aspect ratio for a DVD ISO video track by parsing the specified
-	 * {@link String}.
+	 * Sets the aspect ratio for a {@code DVD ISO} video track by parsing the
+	 * specified {@link String}.
 	 *
 	 * @param aspectRatio the aspect ratio to set.
 	 * @throws NumberFormatException If {@code aspectRatio} cannot be parsed.
 	 */
 	public void setAspectRatioDvdIso(String aspectRatio) {
-		setAspectRatioDvdIso(Rational.valueOf(aspectRatio));
+		if (isBlank(aspectRatio)) {
+			aspectRatioDvdIso = null;
+			return;
+		}
+		if (Rational.RATIONAL_SEPARATOR.matcher(aspectRatio).find()) {
+			setAspectRatioDvdIso(Rational.valueOf(aspectRatio));
+			return;
+		}
+		try {
+			setAspectRatioDvdIso(Rational.aspectRatioValueOf(Double.parseDouble(aspectRatio)));
+		} catch (NumberFormatException e) {
+			setAspectRatioDvdIso(Rational.valueOf(aspectRatio));
+		}
 	}
 
 	/**
-	 * Sets the aspect ratio for a DVD ISO video track.
+	 * Sets the aspect ratio for a {@code DVD ISO} video track.
 	 *
 	 * @param aspectRatio the aspect ratio to set.
 	 * @since 1.50.0
@@ -2402,7 +2414,19 @@ public class DLNAMediaInfo implements Cloneable {
 	 * @throws NumberFormatException If {@code aspectRatio} cannot be parsed.
 	 */
 	public void setAspectRatioContainer(String aspectRatio) {
-		setAspectRatioContainer(Rational.valueOf(aspectRatio));
+		if (isBlank(aspectRatio)) {
+			aspectRatioContainer = null;
+			return;
+		}
+		if (Rational.RATIONAL_SEPARATOR.matcher(aspectRatio).find()) {
+			setAspectRatioContainer(Rational.valueOf(aspectRatio));
+			return;
+		}
+		try {
+			setAspectRatioContainer(Rational.aspectRatioValueOf(Double.parseDouble(aspectRatio)));
+		} catch (NumberFormatException e) {
+			setAspectRatioContainer(Rational.valueOf(aspectRatio));
+		}
 	}
 
 	/**
@@ -2438,7 +2462,19 @@ public class DLNAMediaInfo implements Cloneable {
 	 * @throws NumberFormatException If {@code aspectRatio} cannot be parsed.
 	 */
 	public void setAspectRatioVideoTrack(String aspectRatio) {
-		setAspectRatioVideoTrack(Rational.valueOf(aspectRatio));
+		if (isBlank(aspectRatio)) {
+			aspectRatioVideoTrack = null;
+			return;
+		}
+		if (Rational.RATIONAL_SEPARATOR.matcher(aspectRatio).find()) {
+			setAspectRatioVideoTrack(Rational.valueOf(aspectRatio));
+			return;
+		}
+		try {
+			setAspectRatioVideoTrack(Rational.aspectRatioValueOf(Double.parseDouble(aspectRatio)));
+		} catch (NumberFormatException e) {
+			setAspectRatioVideoTrack(Rational.valueOf(aspectRatio));
+		}
 	}
 
 	/**

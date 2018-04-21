@@ -43,7 +43,8 @@ public class RationalTest {
 
 	@Test
 	public void testStaticInstances() {
-		assertTrue(Rational.ZERO.equals(BigInteger.ZERO));
+		assertFalse(Rational.ZERO.equals(BigInteger.ZERO));
+		assertTrue(Rational.ZERO.equalValue(BigInteger.ZERO));
 		assertEquals(BigInteger.ZERO, Rational.ZERO.numerator);
 		assertEquals(BigInteger.ONE, Rational.ZERO.denominator);
 		assertEquals(BigInteger.ONE, Rational.ZERO.greatestCommonDivisor);
@@ -57,7 +58,8 @@ public class RationalTest {
 		assertEquals("1:1", Rational.ZERO.toAspectRatio());
 		assertEquals(Rational.ZERO, Rational.ZERO);
 
-		assertTrue(Rational.ONE.equals(BigInteger.ONE));
+		assertFalse(Rational.ONE.equals(BigInteger.ONE));
+		assertTrue(Rational.ONE.equalValue(BigInteger.ONE));
 		assertEquals(BigInteger.ONE, Rational.ONE.numerator);
 		assertEquals(BigInteger.ONE, Rational.ONE.denominator);
 		assertEquals(BigInteger.ONE, Rational.ONE.greatestCommonDivisor);
@@ -71,8 +73,10 @@ public class RationalTest {
 		assertEquals("1:1", Rational.ONE.toAspectRatio());
 		assertEquals(Rational.ONE, Rational.ONE);
 
-		assertTrue(Rational.POSITIVE_INFINITY.equals(Double.POSITIVE_INFINITY));
-		assertTrue(Rational.POSITIVE_INFINITY.equals(Float.POSITIVE_INFINITY));
+		assertFalse(Rational.POSITIVE_INFINITY.equals(Double.POSITIVE_INFINITY));
+		assertTrue(Rational.POSITIVE_INFINITY.equalValue(Double.POSITIVE_INFINITY));
+		assertFalse(Rational.POSITIVE_INFINITY.equals(Float.POSITIVE_INFINITY));
+		assertTrue(Rational.POSITIVE_INFINITY.equalValue(Float.POSITIVE_INFINITY));
 		assertEquals(BigInteger.ONE, Rational.POSITIVE_INFINITY.numerator);
 		assertEquals(BigInteger.ZERO, Rational.POSITIVE_INFINITY.denominator);
 		assertEquals(BigInteger.ZERO, Rational.POSITIVE_INFINITY.greatestCommonDivisor);
@@ -86,8 +90,10 @@ public class RationalTest {
 		assertEquals("1:1", Rational.POSITIVE_INFINITY.toAspectRatio());
 		assertEquals(Rational.POSITIVE_INFINITY, Rational.POSITIVE_INFINITY);
 
-		assertTrue(Rational.NEGATIVE_INFINITY.equals(Double.NEGATIVE_INFINITY));
-		assertTrue(Rational.NEGATIVE_INFINITY.equals(Float.NEGATIVE_INFINITY));
+		assertFalse(Rational.NEGATIVE_INFINITY.equals(Double.NEGATIVE_INFINITY));
+		assertTrue(Rational.NEGATIVE_INFINITY.equalValue(Double.NEGATIVE_INFINITY));
+		assertFalse(Rational.NEGATIVE_INFINITY.equals(Float.NEGATIVE_INFINITY));
+		assertTrue(Rational.NEGATIVE_INFINITY.equalValue(Float.NEGATIVE_INFINITY));
 		assertEquals(BigInteger.ONE.negate(), Rational.NEGATIVE_INFINITY.numerator);
 		assertEquals(BigInteger.ZERO, Rational.NEGATIVE_INFINITY.denominator);
 		assertEquals(BigInteger.ZERO, Rational.NEGATIVE_INFINITY.greatestCommonDivisor);
@@ -101,8 +107,10 @@ public class RationalTest {
 		assertEquals("1:1", Rational.NEGATIVE_INFINITY.toAspectRatio());
 		assertEquals(Rational.NEGATIVE_INFINITY, Rational.NEGATIVE_INFINITY);
 
-		assertTrue(Rational.NaN.equals(Double.NaN));
-		assertTrue(Rational.NaN.equals(Float.NaN));
+		assertFalse(Rational.NaN.equals(Double.NaN));
+		assertTrue(Rational.NaN.equalValue(Double.NaN));
+		assertFalse(Rational.NaN.equals(Float.NaN));
+		assertTrue(Rational.NaN.equalValue(Float.NaN));
 		assertEquals(BigInteger.ZERO, Rational.NaN.numerator);
 		assertEquals(BigInteger.ZERO, Rational.NaN.denominator);
 		assertEquals(BigInteger.ZERO, Rational.NaN.greatestCommonDivisor);
@@ -127,7 +135,8 @@ public class RationalTest {
 			BigInteger.valueOf(5)
 		);
 
-		assertTrue(rational.equals(BigDecimal.valueOf(0.8)));
+		assertFalse(rational.equals(BigDecimal.valueOf(0.8)));
+		assertTrue(rational.equalValue(BigDecimal.valueOf(0.8)));
 		assertEquals(BigInteger.ONE, rational.numerator);
 		assertEquals(BigInteger.valueOf(2), rational.denominator);
 		assertEquals(BigInteger.valueOf(3), rational.greatestCommonDivisor);
@@ -148,7 +157,8 @@ public class RationalTest {
 			BigInteger.valueOf(25)
 		);
 
-		assertTrue(rational2.equals(BigDecimal.valueOf(0.92)));
+		assertFalse(rational2.equals(BigDecimal.valueOf(0.92)));
+		assertTrue(rational2.equalValue(BigDecimal.valueOf(0.92)));
 		assertEquals(BigInteger.valueOf(20), rational2.numerator);
 		assertEquals(BigInteger.valueOf(21), rational2.denominator);
 		assertEquals(BigInteger.valueOf(22), rational2.greatestCommonDivisor);
@@ -952,6 +962,70 @@ public class RationalTest {
 		assertEquals("1:1", Rational.NaN.toAspectRatio());
 		assertEquals("1:1", Rational.POSITIVE_INFINITY.toAspectRatio());
 		assertEquals("1:1", Rational.NEGATIVE_INFINITY.toAspectRatio());
+	}
+
+	@Test
+	public void testAspectRatioValueOf() {
+		assertEquals(Rational.NaN, Rational.aspectRatioValueOf(Double.NaN));
+		assertEquals(Rational.NEGATIVE_INFINITY, Rational.aspectRatioValueOf(Double.NEGATIVE_INFINITY));
+		assertEquals(Rational.POSITIVE_INFINITY, Rational.aspectRatioValueOf(Double.POSITIVE_INFINITY));
+		assertEquals(Rational.valueOf(19L, 16L), Rational.aspectRatioValueOf(1.18));
+		assertEquals(Rational.valueOf(19L, 16L), Rational.aspectRatioValueOf(1.195));
+		assertEquals(Rational.valueOf(5L, 4L), Rational.aspectRatioValueOf(1.24));
+		assertEquals(Rational.valueOf(5L, 4L), Rational.aspectRatioValueOf(1.26));
+		assertEquals(Rational.valueOf(4L, 3L), Rational.aspectRatioValueOf(1.31));
+		assertEquals(Rational.valueOf(4L, 3L), Rational.aspectRatioValueOf(1.35));
+		assertEquals(Rational.valueOf(4L, 3L), Rational.aspectRatioValueOf(Float.valueOf(1.34999f)));
+		assertEquals(Rational.valueOf(137L, 100L), Rational.aspectRatioValueOf(1.36));
+		assertEquals(Rational.valueOf(137L, 100L), Rational.aspectRatioValueOf(1.372));
+		assertEquals(Rational.valueOf(11L, 8L), Rational.aspectRatioValueOf(1.373));
+		assertEquals(Rational.valueOf(11L, 8L), Rational.aspectRatioValueOf(1.399));
+		assertEquals(Rational.valueOf(143L, 100L), Rational.aspectRatioValueOf(1.420001));
+		assertEquals(Rational.valueOf(143L, 100L), Rational.aspectRatioValueOf(1.439999));
+		assertEquals(Rational.valueOf(3L, 2L), Rational.aspectRatioValueOf(1.49));
+		assertEquals(Rational.valueOf(3L, 2L), Rational.aspectRatioValueOf(1.51));
+		assertEquals(Rational.valueOf(14L, 9L), Rational.aspectRatioValueOf(1.54));
+		assertEquals(Rational.valueOf(14L, 9L), Rational.aspectRatioValueOf(1.56));
+		assertEquals(Rational.valueOf(16L, 10L), Rational.aspectRatioValueOf(1.59));
+		assertEquals(Rational.valueOf(16L, 10L), Rational.aspectRatioValueOf(1.61));
+		assertEquals(Rational.valueOf(16L, 10L), Rational.aspectRatioValueOf(Double.valueOf(1.61)));
+		assertEquals(Rational.valueOf(15L, 9L), Rational.aspectRatioValueOf(1.65));
+		assertEquals(Rational.valueOf(15L, 9L), Rational.aspectRatioValueOf(1.67));
+		assertEquals(Rational.valueOf(17L, 10L), Rational.aspectRatioValueOf(1.7));
+		assertEquals(Rational.valueOf(7L, 4L), Rational.aspectRatioValueOf(1.7400000001));
+		assertEquals(Rational.valueOf(7L, 4L), Rational.aspectRatioValueOf(1.7599999999));
+		assertEquals(Rational.valueOf(16L, 9L), Rational.aspectRatioValueOf(1.76));
+		assertEquals(Rational.valueOf(16L, 9L), Rational.aspectRatioValueOf(1.8));
+		assertEquals(Rational.valueOf(185L, 100L), Rational.aspectRatioValueOf(1.84));
+		assertEquals(Rational.valueOf(185L, 100L), Rational.aspectRatioValueOf(1.86));
+		assertEquals(Rational.valueOf(1896L, 1000L), Rational.aspectRatioValueOf(1.89));
+		assertEquals(Rational.valueOf(1896L, 1000L), Rational.aspectRatioValueOf(1.9));
+		assertEquals(Rational.valueOf(2L, 1L), Rational.aspectRatioValueOf(2d));
+		assertEquals(Rational.valueOf(2L, 1L), Rational.aspectRatioValueOf(Integer.valueOf(2)));
+		assertEquals(Rational.valueOf(11L, 5L), Rational.aspectRatioValueOf(2.19));
+		assertEquals(Rational.valueOf(11L, 5L), Rational.aspectRatioValueOf(2.21));
+		assertEquals(Rational.valueOf(235L, 100L), Rational.aspectRatioValueOf(2.34));
+		assertEquals(Rational.valueOf(235L, 100L), Rational.aspectRatioValueOf(2.36));
+		assertEquals(Rational.valueOf(237L, 100L), Rational.aspectRatioValueOf(2.360000001));
+		assertEquals(Rational.valueOf(237L, 100L), Rational.aspectRatioValueOf(2.379999999));
+		assertEquals(Rational.valueOf(239L, 100L), Rational.aspectRatioValueOf(2.38));
+		assertEquals(Rational.valueOf(239L, 100L), Rational.aspectRatioValueOf(2.41));
+		assertEquals(Rational.valueOf(255L, 100L), Rational.aspectRatioValueOf(2.54));
+		assertEquals(Rational.valueOf(255L, 100L), Rational.aspectRatioValueOf(2.56));
+		assertEquals(Rational.valueOf(255L, 100L), Rational.aspectRatioValueOf(BigDecimal.valueOf(2.56)));
+		assertEquals(Rational.valueOf(259L, 100L), Rational.aspectRatioValueOf(2.58));
+		assertEquals(Rational.valueOf(259L, 100L), Rational.aspectRatioValueOf(2.6));
+		assertEquals(Rational.valueOf(66L, 25L), Rational.aspectRatioValueOf(2.64));
+		assertEquals(Rational.valueOf(24L, 9L), Rational.aspectRatioValueOf(2.65));
+		assertEquals(Rational.valueOf(24L, 9L), Rational.aspectRatioValueOf(2.67));
+		assertEquals(Rational.valueOf(276L, 100L), Rational.aspectRatioValueOf(2.75));
+		assertEquals(Rational.valueOf(276L, 100L), Rational.aspectRatioValueOf(2.77));
+		assertEquals(Rational.valueOf(4L, 1L), Rational.aspectRatioValueOf(3.9));
+		assertEquals(Rational.valueOf(4L, 1L), Rational.aspectRatioValueOf(BigInteger.valueOf(4)));
+		assertEquals(Rational.valueOf(4L, 1L), Rational.aspectRatioValueOf(4.1));
+		assertEquals(Rational.valueOf(12L, 1L), Rational.aspectRatioValueOf(11.9));
+		assertEquals(Rational.valueOf(12L, 1L), Rational.aspectRatioValueOf(12.1));
+		assertEquals(Rational.valueOf(203L, 10L), Rational.aspectRatioValueOf(20.3));
 	}
 
 	@Test

@@ -76,6 +76,7 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 
 	protected static final int MAX_ARCHIVE_ENTRY_SIZE = 10000000;
 	protected static final int MAX_ARCHIVE_SIZE_SEEK = 800000000;
+	protected static final Rational AR_16_9 = Rational.valueOf(16L, 9L);
 
 	/**
 	 * The name displayed on the renderer. Cached the first time getDisplayName(RendererConfiguration) is called.
@@ -939,7 +940,7 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 
 				if (
 					renderer.isKeepAspectRatio() &&
-					!"16:9".equals(media.getAspectRatioContainer())
+					!AR_16_9.equals(media.getAspectRatioContainer())
 				) {
 					isIncompatible = true;
 					LOGGER.trace(prependTraceReason + "the renderer needs us to add borders to change the aspect ratio from {} to 16/9.", getName(), media.getAspectRatioContainer());

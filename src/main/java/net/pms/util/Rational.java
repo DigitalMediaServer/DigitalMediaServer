@@ -29,6 +29,7 @@ import java.text.ParseException;
 import java.util.Locale;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.regex.Pattern;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import org.apache.commons.lang3.StringUtils;
@@ -79,6 +80,9 @@ import org.apache.commons.lang3.StringUtils;
 public class Rational extends Number implements Comparable<Rational> {
 
 	private static final long serialVersionUID = 2L;
+
+	/** The static rational separator pattern */
+	public static final Pattern RATIONAL_SEPARATOR = Pattern.compile("\\s*(?:/|:)\\s*");
 
 	/**
 	 * The locale-insensitive {@link DecimalFormat} used for
@@ -322,7 +326,7 @@ public class Rational extends Number implements Comparable<Rational> {
 		if (StringUtils.isBlank(value)) {
 			return null;
 		}
-		String[] numbers = value.trim().split("\\s*(?:/|:)\\s*", 2);
+		String[] numbers = RATIONAL_SEPARATOR.split(value.trim(), 2);
 		DecimalFormat decimalFormat = numberFormat instanceof DecimalFormat ? (DecimalFormat) numberFormat : null;
 
 		BigDecimal decimalNumerator = parseBigDecimal(numbers[0], decimalFormat);
@@ -360,7 +364,16 @@ public class Rational extends Number implements Comparable<Rational> {
 	 */
 	@Nonnull
 	public static Rational valueOf(long value) {
-		BigInteger numerator = BigInteger.valueOf(value);
+		BigInteger numerator;
+		if (value == 0) {
+			numerator = BigInteger.ZERO;
+		} else if (value == 1) {
+			numerator = BigInteger.ONE;
+		} else if (value == 10) {
+			numerator = BigInteger.TEN;
+		} else {
+			numerator = BigInteger.valueOf(value);
+		}
 		return new Rational(
 			numerator,
 			BigInteger.ONE,
@@ -556,6 +569,94 @@ public class Rational extends Number implements Comparable<Rational> {
 			reducedNumerator,
 			reducedDenominator
 		);
+	}
+
+	/**
+	 * Returns an instance where the specified value has been rounded to the
+	 * closest "standard" aspect ratio value if close to one of them. If not,
+	 * {@link #valueOf(double)} is called.
+	 *
+	 * @param value the {@link Number} with a potentially slightly inaccurate
+	 *            aspect ratio.
+	 * @return The resulting {@link Rational}.
+	 */
+	@Nullable
+	public static Rational aspectRatioValueOf(Number value) {
+		if (value == null) {
+			return null;
+		}
+		return aspectRatioValueOf(value.doubleValue());
+	}
+
+
+	/**
+	 * Returns an instance where the specified value has been rounded to the
+	 * closest "standard" aspect ratio value if close to one of them. If not,
+	 * {@link #valueOf(double)} is called.
+	 *
+	 * @param value the value with a potentially slightly inaccurate aspect
+	 *            ratio.
+	 * @return The resulting {@link Rational}.
+	 */
+	@Nonnull
+	public static Rational aspectRatioValueOf(double value) {
+		if (value >= 11.9 && value <= 12.1) {
+			return Rational.valueOf(12L, 1L);
+		} else if (value >= 3.9 && value <= 4.1) {
+			return Rational.valueOf(4L, 1L);
+		} else if (value >= 2.75 && value <= 2.77) {
+			return Rational.valueOf(69L, 25L);
+		} else if (value >= 2.65 && value <= 2.67) {
+			return Rational.valueOf(24L, 9L);
+		} else if (value >= 2.58 && value <= 2.6) {
+			return Rational.valueOf(259L, 100L);
+		} else if (value >= 2.54  && value <= 2.56) {
+			return Rational.valueOf(51L, 20L);
+		} else if (value >= 2.38 && value <= 2.41) {
+			return Rational.valueOf(239L, 100L);
+		} else if (value > 2.36 && value < 2.38) {
+			return Rational.valueOf(237L, 100L);
+		} else if (value >= 2.34 && value <= 2.36) {
+			return Rational.valueOf(47L, 20L);
+		} else if (value >= 2.33 && value < 2.34) {
+			return Rational.valueOf(21L, 9L);
+		} else if (value > 2.1  && value < 2.3) {
+			return Rational.valueOf(11L, 5L);
+		} else if (value > 1.9 && value < 2.1) {
+			return Rational.valueOf(2);
+		} else if (value > 1.87  && value <= 1.9) {
+			return Rational.valueOf(237L, 125L);
+		} else if (value >= 1.83 && value <= 1.87) {
+			return Rational.valueOf(37L, 20L);
+		} else if (value >= 1.76 && value <= 1.8) {
+			return Rational.valueOf(16L, 9L);
+		} else if (value > 1.74 && value < 1.76) {
+			return Rational.valueOf(7L, 4L);
+		} else if (value >= 1.65 && value <= 1.67) {
+			return Rational.valueOf(15L, 9L);
+		} else if (value >= 1.59 && value <= 1.61) {
+			return Rational.valueOf(16L, 10L);
+		} else if (value >= 1.54 && value <= 1.56) {
+			return Rational.valueOf(14L, 9L);
+		} else if (value >= 1.49 && value <= 1.51) {
+			return Rational.valueOf(3L, 2L);
+		} else if (value > 1.42 && value < 1.44) {
+			return Rational.valueOf(143L, 100L);
+		} else if (value > 1.372 && value < 1.4) {
+			return Rational.valueOf(11L, 8L);
+		} else if (value > 1.35 && value <= 1.372) {
+			return Rational.valueOf(137L, 100L);
+		} else if (value >= 1.3 && value <= 1.35) {
+			return Rational.valueOf(4L, 3L);
+		} else if (value > 1.2 && value < 1.3) {
+			return Rational.valueOf(5L, 4L);
+		} else if (value >= 1.18 && value <= 1.195) {
+			return Rational.valueOf(19L, 16L);
+		} else if (value > 0.99 && value < 1.1) {
+			return Rational.valueOf(1L);
+		} else {
+			return Rational.valueOf(value);
+		}
 	}
 
 
@@ -2070,37 +2171,76 @@ public class Rational extends Number implements Comparable<Rational> {
 		return result;
 	}
 
+	/**
+	 * Compares this object against the specified object. The result is
+	 * {@code true} if and only if the argument is not {@code null} and is a
+	 * {@code Rational} object that is mathematically equivalent to this object.
+	 * For this purpose, two {@link Rational} instances are considered to be the
+	 * same if and only if both the reduced numerators are identical and the
+	 * reduced denominators are identical.
+	 * <p>
+	 * 1/2 and 4/8 are considered equal by this method, as are 4/2 and 2.
+	 *
+	 * @see #equalValue(Number)
+	 * @see #equalsExact(Rational)
+	 */
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj) {
+			return true;
+		}
+		if (obj == null) {
+			return false;
+		}
+		if (!(obj instanceof Rational)) {
+			return false;
+		}
+		Rational other = (Rational) obj;
+		if (reducedDenominator == null) {
+			if (other.reducedDenominator != null) {
+				return false;
+			}
+		} else if (!reducedDenominator.equals(other.reducedDenominator)) {
+			return false;
+		}
+		if (reducedNumerator == null) {
+			if (other.reducedNumerator != null) {
+				return false;
+			}
+		} else if (!reducedNumerator.equals(other.reducedNumerator)) {
+			return false;
+		}
+		return true;
+	}
 
 	/**
-	 * Indicates whether this instance and {@code object} are mathematically
-	 * equivalent, given that {@code other} implements {@link Number}.
+	 * Indicates whether this instance and {@code number} are mathematically
+	 * equivalent.
 	 * <p>
 	 * 1/2 and 4/8 are considered equal by this method, as are 4/2 and 2.
 	 * <p>
 	 * Equality is determined by equality of {@code reducedNumerator} and
-	 * {@code reducedDenominator} if {@code object} is another {@link Rational}.
-	 * If not, but {@code object} implements {@link Number},
-	 * {@code compareTo(Number) == 0} is used to determine equality.
+	 * {@code reducedDenominator} if {@code number} is another {@link Rational}.
+	 * If not {@code compareTo(Number) == 0} is used to determine equality.
 	 * <p>
 	 * To test equal representation, use {@link #equalsExact}.
 	 *
-	 * @param object the reference object with which to compare.
-	 * @return {@code true} if {@code object} is a {@link Rational} and are
-	 *         mathematically equivalent, {@code false} otherwise.
+	 * @param number the reference {@link Number} with which to compare.
+	 * @return {@code true} if {@code number} is mathematically equivalent,
+	 *         {@code false} otherwise.
+	 *
+	 * @see #equals(Object)
+	 * @see #equalsExact(Rational)
 	 */
-	@Override
-	public boolean equals(Object object) {
-		if (this == object) {
+	public boolean equalValue(Number number) {
+		if (this == number) {
 			return true;
 		}
-		if (object == null) {
+		if (number == null) {
 			return false;
 		}
-		if (!(object instanceof Number)) {
-			return false;
-		}
-		if (object instanceof Rational) {
-			Rational other = (Rational) object;
+		if (number instanceof Rational) {
+			Rational other = (Rational) number;
 			if (reducedDenominator == null) {
 				if (other.reducedDenominator != null) {
 					return false;
@@ -2120,7 +2260,7 @@ public class Rational extends Number implements Comparable<Rational> {
 				// Should be impossible
 				throw new AssertionError("reducedNumerator or reducedDenominator is null");
 			}
-			return compareTo((Number) object) == 0;
+			return compareTo(number) == 0;
 		}
 		return true;
 	}
@@ -2136,6 +2276,9 @@ public class Rational extends Number implements Comparable<Rational> {
 	 * @param other the {@link Rational} with which to compare.
 	 * @return {@code true} if this instance and {@code other} have an identical
 	 *         representation.
+	 *
+	 * @see #equals(Object)
+	 * @see #equalValue(Number)
 	 */
 	public boolean equalsExact(Rational other) {
 		return other != null && numerator.equals(other.numerator) && denominator.equals(other.denominator);
