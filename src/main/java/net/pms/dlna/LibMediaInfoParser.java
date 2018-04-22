@@ -694,7 +694,10 @@ public class LibMediaInfoParser {
 			format = FormatConfiguration.AAC_LTP;
 		} else if (value.contains("he-aac")) {
 			format = FormatConfiguration.HE_AAC;
-		} else if (value.contains("er bsac")) {
+		} else if (
+			value.equals("er bsac") ||
+			value.equals("mp4a-40-22")
+		) {
 			// mp4a-40-22, enca-67-2?
 			format = FormatConfiguration.ER_BSAC;
 		} else if (value.equals("main")) {
