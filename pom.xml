@@ -4,7 +4,7 @@
 
 	<!--
 		DMS consists of two major parts: DMS itself and the third party software needed to
-		run it. While DMS itself is 100% pure Java, some of the third party software is
+		run it. While DMS itself is 100% pure Java, some of the third party software are
 		not. This means building a platform specific distribution boils down to first
 		building the dms.jar and then assembling all application resources.
 
@@ -95,6 +95,8 @@
 		<maven-javadoc-plugin-version>3.0.0</maven-javadoc-plugin-version>
 		<git-commit-id-plugin-version>2.2.4</git-commit-id-plugin-version>
 		<maven-assembly-plugin-version>3.1.0</maven-assembly-plugin-version>
+		<maven-resources-plugin-version>3.0.2</maven-resources-plugin-version>
+		<maven-enforcer-plugin-version>3.0.0-M1</maven-enforcer-plugin-version>
 
 		<!--
 			org.slf4j:slf4j-api is shared with
@@ -106,7 +108,7 @@
 			Check the org.slf4j:slf4j-api version of the other libraries before upgrading
 		-->
 		<logback-version>1.2.3</logback-version>
-		<surefire-version>2.21.0</surefire-version>
+		<surefire-version>2.20</surefire-version>
 
 		<!--
 			net.java.dev.jna:jna-platform is shared with
@@ -120,7 +122,7 @@
 			 use the Windows makensis.exe for Windows builds unless
 			 the system makensis is explicitly selected via the
 			 system-makensis profile
-		 -->
+		-->
 		<makensis-bin>${project.external-resources}/third-party/nsis/makensis.exe</makensis-bin>
 	</properties>
 	<repositories>
@@ -511,7 +513,8 @@
 		</dependency>
 	</dependencies>
 	<build>
-		<defaultGoal>assembly:assembly</defaultGoal>
+		<finalName>update</finalName>
+		<defaultGoal>package</defaultGoal>
 
 		<!-- specify how files in src/main/resources are bundled in the target jar -->
 		<resources>
@@ -594,6 +597,11 @@
 			<plugins>
 				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-jar-plugin</artifactId>
+					<version>3.1.0</version>
+				</plugin>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
 					<artifactId>maven-surefire-plugin</artifactId>
 					<configuration>
 
@@ -606,6 +614,7 @@
 
 							There is an incompatible JNA native library installed on this system.
 						-->
+						<shutdown>kill</shutdown>
 						<argLine>-Duser.language=en -Djna.nosys=true -XX:-UseSplitVerifier</argLine> <!-- only one argLine element is processed -->
 					</configuration>
 					<version>${surefire-version}</version>
@@ -657,6 +666,12 @@
 					<failOnNoGitDirectory>false</failOnNoGitDirectory>
 					<failOnUnableToExtractRepoInfo>false</failOnUnableToExtractRepoInfo>
 				</configuration>
+			</plugin>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-resources-plugin</artifactId>
+				<version>${maven-resources-plugin-version}</version>
 			</plugin>
 
 			<plugin>
@@ -849,7 +864,8 @@
 				<groupId>org.codehaus.mojo</groupId>
 				<artifactId>cobertura-maven-plugin</artifactId>
 				<version>2.7</version>
-			</plugin> -->
+			</plugin>
+			 -->
 
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
@@ -884,48 +900,41 @@
 			</activation>
 
 			<build>
-				<finalName>update</finalName>
+				<finalName>${project.artifactId}</finalName>
 				<plugins>
-					<plugin>
-						<groupId>org.apache.maven.plugins</groupId>
-						<artifactId>maven-clean-plugin</artifactId>
-						<version>3.1.0</version>
-						<executions>
-							<execution>
-								<id>auto-clean</id>
-								<phase>initialize</phase>
-								<goals>
-									<goal>clean</goal>
-								</goals>
-								<configuration>
-									<excludeDefaultDirectories>true</excludeDefaultDirectories>
-									<failOnError>false</failOnError>
-									<retryOnError>false</retryOnError>
-									<filesets>
-										<fileset>
-											<directory>target</directory>
-											<followSymlinks>true</followSymlinks>
-											<includes>
-												<include>${project.artifactId}.jar</include>
-											</includes>
-										</fileset>
-									</filesets>
-								</configuration>
-							</execution>
-						</executions>
-					</plugin>
 					<plugin>
 						<groupId>org.apache.maven.plugins</groupId>
 						<artifactId>maven-shade-plugin</artifactId>
 						<version>3.1.1</version>
 						<configuration>
 							<finalName>${project.artifactId}</finalName>
-							<minimizeJar>false</minimizeJar>
+							<createDependencyReducedPom>false</createDependencyReducedPom>
+							<minimizeJar>true</minimizeJar>
+							<!-- non-included will be automatically excluded -->
+							<filters>
+								<filter>
+									<artifact>commons-logging:commons-logging</artifact>
+									<includes>
+										<include>**</include>
+									</includes>
+								</filter>
+								<filter>
+									<artifact>com.twelvemonkeys.imageio:*</artifact>
+									<includes>
+										<include>**</include>
+									</includes>
+								</filter>
+								<filter>
+									<artifact>com.jgoodies:jgoodies-looks</artifact>
+									<includes>
+										<include>**</include>
+									</includes>
+								</filter>
+							</filters>
 							<promoteTransitiveDependencies>true</promoteTransitiveDependencies>
 							<artifactSet>
 								<excludes>
 									<exclude>com.google.code.findbugs:annotations</exclude>
-									<exclude>commons-logging:commons-logging</exclude>
 								</excludes>
 							</artifactSet>
 						</configuration>
@@ -953,15 +962,14 @@
 		</profile>
 
 		<profile>
-			<id>windows</id>
+			<id>binaries-windows</id>
 			<activation>
 				<activeByDefault>false</activeByDefault>
 			</activation>
 
 			<build>
-					<!--
-						Plugin to build a Windows installer using the nullsoft scriptable install system (NSIS).
-						The "generate-headerfile" goal generates a file "target/project.nsh".
+					<!-- Download all necessary Windows binaries.
+						Keep the same structure because NSIS expects it that way.
 					-->
 				<plugins>
 					<plugin>
@@ -971,7 +979,7 @@
 						<executions>
 							<execution>
 								<id>download-files-windows</id>
-								<phase>download-files</phase>
+								<phase>process-resources</phase>
 								<goals>
 									<goal>run</goal>
 								</goals>
@@ -988,8 +996,6 @@
 										<mkdir dir="${project.binaries}/win32/interframe" />
 										<mkdir dir="${project.binaries}/win32/mplayer" />
 										<mkdir dir="${project.binaries}/win32/service" />
-
-										<!-- Download all necessary Windows binaries. Keep the same structure because NSIS expects it that way. -->
 										<get src="${project.binaries-base}/MediaInfo.dll?p=${binary-revision}" dest="${project.binaries}/win32/MediaInfo.dll"  usetimestamp="true" />
 										<get src="${project.binaries-base}/MediaInfo64.dll?p=${binary-revision}" dest="${project.binaries}/win32/MediaInfo64.dll" usetimestamp="true" />
 										<get src="${project.binaries-base}/MediaInfo-License.html?p=${binary-revision}" dest="${project.binaries}/win32/MediaInfo-License.html" usetimestamp="true" />
@@ -1042,7 +1048,22 @@
 							</execution>
 						</executions>
 					</plugin>
+				</plugins>
+			</build>
+		</profile>
 
+		<profile>
+			<id>windows</id>
+			<activation>
+				<activeByDefault>false</activeByDefault>
+			</activation>
+
+			<build>
+					<!--
+						Plugin to build a Windows installer using the nullsoft scriptable install system (NSIS).
+						The "generate-headerfile" goal generates a file "target/project.nsh".
+					-->
+				<plugins>
 					<plugin>
 						<groupId>org.codehaus.mojo</groupId>
 						<artifactId>nsis-maven-plugin</artifactId>
@@ -1413,6 +1434,7 @@
 						<plugin>
 						<!--
 							This plugin's configuration is used to store Eclipse m2e settings only.
+							https://www.eclipse.org/m2e/documentation/m2e-execution-not-covered.html
 						-->
 							<groupId>org.eclipse.m2e</groupId>
 							<artifactId>lifecycle-mapping</artifactId>
@@ -1453,24 +1475,11 @@
 												<versionRange>[0.1,)</versionRange>
 												<goals>
 													<goal>clean</goal>
-													<goal>deploy</goal>
-													<goal>install</goal>
 													<goal>resolve</goal>
 													<goal>localinstall</goal>
+													<goal>install</goal>
+													<goal>deploy</goal>
 												</goals>
-											</pluginExecutionFilter>
-											<action>
-												<execute></execute>
-											</action>
-										</pluginExecution>
-										<pluginExecution>
-											<pluginExecutionFilter>
-												<groupId>org.apache.maven.plugins</groupId>
-												<artifactId>maven-clean-plugin</artifactId>
-												<versionRange>[3.1,)</versionRange>
-											<goals>
-												<goal>clean</goal>
-											</goals>
 											</pluginExecutionFilter>
 											<action>
 												<execute></execute>
