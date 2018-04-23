@@ -42,8 +42,10 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import net.pms.database.TableCoverArtArchive;
 import net.pms.database.TableCoverArtArchive.CoverArtArchiveResult;
+import net.pms.database.TableManager;
 import net.pms.database.TableMusicBrainzReleases;
 import net.pms.database.TableMusicBrainzReleases.MusicBrainzReleasesResult;
+import net.pms.service.Services;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.client.HttpResponseException;
 import org.jaudiotagger.tag.FieldKey;
@@ -214,6 +216,16 @@ public class CoverArtArchiveUtil extends CoverUtil {
 	@Override
 	@Nullable
 	protected byte[] doGetThumbnail(@Nullable Tag tag, boolean externalNetwork) {
+		TableManager tableManager = Services.tableManager();
+		if (tableManager == null) {
+			LOGGER.error("Can't download cover from Cover Art Archive since TableManager doesn't exist");
+			return null;
+		}
+		TableCoverArtArchive tableCoverArtArchive = tableManager.getTableCoverArtArchive();
+		if (tableCoverArtArchive == null) {
+			LOGGER.error("Can't download cover from Cover Art Archive since the table instance doesn't exist");
+			return null;
+		}
 		String mBID = getMBID(tag, externalNetwork);
 		if (mBID != null) {
 			// Secure exclusive access to search for this tag
@@ -224,7 +236,7 @@ public class CoverArtArchiveUtil extends CoverUtil {
 			}
 			try {
 				// Check if it's cached first
-				CoverArtArchiveResult result = TableCoverArtArchive.findMBID(mBID);
+				CoverArtArchiveResult result = tableCoverArtArchive.findMBID(mBID);
 				if (result.isFound()) {
 					if (result.getCover() != null) {
 						return result.getCover();
@@ -253,7 +265,7 @@ public class CoverArtArchiveUtil extends CoverUtil {
 				}
 				if (coverArt == null || coverArt.getImages().isEmpty()) {
 					LOGGER.debug("MBID \"{}\" has no cover at CoverArtArchive", mBID);
-					TableCoverArtArchive.writeMBID(mBID, null);
+					tableCoverArtArchive.writeMBID(mBID, null);
 					return null;
 				}
 				CoverArtImage image = coverArt.getFrontImage();
@@ -270,12 +282,12 @@ public class CoverArtArchiveUtil extends CoverUtil {
 							cover = IOUtils.toByteArray(is);
 						}
 					}
-					TableCoverArtArchive.writeMBID(mBID, cover);
+					tableCoverArtArchive.writeMBID(mBID, cover);
 					return cover;
 				} catch (HttpResponseException e) {
 					if (e.getStatusCode() == 404) {
 						LOGGER.debug("Cover for MBID \"{}\" was not found at CoverArtArchive", mBID);
-						TableCoverArtArchive.writeMBID(mBID, null);
+						tableCoverArtArchive.writeMBID(mBID, null);
 						return null;
 					}
 					LOGGER.warn(
@@ -428,6 +440,16 @@ public class CoverArtArchiveUtil extends CoverUtil {
 		if (tag == null) {
 			return null;
 		}
+		TableManager tableManager = Services.tableManager();
+		if (tableManager == null) {
+			LOGGER.error("Can't look up cover MBID from MusicBrainz since TableManager doesn't exist");
+			return null;
+		}
+		TableMusicBrainzReleases tableMusicBrainzReleases = tableManager.getTableMusicBrainzReleases();
+		if (tableMusicBrainzReleases == null) {
+			LOGGER.error("Can't look up cover MBID from MusicBrainz since the table instance doesn't exist");
+			return null;
+		}
 
 		// No need to look up MBID if it's already in the tag
 		String mBID = null;
@@ -462,7 +484,7 @@ public class CoverArtArchiveUtil extends CoverUtil {
 		}
 		try {
 			// Check if it's cached first
-			MusicBrainzReleasesResult result = TableMusicBrainzReleases.findMBID(tagInfo);
+			MusicBrainzReleasesResult result = tableMusicBrainzReleases.findMBID(tagInfo);
 			if (result.isFound()) {
 				if (isNotBlank(result.getMBID())) {
 					return result.getMBID();
@@ -612,11 +634,11 @@ public class CoverArtArchiveUtil extends CoverUtil {
 			}
 			if (isNotBlank(mBID)) {
 				LOGGER.debug("MusicBrainz release ID \"{}\" found for \"{}\"", mBID, tagInfo);
-				TableMusicBrainzReleases.writeMBID(mBID, tagInfo);
+				tableMusicBrainzReleases.writeMBID(mBID, tagInfo);
 				return mBID;
 			}
 			LOGGER.debug("No MusicBrainz release found for \"{}\"", tagInfo);
-			TableMusicBrainzReleases.writeMBID(null, tagInfo);
+			tableMusicBrainzReleases.writeMBID(null, tagInfo);
 			return null;
 		} finally {
 			releaseTagLatch(latch);

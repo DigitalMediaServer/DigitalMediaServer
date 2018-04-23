@@ -18,6 +18,7 @@
  */
 package net.pms.database;
 
+import static net.pms.database.Tables.*;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.apache.commons.lang3.StringUtils.left;
 import java.sql.Connection;
@@ -25,9 +26,12 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Timestamp;
+import java.util.EnumSet;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import javax.annotation.concurrent.Immutable;
 import net.pms.util.CoverArtArchiveUtil.CoverArtArchiveTagInfo;
 import org.jaudiotagger.tag.Tag;
 import org.slf4j.Logger;
@@ -43,7 +47,7 @@ import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
  * @author Nadahar
  */
 
-public final class TableMusicBrainzReleases extends Tables {
+public final class TableMusicBrainzReleases extends Table {
 
 	/**
 	 * tableLock is used to synchronize database access on table level.
@@ -54,7 +58,7 @@ public final class TableMusicBrainzReleases extends Tables {
 	 */
 	private static final ReadWriteLock tableLock = new ReentrantReadWriteLock();
 	private static final Logger LOGGER = LoggerFactory.getLogger(TableMusicBrainzReleases.class);
-	private static final String TABLE_NAME = "MUSIC_BRAINZ_RELEASES";
+	private static final TableId ID = TableId.MUSIC_BRAINZ_RELEASES;
 
 	/**
 	 * Table version must be increased every time a change is done to the table
@@ -63,100 +67,109 @@ public final class TableMusicBrainzReleases extends Tables {
 	 */
 	private static final int TABLE_VERSION = 2;
 
-	// No instantiation
-	private TableMusicBrainzReleases() {
+	/**
+	 * Should only be instantiated by {@link TableManager}.
+	 *
+	 * @param tableManager the {@link TableManager} to use.
+	 */
+	TableMusicBrainzReleases(@Nonnull TableManager tableManager) {
+		super(tableManager);
 	}
 
-	private static String constructTagWhere(final CoverArtArchiveTagInfo tagInfo, final boolean includeAll) {
-		StringBuilder where = new StringBuilder(" WHERE ");
-		final String AND = " AND ";
-		boolean added = false;
+	@Override
+	@Nonnull
+	public TableId getTableId() {
+		return ID;
+	}
 
-		if (includeAll || isNotBlank(tagInfo.album)) {
-			where.append("ALBUM").append(sqlNullIfBlank(tagInfo.album, true, false));
-			added = true;
-		}
-		if (includeAll || isNotBlank(tagInfo.artistId)) {
-			if (added) {
-				where.append(AND);
-			}
-			where.append("ARTIST_ID").append(sqlNullIfBlank(tagInfo.artistId, true, false));
-			added = true;
-		}
-		if (includeAll || (!isNotBlank(tagInfo.artistId) && isNotBlank(tagInfo.artist))) {
-			if (added) {
-				where.append(AND);
-			}
-			where.append("ARTIST").append(sqlNullIfBlank(tagInfo.artist, true, false));
-			added = true;
-		}
+	@Override
+	public int getTableVersion() {
+		return TABLE_VERSION;
+	}
 
-		if (
-			includeAll || (
-				isNotBlank(tagInfo.trackId) && (
-					!isNotBlank(tagInfo.album) || !(
-						isNotBlank(tagInfo.artist) ||
-						isNotBlank(tagInfo.artistId)
-					)
-				)
-			)
-		) {
-			if (added) {
-				where.append(AND);
-			}
-			 where.append("TRACK_ID").append(sqlNullIfBlank(tagInfo.trackId, true, false));
-			 added = true;
-		}
-		if (
-			includeAll || (
-				!isNotBlank(tagInfo.trackId) && (
-					isNotBlank(tagInfo.title) && (
-						!isNotBlank(tagInfo.album) || !(
-							isNotBlank(tagInfo.artist) ||
-							isNotBlank(tagInfo.artistId)
-						)
-					)
-				)
-			)
-		) {
-			if (added) {
-				where.append(AND);
-			}
-			where.append("TITLE").append(sqlNullIfBlank(tagInfo.title, true, false));
-			added = true;
-		}
+	@Override
+	@Nullable
+	public EnumSet<TableId> getRelatedTables() {
+		return null;
+	}
 
-		if (isNotBlank(tagInfo.year)) {
-			if (added) {
-				where.append(AND);
-			}
-			where.append("YEAR").append(sqlNullIfBlank(tagInfo.year, true, false));
-			added = true;
+	@Override
+	protected void createTable(@Nonnull Connection connection) throws SQLException {
+		LOGGER.debug("Creating database table \"{}\"", ID);
+		try (Statement statement = connection.createStatement()) {
+			statement.execute(
+				"CREATE TABLE " + ID + "(" +
+					"ID IDENTITY PRIMARY KEY, " +
+					"MODIFIED DATETIME, " +
+					"MBID VARCHAR(36), " +
+					"ARTIST VARCHAR(1000), " +
+					"ALBUM VARCHAR(1000), " +
+					"TITLE VARCHAR(1000), " +
+					"YEAR VARCHAR(20), " +
+					"ARTIST_ID VARCHAR(36), " +
+					"TRACK_ID VARCHAR(36)" +
+				")");
+			statement.execute("CREATE INDEX ARTIST_IDX ON " + ID + "(ARTIST)");
+			statement.execute("CREATE INDEX ARTIST_ID_IDX ON " + ID + "(ARTIST_ID)");
 		}
-
-		return where.toString();
 	}
 
 	/**
-	 * Stores the MBID with information from this {@link Tag} in the database
-	 *
-	 * @param mBID the MBID to store
-	 * @param tag the {@link Tag} who's information should be associated with
-	 *        the given MBID
+	 * This method <b>MUST</b> be updated if the table definition are altered.
+	 * The changes for each version in the form of {@code ALTER TABLE} must be
+	 * implemented here.
 	 */
-	public static void writeMBID(final String mBID, final CoverArtArchiveTagInfo tagInfo) {
+	@Override
+	protected void upgradeTable(@Nonnull Connection connection, int currentVersion) throws SQLException {
+		LOGGER.info("Upgrading database table \"{}\" from version {} to {}", ID, currentVersion, TABLE_VERSION);
+		if (currentVersion < 1) {
+			currentVersion = 1;
+		}
+		tableLock.writeLock().lock();
+		try {
+			for (int version = currentVersion; version < TABLE_VERSION; version++) {
+				LOGGER.trace("Upgrading table {} from version {} to {}", ID, version, version + 1);
+				switch (version) {
+					case 1:
+						// Version 2 increases the size of ARTIST; ALBUM, TITLE and YEAR.
+						Statement statement = connection.createStatement();
+						statement.executeUpdate("ALTER TABLE " + ID + " ALTER COLUMN ARTIST VARCHAR(1000)");
+						statement.executeUpdate("ALTER TABLE " + ID + " ALTER COLUMN ALBUM VARCHAR(1000)");
+						statement.executeUpdate("ALTER TABLE " + ID + " ALTER COLUMN TITLE VARCHAR(1000)");
+						statement.executeUpdate("ALTER TABLE " + ID + " ALTER COLUMN YEAR VARCHAR(20)");
+						break;
+					default:
+						throw new IllegalStateException(
+							"Table \"" + ID + "is missing table upgrade commands from version " +
+							version + " to " + TABLE_VERSION
+						);
+				}
+			}
+			setTableVersion(connection, ID, TABLE_VERSION);
+		} finally {
+			tableLock.writeLock().unlock();
+		}
+	}
+
+	/**
+	 * Stores the MBID with information from this {@link Tag} in the database.
+	 *
+	 * @param mBID the MBID to store.
+	 * @param tagInfo the {@link Tag} who's information should be associated
+	 *            with the given MBID.
+	 */
+	public void writeMBID(String mBID, CoverArtArchiveTagInfo tagInfo) {
 		boolean trace = LOGGER.isTraceEnabled();
 
-		try (Connection connection = DATABASE.getConnection()) {
-			String query = "SELECT * FROM " + TABLE_NAME + constructTagWhere(tagInfo, true);
+		try (Connection connection = getConnection()) {
+			String query = "SELECT * FROM " + ID + constructTagWhere(tagInfo, true);
 			if (trace) {
 				LOGGER.trace("Searching for release MBID with \"{}\" before update", query);
 			}
 
-			tableLock.writeLock().lock();
-			try (Statement statement = connection.createStatement(ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE)){
+			try (Statement statement = connection.createStatement(ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE)) {
 				connection.setAutoCommit(false);
-				try (ResultSet result = statement.executeQuery(query)){
+				try (ResultSet result = statement.executeQuery(query)) {
 					if (result.next()) {
 						if (isNotBlank(mBID) || !isNotBlank(result.getString("MBID"))) {
 							if (trace) {
@@ -216,8 +229,6 @@ public final class TableMusicBrainzReleases extends Tables {
 				} finally {
 					connection.commit();
 				}
-			} finally {
-				tableLock.writeLock().unlock();
 			}
 		} catch (SQLException e) {
 			LOGGER.error(
@@ -231,25 +242,24 @@ public final class TableMusicBrainzReleases extends Tables {
 	}
 
 	/**
-	 * Looks up MBID in the table based on the given {@link Tag}. Never returns
-	 * <code>null</code>
+	 * Looks up MBID in the table based on the given {@link Tag}.
 	 *
-	 * @param tag the {@link Tag} for whose values should be used in the search
-	 *
-	 * @return The result of the search, never <code>null</code>
+	 * @param tagInfo the {@link Tag} for whose values should be used in the
+	 *            search.
+	 * @return The result of the search.
 	 */
-	public static MusicBrainzReleasesResult findMBID(final CoverArtArchiveTagInfo tagInfo) {
+	@Nonnull
+	public MusicBrainzReleasesResult findMBID(CoverArtArchiveTagInfo tagInfo) {
 		boolean trace = LOGGER.isTraceEnabled();
 		MusicBrainzReleasesResult result;
 
-		try (Connection connection = DATABASE.getConnection()) {
-			String query = "SELECT MBID, MODIFIED FROM " + TABLE_NAME + constructTagWhere(tagInfo, false);
+		try (Connection connection = getConnection()) {
+			String query = "SELECT MBID, MODIFIED FROM " + ID + constructTagWhere(tagInfo, false);
 
 			if (trace) {
 				LOGGER.trace("Searching for release MBID with \"{}\"", query);
 			}
 
-			tableLock.readLock().lock();
 			try (Statement statement = connection.createStatement()) {
 				try (ResultSet resultSet = statement.executeQuery(query)) {
 					if (resultSet.next()) {
@@ -258,8 +268,6 @@ public final class TableMusicBrainzReleases extends Tables {
 						result = new MusicBrainzReleasesResult(false, null, null);
 					}
 				}
-			} finally {
-				tableLock.readLock().unlock();
 			}
 		} catch (SQLException e) {
 			LOGGER.error("Database error while looking up Music Brainz ID for \"{}\": {}", tagInfo, e.getMessage());
@@ -270,122 +278,94 @@ public final class TableMusicBrainzReleases extends Tables {
 		return result;
 	}
 
-	/**
-	 * Checks and creates or upgrades the table as needed.
-	 *
-	 * @param connection the {@link Connection} to use
-	 *
-	 * @throws SQLException
-	 */
-	protected static void checkTable(final Connection connection) throws SQLException {
-		tableLock.writeLock().lock();
-		try {
-			if (tableExists(connection, TABLE_NAME)) {
-				Integer version = getTableVersion(connection, TABLE_NAME);
-				if (version != null) {
-					if (version < TABLE_VERSION) {
-						upgradeTable(connection, version);
-					} else if (version > TABLE_VERSION) {
-						throw new SQLException(
-							"Database table \"" + TABLE_NAME +
-							"\" is from a newer version of DMS. Please move, rename or delete database file \"" +
-							DATABASE.getDatabaseFilename() +
-							"\" before starting DMS"
-						);
-					}
-				} else {
-					LOGGER.warn("Database table \"{}\" has an unknown version and cannot be used. Dropping and recreating table", TABLE_NAME);
-					dropTable(connection, TABLE_NAME);
-					createMusicBrainzReleasesTable(connection);
-					setTableVersion(connection, TABLE_NAME, TABLE_VERSION);
-				}
-			} else {
-				createMusicBrainzReleasesTable(connection);
-				setTableVersion(connection, TABLE_NAME, TABLE_VERSION);
-			}
-		} finally {
-			tableLock.writeLock().unlock();
+	private static String constructTagWhere(CoverArtArchiveTagInfo tagInfo, boolean includeAll) {
+		StringBuilder where = new StringBuilder(" WHERE ");
+		final String and = " AND ";
+		boolean added = false;
+
+		if (includeAll || isNotBlank(tagInfo.album)) {
+			where.append("ALBUM").append(sqlNullIfBlank(tagInfo.album, true, false));
+			added = true;
 		}
+		if (includeAll || isNotBlank(tagInfo.artistId)) {
+			if (added) {
+				where.append(and);
+			}
+			where.append("ARTIST_ID").append(sqlNullIfBlank(tagInfo.artistId, true, false));
+			added = true;
+		}
+		if (includeAll || (!isNotBlank(tagInfo.artistId) && isNotBlank(tagInfo.artist))) {
+			if (added) {
+				where.append(and);
+			}
+			where.append("ARTIST").append(sqlNullIfBlank(tagInfo.artist, true, false));
+			added = true;
+		}
+
+		if (
+			includeAll || (
+				isNotBlank(tagInfo.trackId) && (
+					!isNotBlank(tagInfo.album) || !(
+						isNotBlank(tagInfo.artist) ||
+						isNotBlank(tagInfo.artistId)
+					)
+				)
+			)
+		) {
+			if (added) {
+				where.append(and);
+			}
+			where.append("TRACK_ID").append(sqlNullIfBlank(tagInfo.trackId, true, false));
+			added = true;
+		}
+		if (
+			includeAll || (
+				!isNotBlank(tagInfo.trackId) && (
+					isNotBlank(tagInfo.title) && (
+						!isNotBlank(tagInfo.album) || !(
+							isNotBlank(tagInfo.artist) ||
+							isNotBlank(tagInfo.artistId)
+						)
+					)
+				)
+			)
+		) {
+			if (added) {
+				where.append(and);
+			}
+			where.append("TITLE").append(sqlNullIfBlank(tagInfo.title, true, false));
+			added = true;
+		}
+
+		if (isNotBlank(tagInfo.year)) {
+			if (added) {
+				where.append(and);
+			}
+			where.append("YEAR").append(sqlNullIfBlank(tagInfo.year, true, false));
+			added = true;
+		}
+
+		return where.toString();
 	}
 
-	/**
-	 * This method <strong>MUST</strong> be updated if the table definition are
-	 * altered. The changes for each version in the form of
-	 * <code>ALTER TABLE</code> must be implemented here.
-	 *
-	 * @param connection the {@link Connection} to use
-	 * @param currentVersion the version to upgrade <strong>from</strong>
-	 *
-	 * @throws SQLException
-	 */
-	private static void upgradeTable(final Connection connection, final int currentVersion) throws SQLException {
-		LOGGER.info("Upgrading database table \"{}\" from version {} to {}", TABLE_NAME, currentVersion, TABLE_VERSION);
-		tableLock.writeLock().lock();
-		try {
-			for (int version = currentVersion;version < TABLE_VERSION; version++) {
-				LOGGER.trace("Upgrading table {} from version {} to {}", TABLE_NAME, version, version + 1);
-				switch (version) {
-					case 1:
-						// Version 2 increases the size of ARTIST; ALBUM, TITLE and YEAR.
-						Statement statement = connection.createStatement();
-						statement.executeUpdate(
-							"ALTER TABLE " + TABLE_NAME + " ALTER COLUMN ARTIST VARCHAR(1000)"
-						);
-						statement.executeUpdate(
-							"ALTER TABLE " + TABLE_NAME + " ALTER COLUMN ALBUM VARCHAR(1000)"
-						);
-						statement.executeUpdate(
-							"ALTER TABLE " + TABLE_NAME + " ALTER COLUMN TITLE VARCHAR(1000)"
-						);
-						statement.executeUpdate(
-							"ALTER TABLE " + TABLE_NAME + " ALTER COLUMN YEAR VARCHAR(20)"
-						);
-						break;
-					default:
-						throw new IllegalStateException(
-							"Table \"" + TABLE_NAME + "is missing table upgrade commands from version " +
-							version + " to " + TABLE_VERSION
-						);
-				}
-			}
-			setTableVersion(connection, TABLE_NAME, TABLE_VERSION);
-		} finally {
-			tableLock.writeLock().unlock();
-		}
-	}
-
-	/**
-	 * Must be called from inside a table lock
-	 */
-	private static void createMusicBrainzReleasesTable(final Connection connection) throws SQLException {
-		LOGGER.debug("Creating database table \"{}\"", TABLE_NAME);
-		try (Statement statement = connection.createStatement()) {
-			statement.execute(
-				"CREATE TABLE " + TABLE_NAME + "(" +
-					"ID IDENTITY PRIMARY KEY, " +
-					"MODIFIED DATETIME, " +
-					"MBID VARCHAR(36), " +
-					"ARTIST VARCHAR(1000), " +
-					"ALBUM VARCHAR(1000), " +
-					"TITLE VARCHAR(1000), " +
-					"YEAR VARCHAR(20), " +
-					"ARTIST_ID VARCHAR(36), " +
-					"TRACK_ID VARCHAR(36)" +
-				")");
-			statement.execute("CREATE INDEX ARTIST_IDX ON " + TABLE_NAME + "(ARTIST)");
-			statement.execute("CREATE INDEX ARTIST_ID_IDX ON " + TABLE_NAME + "(ARTIST_ID)");
-		}
-	}
 	/**
 	 * A class for holding the results from a Music Brainz releases database
 	 * lookup.
 	 */
+	@Immutable
 	public static class MusicBrainzReleasesResult {
 
 		private final boolean found;
 		private final Timestamp modified;
 		private final String mBID;
 
+		/**
+		 * Creates a new instance holding the specified values.
+		 *
+		 * @param found {@code true} if found, {@code false} otherwise.
+		 * @param modified the modified {@link Timestamp}.
+		 * @param mBID the {@code MBID}.
+		 */
 		@SuppressFBWarnings("EI_EXPOSE_REP2")
 		public MusicBrainzReleasesResult(boolean found, @Nullable Timestamp modified, @Nullable String mBID) {
 			this.found = found;

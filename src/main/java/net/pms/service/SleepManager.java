@@ -19,6 +19,7 @@
 package net.pms.service;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
+import javax.annotation.concurrent.GuardedBy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.sun.jna.Platform;
@@ -58,7 +59,7 @@ import net.pms.util.jna.macos.iokit.IOKitUtils;
  *
  * @author Nadahar
  */
-public class SleepManager {
+public class SleepManager implements Service {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(SleepManager.class);
 
@@ -66,16 +67,23 @@ public class SleepManager {
 	 * A reference count for incremented and decremented with
 	 * {@link #startPlaying()} and {@link #stopPlaying()}
 	 */
+	@GuardedBy("this")
 	protected int playingCount;
 
 	/** The cached value of {@link PmsConfiguration#getPreventSleep()} */
+	@GuardedBy("this")
 	protected PreventSleepMode mode = PMS.getConfiguration().getPreventSleep();
 
 	/** An internal state flag tracking if sleep is currently prevented */
+	@GuardedBy("this")
 	protected boolean sleepPrevented;
 
 	/** The attached worker thread */
+	@GuardedBy("this")
 	protected AbstractSleepWorker worker;
+
+	@GuardedBy("this")
+	private boolean started;
 
 	/**
 	 * Creates and starts a {@link SleepManager} instance.
@@ -172,9 +180,11 @@ public class SleepManager {
 	 * constructor, and need only be called if {@link #stop()} has been called
 	 * previously.
 	 */
+	@Override
 	public synchronized void start() {
 		LOGGER.debug("Starting SleepManager");
 		if (Platform.isWindows() || Platform.isMac()) {
+			started = true;
 			if (mode == PreventSleepMode.RUNNING || mode == PreventSleepMode.PLAYBACK && playingCount > 0) {
 				preventSleep();
 			}
@@ -187,11 +197,15 @@ public class SleepManager {
 	 * Stops the {@link SleepManager}. This will cause its worker thread to
 	 * terminate and any sleep mode prevention to be cancelled.
 	 */
+	@Override
 	public void stop() {
-		LOGGER.debug("Stopping SleepManager");
-		AbstractSleepWorker localWorker;
+		AbstractSleepWorker localWorker = null;
 		synchronized (this) {
-			localWorker = worker;
+			if (started) {
+				LOGGER.debug("Stopping SleepManager");
+				localWorker = worker;
+				started = false;
+			}
 		}
 		if (localWorker != null) {
 			localWorker.interrupt();
@@ -201,6 +215,11 @@ public class SleepManager {
 				LOGGER.debug("SleepManager was interrupted while waiting for the sleep worker to terminate");
 			}
 		}
+	}
+
+	@Override
+	public synchronized boolean isAlive() {
+		return started;
 	}
 
 	/**

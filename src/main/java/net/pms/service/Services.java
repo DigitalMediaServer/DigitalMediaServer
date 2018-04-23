@@ -25,6 +25,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.sun.jna.Platform;
 import net.pms.configuration.PmsConfiguration;
+import net.pms.database.TableManager;
 import net.pms.io.WinUtils;
 
 /**
@@ -73,6 +74,8 @@ public class Services {
 	private ProcessManager processManager;
 
 	private SleepManager sleepManager;
+
+	private TableManager tableManager;
 
 	/**
 	 * Returns current static {@link Services} instance. Isn't normally needed,
@@ -124,6 +127,14 @@ public class Services {
 	}
 
 	/**
+	 * @return The {@link TableManager} instance.
+	 */
+	@Nullable
+	public static TableManager tableManager() {
+		return instance == null ? null : instance.getTableManager();
+	}
+
+	/**
 	 * Sets the static {@link Services} instance. Isn't normally needed, use
 	 * {@link Services#create()} instead.
 	 *
@@ -142,7 +153,7 @@ public class Services {
 	}
 
 	/**
-	 * Creates and starts the services. Isn't normallyt needed, use
+	 * Creates and starts the services. Isn't normally needed, use
 	 * {@link Services#create()} instead.
 	 *
 	 * @throws IllegalStateException If the services have already been started.
@@ -155,6 +166,58 @@ public class Services {
 
 		processManager = new ProcessManager();
 		sleepManager = new SleepManager();
+	}
+
+	/**
+	 * Creates a {@link TableManager} instance. {@link TableManager} is
+	 * <b>not</b> instantiated by {@link #start()} to allow recreation of the
+	 * {@link Service}.
+	 * <p>
+	 * <b>This method is NOT thread-safe and must only be called during startup
+	 * from a single thread before the database has been taken in use.</b>
+	 *
+	 * @throws IllegalStateException If the {@link TableManager} already exists.
+	 */
+	public void createTableManager() {
+		if (tableManager != null) {
+			throw new IllegalArgumentException("A TableManager service already exists");
+		}
+		tableManager = new TableManager(null);
+	}
+
+	/**
+	 * Creates a {@link TableManager} instance. {@link TableManager} is
+	 * <b>not</b> instantiated by {@link #start()} to allow recreation of the
+	 * {@link Service} for different database names.
+	 * <p>
+	 * <b>This method is NOT thread-safe and must only be called during startup
+	 * from a single thread before the database has been taken in use.</b>
+	 *
+	 * @param databaseName the database name to use or {@code null} to use the
+	 *            default.
+	 * @throws IllegalStateException If the {@link TableManager} already exists.
+	 */
+	public void createTableManager(@Nullable String databaseName) {
+		if (tableManager != null) {
+			throw new IllegalStateException("TableManager service already exists");
+		}
+		tableManager = new TableManager(databaseName);
+	}
+
+	/**
+	 * Stops and destroys the {@link TableManager} instance.
+	 * <p>
+	 * <b>This method is NOT thread-safe and must only be called during startup
+	 * from a single thread before the database has been taken in use.</b>
+	 *
+	 * @throws IllegalStateException If the {@link TableManager} doesn't exist.
+	 */
+	public void destroyTableManager() {
+		if (tableManager == null) {
+			throw new IllegalStateException("TableManager doesn't exist");
+		}
+		tableManager.stop();
+		tableManager = null;
 	}
 
 	/**
@@ -172,23 +235,39 @@ public class Services {
 			sleepManager.stop();
 			sleepManager = null;
 		}
+
+		if (tableManager != null) {
+			tableManager.stop();
+		}
 	}
 
 	/**
-	 * Isn't normally needed, use {@link Services#processManager} instead.
+	 * Isn't normally needed, use {@link Services#processManager()} instead.
 	 *
 	 * @return The {@link ProcessManager} instance.
 	 */
+	@Nullable
 	public ProcessManager getProcessManager() {
 		return processManager;
 	}
 
 	/**
-	 * Isn't normally needed, use {@link Services#sleepManager} instead.
+	 * Isn't normally needed, use {@link Services#sleepManager()} instead.
 	 *
 	 * @return The {@link SleepManager} instance.
 	 */
+	@Nullable
 	public SleepManager getSleepManager() {
 		return sleepManager;
+	}
+
+	/**
+	 * Isn't normally needed, use {@link Services#tableManager()} instead.
+	 *
+	 * @return The {@link TableManager} instance.
+	 */
+	@Nullable
+	public TableManager getTableManager() {
+		return tableManager;
 	}
 }

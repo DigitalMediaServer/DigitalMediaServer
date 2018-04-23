@@ -68,6 +68,19 @@ public class StringUtil {
 	public static final String DURATION_TIME_FORMAT = "%02d:%02d:%05.2f";
 	public static final String DLNA_DURATION_FORMAT = "%01d:%02d:%06.3f";
 	public static final String NEWLINE_CHARACTER = System.getProperty("line.separator");
+
+	/** A {@link Pattern} that matches lower-case characters */
+	public static final Pattern LOWER = Pattern.compile("[\\p{Lower}]+", Pattern.UNICODE_CHARACTER_CLASS);
+
+	/** A {@link Pattern} that matches upper-case characters */
+	public static final Pattern UPPER = Pattern.compile("[\\p{Upper}]+", Pattern.UNICODE_CHARACTER_CLASS);
+
+	/** A {@link Pattern} that matches new-lines */
+	public static final Pattern NEWLINE = Pattern.compile("\\r\\n|\\r|\\n");
+
+	/** A {@link Pattern} that matches whitespace */
+	public static final Pattern WHITESPACE = Pattern.compile("\\s+", Pattern.UNICODE_CHARACTER_CLASS);
+
 	public static final long KIBI = 1L << 10;
 	public static final long MEBI = 1L << 20;
 	public static final long GIBI = 1L << 30;
@@ -843,6 +856,43 @@ public class StringUtil {
 	 */
 	public static String caseReplace(CharSequence target, String subString) {
 		return Pattern.compile(subString, Pattern.CASE_INSENSITIVE + Pattern.LITERAL).matcher(target).replaceAll(subString);
+	}
+
+	/**
+	 * Evaluates whether all the alphabetic characters are in upper-case in the
+	 * specified {@link CharSequence}.
+	 *
+	 * @param cs the {@link CharSequence} to evaluate.
+	 * @return {@code true} if all the alphabetic characters in {@code cs} are
+	 *         in upper-case, {@code false} otherwise.
+	 */
+	public static boolean isUpperCase(CharSequence cs) {
+		return !LOWER.matcher(cs).find();
+	}
+
+	/**
+	 * Evaluates whether all the alphabetic characters are in lower-case in the
+	 * specified {@link CharSequence}.
+	 *
+	 * @param cs the {@link CharSequence} to evaluate.
+	 * @return {@code true} if all the alphabetic characters in {@code cs} are
+	 *         in lower-case, {@code false} otherwise.
+	 */
+	public static boolean isLowerCase(CharSequence cs) {
+		return !UPPER.matcher(cs).find();
+	}
+
+	/**
+	 * Evaluates whether all the alphabetic characters are in the same case
+	 * (either upper or lower) in the specified {@link CharSequence}.
+	 *
+	 * @param cs the {@link CharSequence} to evaluate.
+	 * @return {@code true} if all the alphabetic characters in {@code cs} are
+	 *         in the same case (either upper or lower), {@code false}
+	 *         otherwise.
+	 */
+	public static boolean isSameCase(CharSequence cs) {
+		return isLowerCase(cs) || isUpperCase(cs);
 	}
 
 	/**
