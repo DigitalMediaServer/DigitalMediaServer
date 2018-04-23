@@ -18,100 +18,84 @@
  */
 package net.pms.database;
 
+import static org.apache.commons.lang3.StringUtils.isBlank;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import net.pms.PMS;
-import net.pms.dlna.DLNAMediaDatabase;
+import java.util.EnumSet;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
 /**
- * This class is the super class of all database table classes. It has the
- * responsibility to check or create the {@code TABLES} table, and to call
- * {@code checkTable()} for each database table implementation.
- *
- * This class also has some utility methods that's likely to be useful to most
- * child classes.
+ * This {@link Table} implementation is responsible for the special
+ * {@code TABLES} {@link Table}, which contains version information about all
+ * the other {@link Table}s.
+ * <p>
+ * This class also functions as a generic database utility class.
  *
  * @author Nadahar
  */
-public class Tables {
+public class Tables extends Table {
 	private static final Logger LOGGER = LoggerFactory.getLogger(Tables.class);
-	private static final Object CHECK_TABLES_LOCK = new Object();
 
-	/** The {@link DLNAMediaDatabase} instance */
-	protected static final DLNAMediaDatabase DATABASE = PMS.get().getDatabase();
-	private static boolean tablesChecked = false;
-	private static final String ESCAPE_CHARACTER = "\\";
+	/** The {@link TableId} for this {@link Table} */
+	public static final TableId ID = TableId.TABLES;
+
+	private static final String DEFAULT_ESCAPE_CHARACTER = "\\";
 
 	/**
-	 * Not to be instantiated.
+	 * Should only be instantiated by {@link TableManager}.
+	 *
+	 * @param tableManager the {@link TableManager} to use.
 	 */
-	protected Tables() {
+	Tables(@Nonnull TableManager tableManager) {
+		super(tableManager);
+	}
+
+	@Override
+	@Nonnull
+	public TableId getTableId() {
+		return ID;
 	}
 
 	/**
-	 * Checks all child tables for their existence and version and creates or
-	 * upgrades as needed. Access to this method is serialized.
-	 *
-	 * @throws SQLException If an SQL error occurs during the operation.
+	 * {@link Tables} isn't versioned.
 	 */
-	public static final void checkTables() throws SQLException {
-		synchronized (CHECK_TABLES_LOCK) {
-			if (tablesChecked) {
-				LOGGER.debug("Database tables have already been checked, aborting check");
-			} else {
-				LOGGER.debug("Starting check of database tables");
-				try (Connection connection = DATABASE.getConnection()) {
-					if (!tableExists(connection, "TABLES")) {
-						createTablesTable(connection);
-					}
+	@Override
+	public int getTableVersion() {
+		return 0;
+	}
 
-					TableMusicBrainzReleases.checkTable(connection);
-					TableCoverArtArchive.checkTable(connection);
-				}
-				tablesChecked = true;
-			}
+	@Override
+	@Nullable
+	public EnumSet<TableId> getRelatedTables() {
+		return null;
+	}
+
+	/**
+	 * {@link Tables} isn't versioned.
+	 */
+	@Override
+	void upgradeTable(@Nonnull Connection connection, int currentVersion) throws SQLException {
+	}
+
+	@Override
+	void checkTable(@Nonnull Connection connection) throws SQLException {
+		if (!tableExists(connection, ID)) {
+			createTable(connection);
 		}
 	}
 
-	/**
-	 * Checks if a named table exists.
-	 *
-	 * @param connection the {@link Connection} to use while performing the
-	 *            check.
-	 * @param tableName the name of the table to check for existence.
-	 * @param tableSchema the table schema for the table to check for existence.
-	 * @return {@code true} if a table with the given name in the given schema
-	 *         exists, {@code false} otherwise.
-	 * @throws SQLException If an SQL error occurs during the operation.
-	 */
-	protected static final boolean tableExists(
-		final Connection connection,
-		final String tableName,
-		final String tableSchema
-	) throws SQLException {
-		LOGGER.trace("Checking if database table \"{}\" in schema \"{}\" exists", tableName, tableSchema);
-
-		try (PreparedStatement statement = connection.prepareStatement(
-			"SELECT * FROM INFORMATION_SCHEMA.TABLES " +
-				"WHERE TABLE_SCHEMA = ? " +
-				"AND  TABLE_NAME = ?"
-		)) {
-			statement.setString(1, tableSchema);
-			statement.setString(2, tableName);
-			try (ResultSet result = statement.executeQuery()) {
-				if (result.next()) {
-					LOGGER.trace("Database table \"{}\" found", tableName);
-					return true;
-				}
-				LOGGER.trace("Database table \"{}\" not found", tableName);
-				return false;
-			}
+	@Override
+	protected void createTable(@Nonnull Connection connection) throws SQLException {
+		LOGGER.debug("Creating database table \"{}\"", ID.getName());
+		try (Statement statement = connection.createStatement()) {
+			statement.execute("CREATE TABLE TABLES(NAME VARCHAR(50) PRIMARY KEY, VERSION INT NOT NULL)");
 		}
 	}
 
@@ -120,61 +104,121 @@ public class Tables {
 	 *
 	 * @param connection the {@link Connection} to use while performing the
 	 *            check.
-	 * @param tableName the name of the table to check for existence.
-	 * @return {@code true} if a table with the given name in schema
-	 *         {@code PUBLIC} exists, {@code false} otherwise.
+	 * @param tableId the {@link TableId} of the {@link Table} to check for
+	 *            existence.
+	 * @return {@code true} if the {@link Table} in schema {@code PUBLIC}
+	 *         exists, {@code false} otherwise.
 	 * @throws SQLException If an SQL error occurs during the operation.
 	 */
-	protected static final boolean tableExists(final Connection connection, final String tableName) throws SQLException {
-		return tableExists(connection, tableName, "PUBLIC");
+	protected static boolean tableExists(
+		@Nonnull Connection connection,
+		@Nullable TableId tableId
+	) throws SQLException {
+		return tableExists(connection, tableId, null);
 	}
 
 	/**
-	 * Gets the version of a named table from the {@code TABLES} table.
+	 * Checks if a named table exists. If {@code tableSchema} is blank, schema
+	 * {@code PUBLIC} is used.
 	 *
-	 * @param connection the {@link Connection} to use.
-	 * @param tableName the name of the table for which to find the version.
-	 * @return The version number if found or {@code null} if the table isn't
-	 *         listed in {@code TABLES}.
+	 * @param connection the {@link Connection} to use while performing the
+	 *            check.
+	 * @param tableId the {@link TableId} of the {@link Table} to check for
+	 *            existence.
+	 * @param tableSchema the table schema for the table to check for existence.
+	 * @return {@code true} if the {@link Table} exists in the given schema,
+	 *         {@code false} otherwise.
 	 * @throws SQLException If an SQL error occurs during the operation.
 	 */
-	protected static final Integer getTableVersion(final Connection connection, final String tableName) throws SQLException {
+	protected static boolean tableExists(
+		@Nonnull Connection connection,
+		@Nullable TableId tableId,
+		@Nullable String tableSchema
+	) throws SQLException {
+		if (tableId == null) {
+			return false;
+		}
+		if (isBlank(tableSchema)) {
+			tableSchema = "PUBLIC";
+		}
+		LOGGER.trace("Checking if database table \"{}\" in schema \"{}\" exists", tableId, tableSchema);
+
 		try (PreparedStatement statement = connection.prepareStatement(
-			"SELECT VERSION FROM TABLES " +
-				"WHERE NAME = ?"
+			"SELECT * FROM INFORMATION_SCHEMA.TABLES " +
+				"WHERE TABLE_SCHEMA = ? " +
+				"AND  TABLE_NAME = ?"
 		)) {
-			statement.setString(1, tableName);
+			statement.setString(1, tableSchema);
+			statement.setString(2, tableId.getName());
 			try (ResultSet result = statement.executeQuery()) {
 				if (result.next()) {
-					if (LOGGER.isTraceEnabled()) {
-						LOGGER.trace("Table version for database table \"{}\" is {}", tableName, result.getInt("VERSION"));
-					}
-					return result.getInt("VERSION");
+					LOGGER.trace("Database table \"{}\" found", tableId);
+					return true;
 				}
-				LOGGER.trace("Table version for database table \"{}\" not found", tableName);
-				return null;
+				LOGGER.trace("Database table \"{}\" not found", tableId);
+				return false;
 			}
 		}
 	}
 
 	/**
-	 * Sets the version of a named table in the {@code TABLES} table. Creates a
-	 * row for the given table name if needed.
+	 * Gets the version of a {@link Table} from {@link Tables}.
 	 *
 	 * @param connection the {@link Connection} to use.
-	 * @param tableName the name of the table for which to set the version.
-	 * @param version the version number to set.
+	 * @param tableId the {@link TableId} of the {@link Table} for which to find
+	 *            the version.
+	 * @return The version number if found or {@code -1} if the table isn't
+	 *         listed in {@link Tables}.
 	 * @throws SQLException If an SQL error occurs during the operation.
 	 */
-	protected static final void setTableVersion(
-		final Connection connection,
-		final String tableName,
-		final int version
+	protected static int getTableVersion(
+		@Nonnull Connection connection,
+		@Nullable TableId tableId
 	) throws SQLException {
+		if (tableId == null) {
+			return -1;
+		}
+		try (PreparedStatement statement = connection.prepareStatement(
+			"SELECT VERSION FROM TABLES " +
+				"WHERE NAME = ?"
+		)) {
+			statement.setString(1, tableId.getName());
+			try (ResultSet result = statement.executeQuery()) {
+				if (result.next()) {
+					if (LOGGER.isTraceEnabled()) {
+						LOGGER.trace("Table version for database table \"{}\" is {}", tableId, result.getInt("VERSION"));
+					}
+					return result.getInt("VERSION");
+				}
+				LOGGER.trace("Table version for database table \"{}\" not found", tableId);
+				return -1;
+			}
+		}
+	}
+
+	/**
+	 * Sets the version of a {@link Table} in {@link Tables}. Creates a row for
+	 * the given {@link Table} if needed.
+	 *
+	 * @param connection the {@link Connection} to use.
+	 * @param tableId the {@link TableId} of the {@link Table} for which to set
+	 *            the version.
+	 * @param version the version number to set.
+	 * @throws SQLException If an SQL error occurs during the operation.
+	 * @throws IllegalArgumentException If {@code tableId} is {@code null}.
+	 */
+	protected static void setTableVersion(
+		@Nonnull Connection connection,
+		@Nonnull TableId tableId,
+		int version
+	) throws SQLException {
+		if (tableId == null) {
+			throw new IllegalArgumentException("tableId cannot be null");
+		}
 		try (PreparedStatement statement = connection.prepareStatement(
 			"SELECT VERSION FROM TABLES WHERE NAME = ?"
 		)) {
-			statement.setString(1, tableName);
+			statement.setString(1, tableId.getName());
 			try (ResultSet result = statement.executeQuery()) {
 				if (result.next()) {
 					int currentVersion = result.getInt("VERSION");
@@ -184,23 +228,23 @@ public class Tables {
 						)) {
 							LOGGER.trace(
 								"Updating table version for database table \"{}\" from {} to {}",
-								tableName,
+								tableId,
 								currentVersion,
 								version
 							);
 							updateStatement.setInt(1, version);
-							updateStatement.setString(2, tableName);
+							updateStatement.setString(2, tableId.getName());
 							updateStatement.executeUpdate();
 						}
 					} else {
-						LOGGER.trace("Table version for database table \"{}\" is already {}, aborting set", tableName, version);
+						LOGGER.trace("Table version for database table \"{}\" is already {}, aborting set", tableId, version);
 					}
 				} else {
 					try (PreparedStatement insertStatement = connection.prepareStatement(
 						"INSERT INTO TABLES VALUES(?, ?)"
 					)) {
-						LOGGER.trace("Setting table version for database table \"{}\" to {}", tableName, version);
-						insertStatement.setString(1, tableName);
+						LOGGER.trace("Setting table version for database table \"{}\" to {}", tableId, version);
+						insertStatement.setString(1, tableId.getName());
 						insertStatement.setInt(2, version);
 						insertStatement.executeUpdate();
 					}
@@ -210,24 +254,54 @@ public class Tables {
 	}
 
 	/**
-	 * Drops (deletes) the named table. <b>Use with caution</b>, there is no
-	 * undo.
+	 * Removes the specified {@link Table} and its version from {@link Tables}.
 	 *
 	 * @param connection the {@link Connection} to use.
-	 * @param tableName the name of the table to delete.
+	 * @param tableId the {@link TableId} of the {@link Table} to remove.
 	 * @throws SQLException If an SQL error occurs during the operation.
+	 * @throws IllegalArgumentException If {@code tableId} is {@code null}.
 	 */
-	protected static final void dropTable(final Connection connection, final String tableName) throws SQLException {
-		LOGGER.debug("Dropping database table \"{}\"", tableName);
+	protected static void removeTableVersion(
+		@Nonnull Connection connection,
+		@Nonnull TableId tableId
+	) throws SQLException {
+		if (tableId == null) {
+			throw new IllegalArgumentException("tableId cannot be null");
+		}
 		try (Statement statement = connection.createStatement()) {
-			statement.execute("DROP TABLE " + tableName);
+			int result = statement.executeUpdate("DELETE FROM TABLES WHERE NAME = " + sqlQuote(tableId.toString()));
+			if (result < 0) {
+				LOGGER.trace("Table version for database table \"{}\" isn't set, nothing to remove");
+			} else if (result > 1) {
+				throw new AssertionError(
+					"Tables.removeTableVersion removed more than one row with the name \"" + tableId + "\""
+				);
+			} else {
+				LOGGER.trace("Removed table version for database table \"{}\"", tableId);
+			}
 		}
 	}
 
-	private static final void createTablesTable(final Connection connection) throws SQLException {
-		LOGGER.debug("Creating database table \"TABLES\"");
+	/**
+	 * Drops (deletes) a {@link Table}. <b>Use with caution</b>, there is no
+	 * undo. This also removes its version entry from {@link Tables}.
+	 *
+	 * @param connection the {@link Connection} to use.
+	 * @param tableId the {@link TableId} of the {@link Table} to delete.
+	 * @throws SQLException If an SQL error occurs during the operation.
+	 * @throws IllegalArgumentException If {@code tableId} is {@code null}.
+	 */
+	protected static void dropTable(
+		@Nonnull Connection connection,
+		@Nonnull TableId tableId
+	) throws SQLException {
+		if (tableId == null) {
+			throw new IllegalArgumentException("tableId cannot be null");
+		}
+		LOGGER.debug("Dropping database table \"{}\"", tableId);
 		try (Statement statement = connection.createStatement()) {
-			statement.execute("CREATE TABLE TABLES(NAME VARCHAR(50) PRIMARY KEY, VERSION INT NOT NULL)");
+			statement.execute("DROP TABLE " + tableId);
+			removeTableVersion(connection, tableId);
 		}
 	}
 
@@ -248,8 +322,9 @@ public class Tables {
 	 * @return The SQL formatted string including the {@code =}, {@code LIKE} or
 	 *         {@code IS} operator.
 	 */
-	public static final String sqlNullIfBlank(final String s, boolean quote, boolean like) {
-		if (s == null || s.trim().isEmpty()) {
+	@Nonnull
+	public static String sqlNullIfBlank(@Nullable String s, boolean quote, boolean like) {
+		if (isBlank(s)) {
 			return " IS NULL ";
 		} else if (like) {
 			return " LIKE " + sqlQuote(s);
@@ -266,28 +341,67 @@ public class Tables {
 	 *
 	 * @param s the {@link String} to escape and quote.
 	 * @return The escaped and quoted {@link String}.
+	 *
+	 * @see #sqlEscape(String)
 	 */
-	public static final String sqlQuote(final String s) {
+	@Nullable
+	public static String sqlQuote(@Nullable String s) {
 		return s == null ? null : "'" + s.replace("'", "''") + "'";
 	}
 
 	/**
-	 * Escapes the argument with the default H2 escape character for the escape
-	 * character itself and the two wildcard characters {@code %} and {@code _}.
-	 * This escaping is only valid when using, {@code LIKE}, not when using
-	 * {@code =}.
-	 * <p>
-	 * TODO: Escaping should be generalized so that any escape character could
-	 * be used and that the class would set the correct escape character when
-	 * opening the database.
+	 * Escapes any existing single quotes in the argument but doesn't quote it.
+	 *
+	 * @param s the {@link String} to escape.
+	 * @return The escaped {@code s}.
+	 *
+	 * @see #sqlQuote(String)
+	 */
+	@Nullable
+	public static String sqlEscape(@Nullable String s) {
+		return s == null ? null : s.replace("'", "''");
+	}
+
+	/**
+	 * Escapes the argument using the default H2 escape character {@code "\"}
+	 * for the escape character itself and the two wildcard characters {@code %}
+	 * and {@code _}. This escaping is only valid when using, {@code LIKE}, not
+	 * when using {@code =}.
 	 *
 	 * @param s the {@link String} to be SQL escaped.
 	 * @return The escaped {@link String}.
 	 */
-	public static final String sqlLikeEscape(final String s) {
+	@Nullable
+	public static String sqlLikeEscape(@Nullable String s) {
+		return sqlLikeEscape(s, null);
+	}
+
+	/**
+	 * Escapes the argument with the specified escape character for the escape
+	 * character itself and the two wildcard characters {@code %} and {@code _}.
+	 * This escaping is only valid when using, {@code LIKE}, not when using
+	 * {@code =}.
+	 * <p>
+	 * <b>NOTE: When using a non-default escape character</b>, the operand must
+	 * be followed by {@code "ESCAPE '<escape character>'"}.
+	 *
+	 * @param s the {@link String} to be SQL escaped.
+	 * @param escapeCharacter the escape character or {@code null} to use the
+	 *            default.
+	 * @return The escaped {@link String}.
+	 */
+	@Nullable
+	public static String sqlLikeEscape(@Nullable String s, @Nullable String escapeCharacter) {
+		if (escapeCharacter == null) {
+			// Blank escape character is valid
+			escapeCharacter = DEFAULT_ESCAPE_CHARACTER;
+		} else if (escapeCharacter.length() > 1) {
+			LOGGER.debug("Ignoring invalid escape character \"{}\" in sqlLikeEscape()", escapeCharacter);
+			escapeCharacter = DEFAULT_ESCAPE_CHARACTER;
+		}
 		return s == null ? null : s.
-			replace(ESCAPE_CHARACTER, ESCAPE_CHARACTER + ESCAPE_CHARACTER).
-			replace("%", ESCAPE_CHARACTER + "%").
-			replace("_", ESCAPE_CHARACTER + "_");
+			replace(escapeCharacter, escapeCharacter + escapeCharacter).
+			replace("%", escapeCharacter + "%").
+			replace("_", escapeCharacter + "_");
 	}
 }

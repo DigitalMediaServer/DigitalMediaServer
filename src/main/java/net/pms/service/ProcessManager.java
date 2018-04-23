@@ -36,7 +36,6 @@ import javax.annotation.concurrent.GuardedBy;
 import javax.annotation.concurrent.Immutable;
 import javax.annotation.concurrent.NotThreadSafe;
 import javax.annotation.concurrent.ThreadSafe;
-import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.sun.jna.Memory;
@@ -64,7 +63,7 @@ import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
  * @author Nadahar
  */
 @ThreadSafe
-public class ProcessManager {
+public class ProcessManager implements Service {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(ProcessManager.class);
 
@@ -93,6 +92,7 @@ public class ProcessManager {
 	 * the constructor, and need only be called if {@link #stop()} has
 	 * previously been called.
 	 */
+	@Override
 	public void start() {
 		synchronized (incoming) {
 			if (terminator == null || !terminator.isAlive()) {
@@ -109,6 +109,7 @@ public class ProcessManager {
 	 * Stops the {@link ProcessManager}. This will cause its process terminator
 	 * thread to terminate all managed processes and stop.
 	 */
+	@Override
 	public void stop() {
 		ProcessTerminator currentTerminator;
 		synchronized (incoming) {
@@ -123,6 +124,13 @@ public class ProcessManager {
 			} catch (InterruptedException e) {
 				LOGGER.debug("ProcessManager was interrupted while waiting for the process terminator to terminate");
 			}
+		}
+	}
+
+	@Override
+	public boolean isAlive() {
+		synchronized (incoming) {
+			return terminator != null && terminator.isAlive();
 		}
 	}
 
@@ -739,7 +747,7 @@ public class ProcessManager {
 				processInfo.getName(),
 				processInfo.getPID()
 			);
-			destroyProcess(processInfo.getProcess());
+			destroyProcess(processInfo);
 		}
 
 		/**
@@ -792,7 +800,7 @@ public class ProcessManager {
 				processInfo.getName(),
 				processInfo.getPID()
 			);
-			destroyProcess(processInfo.getProcess());
+			destroyProcess(processInfo);
 		}
 
 		/**
@@ -827,23 +835,54 @@ public class ProcessManager {
 						"Successfully terminated process \"{}\" ({})", processInfo.getName(), processInfo.getPID()
 					);
 				}
-				destroyProcess(processInfo.process);
+				destroyProcess(processInfo);
 			}
 		}
 
 		/**
 		 * Destroys a {@link Process} after closing all the attached streams.
 		 *
-		 * @param process the {@link Process} to destroy.
+		 * @param processInfo the {@link ProcessInfo} for the {@link Process} to
+		 *            destroy.
 		 */
-		protected void destroyProcess(@Nullable Process process) {
-			if (process == null) {
+		protected void destroyProcess(@Nullable ProcessInfo processInfo) {
+			if (processInfo == null || processInfo.process == null) {
 				return;
 			}
-			IOUtils.closeQuietly(process.getInputStream());
-			IOUtils.closeQuietly(process.getErrorStream());
-			IOUtils.closeQuietly(process.getOutputStream());
-			process.destroy();
+			if (processInfo.process.getInputStream() != null) {
+				try {
+					processInfo.process.getInputStream().close();
+				} catch (IOException e) {
+					LOGGER.trace(
+						"An error occurred while closing the input stream of process {}\n{}",
+						processInfo.getName(),
+						e
+					);
+				}
+			}
+			if (processInfo.process.getErrorStream() != null) {
+				try {
+					processInfo.process.getErrorStream().close();
+				} catch (IOException e) {
+					LOGGER.trace(
+						"An error occurred while closing the error stream of process {}\n{}",
+						processInfo.getName(),
+						e
+					);
+				}
+			}
+			if (processInfo.process.getOutputStream() != null) {
+				try {
+					processInfo.process.getOutputStream().close();
+				} catch (IOException e) {
+					LOGGER.trace(
+						"An error occurred while closing the output stream of process {}\n{}",
+						processInfo.getName(),
+						e
+					);
+				}
+			}
+			processInfo.process.destroy();
 		}
 
 		/**
