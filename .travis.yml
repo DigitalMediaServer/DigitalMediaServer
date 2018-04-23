@@ -25,4 +25,4 @@ matrix:
 
 install: mvn external:install 
 
-script: mvn install -Dmaven.javadoc.skip=true -B -V
+script: mvn verify -B -V
