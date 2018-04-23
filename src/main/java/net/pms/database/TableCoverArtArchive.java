@@ -18,17 +18,23 @@
  */
 package net.pms.database;
 
+import static net.pms.database.Tables.*;
+import static org.apache.commons.lang3.StringUtils.isBlank;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Timestamp;
+import java.util.EnumSet;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import javax.annotation.concurrent.Immutable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+
 
 /**
  * This class is responsible for managing the Cover Art Archive table. It
@@ -38,8 +44,7 @@ import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
  *
  * @author Nadahar
  */
-
-public final class TableCoverArtArchive extends Tables{
+public final class TableCoverArtArchive extends Table {
 
 	/**
 	 * tableLock is used to synchronize database access on table level.
@@ -50,7 +55,7 @@ public final class TableCoverArtArchive extends Tables{
 	 */
 	private static final ReadWriteLock tableLock = new ReentrantReadWriteLock();
 	private static final Logger LOGGER = LoggerFactory.getLogger(TableCoverArtArchive.class);
-	private static final String TABLE_NAME = "COVER_ART_ARCHIVE";
+	private static final TableId ID = TableId.COVER_ART_ARCHIVE;
 
 	/**
 	 * Table version must be increased every time a change is done to the table
@@ -59,31 +64,103 @@ public final class TableCoverArtArchive extends Tables{
 	 */
 	private static final int TABLE_VERSION = 1;
 
-	// No instantiation
-	private TableCoverArtArchive() {
+	/**
+	 * Should only be instantiated by {@link TableManager}.
+	 *
+	 * @param tableManager the {@link TableManager} to use.
+	 */
+	TableCoverArtArchive(@Nonnull TableManager tableManager) {
+		super(tableManager);
 	}
 
-	private static String contructMBIDWhere(final String mBID) {
-		return " WHERE MBID" + sqlNullIfBlank(mBID, true, false);
+	@Override
+	@Nonnull
+	public TableId getTableId() {
+		return ID;
+	}
+
+	@Override
+	public int getTableVersion() {
+		return TABLE_VERSION;
+	}
+
+	@Override
+	@Nullable
+	public EnumSet<TableId> getRelatedTables() {
+		return null;
+	}
+
+	@Override
+	protected void createTable(@Nonnull Connection connection) throws SQLException {
+		LOGGER.debug("Creating database table \"{}\"", ID);
+		try (Statement statement = connection.createStatement()) {
+			statement.execute(
+				"CREATE TABLE " + ID + "(" +
+					"ID IDENTITY PRIMARY KEY, " +
+					"MODIFIED DATETIME, " +
+					"MBID VARCHAR(36), " +
+					"COVER BLOB, " +
+				")");
+			statement.execute("CREATE INDEX MBID_IDX ON " + ID + "(MBID)");
+		}
 	}
 
 	/**
-	 * Stores the cover {@link Blob} with the given mBID in the database
-	 *
-	 * @param mBID the MBID to store
-	 * @param cover the cover as a {@link Blob}
+	 * This method <b>MUST</b> be updated if the table definition are altered.
+	 * The changes for each version in the form of {@code ALTER TABLE} must be
+	 * implemented here.
+	 * <p>
+	 * For an implementation example see
+	 * {@link TableMusicBrainzReleases#upgradeTable(Connection, int)}.
 	 */
-	public static void writeMBID(final String mBID, final byte[] cover) {
+	@SuppressWarnings("unused")
+	@Override
+	protected void upgradeTable(@Nonnull Connection connection, int currentVersion) throws SQLException {
+		LOGGER.info("Upgrading database table \"{}\" from version {} to {}", ID, currentVersion, TABLE_VERSION);
+		if (currentVersion < 1) {
+			currentVersion = 1;
+		}
+		tableLock.writeLock().lock();
+		try {
+			for (int version = currentVersion; version < TABLE_VERSION; version++) {
+				LOGGER.trace("Upgrading table {} from version {} to {}", ID, version, version + 1);
+				switch (version) {
+					//case 1: Alter table to version 2
+					default:
+						throw new IllegalStateException(
+							"Table \"" + ID + "is missing table upgrade commands from version " +
+							version + " to " + TABLE_VERSION
+						);
+				}
+			}
+			setTableVersion(connection, ID, TABLE_VERSION);
+		} finally {
+			tableLock.writeLock().unlock();
+		}
+	}
+
+	/**
+	 * Stores the cover {@link Blob} with the given {@code MBID} in the
+	 * database.
+	 *
+	 * @param mBID the {@code MBID} to store.
+	 * @param cover the cover as a {@link Blob}.
+	 * @throws IllegalArgumentException If {@code mBID} is blank.
+	 */
+	public void writeMBID(@Nonnull String mBID, @Nullable byte[] cover) {
+		if (isBlank(mBID)) {
+			throw new IllegalArgumentException("mBID cannot be blank");
+		}
 		boolean trace = LOGGER.isTraceEnabled();
 
-		try (Connection connection = DATABASE.getConnection()) {
-			String query = "SELECT * FROM " + TABLE_NAME + contructMBIDWhere(mBID);
+		try (Connection connection = getConnection()) {
+			String query = "SELECT * FROM " + ID + contructMBIDWhere(mBID);
 			if (trace) {
 				LOGGER.trace("Searching for Cover Art Archive cover with \"{}\" before update", query);
 			}
 
 			tableLock.writeLock().lock();
-			try (Statement statement = connection.createStatement(ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE)){
+			try (Statement statement = connection.createStatement(ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE)) {
 				connection.setAutoCommit(false);
 				try (ResultSet result = statement.executeQuery(query)) {
 					if (result.next()) {
@@ -127,19 +204,20 @@ public final class TableCoverArtArchive extends Tables{
 	}
 
 	/**
-	 * Looks up cover in the table based on the given MBID. Never returns
-	 * <code>null</code>
+	 * Looks up cover in the table based on the given {@code MBID} and returns
+	 * the result as a {@link CoverArtArchiveResult}.
 	 *
-	 * @param mBID the MBID {@link String} to search with
+	 * @param mBID the {@code MBID} to search for.
 	 *
-	 * @return The result of the search, never <code>null</code>
+	 * @return The resulting {@link CoverArtArchiveResult}.
 	 */
-	public static CoverArtArchiveResult findMBID(final String mBID) {
+	@Nonnull
+	public CoverArtArchiveResult findMBID(@Nullable String mBID) {
 		boolean trace = LOGGER.isTraceEnabled();
 		CoverArtArchiveResult result;
 
-		try (Connection connection = DATABASE.getConnection()) {
-			String query = "SELECT COVER, MODIFIED FROM " + TABLE_NAME + contructMBIDWhere(mBID);
+		try (Connection connection = getConnection()) {
+			String query = "SELECT COVER, MODIFIED FROM " + ID + contructMBIDWhere(mBID);
 
 			if (trace) {
 				LOGGER.trace("Searching for cover with \"{}\"", query);
@@ -170,102 +248,27 @@ public final class TableCoverArtArchive extends Tables{
 		return result;
 	}
 
-	/**
-	 * Checks and creates or upgrades the table as needed.
-	 *
-	 * @param connection the {@link Connection} to use
-	 *
-	 * @throws SQLException
-	 */
-	protected static void checkTable(final Connection connection) throws SQLException {
-		tableLock.writeLock().lock();
-		try {
-			if (tableExists(connection, TABLE_NAME)) {
-				Integer version = getTableVersion(connection, TABLE_NAME);
-				if (version != null) {
-					if (version < TABLE_VERSION) {
-						upgradeTable(connection, version);
-					} else if (version > TABLE_VERSION) {
-						throw new SQLException(
-							"Database table \"" + TABLE_NAME +
-							"\" is from a newer version of DMS. Please move, rename or delete database file \"" +
-							DATABASE.getDatabaseFilename() +
-							"\" before starting DMS"
-						);
-					}
-				} else {
-					LOGGER.warn("Database table \"{}\" has an unknown version and cannot be used. Dropping and recreating table", TABLE_NAME);
-					dropTable(connection, TABLE_NAME);
-					createCoverArtArchiveTable(connection);
-					setTableVersion(connection, TABLE_NAME, TABLE_VERSION);
-				}
-			} else {
-				createCoverArtArchiveTable(connection);
-				setTableVersion(connection, TABLE_NAME, TABLE_VERSION);
-			}
-		} finally {
-			tableLock.writeLock().unlock();
-		}
-	}
-
-	/**
-	 * This method <strong>MUST</strong> be updated if the table definition are
-	 * altered. The changes for each version in the form of
-	 * <code>ALTER TABLE</code> must be implemented here.
-	 *
-	 * @param connection the {@link Connection} to use
-	 * @param currentVersion the version to upgrade <strong>from</strong>
-	 *
-	 * @throws SQLException
-	 */
-	@SuppressWarnings("unused")
-	private static void upgradeTable(final Connection connection, final int currentVersion) throws SQLException {
-		LOGGER.info("Upgrading database table \"{}\" from version {} to {}", TABLE_NAME, currentVersion, TABLE_VERSION);
-		tableLock.writeLock().lock();
-		try {
-			for (int version = currentVersion;version < TABLE_VERSION; version++) {
-				LOGGER.trace("Upgrading table {} from version {} to {}", TABLE_NAME, version, version + 1);
-				switch (version) {
-					//case 1: Alter table to version 2
-					default:
-						throw new IllegalStateException(
-							"Table \"" + TABLE_NAME + "is missing table upgrade commands from version " +
-							version + " to " + TABLE_VERSION
-						);
-				}
-			}
-			setTableVersion(connection, TABLE_NAME, TABLE_VERSION);
-		} finally {
-			tableLock.writeLock().unlock();
-		}
-	}
-
-	/**
-	 * Must be called from inside a table lock
-	 */
-	private static void createCoverArtArchiveTable(final Connection connection) throws SQLException {
-		LOGGER.debug("Creating database table \"{}\"", TABLE_NAME);
-		try (Statement statement = connection.createStatement()) {
-			statement.execute(
-				"CREATE TABLE " + TABLE_NAME + "(" +
-					"ID IDENTITY PRIMARY KEY, " +
-					"MODIFIED DATETIME, " +
-					"MBID VARCHAR(36), " +
-					"COVER BLOB, " +
-				")");
-			statement.execute("CREATE INDEX MBID_IDX ON " + TABLE_NAME + "(MBID)");
-		}
+	private static String contructMBIDWhere(String mBID) {
+		return " WHERE MBID" + sqlNullIfBlank(mBID, true, false);
 	}
 
 	/**
 	 * A class for holding the results from a Cover Art Archive database lookup.
 	 */
+	@Immutable
 	public static class CoverArtArchiveResult {
 
 		private final boolean found;
 		private final Timestamp modified;
 		private final byte[] cover;
 
+		/**
+		 * Creates a new instance holding the specified values.
+		 *
+		 * @param found {@code true} if found, {@code false} otherwise.
+		 * @param modified the modified {@link Timestamp}.
+		 * @param cover the cover byte array.
+		 */
 		@SuppressFBWarnings("EI_EXPOSE_REP2")
 		public CoverArtArchiveResult(boolean found, @Nullable Timestamp modified, @Nullable byte[] cover) {
 			this.found = found;

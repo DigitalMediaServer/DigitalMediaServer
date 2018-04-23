@@ -57,7 +57,6 @@ import javax.swing.*;
 import net.pms.configuration.DeviceConfiguration;
 import net.pms.configuration.PmsConfiguration;
 import net.pms.configuration.RendererConfiguration;
-import net.pms.database.Tables;
 import net.pms.dlna.CodeEnter;
 import net.pms.dlna.DLNAMediaDatabase;
 import net.pms.dlna.DLNAResource;
@@ -254,7 +253,7 @@ public class PMS {
 	public DLNAMediaDatabase getDatabase() {
 		synchronized (databaseLock) {
 			if (database == null) {
-				database = new DLNAMediaDatabase("medias");
+				database = new DLNAMediaDatabase();
 				database.init(false);
 			}
 			return database;
@@ -417,7 +416,7 @@ public class PMS {
 		displayBanner();
 
 		// Initialize database
-		Tables.checkTables();
+		Services.get().createTableManager();
 
 		// Log registered ImageIO plugins
 		if (LOGGER.isTraceEnabled()) {

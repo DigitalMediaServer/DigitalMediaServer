@@ -18,26 +18,20 @@
  */
 package net.pms.dlna;
 
-import java.awt.Component;
 import java.io.File;
 import java.io.IOException;
 import java.sql.*;
 import java.util.ArrayList;
-import javax.swing.JOptionPane;
-import javax.swing.SwingUtilities;
 import net.pms.Messages;
 import net.pms.PMS;
-import net.pms.configuration.PmsConfiguration;
 import net.pms.dlna.DLNAMediaInfo.RateMode;
 import net.pms.formats.Format;
 import net.pms.formats.v2.SubtitleType;
 import net.pms.image.ImageInfo;
+import net.pms.service.Services;
 import net.pms.util.Rational;
-import org.apache.commons.io.FileUtils;
 import static org.apache.commons.lang3.StringUtils.*;
-import org.h2.engine.Constants;
-import org.h2.jdbcx.JdbcConnectionPool;
-import org.h2.jdbcx.JdbcDataSource;
+import org.h2.api.ErrorCode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
@@ -50,14 +44,9 @@ import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
  */
 public class DLNAMediaDatabase implements Runnable {
 	private static final Logger LOGGER = LoggerFactory.getLogger(DLNAMediaDatabase.class);
-	private static final PmsConfiguration configuration = PMS.getConfiguration();
 
-	private String url;
-	private String dbDir;
-	private String dbName;
 	public static final String NONAME = "###";
 	private Thread scanner;
-	private JdbcConnectionPool cp;
 	private int dbCount;
 
 	/**
@@ -83,58 +72,6 @@ public class DLNAMediaDatabase implements Runnable {
 	private final int SIZE_SONGNAME = 255;
 	private final int SIZE_GENRE = 64;
 
-	public DLNAMediaDatabase(String name) {
-		dbName = name;
-		File profileFolder = new File(configuration.getProfileFolder());
-		dbDir = new File(profileFolder.isDirectory() ? profileFolder : null, "database").getAbsolutePath();
-		boolean logDB = configuration.getDatabaseLogging();
-		url = Constants.START_URL + dbDir + File.separator + dbName + (logDB ? ";TRACE_LEVEL_FILE=4" : "");
-		LOGGER.debug("Using database URL: {}", url);
-		LOGGER.info("Using database located at: \"{}\"", dbDir);
-		if (logDB) {
-			LOGGER.info("Database logging is enabled");
-		} else if (LOGGER.isDebugEnabled()) {
-			LOGGER.debug("Database logging is disabled");
-		}
-
-		try {
-			Class.forName("org.h2.Driver");
-		} catch (ClassNotFoundException e) {
-			LOGGER.error(null, e);
-		}
-
-		JdbcDataSource ds = new JdbcDataSource();
-		ds.setURL(url);
-		ds.setUser("sa");
-		ds.setPassword("");
-		cp = JdbcConnectionPool.create(ds);
-	}
-
-	/**
-	 * Gets the name of the database file.
-	 *
-	 * @return The filename.
-	 */
-	public String getDatabaseFilename() {
-		if (dbName == null || dbDir == null) {
-			return null;
-		}
-		return dbDir + File.separator + dbName;
-	}
-
-	/**
-	 * Gets a new connection from the connection pool if one is available. If
-	 * not waits for a free slot until timeout.
-	 * <p>
-	 * <strong>Important: Every connection must be closed after use</strong>
-	 *
-	 * @return the new connection.
-	 * @throws SQLException If an SQL error occurs during the operation.
-	 */
-	public Connection getConnection() throws SQLException {
-		return cp.getConnection();
-	}
-
 	/**
 	 * Initializes the database for use, performing checks and creating a new
 	 * database if necessary.
@@ -145,215 +82,187 @@ public class DLNAMediaDatabase implements Runnable {
 	public synchronized void init(boolean force) {
 		dbCount = -1;
 		String version = null;
-		Connection conn = null;
-		ResultSet rs = null;
-		Statement stmt = null;
 		boolean trace = LOGGER.isTraceEnabled();
 
-		try {
-			conn = getConnection();
-		} catch (SQLException se) {
-			final File dbFile = new File(dbDir + File.separator + dbName + ".data.db");
-			final File dbDirectory = new File(dbDir);
-			if (dbFile.exists() || (se.getErrorCode() == 90048)) { // Cache is corrupt or a wrong version, so delete it
-				FileUtils.deleteQuietly(dbDirectory);
-				if (!dbDirectory.exists()) {
-					LOGGER.info("The database has been deleted because it was corrupt or had the wrong version");
-				} else {
-					if (!net.pms.PMS.isHeadless()) {
-						JOptionPane.showMessageDialog(
-							SwingUtilities.getWindowAncestor((Component) PMS.get().getFrame()),
-							String.format(Messages.getString("DLNAMediaDatabase.5"), dbDir),
-							Messages.getString("Dialog.Error"),
-							JOptionPane.ERROR_MESSAGE);
-					}
-					LOGGER.error("Damaged cache can't be deleted. Stop the program and delete the folder \"" + dbDir + "\" manually");
-					PMS.get().getRootFolder(null).stopScan();
-					configuration.setUseCache(false);
-					return;
-				}
-			} else {
-				LOGGER.error("Database connection error: " + se.getMessage());
-				LOGGER.trace("", se);
-				RootFolder rootFolder = PMS.get().getRootFolder(null);
-				if (rootFolder != null) {
-					rootFolder.stopScan();
-				}
-				configuration.setUseCache(false);
+		try (Connection connection = Services.tableManager().getConnection()) {
+			if (connection == null) {
+				LOGGER.error("Can't initialize database since TableManager isn't connected");
 				return;
 			}
-		} finally {
-			close(conn);
-		}
 
-		try {
-			conn = getConnection();
-
-			stmt = conn.createStatement();
-			rs = stmt.executeQuery("SELECT count(*) FROM FILES");
-			if (rs.next()) {
-				dbCount = rs.getInt(1);
+			try (
+				Statement statement = connection.createStatement();
+				ResultSet resultSet = statement.executeQuery("SELECT count(*) FROM FILES");
+			) {
+				if (resultSet.next()) {
+					dbCount = resultSet.getInt(1);
+				}
 			}
-			rs.close();
-			stmt.close();
 
-			stmt = conn.createStatement();
-			rs = stmt.executeQuery("SELECT VALUE FROM METADATA WHERE KEY = 'VERSION'");
-			if (rs.next()) {
-				version = rs.getString(1);
+			try (
+				Statement statement = connection.createStatement();
+				ResultSet resultSet = statement.executeQuery("SELECT VALUE FROM METADATA WHERE KEY = 'VERSION'");
+			) {
+				if (resultSet.next()) {
+					version = resultSet.getString(1);
+				}
 			}
 		} catch (SQLException se) {
-			if (se.getErrorCode() != 42102) { // Don't log exception "Table "FILES" not found" which will be corrected in following step
-				LOGGER.error(null, se);
+			if (se.getErrorCode() != ErrorCode.TABLE_OR_VIEW_NOT_FOUND_1) { // Don't log exception "Table "FILES" not found" which will be corrected in following step
+				LOGGER.error("Database initialization error: {}", se.getMessage());
+				LOGGER.trace("", se);
 			}
-		} finally {
-			close(rs);
-			close(stmt);
-			close(conn);
 		}
 
 		// Recreate database if it is not the latest version.
 		boolean force_reinit = !latestVersion.equals(version);
 		if (force || dbCount == -1 || force_reinit) {
 			LOGGER.debug("Database will be (re)initialized");
-			try {
-				conn = getConnection();
-				LOGGER.trace("DROPPING TABLE FILES");
-				executeUpdate(conn, "DROP TABLE FILES");
-				LOGGER.trace("DROPPING TABLE METADATA");
-				executeUpdate(conn, "DROP TABLE METADATA");
-				LOGGER.trace("DROPPING TABLE REGEXP_RULES");
-				executeUpdate(conn, "DROP TABLE REGEXP_RULES");
-				LOGGER.trace("DROPPING TABLE AUDIOTRACKS");
-				executeUpdate(conn, "DROP TABLE AUDIOTRACKS");
-				LOGGER.trace("DROPPING TABLE SUBTRACKS");
-				executeUpdate(conn, "DROP TABLE SUBTRACKS");
-			} catch (SQLException se) {
-				if (se.getErrorCode() != 42102) { // Don't log exception "Table "FILES" not found" which will be corrected in following step
-					LOGGER.error("SQL error while dropping tables: {}", se.getMessage());
+			try (Connection connection = Services.tableManager().getConnection()) {
+				if (connection == null) {
+					LOGGER.error("Can't initialize database since TableManager isn't connected");
+					return;
+				}
+
+				try {
+					LOGGER.trace("DROPPING TABLE FILES");
+					executeUpdate(connection, "DROP TABLE FILES");
+					LOGGER.trace("DROPPING TABLE METADATA");
+					executeUpdate(connection, "DROP TABLE METADATA");
+					LOGGER.trace("DROPPING TABLE REGEXP_RULES");
+					executeUpdate(connection, "DROP TABLE REGEXP_RULES");
+					LOGGER.trace("DROPPING TABLE AUDIOTRACKS");
+					executeUpdate(connection, "DROP TABLE AUDIOTRACKS");
+					LOGGER.trace("DROPPING TABLE SUBTRACKS");
+					executeUpdate(connection, "DROP TABLE SUBTRACKS");
+				} catch (SQLException se) {
+					if (se.getErrorCode() != ErrorCode.TABLE_OR_VIEW_NOT_FOUND_1) { // Don't log exception "Table "FILES" not found" which will be corrected in following step
+						LOGGER.error("SQL error while dropping tables: {}", se.getMessage());
+						LOGGER.trace("", se);
+					}
+				}
+
+				try {
+					StringBuilder sb = new StringBuilder();
+					sb.append("CREATE TABLE FILES (");
+					sb.append("  ID                      INT AUTO_INCREMENT");
+					sb.append(", FILENAME                VARCHAR2(1024)   NOT NULL");
+					sb.append(", MODIFIED                TIMESTAMP        NOT NULL");
+					sb.append(", TYPE                    INT");
+					sb.append(", DURATION                DOUBLE");
+					sb.append(", BITRATE                 INT");
+					sb.append(", BITRATEMODE             OTHER");
+					sb.append(", WIDTH                   INT");
+					sb.append(", HEIGHT                  INT");
+					sb.append(", SIZE                    NUMERIC");
+					sb.append(", CODECV                  VARCHAR2(").append(SIZE_CODECV).append(')');
+					sb.append(", FRAMERATE               VARCHAR2(").append(SIZE_FRAMERATE).append(')');
+					sb.append(", ASPECTRATIODVD          OTHER");
+					sb.append(", ASPECTRATIOCONTAINER    OTHER");
+					sb.append(", ASPECTRATIOVIDEOTRACK   OTHER");
+					sb.append(", REFRAMES                INT");
+					sb.append(", AVCLEVEL                VARCHAR2(").append(SIZE_AVC_LEVEL).append(')');
+					sb.append(", IMAGEINFO               OTHER");
+					sb.append(", THUMB                   OTHER");
+					sb.append(", CONTAINER               VARCHAR2(").append(SIZE_CONTAINER).append(')');
+					sb.append(", MUXINGMODE              VARCHAR2(").append(SIZE_MUXINGMODE).append(')');
+					sb.append(", FRAMERATEMODE           VARCHAR2(").append(SIZE_FRAMERATE_MODE).append(')');
+					sb.append(", STEREOSCOPY             VARCHAR2(").append(SIZE_STEREOSCOPY).append(')');
+					sb.append(", MATRIXCOEFFICIENTS      VARCHAR2(").append(SIZE_MATRIX_COEFFICIENTS).append(')');
+					sb.append(", TITLECONTAINER          VARCHAR2(").append(SIZE_TITLE).append(')');
+					sb.append(", TITLEVIDEOTRACK         VARCHAR2(").append(SIZE_TITLE).append(')');
+					sb.append(", VIDEOTRACKCOUNT         INT");
+					sb.append(", IMAGECOUNT              INT");
+					sb.append(", BITDEPTH                INT");
+					sb.append(", PIXELASPECTRATIO        OTHER");
+					sb.append(", SCANTYPE                OTHER");
+					sb.append(", SCANORDER               OTHER");
+					sb.append(", constraint PK1 primary key (FILENAME, MODIFIED, ID))");
+					if (trace) {
+						LOGGER.trace("Creating table FILES with:\n\n{}\n", sb.toString());
+					}
+					executeUpdate(connection, sb.toString());
+
+					sb = new StringBuilder();
+					sb.append("CREATE TABLE AUDIOTRACKS (");
+					sb.append("  FILEID            INT              NOT NULL");
+					sb.append(", ID                INT              NOT NULL");
+					sb.append(", LANG              VARCHAR2(").append(SIZE_LANG).append(')');
+					sb.append(", TITLE             VARCHAR2(").append(SIZE_TITLE).append(')');
+					sb.append(", NRAUDIOCHANNELS   NUMERIC");
+					sb.append(", SAMPLEFREQ        INT");
+					sb.append(", CODECA            VARCHAR2(").append(SIZE_CODECA).append(')');
+					sb.append(", BITSPERSAMPLE     INT");
+					sb.append(", ALBUM             VARCHAR2(").append(SIZE_ALBUM).append(')');
+					sb.append(", ARTIST            VARCHAR2(").append(SIZE_ARTIST).append(')');
+					sb.append(", SONGNAME          VARCHAR2(").append(SIZE_SONGNAME).append(')');
+					sb.append(", GENRE             VARCHAR2(").append(SIZE_GENRE).append(')');
+					sb.append(", YEAR              INT");
+					sb.append(", TRACK             INT");
+					sb.append(", DELAY             INT");
+					sb.append(", MUXINGMODE        VARCHAR2(").append(SIZE_MUXINGMODE).append(')');
+					sb.append(", BITRATE           INT");
+					sb.append(", BITRATEMODE       OTHER");
+					sb.append(", constraint PKAUDIO primary key (FILEID, ID))");
+					if (trace) {
+						LOGGER.trace("Creating table AUDIOTRACKS with:\n\n{}\n", sb.toString());
+					}
+					executeUpdate(connection, sb.toString());
+
+					sb = new StringBuilder();
+					sb.append("CREATE TABLE SUBTRACKS (");
+					sb.append("  FILEID   INT              NOT NULL");
+					sb.append(", ID       INT              NOT NULL");
+					sb.append(", LANG     VARCHAR2(").append(SIZE_LANG).append(')');
+					sb.append(", TITLE    VARCHAR2(").append(SIZE_TITLE).append(')');
+					sb.append(", TYPE     INT");
+					sb.append(", constraint PKSUB primary key (FILEID, ID))");
+					if (trace) {
+						LOGGER.trace("Creating table SUBTRACKS with:\n\n{}\n", sb.toString());
+					}
+					executeUpdate(connection, sb.toString());
+
+					LOGGER.trace("Creating table METADATA");
+					executeUpdate(connection, "CREATE TABLE METADATA (KEY VARCHAR2(255) NOT NULL, VALUE VARCHAR2(255) NOT NULL)");
+					executeUpdate(connection, "INSERT INTO METADATA VALUES ('VERSION', '" + latestVersion + "')");
+
+					LOGGER.trace("Creating index IDXARTIST");
+					executeUpdate(connection, "CREATE INDEX IDXARTIST on AUDIOTRACKS (ARTIST asc);");
+
+					LOGGER.trace("Creating index IDXALBUM");
+					executeUpdate(connection, "CREATE INDEX IDXALBUM on AUDIOTRACKS (ALBUM asc);");
+
+					LOGGER.trace("Creating index IDXGENRE");
+					executeUpdate(connection, "CREATE INDEX IDXGENRE on AUDIOTRACKS (GENRE asc);");
+
+					LOGGER.trace("Creating index IDXYEAR");
+					executeUpdate(connection, "CREATE INDEX IDXYEAR on AUDIOTRACKS (YEAR asc);");
+
+					LOGGER.trace("Creating table REGEXP_RULES");
+					executeUpdate(connection, "CREATE TABLE REGEXP_RULES ( ID VARCHAR2(255) PRIMARY KEY, RULE VARCHAR2(255), ORDR NUMERIC);");
+					executeUpdate(connection, "INSERT INTO REGEXP_RULES VALUES ( '###', '(?i)^\\W.+', 0 );");
+					executeUpdate(connection, "INSERT INTO REGEXP_RULES VALUES ( '0-9', '(?i)^\\d.+', 1 );");
+
+					// Retrieve the alphabet property value and split it
+					String[] chars = Messages.getString("DLNAMediaDatabase.1").split(",");
+
+					for (int i = 0; i < chars.length; i++) {
+						// Create regexp rules for characters with a sort order based on the property value
+						executeUpdate(connection, "INSERT INTO REGEXP_RULES VALUES ( '" + chars[i] + "', '(?i)^" + chars[i] + ".+', " + (i + 2) + " );");
+					}
+
+					LOGGER.debug("Database initialized");
+				} catch (SQLException se) {
+					LOGGER.error("Error creating tables: {}", se.getMessage());
 					LOGGER.trace("", se);
 				}
-			}
-
-			try {
-				StringBuilder sb = new StringBuilder();
-				sb.append("CREATE TABLE FILES (");
-				sb.append("  ID                      INT AUTO_INCREMENT");
-				sb.append(", FILENAME                VARCHAR2(1024)   NOT NULL");
-				sb.append(", MODIFIED                TIMESTAMP        NOT NULL");
-				sb.append(", TYPE                    INT");
-				sb.append(", DURATION                DOUBLE");
-				sb.append(", BITRATE                 INT");
-				sb.append(", BITRATEMODE             OTHER");
-				sb.append(", WIDTH                   INT");
-				sb.append(", HEIGHT                  INT");
-				sb.append(", SIZE                    NUMERIC");
-				sb.append(", CODECV                  VARCHAR2(").append(SIZE_CODECV).append(')');
-				sb.append(", FRAMERATE               VARCHAR2(").append(SIZE_FRAMERATE).append(')');
-				sb.append(", ASPECTRATIODVD          OTHER");
-				sb.append(", ASPECTRATIOCONTAINER    OTHER");
-				sb.append(", ASPECTRATIOVIDEOTRACK   OTHER");
-				sb.append(", REFRAMES                INT");
-				sb.append(", AVCLEVEL                VARCHAR2(").append(SIZE_AVC_LEVEL).append(')');
-				sb.append(", IMAGEINFO               OTHER");
-				sb.append(", THUMB                   OTHER");
-				sb.append(", CONTAINER               VARCHAR2(").append(SIZE_CONTAINER).append(')');
-				sb.append(", MUXINGMODE              VARCHAR2(").append(SIZE_MUXINGMODE).append(')');
-				sb.append(", FRAMERATEMODE           VARCHAR2(").append(SIZE_FRAMERATE_MODE).append(')');
-				sb.append(", STEREOSCOPY             VARCHAR2(").append(SIZE_STEREOSCOPY).append(')');
-				sb.append(", MATRIXCOEFFICIENTS      VARCHAR2(").append(SIZE_MATRIX_COEFFICIENTS).append(')');
-				sb.append(", TITLECONTAINER          VARCHAR2(").append(SIZE_TITLE).append(')');
-				sb.append(", TITLEVIDEOTRACK         VARCHAR2(").append(SIZE_TITLE).append(')');
-				sb.append(", VIDEOTRACKCOUNT         INT");
-				sb.append(", IMAGECOUNT              INT");
-				sb.append(", BITDEPTH                INT");
-				sb.append(", PIXELASPECTRATIO        OTHER");
-				sb.append(", SCANTYPE                OTHER");
-				sb.append(", SCANORDER               OTHER");
-				sb.append(", constraint PK1 primary key (FILENAME, MODIFIED, ID))");
-				if (trace) {
-					LOGGER.trace("Creating table FILES with:\n\n{}\n", sb.toString());
-				}
-				executeUpdate(conn, sb.toString());
-
-				sb = new StringBuilder();
-				sb.append("CREATE TABLE AUDIOTRACKS (");
-				sb.append("  FILEID            INT              NOT NULL");
-				sb.append(", ID                INT              NOT NULL");
-				sb.append(", LANG              VARCHAR2(").append(SIZE_LANG).append(')');
-				sb.append(", TITLE             VARCHAR2(").append(SIZE_TITLE).append(')');
-				sb.append(", NRAUDIOCHANNELS   NUMERIC");
-				sb.append(", SAMPLEFREQ        INT");
-				sb.append(", CODECA            VARCHAR2(").append(SIZE_CODECA).append(')');
-				sb.append(", BITSPERSAMPLE     INT");
-				sb.append(", ALBUM             VARCHAR2(").append(SIZE_ALBUM).append(')');
-				sb.append(", ARTIST            VARCHAR2(").append(SIZE_ARTIST).append(')');
-				sb.append(", SONGNAME          VARCHAR2(").append(SIZE_SONGNAME).append(')');
-				sb.append(", GENRE             VARCHAR2(").append(SIZE_GENRE).append(')');
-				sb.append(", YEAR              INT");
-				sb.append(", TRACK             INT");
-				sb.append(", DELAY             INT");
-				sb.append(", MUXINGMODE        VARCHAR2(").append(SIZE_MUXINGMODE).append(')');
-				sb.append(", BITRATE           INT");
-				sb.append(", BITRATEMODE       OTHER");
-				sb.append(", constraint PKAUDIO primary key (FILEID, ID))");
-				if (trace) {
-					LOGGER.trace("Creating table AUDIOTRACKS with:\n\n{}\n", sb.toString());
-				}
-				executeUpdate(conn, sb.toString());
-
-				sb = new StringBuilder();
-				sb.append("CREATE TABLE SUBTRACKS (");
-				sb.append("  FILEID   INT              NOT NULL");
-				sb.append(", ID       INT              NOT NULL");
-				sb.append(", LANG     VARCHAR2(").append(SIZE_LANG).append(')');
-				sb.append(", TITLE    VARCHAR2(").append(SIZE_TITLE).append(')');
-				sb.append(", TYPE     INT");
-				sb.append(", constraint PKSUB primary key (FILEID, ID))");
-				if (trace) {
-					LOGGER.trace("Creating table SUBTRACKS with:\n\n{}\n", sb.toString());
-				}
-				executeUpdate(conn, sb.toString());
-
-				LOGGER.trace("Creating table METADATA");
-				executeUpdate(conn, "CREATE TABLE METADATA (KEY VARCHAR2(255) NOT NULL, VALUE VARCHAR2(255) NOT NULL)");
-				executeUpdate(conn, "INSERT INTO METADATA VALUES ('VERSION', '" + latestVersion + "')");
-
-				LOGGER.trace("Creating index IDXARTIST");
-				executeUpdate(conn, "CREATE INDEX IDXARTIST on AUDIOTRACKS (ARTIST asc);");
-
-				LOGGER.trace("Creating index IDXALBUM");
-				executeUpdate(conn, "CREATE INDEX IDXALBUM on AUDIOTRACKS (ALBUM asc);");
-
-				LOGGER.trace("Creating index IDXGENRE");
-				executeUpdate(conn, "CREATE INDEX IDXGENRE on AUDIOTRACKS (GENRE asc);");
-
-				LOGGER.trace("Creating index IDXYEAR");
-				executeUpdate(conn, "CREATE INDEX IDXYEAR on AUDIOTRACKS (YEAR asc);");
-
-				LOGGER.trace("Creating table REGEXP_RULES");
-				executeUpdate(conn, "CREATE TABLE REGEXP_RULES ( ID VARCHAR2(255) PRIMARY KEY, RULE VARCHAR2(255), ORDR NUMERIC);");
-				executeUpdate(conn, "INSERT INTO REGEXP_RULES VALUES ( '###', '(?i)^\\W.+', 0 );");
-				executeUpdate(conn, "INSERT INTO REGEXP_RULES VALUES ( '0-9', '(?i)^\\d.+', 1 );");
-
-				// Retrieve the alphabet property value and split it
-				String[] chars = Messages.getString("DLNAMediaDatabase.1").split(",");
-
-				for (int i = 0; i < chars.length; i++) {
-					// Create regexp rules for characters with a sort order based on the property value
-					executeUpdate(conn, "INSERT INTO REGEXP_RULES VALUES ( '" + chars[i] + "', '(?i)^" + chars[i] + ".+', " + (i + 2) + " );");
-				}
-
-				LOGGER.debug("Database initialized");
-			} catch (SQLException se) {
-				LOGGER.error("Error creating tables: " + se.getMessage());
-				LOGGER.trace("", se);
-			} finally {
-				close(conn);
+			} catch (SQLException e) {
+				LOGGER.error("Error closing database connection: {}", e.getMessage());
+				LOGGER.trace("", e);
 			}
 		} else {
-			LOGGER.debug("Database file count: " + dbCount);
-			LOGGER.debug("Database version: " + latestVersion);
+			LOGGER.debug("Database file count: {}", dbCount);
+			LOGGER.debug("Database version: {}", latestVersion);
 		}
 	}
 
@@ -376,26 +285,29 @@ public class DLNAMediaDatabase implements Runnable {
 	 */
 	public synchronized boolean isDataExists(String name, long modified) {
 		boolean found = false;
-		Connection conn = null;
-		ResultSet rs = null;
-		PreparedStatement stmt = null;
-		try {
-			conn = getConnection();
-			stmt = conn.prepareStatement("SELECT * FROM FILES WHERE FILENAME = ? AND MODIFIED = ?");
+		try (
+			Connection connection = Services.tableManager().getConnection();
+			PreparedStatement stmt = connection == null ? null : connection.prepareStatement(
+				"SELECT * FROM FILES WHERE FILENAME = ? AND MODIFIED = ?"
+			);
+		) {
+			if (connection == null || stmt == null) {
+				LOGGER.error("Can't check for data existence since TableManager isn't connected");
+				return false;
+			}
 			stmt.setString(1, name);
 			stmt.setTimestamp(2, new Timestamp(modified));
-			rs = stmt.executeQuery();
-			while (rs.next()) {
-				found = true;
+			try (
+				ResultSet rs = stmt.executeQuery();
+			) {
+				while (rs.next()) {
+					found = true;
+				}
 			}
 		} catch (SQLException se) {
 			LOGGER.error("An SQL error occurred when trying to check if data exists for \"{}\": {}", name, se.getMessage());
 			LOGGER.trace("", se);
 			return false;
-		} finally {
-			close(rs);
-			close(stmt);
-			close(conn);
 		}
 		return found;
 	}
@@ -414,15 +326,21 @@ public class DLNAMediaDatabase implements Runnable {
 	public synchronized ArrayList<DLNAMediaInfo> getData(String name, long modified) throws IOException, SQLException {
 		ArrayList<DLNAMediaInfo> list = new ArrayList<>();
 		try (
-			Connection conn = getConnection();
-			PreparedStatement stmt = conn.prepareStatement("SELECT * FROM FILES WHERE FILENAME = ? AND MODIFIED = ?");
+			Connection connection = Services.tableManager().getConnection();
+			PreparedStatement stmt = connection == null ? null : connection.prepareStatement(
+				"SELECT * FROM FILES WHERE FILENAME = ? AND MODIFIED = ?"
+			);
 		) {
+			if (connection == null || stmt == null) {
+				LOGGER.error("Can't get data since TableManager isn't connected");
+				return list;
+			}
 			stmt.setString(1, name);
 			stmt.setTimestamp(2, new Timestamp(modified));
 			try (
 				ResultSet rs = stmt.executeQuery();
-				PreparedStatement audios = conn.prepareStatement("SELECT * FROM AUDIOTRACKS WHERE FILEID = ?");
-				PreparedStatement subs = conn.prepareStatement("SELECT * FROM SUBTRACKS WHERE FILEID = ?")
+				PreparedStatement audios = connection.prepareStatement("SELECT * FROM AUDIOTRACKS WHERE FILEID = ?");
+				PreparedStatement subs = connection.prepareStatement("SELECT * FROM SUBTRACKS WHERE FILEID = ?")
 			) {
 				while (rs.next()) {
 					DLNAMediaInfo media = new DLNAMediaInfo();
@@ -670,9 +588,11 @@ public class DLNAMediaDatabase implements Runnable {
 	 * @throws SQLException if an SQL error occurs during the operation.
 	 */
 	public synchronized void insertOrUpdateData(String name, long modified, int type, DLNAMediaInfo media) throws SQLException {
-		try (
-			Connection connection = getConnection()
-		) {
+		try (Connection connection = Services.tableManager().getConnection()) {
+			if (connection == null) {
+				LOGGER.error("Can't insert or update data since TableManager isn't connected");
+				return;
+			}
 			connection.setAutoCommit(false);
 			int fileId = -1;
 			try (PreparedStatement ps = connection.prepareStatement(
@@ -839,13 +759,17 @@ public class DLNAMediaDatabase implements Runnable {
 
 	public synchronized void deleteThumbnails() {
 		try (
-			Connection conn = getConnection();
-			PreparedStatement ps = conn.prepareStatement(
+			Connection connection = Services.tableManager().getConnection();
+			PreparedStatement preparedStatement = connection == null ? null : connection.prepareStatement(
 				"UPDATE FILES SET THUMB = ?"
 			);
 		) {
-			ps.setNull(1, Types.OTHER);
-			ps.executeUpdate();
+			if (connection == null || preparedStatement == null) {
+				LOGGER.error("Can't delete thumbnails since TableManager isn't connected");
+				return;
+			}
+			preparedStatement.setNull(1, Types.OTHER);
+			preparedStatement.executeUpdate();
 		} catch (SQLException se) {
 			LOGGER.error("Error deleting cached thumbnails: {}", se.getMessage());
 			LOGGER.trace("", se);
@@ -854,19 +778,23 @@ public class DLNAMediaDatabase implements Runnable {
 
 	public synchronized void updateThumbnail(String name, long modified, DLNAMediaInfo media) {
 		try (
-			Connection conn = getConnection();
-			PreparedStatement ps = conn.prepareStatement(
+			Connection connection = Services.tableManager().getConnection();
+			PreparedStatement preparedStatement = connection == null ? null : connection.prepareStatement(
 				"UPDATE FILES SET THUMB = ? WHERE FILENAME = ? AND MODIFIED = ?"
 			);
 		) {
-			ps.setString(2, name);
-			ps.setTimestamp(3, new Timestamp(modified));
-			if (media != null && media.getThumb() != null) {
-				ps.setObject(1, media.getThumb());
-			} else {
-				ps.setNull(1, Types.OTHER);
+			if (connection == null || preparedStatement == null) {
+				LOGGER.error("Can't update thumbnail since TableManager isn't connected");
+				return;
 			}
-			ps.executeUpdate();
+			preparedStatement.setString(2, name);
+			preparedStatement.setTimestamp(3, new Timestamp(modified));
+			if (media != null && media.getThumb() != null) {
+				preparedStatement.setObject(1, media.getThumb());
+			} else {
+				preparedStatement.setNull(1, Types.OTHER);
+			}
+			preparedStatement.executeUpdate();
 		} catch (SQLException se) {
 			LOGGER.error("Error updating cached thumbnail for \"{}\": {}", media, se.getMessage());
 			LOGGER.trace("", se);
@@ -875,138 +803,115 @@ public class DLNAMediaDatabase implements Runnable {
 
 	public synchronized ArrayList<String> getStrings(String sql) {
 		ArrayList<String> list = new ArrayList<>();
-		Connection connection = null;
-		ResultSet rs = null;
-		PreparedStatement ps = null;
-		try {
-			connection = getConnection();
-			ps = connection.prepareStatement(sql);
-			rs = ps.executeQuery();
-			while (rs.next()) {
-				String str = rs.getString(1);
-				if (isBlank(str)) {
-					if (!list.contains(NONAME)) {
-						list.add(NONAME);
+		try (Connection connection = Services.tableManager().getConnection()) {
+			if (connection == null) {
+				LOGGER.error("Can't get strings since TableManager isn't connected");
+				return null;
+			}
+			try (
+				PreparedStatement preparedStatement = connection.prepareStatement(sql);
+				ResultSet resultSet = preparedStatement.executeQuery();
+			) {
+				while (resultSet.next()) {
+					String str = resultSet.getString(1);
+					if (isBlank(str)) {
+						if (!list.contains(NONAME)) {
+							list.add(NONAME);
+						}
+					} else if (!list.contains(str)) {
+						list.add(str);
 					}
-				} else if (!list.contains(str)) {
-					list.add(str);
 				}
 			}
 		} catch (SQLException se) {
-			LOGGER.error(null, se);
+			LOGGER.error("An error occured while getting strings: {}", se.getMessage());
+			LOGGER.trace("", se);
 			return null;
-		} finally {
-			close(rs);
-			close(ps);
-			close(connection);
 		}
 		return list;
 	}
 
 	public synchronized void cleanup() {
-		Connection conn = null;
-		PreparedStatement ps = null;
-		ResultSet rs = null;
+		try (Connection connection = Services.tableManager().getConnection()) {
+			if (connection == null) {
+				LOGGER.error("Can't cleanup database since TableManager isn't connected");
+				return;
+			}
+			try (
+				PreparedStatement preparedStatement = connection.prepareStatement("SELECT COUNT(*) FROM FILES");
+				ResultSet resultSet = preparedStatement.executeQuery();
+			) {
+				dbCount = 0;
 
-		try {
-			conn = getConnection();
-			ps = conn.prepareStatement("SELECT COUNT(*) FROM FILES");
-			rs = ps.executeQuery();
-			dbCount = 0;
-
-			if (rs.next()) {
-				dbCount = rs.getInt(1);
+				if (resultSet.next()) {
+					dbCount = resultSet.getInt(1);
+				}
 			}
 
-			rs.close();
-			ps.close();
 			PMS.get().getFrame().setStatusLine(Messages.getString("DLNAMediaDatabase.2") + " 0%");
 			int i = 0;
 			int oldpercent = 0;
 
 			if (dbCount > 0) {
-				ps = conn.prepareStatement("SELECT FILENAME, MODIFIED, ID FROM FILES", ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_UPDATABLE);
-				rs = ps.executeQuery();
-				while (rs.next()) {
-					String filename = rs.getString("FILENAME");
-					long modified = rs.getTimestamp("MODIFIED").getTime();
-					File file = new File(filename);
-					if (!file.exists() || file.lastModified() != modified) {
-						rs.deleteRow();
-					}
-					i++;
-					int newpercent = i * 100 / dbCount;
-					if (newpercent > oldpercent) {
-						PMS.get().getFrame().setStatusLine(Messages.getString("DLNAMediaDatabase.2") + newpercent + "%");
-						oldpercent = newpercent;
+				try (
+					PreparedStatement preparedStatement = connection.prepareStatement(
+						"SELECT FILENAME, MODIFIED, ID FROM FILES",
+						ResultSet.TYPE_FORWARD_ONLY,
+						ResultSet.CONCUR_UPDATABLE
+					);
+					ResultSet resultSet = preparedStatement.executeQuery();
+				) {
+					while (resultSet.next()) {
+						String filename = resultSet.getString("FILENAME");
+						long modified = resultSet.getTimestamp("MODIFIED").getTime();
+						File file = new File(filename);
+						if (!file.exists() || file.lastModified() != modified) {
+							resultSet.deleteRow();
+						}
+						i++;
+						int newpercent = i * 100 / dbCount;
+						if (newpercent > oldpercent) {
+							PMS.get().getFrame().setStatusLine(Messages.getString("DLNAMediaDatabase.2") + newpercent + "%");
+							oldpercent = newpercent;
+						}
 					}
 				}
 			}
 		} catch (SQLException se) {
-			LOGGER.error(null, se);
-		} finally {
-			close(rs);
-			close(ps);
-			close(conn);
+			LOGGER.error("An error occured while cleaning up the database: {}", se.getMessage());
+			LOGGER.trace("", se);
 		}
 	}
 
 	public synchronized ArrayList<File> getFiles(String sql) {
 		ArrayList<File> list = new ArrayList<>();
-		Connection conn = null;
-		ResultSet rs = null;
-		PreparedStatement ps = null;
-		try {
-			conn = getConnection();
-			ps = conn.prepareStatement(sql.toLowerCase().startsWith("select") ? sql : ("SELECT FILENAME, MODIFIED FROM FILES WHERE " + sql));
-			rs = ps.executeQuery();
-			while (rs.next()) {
-				String filename = rs.getString("FILENAME");
-				long modified = rs.getTimestamp("MODIFIED").getTime();
-				File file = new File(filename);
-				if (file.exists() && file.lastModified() == modified) {
-					list.add(file);
+		try (Connection connection = Services.tableManager().getConnection()) {
+			if (connection == null) {
+				LOGGER.error("Can't get files since TableManager isn't connected");
+				return null;
+			}
+
+			try (
+				PreparedStatement preparedStatement = connection.prepareStatement(
+					sql.toLowerCase().startsWith("select") ? sql : ("SELECT FILENAME, MODIFIED FROM FILES WHERE " + sql)
+				);
+				ResultSet resultSet = preparedStatement.executeQuery();
+			) {
+				while (resultSet.next()) {
+					String filename = resultSet.getString("FILENAME");
+					long modified = resultSet.getTimestamp("MODIFIED").getTime();
+					File file = new File(filename);
+					if (file.exists() && file.lastModified() == modified) {
+						list.add(file);
+					}
 				}
 			}
 		} catch (SQLException se) {
-			LOGGER.error(null, se);
+			LOGGER.error("An error occured while getting files: {}", se.getMessage());
+			LOGGER.trace("", se);
 			return null;
-		} finally {
-			close(rs);
-			close(ps);
-			close(conn);
 		}
 		return list;
-	}
-
-	private static void close(ResultSet rs) {
-		try {
-			if (rs != null) {
-				rs.close();
-			}
-		} catch (SQLException e) {
-			LOGGER.error("error during closing:" + e.getMessage(), e);
-		}
-	}
-
-	private static void close(Statement ps) {
-		try {
-			if (ps != null) {
-				ps.close();
-			}
-		} catch (SQLException e) {
-			LOGGER.error("error during closing:" + e.getMessage(), e);
-		}
-	}
-
-	private static void close(Connection conn) {
-		try {
-			if (conn != null) {
-				conn.close();
-			}
-		} catch (SQLException e) {
-			LOGGER.error("error during closing:" + e.getMessage(), e);
-		}
 	}
 
 	public boolean isScanLibraryRunning() {
