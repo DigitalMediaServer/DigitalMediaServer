@@ -166,6 +166,12 @@
 				Check the commons-logging:commons-logging version of the other libraries before upgrading
 			-->
 			<version>1.10</version>
+			<exclusions>
+				<exclusion>
+					<groupId>commons-logging</groupId>
+					<artifactId>commons-logging</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 		<dependency>
 			<groupId>commons-io</groupId>
@@ -344,7 +350,7 @@
 
 				Check the commons-logging:commons-logging version of the other libraries before upgrading
 			-->
-			<version>0.7</version>
+			<version>1.0.0</version>
 		</dependency>
 
 		<!-- XXX: not Mavenized: https://code.google.com/p/cuelib/ -->
@@ -484,6 +490,10 @@
 				<exclusion>
 					<groupId>commons-io</groupId>
 					<artifactId>commons-io</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>commons-logging</groupId>
+					<artifactId>commons-logging</artifactId>
 				</exclusion>
 			</exclusions>
 		</dependency>
