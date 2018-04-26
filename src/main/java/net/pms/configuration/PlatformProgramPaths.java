@@ -124,7 +124,7 @@ public abstract class PlatformProgramPaths {
 			subPath = "linux";
 		}
 		PLATFORM_BINARIES_FOLDER = BINARIES_FOLDER.resolve(subPath).toAbsolutePath();
-		Path developmentBinaryFolder = Paths.get("target/bin", subPath);
+		Path developmentBinaryFolder = Paths.get("bin", subPath);
 		try {
 			FilePermissions permission = new FilePermissions(developmentBinaryFolder);
 			if (permission.isBrowsable()) {

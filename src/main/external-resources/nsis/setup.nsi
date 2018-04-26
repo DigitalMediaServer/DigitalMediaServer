@@ -26,7 +26,7 @@ SetCompressorDictSize 64
 
 !define INSTALLERMUTEXNAME "$(^Name)"
 !define PRODUCT_NAME "${PROJECT_NAME}"
-!define PRODUCT_VERSION "v${PROJECT_VERSION_SHORT}"
+!define PRODUCT_VERSION "v${PROJECT_VERSION}"
 !define PRODUCT_PUBLISHER "${PROJECT_NAME} Team"
 !define PRODUCT_WEB_SITE "${PROJECT_ORGANIZATION_URL}"
 !define REG_KEY_UNINSTALL "SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\${PROJECT_NAME}"
@@ -158,7 +158,7 @@ Section "!$(SectionServer)" sec1
 	File /r /x "*.conf" /x "*.zip" /x "*.rar" /x "*.7z" /x "*.dll" /x "third-party" "${PROJECT_BASEDIR}\src\main\external-resources\plugins"
 	File /r "${PROJECT_BASEDIR}\src\main\external-resources\documentation"
 	File /r "${PROJECT_BASEDIR}\src\main\external-resources\renderers"
-	File /r /x "ffmpeg*.exe" /x "avisynth" /x "MediaInfo64.dll" "${PROJECT_BASEDIR}\target\bin\win32"
+	File /r /x "ffmpeg*.exe" /x "avisynth" /x "MediaInfo64.dll" "${PROJECT_BINARIES}\win32"
 	File "${PROJECT_BUILD_DIR}\${PROJECT_NAME_SHORT}.exe"
 	File "${PROJECT_BASEDIR}\src\main\external-resources\${PROJECT_NAME_SHORT}.bat"
 	File /r "${PROJECT_BASEDIR}\src\main\external-resources\web"
@@ -227,16 +227,16 @@ SectionEnd
 Section "-32-bit" sec11
 	SetOverwrite on
 	SetOutPath "$INSTDIR\win32"
-	File "${PROJECT_BASEDIR}\target\bin\win32\ffmpeg.exe"
+	File "${PROJECT_BINARIES}\win32\ffmpeg.exe"
 	LockedList::AddModule "$INSTDIR\win32\MediaInfo.dll"
 SectionEnd
 
 Section "-64-bit" sec12
 	SetOverwrite on
 	SetOutPath "$INSTDIR\win32"
-	File "${PROJECT_BASEDIR}\target\bin\win32\ffmpeg64.exe"
+	File "${PROJECT_BINARIES}\win32\ffmpeg64.exe"
 	LockedList::AddModule "$INSTDIR\win32\MediaInfo.dll"
-	File "${PROJECT_BASEDIR}\target\bin\win32\MediaInfo64.dll"
+	File "${PROJECT_BINARIES}\win32\MediaInfo64.dll"
 	LockedList::AddModule "$INSTDIR\win32\MediaInfo64.dll"
 SectionEnd
 
@@ -353,7 +353,7 @@ Section /o "AviSynth" sec6
 	; https://github.com/vapoursynth/vapoursynth/releases
 	SetOverwrite on
 	SetOutPath "$INSTDIR\win32\avisynth"
-	File "${PROJECT_BASEDIR}\target\bin\win32\avisynth\avisynth.exe"
+	File "${PROJECT_BINARIES}\win32\avisynth\avisynth.exe"
 	ExecWait "$INSTDIR\win32\avisynth\avisynth.exe"
 SectionEnd
 
