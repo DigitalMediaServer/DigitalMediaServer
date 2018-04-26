@@ -1884,13 +1884,13 @@ public class PMS {
 		// Set JNA library path
 		ArrayList<String> libraryPaths = new ArrayList<>();
 		if (windows) {
-			Path path = Paths.get("target/bin/win32");
+			Path path = Paths.get("bin/win32");
 			if (Files.exists(path)) {
 				libraryPaths.add(path.toAbsolutePath().toString());
 			}
 			libraryPaths.add("win32");
 		} else if (macos) {
-			Path path = Paths.get("target/bin/osx");
+			Path path = Paths.get("bin/osx");
 			if (Files.exists(path)) {
 				libraryPaths.add(path.toAbsolutePath().toString());
 			}

@@ -25,6 +25,8 @@ Name "${PROJECT_NAME_SHORT}"
 Caption "${PROJECT_NAME}"
 Icon "${PROJECT_BASEDIR}\src\main\resources\images\logo.ico"
 
+!searchparse /noerrors '${PROJECT_VERSION}' '' PRODUCT_VERSION_MAJOR '.' PRODUCT_VERSION_MINOR '.' PRODUCT_VERSION_BUGFIX '-'
+!define PRODUCT_VERSION_SHORT "${PRODUCT_VERSION_MAJOR}.${PRODUCT_VERSION_MINOR}.${PRODUCT_VERSION_BUGFIX}.0"
 VIAddVersionKey "ProductName" "${PROJECT_NAME}"
 VIAddVersionKey "Comments" "Media server"
 VIAddVersionKey "CompanyName" "${PROJECT_ORGANIZATION_NAME}"
@@ -32,7 +34,9 @@ VIAddVersionKey "LegalTrademarks" ""
 VIAddVersionKey "LegalCopyright" ""
 VIAddVersionKey "FileDescription" "${PROJECT_NAME}"
 VIAddVersionKey "FileVersion" "${PROJECT_VERSION}"
-VIProductVersion "${PROJECT_VERSION_SHORT}.0"
+VIAddVersionKey "ProductVersion" "${PROJECT_VERSION}"
+;https://msdn.microsoft.com/en-us/library/windows/desktop/ms646997%28v=vs.85%29.aspx
+VIProductVersion "${PRODUCT_VERSION_SHORT}"
 
 Section
 	${SearchJava}

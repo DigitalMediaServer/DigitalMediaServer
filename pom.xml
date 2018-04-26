@@ -12,6 +12,8 @@
 		To install external dependencies to your local repository, run the following commands:
 
 		mvn external:install
+		or
+		mvn dependency:go-offline
 
 		To build DMS, do:
 
@@ -30,7 +32,7 @@
 	<artifactId>dms</artifactId>
 	<name>Digital Media Server</name>
 	<packaging>jar</packaging>
-	<version>0.0.1-SNAPSHOT</version>
+	<version>0.0.2-SNAPSHOT</version>
 	<url>http://www.digitalmediaserver.org/</url>
 	<inceptionYear>2016</inceptionYear>
 
@@ -68,8 +70,6 @@
 		<url>https://github.com/DigitalMediaServer/DigitalMediaServer/issues</url>
 	</issueManagement>
 	<properties>
-		<!-- NSIS needs a version without "-SNAPSHOT" or "-b1" -->
-		<project.version.short>0.0.1</project.version.short>
 		<project.name.short>DMS</project.name.short>
 		<project.name.camel>DigitalMediaServer</project.name.camel>
 		<cuelib-version>1.2.1-2008-06-13</cuelib-version>
@@ -87,7 +87,7 @@
 
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.external-resources>${project.basedir}/src/main/external-resources</project.external-resources>
-		<project.binaries>${project.basedir}/target/bin</project.binaries>
+		<project.binaries>${project.basedir}/bin</project.binaries>
 
 		<project.binaries-base>http://universalmediaserver.com/svn/binaries</project.binaries-base>
 		<binary-revision>67</binary-revision>
@@ -118,17 +118,32 @@
 		-->
 		<jna-version>4.4.0</jna-version>
 
-		<!--
-			 use the Windows makensis.exe for Windows builds unless
-			 the system makensis is explicitly selected via the
-			 system-makensis profile
-		-->
+		<!-- Use makensis.exe for Windows builds -->
 		<makensis-bin>${project.external-resources}/third-party/nsis/makensis.exe</makensis-bin>
 	</properties>
 	<repositories>
 		<repository>
+			<id>central</id>
+			<name>Maven Plugin Repository</name>
+			<url>https://repo1.maven.org/maven2</url>
+			<releases>
+				<enabled>true</enabled>
+				<updatePolicy>daily</updatePolicy>
+				<checksumPolicy>warn</checksumPolicy>
+			</releases>
+			<snapshots>
+				<enabled>false</enabled>
+			</snapshots>
+		</repository>
+		<repository>
 			<id>4thline-repo</id>
+			<name>Repository used for Cling</name>
 			<url>http://4thline.org/m2</url>
+			<releases>
+				<enabled>true</enabled>
+				<updatePolicy>never</updatePolicy>
+				<checksumPolicy>warn</checksumPolicy>
+			</releases>
 			<snapshots>
 				<enabled>false</enabled>
 			</snapshots>
@@ -136,6 +151,14 @@
 		<repository>
 			<id>jaudiotagger-repository</id>
 			<url>https://dl.bintray.com/pathrik/PathriK</url>
+			<releases>
+				<enabled>true</enabled>
+				<updatePolicy>never</updatePolicy>
+				<checksumPolicy>fail</checksumPolicy>
+			</releases>
+			<snapshots>
+				<enabled>false</enabled>
+			</snapshots>
 		</repository>
 	</repositories>
 	<dependencies>
@@ -952,17 +975,18 @@
 		</profile>
 
 		<profile>
-			<id>binaries-windows</id>
+			<id>windows</id>
 			<activation>
 				<activeByDefault>false</activeByDefault>
 			</activation>
 
 			<build>
-					<!-- Download all necessary Windows binaries.
-						Keep the same structure because NSIS expects it that way.
+					<!--
+						Plugin to build a Windows installer using the nullsoft scriptable install system (NSIS).
+						The "generate-headerfile" goal generates a file "target/project.nsh".
 					-->
 				<plugins>
-					<plugin>
+				<plugin>
 						<groupId>org.apache.maven.plugins</groupId>
 						<artifactId>maven-antrun-plugin</artifactId>
 						<version>1.8</version>
@@ -974,8 +998,8 @@
 									<goal>run</goal>
 								</goals>
 								<configuration>
-									<target unless="offline">
-										<!-- Make sure the download folders exist -->
+									<tasks name="Downloading binaries" unless="offline">
+										<!-- Make sure the download folders exist (if "mvn -Doffline" is not used) -->
 										<mkdir dir="${project.binaries}" />
 										<mkdir dir="${project.binaries}/win32" />
 										<mkdir dir="${project.binaries}/win32/avisynth" />
@@ -1033,27 +1057,11 @@
 										<get src="${project.binaries-base}/win32/mplayer/config?p=${binary-revision}" dest="${project.binaries}/win32/mplayer/config" usetimestamp="true" />
 										<get src="${project.binaries-base}/win32/mplayer/input.conf?p=${binary-revision}" dest="${project.binaries}/win32/mplayer/input.conf" usetimestamp="true" />
 										<get src="${project.binaries-base}/win32/mplayer/subfont.ttf?p=${binary-revision}" dest="${project.binaries}/win32/mplayer/subfont.ttf" usetimestamp="true" />
-									</target>
+									</tasks>
 								</configuration>
 							</execution>
 						</executions>
 					</plugin>
-				</plugins>
-			</build>
-		</profile>
-
-		<profile>
-			<id>windows</id>
-			<activation>
-				<activeByDefault>false</activeByDefault>
-			</activation>
-
-			<build>
-					<!--
-						Plugin to build a Windows installer using the nullsoft scriptable install system (NSIS).
-						The "generate-headerfile" goal generates a file "target/project.nsh".
-					-->
-				<plugins>
 					<plugin>
 						<groupId>org.codehaus.mojo</groupId>
 						<artifactId>nsis-maven-plugin</artifactId>
@@ -1278,7 +1286,7 @@
 									<goal>run</goal>
 								</goals>
 								<configuration>
-									<target>
+									<target unless="offline">
 										<!-- Make sure the binaries folder exists -->
 										<mkdir dir="${project.binaries}" />
 										<mkdir dir="${project.binaries}/osx" />
@@ -1340,7 +1348,6 @@
 													displayname="${project.name}"
 													executableName="${project.name.short}"
 													identifier="net.pms.PMS"
-													shortversion="${project.version.short}"
 													version="${project.version}"
 													icon="${project.basedir}/src/main/resources/images/logo.icns"
 													applicationCategory="public.app-category.entertainment"
