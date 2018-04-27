@@ -1249,17 +1249,33 @@
 						<groupId>org.vafer</groupId>
 						<!-- Above versions doesn't support Java 7 -->
 						<version>1.5</version>
+						<configuration>
+							<verbose>true</verbose>
+							<controlDir>${project.basedir}/target/control</controlDir>
+							<dataSet>
+								<data>
+									<!--
+									<src>./src</src>
+									<type>directory</type>
+									-->
+									<src>${project.basedir}/target/${project.artifactId}.jar</src>
+									<type>file</type>
+									<!--<mapper>
+									<type>perm</type>
+										<prefix>/usr/share/jdeb/lib</prefix>
+									</mapper>-->
+								</data>
+							</dataSet>
+						</configuration>
 						<executions>
 							<execution>
 								<phase>package</phase>
 								<goals>
 									<goal>jdeb</goal>
 								</goals>
-								<configuration>
-								</configuration>
 							</execution>
 						</executions>
-						<dependencies>
+						<!--<dependencies>
 						</dependencies>
 						<configuration>
 							<dataSet>
@@ -1277,7 +1293,7 @@
 									</mapper>
 								</data>
 							</dataSet>
-						</configuration>
+						</configuration>-->
 					</plugin>
 				</plugins>
 			</build>
