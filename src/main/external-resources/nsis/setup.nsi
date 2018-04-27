@@ -179,7 +179,7 @@ Section "!$(SectionServer)" sec1
 	SetOutPath "$INSTDIR\win32\service"
 	File "${PROJECT_BASEDIR}\src\main\external-resources\third-party\wrapper\*.*"
 
-	; The user may have set the installation folder as the profile folder, so we can't clobber this
+	; Make sure to not override the existing user"s configurations
 	SetOutPath "$INSTDIR"
 	SetOverwrite off
 	File "${PROJECT_BASEDIR}\src\main\external-resources\${PROJECT_NAME_SHORT}.conf"
@@ -190,7 +190,7 @@ Section "!$(SectionServer)" sec1
 	; Store install folder
 	WriteRegStr HKCU "${REG_KEY_SOFTWARE}" "" "$INSTDIR"
 
-	;Workaround until Crowdin support $\r$\n special characters
+	; Workaround until Crowdin support $\r$\n special characters
 	${WordReplace} "$(CannotOpen)" "%%" "$\r$\n" "+" $0
 	WriteRegStr HKCU "${REG_KEY_UNINSTALL}" "CannotOpen" "$0"
 
@@ -462,7 +462,7 @@ Function .onInit
 
 	InitPluginsDir
 
-	StrCpy $CopyLeft "${U+00A9} ${BUILD_YEAR} ${PRODUCT_NAME} ${PRODUCT_VERSION}                                        Nullsoft Install System ${NSIS_VERSION}"
+	StrCpy $CopyLeft "${U+00A9} ${BUILD_YEAR} ${PRODUCT_NAME} ${PRODUCT_VERSION}                                     Nullsoft Install System ${NSIS_VERSION}"
 	${If} ${AtLeastWinVista}
 	${AndIf} ${AtMostWin7}
 		StrCpy $CopyLeft "${U+00A9} ${BUILD_YEAR} ${PRODUCT_NAME} ${PRODUCT_VERSION}"

@@ -37,6 +37,11 @@ if [ "x$JAVA" = "x" ]; then
     fi
 fi
 
+# Move the configuration files
+if [ -e ffmpeg.webfilters ]; then
+    mv -i *.conf ffmpeg.webfilters $HOME/.config/DigitalMediaServer
+fi
+
 # Setup the classpath
 # since we always cd to the working dir, these a) can be unqualified and b) *must*
 # be unqualified: https://code.google.com/p/ps3mediaserver/issues/detail?id=1122
