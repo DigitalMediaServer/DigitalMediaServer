@@ -1,62 +1,35 @@
 <assembly
-	xmlns="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.2"
-	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.2 http://maven.apache.org/xsd/assembly-1.1.2.xsd">
-	
+	xmlns="http://maven.apache.org/ASSEMBLY/2.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/ASSEMBLY/2.0.0 http://maven.apache.org/xsd/assembly-2.0.0.xsd">
+
 	<!--
 		This file takes care of assembling the Linux distribution file.
 	-->
 
-	<id>distribution</id>
+	<id>all</id>
 	<formats>
-		<format>tar.gz</format>
+		<format>tgz</format>
 	</formats>
-	<includeBaseDirectory>true</includeBaseDirectory>
+	<baseDirectory>${project.artifactId}</baseDirectory>
 
 	<files>
-		<!-- Include dms-X.YY.Z-SNAPSHOT-jar-with-dependencies as dms.jar-->
+		<!-- Include dms.jar -->
 		<file>
-			<source>${project.basedir}/target/${project.artifactId}-${project.version}-jar-with-dependencies.jar</source>
+			<source>${project.build.directory}/${project.artifactId}.jar</source>
 			<outputDirectory>.</outputDirectory>
-			<destName>dms.jar</destName>
 			<fileMode>0644</fileMode>
-			<lineEnding>keep</lineEnding>
-		</file>
-
-		<!-- Include the 32-bit FFmpeg binary -->
-		<file>
-			<source>${project.binaries}/linux/ffmpeg</source>
-			<outputDirectory>./linux</outputDirectory>
-			<fileMode>0755</fileMode>
-			<lineEnding>keep</lineEnding>
-		</file>
-
-		<!-- Include the 64-bit FFmpeg binary -->
-		<file>
-			<source>${project.binaries}/linux/ffmpeg64</source>
-			<outputDirectory>./linux</outputDirectory>
-			<fileMode>0755</fileMode>
-			<lineEnding>keep</lineEnding>
-		</file>
-
-		<!-- Include the tsMuxeR binaries -->
-		<file>
-			<source>${project.binaries}/linux/tsMuxeR</source>
-			<outputDirectory>./linux</outputDirectory>
-			<fileMode>0755</fileMode>
 			<lineEnding>keep</lineEnding>
 		</file>
 
 		<!-- Include executable script DMS.sh -->
 		<file>
-			<source>${project.external-resources}/DMS.sh</source>
-			<outputDirectory>.</outputDirectory>
+			<source>${project.external-resources}/${project.name.short}.sh</source>
 			<fileMode>0755</fileMode>
 			<lineEnding>unix</lineEnding>
 		</file>
 	</files>
-	<fileSets>
 
+	<fileSets>
 		<!-- Include documentation -->
 		<fileSet>
 			<directory>${project.basedir}</directory>
@@ -64,11 +37,8 @@
 			<fileMode>0644</fileMode>
 			<lineEnding>unix</lineEnding>
 			<includes>
-				<include>README.md</include>
-				<include>README.txt</include>
-				<include>CHANGELOG.txt</include>
-				<include>INSTALL.txt</include>
-				<include>LICENSE.txt</include>
+				<include>*.md</include>
+				<include>*.txt</include>
 			</includes>
 		</fileSet>
 
@@ -80,16 +50,13 @@
 			<directoryMode>0755</directoryMode>
 			<lineEnding>unix</lineEnding>
 			<includes>
-				<include>DMS.conf</include>
-				<include>WEB.conf</include>
-				<include>logback.headless.xml</include>
-				<include>logback.xml</include>
-				<include>linux/*.txt</include>
 				<include>plugins/**</include>
-				<include>renderers/*</include>
-				<include>VirtualFolders.conf</include>
-				<include>DummyInput.ass</include>
+				<include>renderers/**</include>
+				<include>*.*</include>
 			</includes>
+			<excludes>
+				<exclude>*.bat</exclude>
+			</excludes>
 		</fileSet>
 
 		<!--
@@ -101,12 +68,20 @@
 			<outputDirectory>.</outputDirectory>
 			<fileMode>0644</fileMode>
 			<directoryMode>0755</directoryMode>
+			<lineEnding>keep</lineEnding>
 			<includes>
 				<include>documentation/**</include>
-				<include>DummyInput.jpg</include>
 				<include>web/**</include>
+				<include>DummyInput.jpg</include>
 			</includes>
 		</fileSet>
 
+		<fileSet>
+			<directory>${project.binaries}/linux</directory>
+			<outputDirectory>./linux</outputDirectory>
+			<fileMode>0755</fileMode>
+			<directoryMode>0755</directoryMode>
+			<lineEnding>keep</lineEnding>
+		</fileSet>
 	</fileSets>
 </assembly>

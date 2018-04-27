@@ -90,7 +90,7 @@
 		<project.binaries>${project.basedir}/bin</project.binaries>
 
 		<project.binaries-base>http://universalmediaserver.com/svn/binaries</project.binaries-base>
-		<binary-revision>67</binary-revision>
+		<binary-revision>71</binary-revision>
 
 		<maven-javadoc-plugin-version>3.0.0</maven-javadoc-plugin-version>
 		<git-commit-id-plugin-version>2.2.4</git-commit-id-plugin-version>
@@ -120,6 +120,8 @@
 
 		<!-- Use makensis.exe for Windows builds -->
 		<makensis-bin>${project.external-resources}/third-party/nsis/makensis.exe</makensis-bin>
+		<release>false</release> <!-- mvn -Drelease=true -->
+		<P>none</P>
 	</properties>
 	<repositories>
 		<repository>
@@ -161,6 +163,7 @@
 			</snapshots>
 		</repository>
 	</repositories>
+
 	<dependencies>
 		<!-- TODO this can be removed when MEncoder is removed -->
 		<dependency>
@@ -534,10 +537,18 @@
 			-->
 			<version>3.4.3</version>
 		</dependency>
+		<!--
+		<dependency>
+			<groupId>net.sourceforge.cobertura</groupId>
+			<artifactId>cobertura</artifactId>
+			<version>2.1.2</version>
+			<scope>test</scope>
+		</dependency>
+		-->
 	</dependencies>
+
 	<build>
-		<finalName>update</finalName>
-		<defaultGoal>package</defaultGoal>
+		<defaultGoal>prepare-package</defaultGoal>
 
 		<!-- specify how files in src/main/resources are bundled in the target jar -->
 		<resources>
@@ -638,13 +649,19 @@
 							There is an incompatible JNA native library installed on this system.
 						-->
 						<shutdown>kill</shutdown>
-						<argLine>-Duser.language=en -Djna.nosys=true -XX:-UseSplitVerifier</argLine> <!-- only one argLine element is processed -->
+						<forkCount>1.5C</forkCount>
+						<reuseForks>true</reuseForks>
+						<!--
+							Only one argLine element is processed.
+							-XX:-UseSplitVerifier is a workaround for use Cobertura with Java 7
+						-->
+						<argLine>-Duser.language=en -Djna.nosys=true -XX:-UseSplitVerifier</argLine>
 					</configuration>
 					<version>${surefire-version}</version>
 				</plugin>
 
 				<!--
-					This plugin's configuration is used to run crowdin plugin from the command line,
+					This plugin's configuration is used to run Crowdin plugin from the command line,
 					it has no influence on the Maven build itself.
 				-->
 				<plugin>
@@ -887,6 +904,9 @@
 				<groupId>com.qualinsight.mojo.cobertura</groupId>
 				<artifactId>qualinsight-mojo-cobertura-core</artifactId>
 				<version>2.0.0</version>
+				<configuration>
+					<formats>html</formats>
+				</configuration>
 			</plugin>
 
 			<plugin>
@@ -916,6 +936,7 @@
 
 	<profiles>
 		<profile>
+			<!-- https://packages.debian.org/sid/nsis -->
 			<id>system-makensis</id>
 			<activation>
 				<os>
@@ -924,7 +945,7 @@
 			</activation>
 
 			<properties>
-				<!-- if selected, use the system makensis on Linux -->
+				<!-- Use the system makensis on Linux or if selected for others OS -->
 				<makensis-bin>makensis</makensis-bin>
 			</properties>
 		</profile>
@@ -933,19 +954,22 @@
 			<id>jar</id>
 			<activation>
 				<activeByDefault>false</activeByDefault>
+				<property>
+					<name>release</name>
+					<value>true</value>
+				</property>
 			</activation>
 
 			<build>
-				<finalName>${project.artifactId}</finalName>
 				<plugins>
 					<plugin>
 						<groupId>org.apache.maven.plugins</groupId>
 						<artifactId>maven-shade-plugin</artifactId>
 						<version>3.1.1</version>
 						<configuration>
-							<finalName>${project.artifactId}</finalName>
-							<createDependencyReducedPom>false</createDependencyReducedPom>
 							<minimizeJar>true</minimizeJar>
+							<keepDependenciesWithProvidedScope>false</keepDependenciesWithProvidedScope>
+							<outputFile>${project.build.directory}/${project.artifactId}.jar</outputFile>
 							<!-- non-included will be automatically excluded -->
 							<filters>
 								<filter>
@@ -961,7 +985,19 @@
 									</includes>
 								</filter>
 								<filter>
+									<artifact>com.twelvemonkeys.common:common-lang</artifact>
+									<includes>
+										<include>**</include>
+									</includes>
+								</filter>
+								<filter>
 									<artifact>com.jgoodies:jgoodies-looks</artifact>
+									<includes>
+										<include>**</include>
+									</includes>
+								</filter>
+								<filter>
+									<artifact>org.fourthline.cling:cling-core</artifact>
 									<includes>
 										<include>**</include>
 									</includes>
@@ -986,7 +1022,7 @@
 											implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
 										<transformer
 											implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-										<mainClass>net.pms.PMS</mainClass>
+											<mainClass>net.pms.PMS</mainClass>
 										</transformer>
 									</transformers>
 								</configuration>
@@ -997,19 +1033,22 @@
 			</build>
 		</profile>
 
+		<!--
+			Build a Windows installer using the nullsoft scriptable install system (NSIS). "generate-headerfile" goal generates a file "target/project.nsh".
+		-->
 		<profile>
-			<id>windows</id>
+			<id>exe</id>
 			<activation>
 				<activeByDefault>false</activeByDefault>
+				<property>
+					<name>release</name>
+					<value>true</value>
+				</property>
 			</activation>
 
 			<build>
-					<!--
-						Plugin to build a Windows installer using the nullsoft scriptable install system (NSIS).
-						The "generate-headerfile" goal generates a file "target/project.nsh".
-					-->
 				<plugins>
-				<plugin>
+					<plugin>
 						<groupId>org.apache.maven.plugins</groupId>
 						<artifactId>maven-antrun-plugin</artifactId>
 						<version>1.8</version>
@@ -1021,7 +1060,7 @@
 									<goal>run</goal>
 								</goals>
 								<configuration>
-									<tasks name="Downloading binaries" unless="offline">
+									<target name="Downloading binaries" unless="offline">
 										<!-- Make sure the download folders exist (if "mvn -Doffline" is not used) -->
 										<mkdir dir="${project.binaries}" />
 										<mkdir dir="${project.binaries}/win32" />
@@ -1033,6 +1072,7 @@
 										<mkdir dir="${project.binaries}/win32/interframe" />
 										<mkdir dir="${project.binaries}/win32/mplayer" />
 										<mkdir dir="${project.binaries}/win32/service" />
+										<!-- Download binaries -->
 										<get src="${project.binaries-base}/MediaInfo.dll?p=${binary-revision}" dest="${project.binaries}/win32/MediaInfo.dll"  usetimestamp="true" />
 										<get src="${project.binaries-base}/MediaInfo64.dll?p=${binary-revision}" dest="${project.binaries}/win32/MediaInfo64.dll" usetimestamp="true" />
 										<get src="${project.binaries-base}/MediaInfo-License.html?p=${binary-revision}" dest="${project.binaries}/win32/MediaInfo-License.html" usetimestamp="true" />
@@ -1080,7 +1120,7 @@
 										<get src="${project.binaries-base}/win32/mplayer/config?p=${binary-revision}" dest="${project.binaries}/win32/mplayer/config" usetimestamp="true" />
 										<get src="${project.binaries-base}/win32/mplayer/input.conf?p=${binary-revision}" dest="${project.binaries}/win32/mplayer/input.conf" usetimestamp="true" />
 										<get src="${project.binaries-base}/win32/mplayer/subfont.ttf?p=${binary-revision}" dest="${project.binaries}/win32/mplayer/subfont.ttf" usetimestamp="true" />
-									</tasks>
+									</target>
 								</configuration>
 							</execution>
 						</executions>
@@ -1103,7 +1143,6 @@
 									<goal>make</goal>
 								</goals>
 							</execution>
-
 							<execution>
 								<id>build-setup-windows</id>
 								<configuration>
@@ -1113,7 +1152,6 @@
 								</configuration>
 								<phase>package</phase>
 								<goals>
-									<goal>generate-headerfile</goal>
 									<goal>make</goal>
 								</goals>
 							</execution>
@@ -1124,78 +1162,27 @@
 		</profile>
 
 		<!--
-			Linux profile: takes care of building the final package for Linux
+			Build the final TAR.GZ package for Linux
 		-->
 		<profile>
-			<id>linux</id>
-			<!--
-				this setting does the right thing on Linux
-				and is needed for the Hudson profile to work
-			-->
+			<id>tgz</id>
 			<activation>
 				<activeByDefault>false</activeByDefault>
+				<property>
+					<name>release</name>
+					<value>true</value>
+				</property>
 			</activation>
 
 			<build>
 				<plugins>
-					<plugin>
-						<artifactId>maven-assembly-plugin</artifactId>
-						<version>${maven-assembly-plugin-version}</version>
-						<executions>
-							<!-- Assemble a jar with dependencies -->
-							<execution>
-								<id>make-jar-with-dependencies-linux</id>
-								<phase>package</phase>
-								<goals>
-									<goal>single</goal>
-								</goals>
-								<configuration>
-									<descriptors>
-										<descriptor>${project.basedir}/src/main/assembly/jar-with-dependencies.xml</descriptor>
-									</descriptors>
-									<archive>
-										<manifest>
-											<mainClass>net.pms.PMS</mainClass>
-											<addDefaultImplementationEntries>true</addDefaultImplementationEntries> <!-- see above for documentation -->
-										</manifest>
-									</archive>
-								</configuration>
-							</execution>
-
-							<!-- Assemble the DMS distribution file. -->
-							<execution>
-								<id>build-dms-linux</id>
-								<phase>package</phase>
-								<goals>
-									<goal>single</goal>
-								</goals>
-								<configuration>
-									<descriptors>
-										<descriptor>${project.basedir}/src/main/assembly/assembly-linux.xml</descriptor>
-									</descriptors>
-									<archive>
-										<manifest>
-											<mainClass>net.pms.PMS</mainClass>
-											<addDefaultImplementationEntries>true</addDefaultImplementationEntries> <!-- see above for documentation -->
-										</manifest>
-									</archive>
-								</configuration>
-							</execution>
-						</executions>
-					</plugin>
-					<!--
-						Use the antrun plugin to:
-
-						Download the tsMuxeR binary to ${project.binaries}/tsMuxeR
-						Copy the dms-x.x.x-jar-with-dependencies.jar to dms.jar
-					-->
 					<plugin>
 						<groupId>org.apache.maven.plugins</groupId>
 						<artifactId>maven-antrun-plugin</artifactId>
 						<version>1.8</version>
 						<executions>
 							<execution>
-								<id>process-resources-linux</id>
+								<id>download-files-linux</id>
 								<phase>process-resources</phase>
 								<goals>
 									<goal>run</goal>
@@ -1204,8 +1191,7 @@
 									<target unless="offline">
 										<!-- Make sure the binaries folder exists -->
 										<mkdir dir="${project.binaries}" />
-										<mkdir dir="${project.binaries}/linux" />										
-
+										<mkdir dir="${project.binaries}/linux" />
 										<!-- Download binaries -->
 										<get src="${project.binaries-base}/linux/ffmpeg?p=${binary-revision}" dest="${project.binaries}/linux/ffmpeg" usetimestamp="true" />
 										<get src="${project.binaries-base}/linux/ffmpeg64?p=${binary-revision}" dest="${project.binaries}/linux/ffmpeg64" usetimestamp="true" />
@@ -1214,17 +1200,32 @@
 									</target>
 								</configuration>
 							</execution>
+						</executions>
+					</plugin>
+					<plugin>
+						<artifactId>maven-assembly-plugin</artifactId>
+						<version>${maven-assembly-plugin-version}</version>
+							<!-- Assemble the DMS distribution file. -->
+						<executions>
 							<execution>
-								<id>copy-jar-with-dependencies-linux</id>
+								<id>build-dms-linux</id>
 								<phase>package</phase>
 								<goals>
-									<goal>run</goal>
+									<goal>single</goal>
 								</goals>
 								<configuration>
-									<target>
-										<copy file="${project.basedir}/target/${project.artifactId}-${project.version}-jar-with-dependencies.jar"
-											tofile="${project.basedir}/target/dms.jar" overwrite="true" />
-									</target>
+									<finalName>${project.artifactId}-${project.version}</finalName>
+									<appendAssemblyId>false</appendAssemblyId>
+									<descriptors>
+										<descriptor>${project.basedir}/src/main/assembly/assembly-linux.xml</descriptor>
+									</descriptors>
+									<archive>
+										<manifest>
+											<addClasspath>true</addClasspath>
+											<mainClass>net.pms.PMS</mainClass>
+											<addDefaultImplementationEntries>true</addDefaultImplementationEntries>
+										</manifest>
+									</archive>
 								</configuration>
 							</execution>
 						</executions>
@@ -1237,76 +1238,217 @@
 			Linux DEB profile: takes care of building the final package for Linux
 		-->
 		<profile>
-			<id>linux-deb</id>
+			<id>deb</id>
 			<activation>
 				<activeByDefault>false</activeByDefault>
+				<jdk>[1.7,)</jdk>
+				<property>
+					<name>release</name>
+					<value>true</value>
+				</property>
 			</activation>
 
 			<build>
 				<plugins>
 					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-antrun-plugin</artifactId>
+						<version>1.8</version>
+						<executions>
+							<execution>
+								<id>download-binaries-linux</id>
+								<phase>process-resources</phase>
+								<goals>
+									<goal>run</goal>
+								</goals>
+								<configuration>
+									<target unless="offline">
+										<!-- Make sure the binaries folder exists -->
+										<mkdir dir="${project.binaries}" />
+										<mkdir dir="${project.binaries}/linux" />
+										<!-- Download binaries -->
+										<get src="${project.binaries-base}/linux/ffmpeg?p=${binary-revision}" dest="${project.binaries}/linux/ffmpeg" usetimestamp="true" />
+										<get src="${project.binaries-base}/linux/ffmpeg64?p=${binary-revision}" dest="${project.binaries}/linux/ffmpeg64" usetimestamp="true" />
+										<get src="${project.binaries-base}/linux/tsMuxeR-new?p=${binary-revision}" dest="${project.binaries}/linux/tsMuxeR" usetimestamp="true" />
+										<get src="${project.binaries-base}/linux/tsMuxeR_licence.txt?p=${binary-revision}" dest="${project.binaries}/linux/tsMuxeR_license.txt" usetimestamp="true" />
+									</target>
+								</configuration>
+							</execution>
+							<execution>
+								<id>create-control-linux</id>
+								<phase>process-resources</phase>
+								<goals>
+									<goal>run</goal>
+								</goals>
+								<configuration>
+									<target>
+										<mkdir dir="${project.build.directory}/control" />
+										<chmod dir="${project.build.directory}/control" type="dir" perm="0755"/>
+										<echo file="${project.build.directory}/control/control" force="true">Package: ${project.artifactId}${line.separator}</echo>
+										<echo file="${project.build.directory}/control/control" append="true">Version: ${project.version}${line.separator}</echo>
+										<echo file="${project.build.directory}/control/control" append="true">Section: java${line.separator}</echo>
+										<echo file="${project.build.directory}/control/control" append="true">Priority: standard${line.separator}</echo>
+										<echo file="${project.build.directory}/control/control" append="true">Architecture: all${line.separator}</echo>
+										<echo file="${project.build.directory}/control/control" append="true">Depends: default-jre-headless (>= 1.7) | default-jre (>= 1.7) | java7-runtime | java8-runtime | jdk (>= 1.7)${line.separator}</echo>
+										<echo file="${project.build.directory}/control/control" append="true">Recommends: dcraw, ffmpeg, mediainfo${line.separator}</echo>
+										<echo file="${project.build.directory}/control/control" append="true">Suggests: mencoder, tsmuxer, tsmuxer-bin${line.separator}</echo>
+										<echo file="${project.build.directory}/control/control" append="true">Maintainer: Nadahar &lt;nadahar@dms.com&gt;${line.separator}</echo>
+										<echo file="${project.build.directory}/control/control" append="true">Description: Media server${line.separator}</echo>
+										<echo file="${project.build.directory}/control/control" append="true">Distribution: stable${line.separator}</echo>
+										<echo file="${project.build.directory}/control/control" append="true">Homepage: http://www.digitalmediaserver.com/${line.separator}</echo>
+										<chmod file="${project.build.directory}/control/control" perm="0644"/>
+									</target>
+								</configuration>
+							</execution>
+						</executions>
+					</plugin>
+					<plugin>
 						<artifactId>jdeb</artifactId>
 						<groupId>org.vafer</groupId>
 						<!-- Above versions doesn't support Java 7 -->
 						<version>1.5</version>
-						<configuration>
-							<verbose>true</verbose>
-							<controlDir>${project.basedir}/target/control</controlDir>
-							<dataSet>
-								<data>
-									<!--
-									<src>./src</src>
-									<type>directory</type>
-									-->
-									<src>${project.basedir}/target/${project.artifactId}.jar</src>
-									<type>file</type>
-									<!--<mapper>
-									<type>perm</type>
-										<prefix>/usr/share/jdeb/lib</prefix>
-									</mapper>-->
-								</data>
-							</dataSet>
-						</configuration>
 						<executions>
 							<execution>
 								<phase>package</phase>
 								<goals>
 									<goal>jdeb</goal>
 								</goals>
+								<configuration>
+									<deb>${project.build.directory}/${project.artifactId}-${project.version}.deb</deb>
+									<verbose>false</verbose>
+									<controlDir>${project.build.directory}/control</controlDir>
+									<compression>xz</compression>
+									<!--
+										Control structure:
+										https://debian-handbook.info/browse/stable/sect.package-meta-information.html
+										https://www.debian.org/doc/debian-policy/#document-ch-controlfields
+										Binaries dependencies:
+										https://www.debian.org/doc/debian-policy/#s-binarydeps
+									-->
+									<controlInfo>
+										<package>${project.artifactId}</package>
+										<version>${project.version}</version>
+										<section>java</section>
+										<priority>standard</priority>
+										<architecture>all</architecture>
+										<depends>default-jre-headless (>= 1.7) | default-jre (>= 1.7) | java7-runtime | java8-runtime | jdk (>= 1.7)</depends>
+										<recommends>dcraw, ffmpeg, mediainfo</recommends>
+										<suggests>mencoder, tsmuxer, tsmuxer-bin</suggests>
+										<description>Media server</description>
+										<maintainer>Nadahar</maintainer>
+										<distribution>stable</distribution>
+										<maintainer>Nadahar &lt;nadahar@dms.com&gt;</maintainer>
+									</controlInfo>
+									<dataSet>
+										<data>
+											<src>${project.external-resources}/documentation</src>
+											<type>directory</type>
+											<missingSrc>ignore</missingSrc>
+											<mapper>
+												<type>perm</type>
+												<prefix>/usr/local/lib/${project.artifactId}/documentation</prefix>
+											</mapper>
+										</data>
+										<data>
+											<src>${project.external-resources}/plugins</src>
+											<type>directory</type>
+											<missingSrc>ignore</missingSrc>
+											<mapper>
+												<type>perm</type>
+												<prefix>/usr/local/lib/${project.artifactId}/plugins</prefix>
+											</mapper>
+										</data>
+										<data>
+											<src>${project.external-resources}/renderers</src>
+											<type>directory</type>
+											<mapper>
+												<type>perm</type>
+												<prefix>/usr/local/lib/${project.artifactId}/renderers</prefix>
+											</mapper>
+										</data>
+										<data>
+											<src>${project.external-resources}/web</src>
+											<type>directory</type>
+											<mapper>
+												<type>perm</type>
+												<prefix>/usr/local/lib/${project.artifactId}/web</prefix>
+											</mapper>
+										</data>
+										<data>
+											<src>${project.binaries}/linux</src>
+											<type>directory</type>
+											<mapper>
+												<type>perm</type>
+												<prefix>/usr/local/lib/${project.artifactId}/linux</prefix>
+												<filemode>755</filemode>
+											</mapper>
+										</data>
+										<data>
+											<src>${project.external-resources}</src>
+											<type>directory</type>
+											<includes>*.*</includes>
+											<excludes>*.sh, *.bat, *.conf, *.webfilters</excludes>
+											<mapper>
+												<type>perm</type>
+												<strip>1</strip>
+												<prefix>/usr/local/lib/${project.artifactId}</prefix>
+											</mapper>
+										</data>
+										<data>
+											<src>${project.external-resources}</src>
+											<type>directory</type>
+											<includes>*.conf, *.webfilters</includes>
+											<conffile>true</conffile>
+											<mapper>
+												<type>perm</type>
+												<strip>1</strip>
+												<prefix>/etc/skel/.config</prefix>
+											</mapper>
+										</data>
+										<data>
+											<src>${project.build.directory}/${project.artifactId}.jar</src>
+											<dst>/usr/local/lib/${project.artifactId}/${project.artifactId}.jar</dst>
+											<type>file</type>
+										</data>
+										<data>
+											<src>${project.external-resources}/${project.name.short}.sh</src>
+											<dst>/usr/local/lib/${project.artifactId}/${project.name.short}.sh</dst>
+											<type>file</type>
+											<mapper>
+												<type>perm</type>
+												<filemode>755</filemode>
+											</mapper>
+										</data>
+										<data>
+											<linkName>/usr/local/bin/${project.artifactId}</linkName>
+											<linkTarget>/usr/local/lib/${project.artifactId}/${project.name.short}.sh</linkTarget>
+											<symlink>true</symlink>
+											<type>link</type>
+										</data>
+									</dataSet>
+								</configuration>
 							</execution>
 						</executions>
-						<!--<dependencies>
-						</dependencies>
-						<configuration>
-							<dataSet>
-								<data>
-									<type>directory</type>
-									<src>${basedir}/src/main/applications</src>
-									<includes>*</includes>
-									<mapper>
-										<type>perm</type>
-										<strip>1</strip>
-										<prefix>/usr/share/applications</prefix>
-										<user>root</user>
-										<group>root</group>
-										<filemode>755</filemode>
-									</mapper>
-								</data>
-							</dataSet>
-						</configuration>-->
 					</plugin>
 				</plugins>
 			</build>
 		</profile>
 
 		<!--
-			Mac OSX Java 8 profile: takes care of building the final package for Mac OSX using Java 8.
-			Note: This does not make the .dmg you will have to do that manually. Use the open source dmgCreator
+			Mac OSX profile: takes care of building the pre-final package for macOS.
+			Note: This does not make the .dmg so you will have to do that manually.
+			The open source dmgCreator can be used.
 		-->
 		<profile>
 			<id>osx</id>
 			<activation>
 				<activeByDefault>false</activeByDefault>
+				<!--
+				<property>
+					<name>release</name>
+					<value>true</value>
+				</property>
+				-->
 			</activation>
 			<build>
 				<plugins>
@@ -1354,8 +1496,7 @@
 								<configuration>
 									<target>
 										<!-- Make sure the target folder exists -->
-										<mkdir dir="${project.build.directory}/${project.build.finalName}-distribution" />
-
+										<mkdir dir="${project.build.directory}/${project.artifactId}-${project.version}" />
 										<!-- Create the shortcut to the Applications folder -->
 										<exec executable="/usr/bin/osascript">
 											<arg value="-e" />
@@ -1363,7 +1504,7 @@
 											<arg value="-e" />
 											<arg value="set src to POSIX file &quot;/Applications&quot;" />
 											<arg value="-e" />
-											<arg value="set dest to POSIX file &quot;${project.build.directory}/${project.build.finalName}-distribution&quot;" />
+											<arg value="set dest to POSIX file &quot;${project.build.directory}/${project.artifactId}-${project.version}&quot;" />
 											<arg value="-e" />
 											<arg value="make new alias file to folder src at folder dest" />
 											<arg value="-e" />
@@ -1382,7 +1523,7 @@
 									<target>
 										<taskdef name="bundleapp" classname="com.oracle.appbundler.AppBundlerTask"
 											classpath="${basedir}/src/main/external-resources/lib/appbundler-1.3.${project.name.short}.jar"/>
-										<bundleapp  outputdirectory="${project.build.directory}/${project.build.finalName}-distribution"
+										<bundleapp  outputdirectory="${project.build.directory}/${project.artifactId}-${project.version}"
 													name="${project.name}"
 													displayname="${project.name}"
 													executableName="${project.name.short}"
@@ -1392,12 +1533,12 @@
 													applicationCategory="public.app-category.entertainment"
 													workingdirectory="$APP_ROOT/Contents/Resources"
 													mainclassname="net.pms.PMS">
-											<classpath file="${project.build.directory}/${project.build.finalName}-jar-with-dependencies.jar"/>
+											<classpath file="${project.build.directory}/${project.artifactId}.jar"/>
 											<option value="-Xmx768M"/>
 											<option value="-Xss16M"/>
 											<option value="-Dfile.encoding=UTF-8"/>
 											<option value="-Djava.net.preferIPv4Stack=true"/>
-											<option value="-Xdock:name=Digital Media Server"/>
+											<option value="-Xdock:name=${project.name}"/>
 										</bundleapp>
 									</target>
 								</configuration>
@@ -1444,12 +1585,68 @@
 									<archive>
 										<manifest>
 											<mainClass>net.pms.PMS</mainClass>
-											<addDefaultImplementationEntries>true</addDefaultImplementationEntries> <!-- see above for documentation -->
+											<addDefaultImplementationEntries>true</addDefaultImplementationEntries>
 										</manifest>
 									</archive>
 								</configuration>
 							</execution>
 						</executions>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+
+		<!--
+			This profile produce the checksums
+		-->
+		<profile>
+			<id>checksum</id>
+			<activation>
+				<activeByDefault>false</activeByDefault>
+				<property>
+					<name>release</name>
+					<value>true</value>
+				</property>
+			</activation>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>net.nicoulaj.maven.plugins</groupId>
+						<artifactId>checksum-maven-plugin</artifactId>
+						<version>1.6</version>
+						<!-- Rely on org.bouncycastle:bcprov-jdk15on dependancy -->
+						<executions>
+							<execution>
+								<id>checksum-files</id>
+								<phase>package</phase>
+								<goals>
+									<goal>files</goal>
+								</goals>
+							</execution>
+						</executions>
+						<configuration>
+							<quiet>true</quiet>
+							<!-- Choose the prefered one -->
+							<shasumSummary>true</shasumSummary>
+							<xmlSummary>true</xmlSummary>
+							<csvSummary>false</csvSummary>
+							<failOnError>false</failOnError>
+							<algorithms>
+								<algorithm>SHA-256</algorithm>
+								<!-- <algorithm>MD5</algorithm> -->
+							</algorithms>
+							<fileSets>
+								<fileSet>
+									<directory>${project.build.directory}</directory>
+									<includes>
+										<include>${project.name.short}-setup.exe</include>
+										<include>${project.artifactId}-${project.version}.tgz</include>
+										<include>${project.artifactId}-${project.version}.deb</include>
+										<include>${project.artifactId}-${project.version}.rpm</include>
+									</includes>
+								</fileSet>
+							</fileSets>
+						</configuration>
 					</plugin>
 				</plugins>
 			</build>
