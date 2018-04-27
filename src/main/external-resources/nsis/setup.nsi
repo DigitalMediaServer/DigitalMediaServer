@@ -472,7 +472,7 @@ Function .onInit
 
 	InitPluginsDir
 
-	StrCpy $CopyLeft "${U+00A9} ${BUILD_YEAR} ${PRODUCT_NAME} ${PRODUCT_VERSION}                                                 Nullsoft Install System ${NSIS_VERSION}"
+	StrCpy $CopyLeft "${U+00A9} ${BUILD_YEAR} ${PRODUCT_NAME} ${PRODUCT_VERSION}                                        Nullsoft Install System ${NSIS_VERSION}"
 	${If} ${AtLeastWinVista}
 	${AndIf} ${AtMostWin7}
 		StrCpy $CopyLeft "${U+00A9} ${BUILD_YEAR} ${PRODUCT_NAME} ${PRODUCT_VERSION}"
