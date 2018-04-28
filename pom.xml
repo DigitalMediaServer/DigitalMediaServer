@@ -906,6 +906,20 @@
 
 	<profiles>
 		<profile>
+			<id>system-makensis</id>
+			<activation>
+				<os>
+					<family>unix</family>
+				</os>
+			</activation>
+
+			<properties>
+				<!-- if selected, use the system makensis on Linux -->
+				<makensis-bin>makensis</makensis-bin>
+			</properties>
+		</profile>
+
+		<profile>
 			<id>jar</id>
 			<activation>
 				<activeByDefault>false</activeByDefault>
