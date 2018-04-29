@@ -100,7 +100,7 @@ public final class PlayerFactory {
 	 *
 	 * @throws InterruptedException If the operation is interrupted.
 	 */
-	public static void initialize() throws InterruptedException {
+	public static void initialize() {
 		registerPlayers();
 	}
 
@@ -109,7 +109,7 @@ public final class PlayerFactory {
 	 *
 	 * @throws InterruptedException
 	 */
-	private static void registerPlayers() throws InterruptedException {
+	private static void registerPlayers() {
 		if (Platform.isWindows()) {
 			registerPlayer(new AviSynthFFmpeg());
 			registerPlayer(new AviSynthMEncoder());
@@ -136,7 +136,7 @@ public final class PlayerFactory {
 	 * @param player the {@link Player} to be added.
 	 * @throws InterruptedException If the operation is interrupted.
 	 */
-	public static void registerPlayer(final Player player) throws InterruptedException {
+	public static void registerPlayer(final Player player) {
 		if (player == null) {
 			throw new IllegalArgumentException("player cannot be null");
 		}

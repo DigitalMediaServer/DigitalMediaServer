@@ -272,22 +272,9 @@ public class FormatRecognitionTest {
 	 */
 	@Test
 	public void testVirtualVideoActionInitializationCompatibility() throws InterruptedException {
-		boolean configurationLoaded = false;
-
-		try {
-			// Initialize DMS configuration like at initialization time, this
-			// is relevant for RendererConfiguration.isCompatible().
-			PMS.setConfiguration(new PmsConfiguration());
-			configurationLoaded = true;
-		} catch (ConfigurationException e) {
-			e.printStackTrace();
-		}
-
-		// Continue the test if the configuration loaded, otherwise skip it.
-		assumeTrue(configurationLoaded);
 
 		// Continue the test if the LibMediaInfoParser can be loaded, otherwise skip it.
-		assumeTrue(LibMediaInfoParser.isValid());
+		assumeTrue(mediaInfoParserIsValid);
 
 		// Construct media info exactly as VirtualVideoAction does
 		DLNAMediaInfo info = new DLNAMediaInfo();
@@ -306,5 +293,4 @@ public class FormatRecognitionTest {
 		assertEquals("VirtualVideoAction is initialized as compatible with null configuration",
 				true, format.isCompatible(info, null));
 	}
-
 }
