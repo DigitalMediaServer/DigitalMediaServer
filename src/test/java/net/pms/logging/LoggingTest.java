@@ -156,8 +156,8 @@ public class LoggingTest {
 	public void testDebugLogPropertyDefiner() throws ConfigurationException, InterruptedException {
 
 		// Set up DMS configuration
+		PMS.setTestConfiguration();
 		PMS.get();
-		PMS.setConfiguration(new PmsConfiguration());
 		DebugLogPropertyDefiner propertyDefiner = new DebugLogPropertyDefiner();
 
 		// Test logFilePath
@@ -179,9 +179,9 @@ public class LoggingTest {
 	public void testLoggingConfig() throws ConfigurationException, NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException, InterruptedException {
 
 		// Set up a test (default) configuration
+		PMS.setTestConfiguration();
+		PmsConfiguration configuration = PMS.getConfiguration();
 		PMS.get();
-		PmsConfiguration configuration = new PmsConfiguration(false);
-		PMS.setConfiguration(configuration);
 
 		// Load logback configuration
 		LoggingConfig.loadFile();

@@ -564,9 +564,8 @@ public class PmsConfiguration extends RendererConfiguration {
 	 * from the profile path.
 	 *
 	 * @throws org.apache.commons.configuration.ConfigurationException
-	 * @throws InterruptedException
 	 */
-	public PmsConfiguration() throws ConfigurationException, InterruptedException {
+	public PmsConfiguration() throws ConfigurationException {
 		this(true);
 	}
 
@@ -576,9 +575,8 @@ public class PmsConfiguration extends RendererConfiguration {
 	 * @param loadFile Set to true to attempt to load the DMS configuration
 	 *                 file from the profile path. Set to false to skip
 	 *                 loading.
-	 * @throws InterruptedException
 	 */
-	public PmsConfiguration(boolean loadFile) throws ConfigurationException, InterruptedException {
+	public PmsConfiguration(boolean loadFile) throws ConfigurationException {
 		super(0);
 
 		if (loadFile) {
