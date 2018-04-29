@@ -88,7 +88,7 @@ public class TempFileMgr {
 				scan();
 			}
 		};
-		Timer t = new Timer();
+		Timer t = new Timer(true);
 		t.scheduleAtFixedRate(task, 0, INTERVAL);
 	}
 

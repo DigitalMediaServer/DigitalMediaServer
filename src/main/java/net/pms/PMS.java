@@ -44,7 +44,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.logging.LogManager;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -57,6 +56,7 @@ import javax.swing.*;
 import net.pms.configuration.DeviceConfiguration;
 import net.pms.configuration.PmsConfiguration;
 import net.pms.configuration.RendererConfiguration;
+import net.pms.database.TableManager;
 import net.pms.dlna.CodeEnter;
 import net.pms.dlna.DLNAMediaDatabase;
 import net.pms.dlna.DLNAResource;
@@ -65,6 +65,7 @@ import net.pms.dlna.Playlist;
 import net.pms.dlna.RootFolder;
 import net.pms.dlna.virtual.MediaLibrary;
 import net.pms.encoders.PlayerFactory;
+import net.pms.exception.InitializationException;
 import net.pms.formats.Format;
 import net.pms.formats.FormatFactory;
 import net.pms.io.*;
@@ -95,13 +96,7 @@ public class PMS {
 	private static final String SCROLLBARS = "scrollbars";
 	private static final String NATIVELOOK = "nativelook";
 	private static final String CONSOLE = "console";
-	private static final String HEADLESS = "headless";
 	private static final String NOCONSOLE = "noconsole";
-	private static final String PROFILES = "profiles";
-	private static final String PROFILE = "^(?i)profile(?::|=)([^\"*<>?]+)$";
-	private static final String TRACE = "trace";
-	private static final String DBLOG = "dblog";
-	private static final String DBTRACE = "dbtrace";
 	public static final String CROWDIN_LINK = "http://crowdin.com/project/DigitalMediaServer";
 
 	private boolean ready = false;
@@ -366,7 +361,7 @@ public class PMS {
 		// This should be removed soon
 		OpenSubtitle.convert();
 
-		// Start this here to let the converison work
+		// Start this here to let the conversion work
 		tfm.schedule();
 
 	}
@@ -374,11 +369,12 @@ public class PMS {
 	/**
 	 * Initialization procedure for DMS.
 	 *
-	 * @return <code>true</code> if the server has been initialized correctly.
-	 *         <code>false</code> if initialization was aborted.
-	 * @throws Exception
+	 * @return {@code true} if the server has been initialized correctly,
+	 *         {@code false} if initialization was aborted.
+	 * @throws IOException If an I/O error occurs during initialization.
+	 * @throws InitializationException If an error occurs during initialization.
 	 */
-	private boolean init() throws Exception {
+	private boolean init() throws IOException, InitializationException {
 		// Gather and log system information from a separate thread
 		LogSystemInformationMode logSystemInfo = configuration.getLogSystemInformation();
 		if (
@@ -416,7 +412,21 @@ public class PMS {
 		displayBanner();
 
 		// Initialize database
-		Services.get().createTableManager();
+		try {
+			if (!initializeDatabase()) {
+				if (splash != null) {
+					splash.dispose();
+					splash = null;
+				}
+				return false;
+			}
+		} catch (InitializationException e) {
+			if (splash != null) {
+				splash.dispose();
+				splash = null;
+			}
+			throw e;
+		}
 
 		// Log registered ImageIO plugins
 		if (LOGGER.isTraceEnabled()) {
@@ -475,7 +485,7 @@ public class PMS {
 				}
 
 				// Ask if their network is wired, etc.
-				Object[] options = {
+				Object[] wizardOptions = {
 					Messages.getString("Wizard.8"),
 					Messages.getString("Wizard.9"),
 					Messages.getString("Wizard.10")
@@ -487,8 +497,8 @@ public class PMS {
 					JOptionPane.YES_NO_CANCEL_OPTION,
 					JOptionPane.QUESTION_MESSAGE,
 					null,
-					options,
-					options[1]
+					wizardOptions,
+					wizardOptions[1]
 				);
 				switch (networkType) {
 					case JOptionPane.YES_OPTION:
@@ -756,8 +766,10 @@ public class PMS {
 					UPNPHelper.sendByeBye();
 
 					LOGGER.debug("Shutting down the HTTP server");
-					get().getServer().stop();
-					Thread.sleep(500);
+					if (instance != null && instance.getServer() != null) {
+						instance.getServer().stop();
+						Thread.sleep(500);
+					}
 
 					LOGGER.debug("Shutting down all active processes");
 
@@ -798,12 +810,55 @@ public class PMS {
 
 		configuration.setAutoSave();
 		UPNPHelper.sendByeBye();
-		LOGGER.trace("Waiting 250 milliseconds...");
-		Thread.sleep(250);
-		UPNPHelper.sendAlive();
-		LOGGER.trace("Waiting 250 milliseconds...");
-		Thread.sleep(250);
-		UPNPHelper.listen();
+		try {
+			LOGGER.trace("Waiting 250 milliseconds...");
+			Thread.sleep(250);
+			UPNPHelper.sendAlive();
+			LOGGER.trace("Waiting 250 milliseconds...");
+			Thread.sleep(250);
+			UPNPHelper.listen();
+		} catch (InterruptedException e) {
+			return false;
+		}
+
+		return true;
+	}
+
+	private static boolean initializeDatabase() throws InitializationException {
+		Services services = Services.get();
+		if (Services.get() == null) {
+			throw new InitializationException("Services don't exist during database initialization");
+		}
+
+		services.createTableManager();
+		TableManager tableManager = services.getTableManager();
+		if (tableManager.isError()) {
+			if (tableManager.isAlreadyOpenError()) {
+				LOGGER.error("DMS can't start because the database located at");
+				LOGGER.error("\"{}\"", tableManager.getDatabaseFilepath(true));
+				LOGGER.error("is in use. This is normally because another instance of DMS is already running.");
+			} else if (tableManager.isWrongVersionOrCorrupt()) {
+				LOGGER.error("The database is either of a wrong version or corrupt.");
+			} else if (tableManager.hasFutureTables()) {
+				boolean plural = tableManager.getFutureTables(true, false, true).size() > 1;
+				LOGGER.error("The database has tables from a newer version of DMS that are incompatible");
+				LOGGER.error("with this version. This can be resolved manually by deleting, renaming or");
+				LOGGER.error("moving the database located at");
+				LOGGER.error("\"{}\".", tableManager.getDatabaseFilepath(true));
+				LOGGER.error("");
+				LOGGER.error(
+					"The incompatible table{} {}: {}",
+					plural ? "s" : "",
+					plural ? "are" : "is",
+					tableManager.getFutureTablesString(true, true)
+				);
+			} else {
+				LOGGER.error("A database error prevents DMS from starting. If you cannot resolve the error,");
+				LOGGER.error("delete, rename or move the database located at");
+				LOGGER.error("\"{}\".", tableManager.getDatabaseFilepath(true));
+			}
+			return false;
+		}
 
 		return true;
 	}
@@ -958,21 +1013,30 @@ public class PMS {
 	 * Returns the PMS instance.
 	 *
 	 * @return {@link net.pms.PMS}
+	 * @throws InitializationException If an error occurs during initialization.
 	 */
 	@Nonnull
 	public static PMS get() {
-		// XXX when DMS is run as an application, the instance is initialized via the createInstance call in main().
+		// When DMS is run as an application, the instance is initialized via the createInstance call in main().
 		// However, plugin tests may need access to a DMS instance without going
 		// to the trouble of launching the DMS application, so we provide a fallback
 		// initialization here. Either way, createInstance() should only be called once (see below)
 		if (instance == null) {
-			createInstance();
+			try {
+				createInstance();
+			} catch (InitializationException e) {
+				//XXX This is a bad solution which will lead to NPEs if initialization fails.
+				// It is however the only solution without completely refactoring the use of
+				// the "PMS" instance.
+				LOGGER.error("An error occurred while instantiating the master instance: {}", e.getMessage());
+				LOGGER.trace("", e);
+			}
 		}
 
 		return instance;
 	}
 
-	private synchronized static void createInstance() {
+	private synchronized static void createInstance() throws InitializationException {
 		assert instance == null; // this should only be called once
 		instance = new PMS();
 
@@ -982,9 +1046,8 @@ public class PMS {
 			} else {
 				LOGGER.info("{} initialization was aborted", getName());
 			}
-		} catch (Exception e) {
-			LOGGER.error("A serious error occurred during {} initialization: {}", getName(), e.getMessage());
-			LOGGER.trace("", e);
+		} catch (IOException e) {
+			throw new InitializationException("An I/O error occurred during initialization: " + e.getMessage(), e);
 		}
 	}
 
@@ -1000,10 +1063,147 @@ public class PMS {
 		return FormatFactory.getAssociatedFormat(filename);
 	}
 
+	@Nonnull
+	private static Map<Option, Object> parseArgs(@Nullable String[] args) {
+		HashMap<Option, Object> result = new HashMap<>();
+		if (args == null || args.length == 0) {
+			return result;
+		}
+
+		Pattern separator = Pattern.compile("=");
+		ArrayList<String> arguments = new ArrayList<>();
+		for (String argument : args) {
+			String[] parts = separator.split(argument);
+			if (parts.length > 1) {
+				for (String part : parts) {
+					if (isNotBlank(part)) {
+						arguments.add(part.trim());
+					}
+				}
+			} else {
+				arguments.add(argument);
+			}
+		}
+
+		for (int i = 0; i < arguments.size(); i++) {
+			String argument = arguments.get(i).trim();
+			if (!argument.startsWith("-")) {
+				argument = argument.toLowerCase(Locale.ROOT);
+			}
+			switch (argument) {
+				case "-h":
+				case "--help":
+				case "help":
+					result.put(Option.HELP, null);
+					break;
+				case "-V":
+				case "--version":
+				case "version":
+					result.put(Option.VERSION, null);
+					break;
+				case "-c":
+				case "--console":
+				case "--headless":
+				case "headless":
+				case CONSOLE:
+					result.put(Option.HEADLESS, null);
+					break;
+				case "-n":
+				case "--nativelook":
+				case NATIVELOOK:
+					result.put(Option.NATIVE_LOOK, null);
+					break;
+				case "-s":
+				case "--scrollbars":
+				case SCROLLBARS:
+					result.put(Option.SCROLLBARS, null);
+					break;
+				case "-C":
+				case "--noconsole":
+				case NOCONSOLE:
+					result.put(Option.NOCONSOLE, null);
+					break;
+				case "-v":
+				case "--verbose":
+				case "-t":
+				case "--trace":
+				case "trace":
+					result.put(Option.TRACE, null);
+					break;
+				case "-db":
+				case "--database":
+				case "db":
+					if (i < arguments.size() - 1) {
+						String value = arguments.get(++i);
+						if (isNotBlank(value)) {
+							value = value.trim().toLowerCase(Locale.ROOT);
+							switch (value) {
+								case "log":
+								case "trace":
+									result.put(Option.DB_LOG, null);
+									break;
+								default:
+									LOGGER.warn("Ignoring unknown {} argument \"{}\"", argument, value);
+									break;
+							}
+							break;
+						}
+					}
+					LOGGER.warn("Ignoring blank {} argument", argument);
+					break;
+				case "-P":
+				case "--profiles":
+				case "profiles":
+					result.put(Option.SELECT_PROFILE, null);
+					break;
+				case "-p":
+				case "--profile":
+				case "profile":
+					if (i < arguments.size() - 1) {
+						String value = arguments.get(++i);
+						if (isNotBlank(value)) {
+							result.put(Option.PROFILE, value);
+							break;
+						}
+					}
+					LOGGER.warn("Ignoring blank profile", argument);
+					break;
+				default:
+					LOGGER.warn("Ignoring unknown argument \"{}\"", argument);
+					break;
+			}
+		}
+		return result;
+	}
+
+	private static void printHelp() {
+		getVersion();
+		PrintStream out = System.out;
+		out.println("Options:");
+		out.println("  -p, --profile=PROFILE_PATH      Use the configuration in PROFILE_PATH.");
+		out.println("  -P, --profiles                  Show the profile selection dialog during");
+		out.println("                                  startup, ignored if running headless or if a");
+		out.println("                                  profile is specified.");
+		out.println("  -v, --trace                     Force logging level to TRACE.");
+		out.println("  -c, --headless                  Run without GUI.");
+		out.println("  -C, --noconsole                 Fail if a GUI can't be created.");
+		if (!Platform.isWindows() && !Platform.isMac()) {
+			out.println("  -n, --nativelook                Attempt to use the graphical environment's");
+			out.println("                                  native look.");
+		}
+		out.println("  -s, --scrollbars                Force horizontal and vertical GUI scroll bars.");
+		out.println("  -db, --database");
+		out.println("     log, trace                   Enable database logging.");
+		out.println("  -V, --version                   Display the version and exit.");
+		out.println("  -h, --help                      Display this help and exit.");
+	}
+
+	private static void printVersion() {
+		System.out.println(getName() + " " + getVersion());
+		System.out.println();
+	}
+
 	public static void main(String args[]) {
-		boolean displayProfileChooser = false;
-		boolean denyHeadless = false;
-		File profilePath = null;
 
 		// This must be called before JNA is used
 		configureJNA();
@@ -1011,59 +1211,51 @@ public class PMS {
 		// Start caching log messages until the logger is configured
 		CacheLogger.startCaching();
 
-		// Set headless options if given as a system property when launching the JVM
+		// Get options
+		Map<Option, Object> options = parseArgs(args);
+		if (options.containsKey(Option.HELP)) {
+			printHelp();
+			System.exit(0);
+		}
+		if (options.containsKey(Option.VERSION)) {
+			printVersion();
+			System.exit(0);
+		}
 		if (System.getProperty(CONSOLE, "").equalsIgnoreCase(Boolean.toString(true))) {
-			forceHeadless();
+			options.put(Option.HEADLESS, null);
 		}
 		if (System.getProperty(NOCONSOLE, "").equalsIgnoreCase(Boolean.toString(true))) {
-			denyHeadless = true;
+			options.put(Option.NOCONSOLE, null);
 		}
 
-		if (args.length > 0) {
-			Pattern pattern = Pattern.compile(PROFILE);
-			for (String arg : args) {
-				switch (arg.trim().toLowerCase(Locale.ROOT)) {
-					case HEADLESS:
-					case CONSOLE:
-						forceHeadless();
-						break;
-					case NATIVELOOK:
-						System.setProperty(NATIVELOOK, Boolean.toString(true));
-						break;
-					case SCROLLBARS:
-						System.setProperty(SCROLLBARS, Boolean.toString(true));
-						break;
-					case NOCONSOLE:
-						denyHeadless = true;
-						break;
-					case PROFILES:
-						displayProfileChooser = true;
-						break;
-					case TRACE:
-						traceMode = 2;
-						break;
-					case DBLOG:
-					case DBTRACE:
-						logDB = true;
-						break;
-					default:
-						Matcher matcher = pattern.matcher(arg);
-						if (matcher.find()) {
-							profilePath = new File(matcher.group(1));
-						}
-						break;
-				}
-			}
+		// Apply options
+		if (options.containsKey(Option.HEADLESS)) {
+			forceHeadless();
+		}
+		if (options.containsKey(Option.NATIVE_LOOK)) {
+			System.setProperty(NATIVELOOK, Boolean.toString(true));
+		}
+		if (options.containsKey(Option.SCROLLBARS)) {
+			System.setProperty(SCROLLBARS, Boolean.toString(true));
+		}
+		if (options.containsKey(Option.TRACE)) {
+			traceMode = 2;
+		}
+		if (options.containsKey(Option.DB_LOG)) {
+			logDB = true;
 		}
 
+		if (isHeadless()) {
+			System.setProperty("java.awt.headless", Boolean.toString(true));
+		}
 		try {
 			Toolkit.getDefaultToolkit();
 		} catch (AWTError t) {
-			LOGGER.error("Toolkit error: " + t.getClass().getName() + ": " + t.getMessage());
+			LOGGER.error("Toolkit error, GUI is unavailable: {}: {}", t.getClass().getName(), t.getMessage());
 			forceHeadless();
 		}
 
-		if (isHeadless() && denyHeadless) {
+		if (isHeadless() && options.containsKey(Option.NOCONSOLE)) {
 			System.err.println(
 				"Either a graphics environment isn't available or headless " +
 				"mode is forced, but \"noconsole\" is specified. " + getName() +
@@ -1074,17 +1266,23 @@ public class PMS {
 			LooksFrame.initializeLookAndFeel();
 		}
 
-		if (profilePath != null) {
-			if (!FileUtil.isValidFileName(profilePath.getName())) {
-				LOGGER.warn("Invalid file name in profile argument - using default profile");
-			} else if (!profilePath.exists()) {
-				LOGGER.warn("Specified profile ({}) doesn't exist - using default profile", profilePath.getAbsolutePath());
+		if (options.containsKey(Option.PROFILE) && options.get(Option.PROFILE) instanceof String) {
+			File profile = new File((String) options.get(Option.PROFILE));
+			if (FileUtil.isValidFileName(profile)) {
+				LOGGER.debug("Using specified profile: {}", profile.getAbsolutePath());
+				System.setProperty("dms.profile.path", profile.getAbsolutePath());
 			} else {
-				LOGGER.debug("Using specified profile: {}", profilePath.getAbsolutePath());
-				System.setProperty("dms.profile.path", profilePath.getAbsolutePath());
+				LOGGER.error(
+					"Invalid file or folder name \"{}\" in profile argument - using default profile",
+					profile.getAbsolutePath()
+				);
 			}
-		} else if (!isHeadless() && displayProfileChooser) {
-			ProfileChooser.display();
+		} else if (options.containsKey(Option.SELECT_PROFILE)) {
+			if (isHeadless()) {
+				LOGGER.error("The profile selection dialog isn't available in headless mode, using the default profile");
+			} else {
+				ProfileChooser.display();
+			}
 		}
 
 		try {
@@ -1139,7 +1337,8 @@ public class PMS {
 			try {
 				getConfiguration().initCred();
 			} catch (IOException e) {
-				LOGGER.debug("Error initializing plugin credentials: {}", e);
+				LOGGER.debug("Error initializing credentials: {}", e.getMessage());
+				LOGGER.trace("", e);
 			}
 
 			if (getConfiguration().isRunSingleInstance()) {
@@ -1148,25 +1347,28 @@ public class PMS {
 
 			// Create the PMS instance returned by get()
 			createInstance(); // Calls new() then init()
-		} catch (ConfigurationException t) {
-			String errorMessage = String.format(
-				"Configuration error: %s: %s",
-				t.getClass().getName(),
-				t.getMessage()
-			);
+		} catch (ConfigurationException | InitializationException e) {
+			StringBuilder sb = new StringBuilder();
+			String errorMessage;
+			if (e instanceof ConfigurationException) {
+				sb.append(Messages.getString("Application.ConfigurationError")).append(".");
+				errorMessage = Messages.getRootString("Application.ConfigurationError") + ":";
+			} else {
+				sb.append(Messages.getString("Application.InitializationError")).append(".");
+				errorMessage = Messages.getRootString("Application.InitializationError") + ":";
+			}
 
-			LOGGER.error(errorMessage);
+			LOGGER.error("{} {}", errorMessage, e.getMessage());
+			LOGGER.debug("", e);
 
-			if (!isHeadless() && instance != null) {
+			if (!isHeadless()) {
 				JOptionPane.showMessageDialog(
-					(SwingUtilities.getWindowAncestor((Component) instance.getFrame())),
-					errorMessage,
+					null,
+					sb.toString(),
 					Messages.getString("PMS.42"),
 					JOptionPane.ERROR_MESSAGE
 				);
 			}
-		} catch (InterruptedException e) {
-			// Interrupted during startup
 		}
 	}
 
@@ -1247,8 +1449,31 @@ public class PMS {
 	 *
 	 * @param conf The configuration object.
 	 */
-	public static void setConfiguration(PmsConfiguration conf) {
+	private static void setConfiguration(PmsConfiguration conf) {
 		configuration = conf;
+	}
+
+	/**
+	 * Sets up a standard test configuration that doesn't open any GUI dialogs
+	 * during {@link #init()}.
+	 * <p>
+	 * XXX This is NOT thread-safe and can lead to random issues when tests are
+	 * run in parallel. This isn't because of this method but because of the
+	 * fundamental design of having an unprotected static
+	 * {@link PmsConfiguration} instance. The problem only manifests during
+	 * tests, as the configuration instance is only set once from the main
+	 * thread during normal initialization.
+	 *
+	 * @throws ConfigurationException If a configuration error occurs.
+	 */
+	public static void setTestConfiguration() throws ConfigurationException {
+		if (configuration == null) {
+			PmsConfiguration testConfiguration = new PmsConfiguration(false);
+			testConfiguration.setLanguage(Locale.ENGLISH);
+			testConfiguration.setShowSplashScreen(false);
+			testConfiguration.setRunWizard(false);
+			configuration = testConfiguration;
+		}
 	}
 
 	private static final Object PROPERTIES_LOCK = new Object();
@@ -1582,7 +1807,7 @@ public class PMS {
 	 * sensitive operations. If <code>null</code> the default {@link Locale}
 	 * is returned.
 	 */
-
+	@Nonnull
 	public static Locale getLocale() {
 		localeLock.readLock().lock();
 		try {
@@ -1597,13 +1822,13 @@ public class PMS {
 
 	/**
 	 * Sets DMS' {@link Locale}.
+	 *
 	 * @param aLocale the {@link Locale} to set
 	 */
-
-	public static void setLocale(Locale aLocale) {
+	public static void setLocale(@Nullable Locale aLocale) {
 		localeLock.writeLock().lock();
 		try {
-			locale = (Locale) aLocale.clone();
+			locale = aLocale == null ? Locale.getDefault() : aLocale;
 			Messages.setLocaleBundle(locale);
 		} finally {
 			localeLock.writeLock().unlock();
@@ -1697,12 +1922,12 @@ public class PMS {
 	}
 
 	public static boolean isReady() {
-		return get().ready;
+		return instance == null ? false : instance.ready;
 	}
 
 	@Nullable
 	public static GlobalIdRepo getGlobalRepo() {
-		return get().globalRepo;
+		return instance == null ? null : instance.globalRepo;
 	}
 
 	private InfoDb infoDb;
@@ -1905,5 +2130,42 @@ public class PMS {
 		if (!libraryPaths.isEmpty()) {
 			System.setProperty("jna.library.path", StringUtils.join(libraryPaths, File.pathSeparator));
 		}
+	}
+
+	/**
+	 * This {@code enum} represents the startup options parsed from the command
+	 * line arguments, system variables or environment variables.
+	 */
+	public static enum Option {
+
+		/** Enable database logging */
+		DB_LOG,
+
+		/** Force headless mode */
+		HEADLESS,
+
+		/** Display help and exit */
+		HELP,
+
+		/** Attempt to use the graphical environment's native look under Linux */
+		NATIVE_LOOK,
+
+		/** Never use headless mode */
+		NOCONSOLE,
+
+		/** Specifies a profile to use */
+		PROFILE,
+
+		/** Always show horizontal and vertical scrollbars in the GUI */
+		SCROLLBARS,
+
+		/** Display the select profile dialog during startup */
+		SELECT_PROFILE,
+
+		/** Enable forced {@code TRACE} logging level */
+		TRACE,
+
+		/** Display the version and exit */
+		VERSION
 	}
 }
