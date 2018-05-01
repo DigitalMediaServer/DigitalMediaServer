@@ -1,4 +1,4 @@
-UMS sync with: d45fa1e1e984f1ce1072d728b7cb14e1b5415eb2 Updated MediaInfo to 18.03.1
+UMS sync with: aed10bbddbf6abb2bea15ebc4d6aeb6c81912199 Samsung 8 and 9 series TVs should transcode external ASS/SSA subtitles
 
 Skipped:
 a4a099c7efcaf6dc8a28402a29eade757a2ce78d The ugly hack to solve problem when the TotalMatches are changed
