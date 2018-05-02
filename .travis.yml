@@ -23,6 +23,8 @@ matrix:
       jdk: openjdk8
     - os: osx
 
+before_install: echo "MAVEN_OPTS='-XX:+TieredCompilation -XX:TieredStopAtLevel=1'" > ~/.mavenrc
+
 install: mvn external:install 
 
 script: mvn verify -B -V
