@@ -76,7 +76,7 @@ public class DLNAMediaSubtitle extends DLNAMediaLang implements Cloneable {
 		result.append("id: ");
 		result.append(getId());
 		result.append(", type: ");
-		result.append(type);
+		result.append(getType());
 
 		if (isNotBlank(subtitlesTrackTitleFromMetadata)) {
 			result.append(", subtitles track title from metadata: ");
