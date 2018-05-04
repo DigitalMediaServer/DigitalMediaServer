@@ -214,10 +214,6 @@ Section "!$(SectionServer)" sec1
 	CreateDirectory "$R0\${PROJECT_NAME_CAMEL}\data"
 	AccessControl::GrantOnFile "$R0\${PROJECT_NAME_CAMEL}" "(BU)" "GenericRead + GenericExecute + GenericWrite + Delete + FullAccess"
 	Pop $0
-	File "${PROJECT_BASEDIR}\src\main\external-resources\${PROJECT_NAME_SHORT}.conf"
-	File "${PROJECT_BASEDIR}\src\main\external-resources\WEB.conf"
-	File "${PROJECT_BASEDIR}\src\main\external-resources\ffmpeg.webfilters"
-	File "${PROJECT_BASEDIR}\src\main\external-resources\VirtualFolders.conf"
 SectionEnd
 
 Section $(SectionShortcuts) sec7
