@@ -285,14 +285,14 @@ Section /o $(SectionDownloadJava) sec3 ; http://www.oracle.com/technetwork/java/
 	${AndIfNot} ${RunningX64}
 		; jre-7u80-windows-i586.exe
 		; http://javadl.sun.com/webapps/download/AutoDL?BundleId=106307
-		StrCpy $0 "javadl.oracle.com/webapps/download/AutoDL?BundleId=227550_e758a0de34e24606bca991d704f6dcbf"
+		StrCpy $0 "http://javadl.oracle.com/webapps/download/AutoDL?BundleId=227550_e758a0de34e24606bca991d704f6dcbf"
 		StrCpy $1 "jre-8u151-windows-i586.exe"
 	${EndIf}
 	${If} ${IsWinXP}
 	${AndIf} ${RunningX64}
 		; jre-7u80-windows-x64.exe
 		; http://javadl.sun.com/webapps/download/AutoDL?BundleId=106309
-		StrCpy $0 "javadl.oracle.com/webapps/download/AutoDL?BundleId=227552_e758a0de34e24606bca991d704f6dcbf"
+		StrCpy $0 "http://javadl.oracle.com/webapps/download/AutoDL?BundleId=227552_e758a0de34e24606bca991d704f6dcbf"
 		StrCpy $1 "jre-8u151-windows-x64.exe"
 	${EndIf}
 	${WordReplaceS} $(Downloading) "%s" "Oracle Java 8" "+1" $2
