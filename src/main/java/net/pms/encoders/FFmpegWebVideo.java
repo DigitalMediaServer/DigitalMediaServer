@@ -22,6 +22,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -31,6 +32,7 @@ import javax.swing.JComponent;
 import net.pms.configuration.DeviceConfiguration;
 import net.pms.configuration.ExecutableInfo;
 import net.pms.configuration.FFmpegExecutableInfo;
+import net.pms.configuration.FFmpegExecutableInfo.ProtocolFlags;
 import net.pms.configuration.PmsConfiguration;
 import net.pms.configuration.RendererConfiguration;
 import net.pms.dlna.DLNAMediaInfo;
@@ -378,8 +380,8 @@ public class FFmpegWebVideo extends FFMpegVideo {
 
 			ExecutableInfo executableInfo = programInfo.getExecutableInfo(currentExecutableType);
 			if (executableInfo instanceof FFmpegExecutableInfo) {
-				List<String> protocols = ((FFmpegExecutableInfo) executableInfo).getProtocols();
-				if (protocols == null || !protocols.contains(url.split(":")[0])) {
+				EnumSet<ProtocolFlags> flags = ((FFmpegExecutableInfo) executableInfo).getProtocols().get(url.split(":")[0]);
+				if (flags == null || !flags.contains(ProtocolFlags.INPUT)) {
 					return false;
 				}
 			} else {
@@ -435,7 +437,7 @@ public class FFmpegWebVideo extends FFMpegVideo {
 }
 
 // A self-combining map of regexes that recompiles if modified
-class PatternMap<T> extends modAwareHashMap<String, T> {
+class PatternMap<T> extends ModAwareHashMap<String, T> {
 	private static final long serialVersionUID = 3096452459003158959L;
 	Matcher combo;
 	List<String> groupmap = new ArrayList<>();
@@ -480,7 +482,7 @@ class PatternMap<T> extends modAwareHashMap<String, T> {
 
 // A HashMap that reports whether it's been modified
 // (necessary because 'modCount' isn't accessible outside java.util)
-class modAwareHashMap<K, V> extends HashMap<K, V> {
+class ModAwareHashMap<K, V> extends HashMap<K, V> {
 	private static final long serialVersionUID = -5334451082377480129L;
 	public boolean modified = false;
 

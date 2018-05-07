@@ -297,6 +297,27 @@ public abstract class Player {
 		return executable == null ? null : executable.toString();
 	}
 
+	/**
+	 * @return The {@link ExecutableInfo} for the currently configured
+	 *         {@link ProgramExecutableType} for this {@link Player} or
+	 *         {@code null}.
+	 */
+	@Nullable
+	public ExecutableInfo getExecutableInfo() {
+		return getProgramInfo().getExecutableInfo(currentExecutableType);
+	}
+
+	/**
+	 * @return The {@link Version} for the currently configured
+	 *         {@link ProgramExecutableType} for this {@link Player} or
+	 *         {@code null}.
+	 */
+	@Nullable
+	public Version getVersion() {
+		ExecutableInfo executableInfo = getProgramInfo().getExecutableInfo(currentExecutableType);
+		return executableInfo == null ? null : executableInfo.getVersion();
+	}
+
 	protected static final PmsConfiguration _configuration = PMS.getConfiguration();
 	protected PmsConfiguration configuration = _configuration;
 
@@ -585,7 +606,7 @@ public abstract class Player {
 			programInfo.setOriginalDefault();
 		} else {
 			programInfo.setDefault(ProgramExecutableType.CUSTOM);
-			LOGGER.debug("Custom executable path for {} was initialized to \"{}\"", programInfo, customPath);
+			LOGGER.debug("Custom executable path for {} was initialized to \"{}\"", programInfo.getName(), customPath);
 		}
 	}
 
@@ -625,12 +646,12 @@ public abstract class Player {
 			if (customPath == null) {
 				defaultType = DefaultExecutableType.ORIGINAL;
 				if (setConfiguration && LOGGER.isDebugEnabled()) {
-					LOGGER.debug("Custom executable path for {} was cleared", programInfo);
+					LOGGER.debug("Custom executable path for {} was cleared", programInfo.getName());
 				}
 			} else {
 				defaultType = DefaultExecutableType.CUSTOM;
 				if (setConfiguration && LOGGER.isDebugEnabled()) {
-					LOGGER.debug("Custom executable path for {} was set to \"{}\"", programInfo, customPath);
+					LOGGER.debug("Custom executable path for {} was set to \"{}\"", programInfo.getName(), customPath);
 				}
 			}
 			PlayerFactory.reEvaluateExecutable(this, ProgramExecutableType.CUSTOM, defaultType);
