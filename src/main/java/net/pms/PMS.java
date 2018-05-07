@@ -57,6 +57,7 @@ import net.pms.configuration.DeviceConfiguration;
 import net.pms.configuration.PmsConfiguration;
 import net.pms.configuration.RendererConfiguration;
 import net.pms.database.TableManager;
+import net.pms.database.Tables;
 import net.pms.dlna.CodeEnter;
 import net.pms.dlna.DLNAMediaDatabase;
 import net.pms.dlna.DLNAResource;
@@ -374,7 +375,7 @@ public class PMS {
 	 * @throws IOException If an I/O error occurs during initialization.
 	 * @throws InitializationException If an error occurs during initialization.
 	 */
-	private boolean init() throws IOException, InitializationException {
+	private boolean init(@Nullable Map<Option, Object> options) throws IOException, InitializationException {
 		// Gather and log system information from a separate thread
 		LogSystemInformationMode logSystemInfo = configuration.getLogSystemInformation();
 		if (
@@ -413,7 +414,7 @@ public class PMS {
 
 		// Initialize database
 		try {
-			if (!initializeDatabase()) {
+			if (!initializeDatabase(options, splash)) {
 				if (splash != null) {
 					splash.dispose();
 					splash = null;
@@ -824,7 +825,10 @@ public class PMS {
 		return true;
 	}
 
-	private static boolean initializeDatabase() throws InitializationException {
+	private static boolean initializeDatabase(
+		@Nullable Map<Option, Object> options,
+		@Nullable Splash splash
+	) throws InitializationException {
 		Services services = Services.get();
 		if (Services.get() == null) {
 			throw new InitializationException("Services don't exist during database initialization");
@@ -833,31 +837,170 @@ public class PMS {
 		services.createTableManager();
 		TableManager tableManager = services.getTableManager();
 		if (tableManager.isError()) {
-			if (tableManager.isAlreadyOpenError()) {
-				LOGGER.error("DMS can't start because the database located at");
-				LOGGER.error("\"{}\"", tableManager.getDatabaseFilepath(true));
-				LOGGER.error("is in use. This is normally because another instance of DMS is already running.");
-			} else if (tableManager.isWrongVersionOrCorrupt()) {
-				LOGGER.error("The database is either of a wrong version or corrupt.");
-			} else if (tableManager.hasFutureTables()) {
-				boolean plural = tableManager.getFutureTables(true, false, true).size() > 1;
-				LOGGER.error("The database has tables from a newer version of DMS that are incompatible");
-				LOGGER.error("with this version. This can be resolved manually by deleting, renaming or");
-				LOGGER.error("moving the database located at");
-				LOGGER.error("\"{}\".", tableManager.getDatabaseFilepath(true));
-				LOGGER.error("");
-				LOGGER.error(
-					"The incompatible table{} {}: {}",
-					plural ? "s" : "",
-					plural ? "are" : "is",
-					tableManager.getFutureTablesString(true, true)
-				);
-			} else {
-				LOGGER.error("A database error prevents DMS from starting. If you cannot resolve the error,");
-				LOGGER.error("delete, rename or move the database located at");
-				LOGGER.error("\"{}\".", tableManager.getDatabaseFilepath(true));
+			if (options != null && options.containsKey(Option.DB_BACKUP_DOWNGRADE) && tableManager.hasFutureTables()) {
+				try {
+					// Backup
+					String backupName = Tables.copyDatabase(
+						tableManager.getDatabaseFilepath(false),
+						options.get(Option.DB_BACKUP_DOWNGRADE),
+						false
+					);
+					LOGGER.info("Successfully backed up the database to \"{}\"", backupName);
+
+					// Downgrade
+					Tables.downgradeDatabase(tableManager);
+					LOGGER.info("Successfully deleted incompatible database tables");
+					tableManager.start();
+					if (tableManager.isError()) {
+						if (tableManager.getError() != null) {
+							throw new InitializationException(
+								"Failed to initialize the database after downgrade: " +
+								tableManager.getError().getMessage(),
+								tableManager.getError()
+							);
+						}
+						// Should never get here
+						throw new InitializationException("Failed to initialize the database after downgrade");
+					}
+					return true;
+				} catch (IOException e) {
+					LOGGER.error("Failed to backup the database, aborting: {}", e.getMessage());
+					LOGGER.trace("", e);
+					throw new InitializationException("Failed to backup database: " + e.getMessage(), e);
+				} catch (SQLException e) {
+					LOGGER.error("Failed to delete incompatible database tables, aborting: {}", e.getMessage());
+					LOGGER.trace("", e);
+					throw new InitializationException("Failed to downgrade database: " + e.getMessage(), e);
+				}
 			}
-			return false;
+			if (!tableManager.isAlreadyOpenError() && options != null && options.containsKey(Option.DB_RENAME)) {
+				try {
+					String newName = Tables.copyDatabase(
+						tableManager.getDatabaseFilepath(false),
+						options.get(Option.DB_RENAME),
+						true
+					);
+					LOGGER.info("Successfully renamed the database to \"{}\"", newName);
+					tableManager.start();
+					if (tableManager.isError()) {
+						if (tableManager.getError() != null) {
+							throw new InitializationException(
+								"Failed to initialize the database after rename: " +
+								tableManager.getError().getMessage(),
+								tableManager.getError()
+							);
+						}
+						// Should never get here
+						throw new InitializationException("Failed to initialize the database after rename");
+					}
+					return true;
+				} catch (IOException e) {
+					LOGGER.error("Failed to rename the database, aborting: {}", e.getMessage());
+					LOGGER.trace("", e);
+					throw new InitializationException("Failed to rename database: " + e.getMessage(), e);
+				}
+			}
+			if (options != null && options.containsKey(Option.DB_DOWNGRADE) && tableManager.hasFutureTables()) {
+				try {
+					Tables.downgradeDatabase(tableManager);
+					LOGGER.info("Successfully deleted incompatible database tables");
+					tableManager.start();
+					if (tableManager.isError()) {
+						if (tableManager.getError() != null) {
+							throw new InitializationException(
+								"Failed to initialize the database after downgrade: " +
+								tableManager.getError().getMessage(),
+								tableManager.getError()
+							);
+						}
+						// Should never get here
+						throw new InitializationException("Failed to initialize the database after downgrade");
+					}
+					return true;
+				} catch (SQLException e) {
+					LOGGER.error("Failed to delete incompatible database tables, aborting: {}", e.getMessage());
+					LOGGER.trace("", e);
+					throw new InitializationException("Failed to downgrade database: " + e.getMessage(), e);
+				}
+			}
+			if (isHeadless()) {
+				// Handle headless
+				if (tableManager.isAlreadyOpenError()) {
+					LOGGER.error("DMS can't start because the database located at");
+					LOGGER.error("\"{}\"", tableManager.getDatabaseFilepath(true));
+					LOGGER.error("is in use. This is normally because another instance of DMS is already running.");
+				} else if (tableManager.isWrongVersionOrCorrupt()) {
+					LOGGER.error("The database is either of a wrong version or corrupt. Attempting to rename the");
+					LOGGER.error("database and create a new.");
+					try {
+						String source = tableManager.getDatabaseFilepath(false);
+						String newName = Tables.copyDatabase(
+							source,
+							Tables.suggestNewDatabaseName(source, "bad"),
+							true
+						);
+						LOGGER.info("Successfully renamed the database to \"{}\"", newName);
+						tableManager.start();
+						if (tableManager.isError()) {
+							if (tableManager.getError() != null) {
+								throw new InitializationException(
+									"Failed to initialize the database after rename: " +
+									tableManager.getError().getMessage(),
+									tableManager.getError()
+								);
+							}
+							// Should never get here
+							throw new InitializationException("Failed to initialize the database after rename");
+						}
+						return true;
+					} catch (IOException e) {
+						LOGGER.error("Failed to rename the database, aborting: {}", e.getMessage());
+						LOGGER.trace("", e);
+						throw new InitializationException(
+							"Database is wrong version or corrupt, automatic rename failed: " + e.getMessage(), e
+						);
+					}
+				} else if (tableManager.hasFutureTables()) {
+					boolean plural = tableManager.getFutureTables(true, false, true).size() > 1;
+					LOGGER.error("The database has tables from a newer version of DMS that are incompatible");
+					LOGGER.error("with this version. This can be resolved manually by deleting, renaming or");
+					LOGGER.error("moving the database located at");
+					LOGGER.error("\"{}\",", tableManager.getDatabaseFilepath(true));
+					LOGGER.error("or automatically by starting DMS using either the \"-db rename\" or the ");
+					LOGGER.error("\"-db downgrade\" command line argument.");
+					LOGGER.error("");
+					LOGGER.error("\"-rename\" will rename the current and create a new empty database,");
+					LOGGER.error("\"-downgrade\" will only delete the incompatible tables and keep the remaining");
+					LOGGER.error("data.");
+					LOGGER.error("");
+					LOGGER.error(
+						"The incompatible table{} {}: {}",
+						plural ? "s" : "",
+						plural ? "are" : "is",
+						tableManager.getFutureTablesString(true, true)
+					);
+				} else {
+					LOGGER.error("A database error prevents DMS from starting. If you cannot resolve the error,");
+					LOGGER.error("delete, rename or move the database located at");
+					LOGGER.error("\"{}\".", tableManager.getDatabaseFilepath(true));
+					LOGGER.error("Alternatively DMS can be started using the \"db -rename\" command line argument.");
+					LOGGER.error("In either case, a new empty database will be created.");
+				}
+				return false;
+			}
+
+			// Handle with GUI
+			if (splash != null) {
+				splash.setVisible(false);
+			}
+				DatabaseProblem databaseProblem = new DatabaseProblem(null, tableManager);
+				databaseProblem.show();
+				if (databaseProblem.isAborted()) {
+					return false;
+				}
+			if (splash != null) {
+				splash.setVisible(true);
+			}
 		}
 
 		return true;
@@ -1023,7 +1166,7 @@ public class PMS {
 		// initialization here. Either way, createInstance() should only be called once (see below)
 		if (instance == null) {
 			try {
-				createInstance();
+				createInstance(null);
 			} catch (InitializationException e) {
 				//XXX This is a bad solution which will lead to NPEs if initialization fails.
 				// It is however the only solution without completely refactoring the use of
@@ -1036,12 +1179,12 @@ public class PMS {
 		return instance;
 	}
 
-	private synchronized static void createInstance() throws InitializationException {
+	private synchronized static void createInstance(@Nullable Map<Option, Object> options) throws InitializationException {
 		assert instance == null; // this should only be called once
 		instance = new PMS();
 
 		try {
-			if (instance.init()) {
+			if (instance.init(options)) {
 				LOGGER.info("{} is now available for renderers to find", getName());
 			} else {
 				LOGGER.info("{} initialization was aborted", getName());
@@ -1141,6 +1284,29 @@ public class PMS {
 								case "trace":
 									result.put(Option.DB_LOG, null);
 									break;
+								case "backup":
+									if (i < arguments.size() - 1) {
+										String backupName = arguments.get(++i);
+										if (isNotBlank(backupName)) {
+											result.put(Option.DB_BACKUP_DOWNGRADE, backupName);
+											break;
+										}
+									}
+									result.put(Option.DB_BACKUP_DOWNGRADE, null);
+									break;
+								case "downgrade":
+									result.put(Option.DB_DOWNGRADE, null);
+									break;
+								case "rename":
+									if (i < arguments.size() - 1) {
+										String newName = arguments.get(++i);
+										if (isNotBlank(newName)) {
+											result.put(Option.DB_RENAME, newName);
+											break;
+										}
+									}
+									result.put(Option.DB_RENAME, null);
+									break;
 								default:
 									LOGGER.warn("Ignoring unknown {} argument \"{}\"", argument, value);
 									break;
@@ -1193,6 +1359,17 @@ public class PMS {
 		out.println("  -s, --scrollbars                Force horizontal and vertical GUI scroll bars.");
 		out.println("  -db, --database");
 		out.println("     log, trace                   Enable database logging.");
+		out.println("     downgrade                    Delete and recreate any database tables of a");
+		out.println("                                  newer version. The data in the incompatible");
+		out.println("                                  tables will be lost.");
+		out.println("     backup[=NAME]                Copy the database before downgrading it if any");
+		out.println("                                  database tables are of a newer version. If a");
+		out.println("                                  name for the backup isn't provided, one will");
+		out.println("                                  be generated.");
+		out.println("     rename[=NAME]                Rename the database and create a new, empty");
+		out.println("                                  database if there is a problem with the");
+		out.println("                                  current database. If a name isn't provided,");
+		out.println("                                  one will be generated.");
 		out.println("  -V, --version                   Display the version and exit.");
 		out.println("  -h, --help                      Display this help and exit.");
 	}
@@ -1345,7 +1522,7 @@ public class PMS {
 			}
 
 			// Create the PMS instance returned by get()
-			createInstance(); // Calls new() then init()
+			createInstance(options); // Calls new() then init()
 		} catch (ConfigurationException | InitializationException e) {
 			StringBuilder sb = new StringBuilder();
 			String errorMessage;
@@ -2137,8 +2314,17 @@ public class PMS {
 	 */
 	public static enum Option {
 
+		/** Backup and downgrade the database if incompatible */
+		DB_BACKUP_DOWNGRADE,
+
+		/** Downgrade the database if incompatible */
+		DB_DOWNGRADE,
+
 		/** Enable database logging */
 		DB_LOG,
+
+		/** Rename the database if incompatible */
+		DB_RENAME,
 
 		/** Force headless mode */
 		HEADLESS,
