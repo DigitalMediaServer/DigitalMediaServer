@@ -19,14 +19,21 @@
 package net.pms.database;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.EnumSet;
+import java.util.List;
+import java.util.Objects;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import org.h2.engine.Constants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,6 +54,13 @@ public class Tables extends Table {
 	public static final TableId ID = TableId.TABLES;
 
 	private static final String DEFAULT_ESCAPE_CHARACTER = "\\";
+
+	private static final String[] DATABASE_FILE_EXTENSIONS = {
+		Constants.SUFFIX_LOB_FILE,
+		Constants.SUFFIX_MV_FILE,
+		Constants.SUFFIX_PAGE_FILE,
+		Constants.SUFFIX_TRACE_FILE
+	};
 
 	/**
 	 * Should only be instantiated by {@link TableManager}.
@@ -302,6 +316,138 @@ public class Tables extends Table {
 		try (Statement statement = connection.createStatement()) {
 			statement.execute("DROP TABLE " + tableId);
 			removeTableVersion(connection, tableId);
+		}
+	}
+
+	/**
+	 * Finds an unused H2 database name by increasing an index until an unused
+	 * name is found. The new name will be in the form
+	 * {@code <source path>_<tag>-<index>}.
+	 *
+	 * @param sourceName the database name to use as the base of the new name.
+	 * @param tag the tag to add to the new name. Default to {@code "renamed"}.
+	 * @return The new database path.
+	 */
+	@Nonnull
+	public static String suggestNewDatabaseName(@Nonnull String sourceName, @Nullable String tag) {
+		return suggestNewDatabaseName(Paths.get(sourceName), tag);
+	}
+
+	/**
+	 * Finds an unused H2 database name by increasing an index until an unused
+	 * name is found. The new name will be in the form
+	 * {@code <source path>_<tag>-<index>}.
+	 *
+	 * @param source the database name to use as the base of the new name.
+	 * @param tag the tag to add to the new name. Default to {@code "renamed"}.
+	 * @return The new database path.
+	 */
+	@Nonnull
+	public static String suggestNewDatabaseName(@Nonnull Path source, @Nullable String tag) {
+		source = source.toAbsolutePath();
+		if (isBlank(tag)) {
+			tag = "renamed";
+		}
+		String baseName = source.toString() + "_" + tag + "-";
+		int i = 1;
+		String newName;
+		do {
+			newName = baseName + i;
+			for (String extension : DATABASE_FILE_EXTENSIONS) {
+				if (Files.exists(Paths.get(newName + extension))) {
+					newName = null;
+					break;
+				}
+			}
+			i++;
+		} while (newName == null);
+		return newName;
+	}
+
+	/**
+	 * Copies, moves or renames a H2 database. The difference between "rename"
+	 * and "move" is considered whether the destination folder if the same as
+	 * the source folder or not.
+	 *
+	 * @param sourceName the source database path without extension.
+	 * @param targetName the target database path without extension.
+	 * @param move if {@code true} a move/rename is performed, if {@code false}
+	 *            a copy is performed.
+	 * @return the new database path without extension.
+	 * @throws IOException If an error occurs during the operation.
+	 * @throws IllegalArgumentException If {@code sourceName} is blank.
+	 */
+	@Nonnull
+	public static String copyDatabase(
+		@Nonnull String sourceName,
+		@Nullable Object targetName,
+		boolean move
+	) throws IOException {
+		if (isBlank(sourceName)) {
+			throw new IllegalArgumentException("sourceName cannot be blank");
+		}
+		Path source = Paths.get(sourceName).toAbsolutePath();
+		String targetNameStr = targetName == null ? null : targetName.toString();
+		if (isBlank(targetNameStr)) {
+			targetNameStr = suggestNewDatabaseName(source, null);
+		}
+		Path target = Paths.get(targetNameStr);
+		if (!target.isAbsolute()) {
+			Path parent = source.normalize().getParent();
+			if (parent != null) {
+				target = parent.resolve(target);
+			}
+		}
+		LOGGER.info("Renaming database from \"{}\" to \"{}\"", source, target);
+		for (String extension : DATABASE_FILE_EXTENSIONS) {
+			Path sourcePath = Paths.get(source.toString() + extension);
+			if (Files.exists(sourcePath)) {
+				String targetStr = target.toString() + extension;
+				Path targetPath = Paths.get(targetStr);
+				if (move) {
+					if (Objects.equals(sourcePath.getParent(), targetPath.getParent())) {
+						LOGGER.debug("Renaming database file \"{}\" to \"{}\"", sourcePath, targetStr);
+					} else {
+						LOGGER.debug("Moving database file \"{}\" to \"{}\"", sourcePath, targetStr);
+					}
+					Files.move(sourcePath, targetPath);
+				} else {
+					LOGGER.debug("Copying database file \"{}\" to \"{}\"", sourcePath, targetStr);
+					Files.copy(sourcePath, targetPath);
+				}
+			}
+		}
+
+		return target.toAbsolutePath().toString();
+	}
+
+	/**
+	 * Downgrades a database by deleting all incompatible and their related
+	 * {@link Table}s. <b>This operation will permanently delete the data in the
+	 * affected tables</b>.
+	 *
+	 * @param tableManager the {@link TableManager} to use.
+	 * @throws SQLException If an SQL error occurs during the operation.
+	 * @throws IllegalArgumentException If {@code tableManager} is {@code null}.
+	 */
+	public static void downgradeDatabase(@Nonnull TableManager tableManager) throws SQLException {
+		if (tableManager == null) {
+			throw new IllegalArgumentException("tableManager cannot be null");
+		}
+		List<TableId> futureTables = tableManager.getFutureTables(true, false, true);
+		if (futureTables.isEmpty()) {
+			LOGGER.warn("No database tables need to be \"downgraded\", aborting..");
+			return;
+		}
+		LOGGER.info(
+			"Deleting too new database table{}: {}",
+			futureTables.size() > 1 ? "s" : "",
+			tableManager.getFutureTablesString(true, true)
+		);
+		try (Connection connection = tableManager.getMaintenanceConnection()) {
+			for (TableId tableId : futureTables) {
+				dropTable(connection, tableId);
+			}
 		}
 	}
 

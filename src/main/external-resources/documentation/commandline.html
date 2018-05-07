@@ -42,6 +42,9 @@
 			<li><code>-db, --database</code>
 				<ul>
 					<li><code>log, trace</code> &ndash; Enables database logging.</li>
+					<li><code>downgrade</code> &ndash; Deletes and recreates any database tables of a newer version. The data in the incompatible tables will be lost. This is useful if you have previously run a newer version of <abbr title="Digital Media Server">DMS</abbr> that has upgraded one or more database tables to a version unknown to this version of <abbr title="Digital Media Server">DMS</abbr>.</li>
+					<li><code>backup[=&lt;name&gt;]</code> &ndash; Makes a copy of the database before downgrading it if any database tables are of a newer version. If &lt;name&gt; isn't provided, a name for the backup will be generated. This is useful if you have previously run a newer version of <abbr title="Digital Media Server">DMS</abbr> that has upgraded one or more database tables to a version unknown to this version of <abbr title="Digital Media Server">DMS</abbr>.</li>
+					<li><code>rename[=&lt;name&gt;]</code> &ndash; Renames or moves the database and creates a new, empty database if there is a problem with the current database. If &lt;name&gt; isn't provided, a new name will be generated. This is useful if you have database errors that prevents <abbr title="Digital Media Server">DMS</abbr> from starting but don't want to delete the database.</li>
 				</ul>
 			</li>
 			<li><code>-V, --version</code> &ndash; Displays the <abbr title="Digital Media Server">DMS</abbr> version and exits.</li>

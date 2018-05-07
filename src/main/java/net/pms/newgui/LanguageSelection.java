@@ -60,12 +60,12 @@ import org.apache.commons.configuration.ConfigurationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+
 /**
  * This class creates and handles the language selection dialog.
  *
  * @author Nadahar
  */
-
 public class LanguageSelection {
 	private static final Logger LOGGER = LoggerFactory.getLogger(LanguageSelection.class);
 
@@ -108,7 +108,7 @@ public class LanguageSelection {
 			pane = new JOptionPane(
 				buildComponent(),
 				JOptionPane.PLAIN_MESSAGE,
-				JOptionPane.NO_OPTION,
+				JOptionPane.DEFAULT_OPTION,
 				null,
 				new JButton[]{applyButton, selectButton},
 				selectButton
@@ -263,10 +263,10 @@ public class LanguageSelection {
 			}
 		}
 		// Set the width of the text panels by font size to accommodate font scaling
-		float avgCharWidth = SwingUtils.getComponentAverageCharacterWidth(descriptionText);
-		textWidth = Math.round(avgCharWidth * 100);
-		selectButton.setMargin(new Insets(Math.round((float) 0.5 * avgCharWidth), Math.round(4 * avgCharWidth), Math.round((float) 0.5 * avgCharWidth), Math.round(4 * avgCharWidth)));
-		applyButton.setMargin(new Insets(Math.round((float) 0.5 * avgCharWidth), Math.round(4 * avgCharWidth), Math.round((float) 0.5 * avgCharWidth), Math.round(4 * avgCharWidth)));
+		double avgCharWidth = SwingUtils.getComponentAverageCharacterWidth(descriptionText);
+		textWidth = (int) Math.round(avgCharWidth * 100);
+		selectButton.setMargin(createButtonInsets(avgCharWidth));
+		applyButton.setMargin(createButtonInsets(avgCharWidth));
 
 		descriptionText.setPreferredSize(SwingUtils.getWordWrappedTextDimension(descriptionText, textWidth));
 
@@ -442,6 +442,14 @@ public class LanguageSelection {
 
 		return rootPanel;
 
+	}
+
+	private static Insets createButtonInsets(double avgCharWidth) {
+		return new Insets(
+			(int) Math.round(0.5 * avgCharWidth),
+			(int) Math.round(4 * avgCharWidth),
+			(int) Math.round(0.5 * avgCharWidth),
+			(int) Math.round(4 * avgCharWidth));
 	}
 
 	public boolean isAborted() {
