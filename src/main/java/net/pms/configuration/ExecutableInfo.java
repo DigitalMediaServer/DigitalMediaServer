@@ -291,7 +291,7 @@ public class ExecutableInfo {
 		}
 
 		/**
-		 * @return The {@link Path} to this executable.
+		 * @return The {@link Path} to this executable or {@code null}.
 		 */
 		@Nullable
 		public Path executablePath() {
@@ -302,7 +302,7 @@ public class ExecutableInfo {
 		 * Sets the {@link Path} to this executable.
 		 *
 		 * @param executablePath the {@link Path} to set.
-		 * @return The {@link ExecutableInfoBuilder} instance.
+		 * @return This {@link ExecutableInfoBuilder} instance.
 		 */
 		@Nonnull
 		public ExecutableInfoBuilder executablePath(Path executablePath) {
@@ -311,7 +311,7 @@ public class ExecutableInfo {
 		}
 
 		/**
-		 * @return The available status of this executable.
+		 * @return The available status of this executable or {@code null}.
 		 */
 		@Nullable
 		public Boolean available() {
@@ -322,7 +322,7 @@ public class ExecutableInfo {
 		 * Sets the available status of this executable.
 		 *
 		 * @param available the available status to set.
-		 * @return The {@link ExecutableInfoBuilder} instance.
+		 * @return This {@link ExecutableInfoBuilder} instance.
 		 */
 		@Nonnull
 		public ExecutableInfoBuilder available(Boolean available) {
@@ -331,7 +331,7 @@ public class ExecutableInfo {
 		}
 
 		/**
-		 * @return The {@link Version} of this executable.
+		 * @return The {@link Version} of this executable or {@code null}.
 		 */
 		@Nullable
 		public Version version() {
@@ -342,7 +342,7 @@ public class ExecutableInfo {
 		 * Sets the {@link Version} for this executable.
 		 *
 		 * @param version the {@link Version} to set.
-		 * @return The {@link ExecutableInfoBuilder} instance.
+		 * @return This {@link ExecutableInfoBuilder} instance.
 		 */
 		@Nonnull
 		public ExecutableInfoBuilder version(Version version) {
@@ -351,7 +351,8 @@ public class ExecutableInfo {
 		}
 
 		/**
-		 * @return The {@link ExecutableErrorType} for this executable.
+		 * @return The {@link ExecutableErrorType} for this executable or
+		 *         {@code null}.
 		 */
 		@Nullable
 		public ExecutableErrorType errorType() {
@@ -362,7 +363,7 @@ public class ExecutableInfo {
 		 * Sets the {@link ExecutableErrorType} for this executable.
 		 *
 		 * @param errorType the {@link ExecutableErrorType} to set.
-		 * @return The {@link ExecutableInfoBuilder} instance.
+		 * @return This {@link ExecutableInfoBuilder} instance.
 		 */
 		@Nonnull
 		public ExecutableInfoBuilder errorType(ExecutableErrorType errorType) {
@@ -371,7 +372,7 @@ public class ExecutableInfo {
 		}
 
 		/**
-		 * @return The localized error text for this executable.
+		 * @return The localized error text for this executable or {@code null}.
 		 */
 		@Nullable
 		public String errorText() {
@@ -382,7 +383,7 @@ public class ExecutableInfo {
 		 * Sets the localized error text for this executable.
 		 *
 		 * @param errorText the error text to set.
-		 * @return The {@link ExecutableInfoBuilder} instance.
+		 * @return This {@link ExecutableInfoBuilder} instance.
 		 */
 		public ExecutableInfoBuilder errorText(String errorText) {
 			this.errorText = errorText;
