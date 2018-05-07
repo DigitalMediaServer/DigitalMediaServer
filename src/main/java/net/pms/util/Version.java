@@ -54,19 +54,19 @@ public final class Version implements Comparable<Version> {
 	private static final Logger LOGGER = LoggerFactory.getLogger(Version.class);
 
 	/** Used to match the first version element in a hexadecimal version string */
-	public static final Pattern HEX_ELEMENT_FIRST = Pattern.compile("([^a-fA-F0-9\\.,_\\s]*([a-fA-F0-9]+))[\\.,_ ]?");
+	public static final Pattern HEX_ELEMENT_FIRST = Pattern.compile("([^a-fA-F0-9\\.,_\\s]*([a-fA-F0-9]+))\\s*[\\.,_]?");
 
 	/**
 	 * Used to match the remaining version elements in a hexadecimal version
 	 * string
 	 */
-	public static final Pattern HEX_ELEMENT = Pattern.compile("([a-fA-F0-9]+)[\\.,_ ]?");
+	public static final Pattern HEX_ELEMENT = Pattern.compile("\\s*([a-fA-F0-9]+)\\s*[\\.,_]?");
 
 	/** Used to match the first version element in a decimal version string */
-	public static final Pattern DEC_ELEMENT_FIRST = Pattern.compile("([^\\d\\.,_\\s]*(\\d+))[\\.,_ ]?");
+	public static final Pattern DEC_ELEMENT_FIRST = Pattern.compile("([^\\d\\.,_\\s]*(\\d+))\\s*[\\.,_]?");
 
 	/** Used to match the remaining version elements in a decimal version string */
-	public static final Pattern DEC_ELEMENT = Pattern.compile("(\\d+)[\\.,_ ]?");
+	public static final Pattern DEC_ELEMENT = Pattern.compile("\\s*(\\d+)\\s*[\\.,_]?");
 
 	/** Used to match any trailing (non-parsable) content in a version string */
 	public static final Pattern ALPHA_ELEMENT = Pattern.compile("\\s*(.*\\S)\\s*");
@@ -101,7 +101,7 @@ public final class Version implements Comparable<Version> {
 		List<String> tmpElements = new ArrayList<>();
 		List<Integer> tmpElementValues = new ArrayList<>();
 		String tmpText = null;
-		String remaining = versionString.trim();
+		String remaining = this.versionString;
 		Matcher matcher = hexadecimal ? HEX_ELEMENT_FIRST.matcher(remaining) : DEC_ELEMENT_FIRST.matcher(remaining);
 		if (matcher.lookingAt()) {
 			tmpElementValues.add(Integer.parseInt(matcher.group(2), hexadecimal ? 16 : 10));

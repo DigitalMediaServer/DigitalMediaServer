@@ -297,6 +297,27 @@ public abstract class Player {
 		return executable == null ? null : executable.toString();
 	}
 
+	/**
+	 * @return The {@link ExecutableInfo} for the currently configured
+	 *         {@link ProgramExecutableType} for this {@link Player} or
+	 *         {@code null}.
+	 */
+	@Nullable
+	public ExecutableInfo getExecutableInfo() {
+		return getProgramInfo().getExecutableInfo(currentExecutableType);
+	}
+
+	/**
+	 * @return The {@link Version} for the currently configured
+	 *         {@link ProgramExecutableType} for this {@link Player} or
+	 *         {@code null}.
+	 */
+	@Nullable
+	public Version getVersion() {
+		ExecutableInfo executableInfo = getProgramInfo().getExecutableInfo(currentExecutableType);
+		return executableInfo == null ? null : executableInfo.getVersion();
+	}
+
 	protected static final PmsConfiguration _configuration = PMS.getConfiguration();
 	protected PmsConfiguration configuration = _configuration;
 
