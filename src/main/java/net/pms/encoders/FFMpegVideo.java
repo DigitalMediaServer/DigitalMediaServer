@@ -41,6 +41,7 @@ import net.pms.configuration.DeviceConfiguration;
 import net.pms.configuration.ExecutableInfo;
 import net.pms.configuration.ExecutableInfo.ExecutableInfoBuilder;
 import net.pms.configuration.ExternalProgramInfo;
+import net.pms.configuration.FFmpegExecutableInfo;
 import net.pms.configuration.FFmpegExecutableInfo.FFmpegExecutableInfoBuilder;
 import net.pms.configuration.PmsConfiguration;
 import net.pms.configuration.RendererConfiguration;
@@ -60,7 +61,6 @@ import net.pms.util.PlayerUtil;
 import net.pms.util.ProcessUtil;
 import net.pms.util.StringUtil;
 import net.pms.util.SubtitleUtils;
-import net.pms.util.Version;
 import org.apache.commons.lang3.StringUtils;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
@@ -1480,25 +1480,45 @@ public class FFMpegVideo extends Player {
 				return result.build();
 			}
 			if (output.getExitCode() == 0) {
-				if (output.getOutput() != null && output.getOutput().size() > 0) {
-					Pattern pattern = Pattern.compile("^ffmpeg version\\s+(.*?)\\s+Copyright", Pattern.CASE_INSENSITIVE);
-					Matcher matcher = pattern.matcher(output.getOutput().get(0));
-					if (matcher.find() && isNotBlank(matcher.group(1))) {
-						result.version(new Version(matcher.group(1)));
-					}
-				}
 				result.available(Boolean.TRUE);
-
 				if (result instanceof FFmpegExecutableInfoBuilder) {
-					List<String> protocols = FFmpegOptions.getSupportedProtocols(executableInfo.getPath());
-					((FFmpegExecutableInfoBuilder) result).protocols(protocols);
-					if (protocols.size() == 0) {
+					FFmpegExecutableInfoBuilder builder = (FFmpegExecutableInfoBuilder) result;
+					FFmpegExecutableInfo.parseVersions(builder, output);
+
+					FFmpegExecutableInfo.determineProtocols(builder);
+					if (builder.protocols() == null || builder.protocols().size() == 0) {
 						LOGGER.warn("Couldn't parse any supported protocols for \"{}\"", executableInfo.getPath());
-					} else {
-						LOGGER.debug("{} supported protocols: {}", executableInfo.getPath(), protocols);
+					} else if (LOGGER.isDebugEnabled()) {
+						LOGGER.debug(
+							"{} supported protocols: {}",
+							executableInfo.getPath(),
+							FFmpegExecutableInfo.toProtocolsString(builder.protocols())
+						);
+					}
+
+					FFmpegExecutableInfo.determineFormats(builder);
+					if (builder.formats() == null || builder.formats().size() == 0) {
+						LOGGER.warn("Couldn't parse any supported formats for \"{}\"", executableInfo.getPath());
+					} else if (LOGGER.isDebugEnabled()) {
+						LOGGER.debug(
+							"{} supported formats: {}",
+							executableInfo.getPath(),
+							FFmpegExecutableInfo.toFormatsString(builder.formats())
+						);
+					}
+
+					FFmpegExecutableInfo.determineCodecs(builder);
+					if (builder.codecs() == null || builder.codecs().size() == 0) {
+						LOGGER.warn("Couldn't parse any supported codecs for \"{}\"", executableInfo.getPath());
+					} else if (LOGGER.isDebugEnabled()) {
+						LOGGER.debug(
+							"{} supported codecs: {}",
+							executableInfo.getPath(),
+							FFmpegExecutableInfo.toCodecsStringBuilder(builder.codecs())
+						);
 					}
 				} else {
-					LOGGER.error("Could not store FFmpeg supported protocols because of an internal error");
+					LOGGER.error("Could not determine FFmpeg details because of an internal error");
 				}
 			} else {
 				NTStatus ntStatus = Platform.isWindows() ? NTStatus.typeOf(output.getExitCode()) : null;

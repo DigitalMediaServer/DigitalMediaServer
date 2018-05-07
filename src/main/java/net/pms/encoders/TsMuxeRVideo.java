@@ -30,6 +30,7 @@ import java.awt.event.ItemListener;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.ArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.annotation.Nonnull;
@@ -43,6 +44,9 @@ import net.pms.configuration.DeviceConfiguration;
 import net.pms.configuration.ExecutableInfo;
 import net.pms.configuration.ExecutableInfo.ExecutableInfoBuilder;
 import net.pms.configuration.ExternalProgramInfo;
+import net.pms.configuration.FFmpegExecutableInfo;
+import net.pms.configuration.FFmpegExecutableInfo.Codec;
+import net.pms.configuration.FFmpegExecutableInfo.CoderFlags;
 import net.pms.configuration.PmsConfiguration;
 import net.pms.configuration.RendererConfiguration;
 import net.pms.dlna.*;
@@ -465,19 +469,50 @@ public class TsMuxeRVideo extends Player {
 							};
 						} else if (!ac3Remux && params.mediaRenderer.isTranscodeToAAC()) {
 							// AAC audio
-							ffmpegCommands = new String[] {
-								PlayerFactory.getPlayerExecutable(StandardPlayerId.FFMPEG_VIDEO),
-								"-ss", params.timeseek > 0 ? "" + params.timeseek : "0",
-								"-i", filename,
-								"-ac", "" + channels,
-								"-f", "adts",
-								singleMediaAudio ? "-y" : "-map", singleMediaAudio ? "-y" : ("0:a:" + (media.getAudioTracksList().indexOf(audio))),
-								"-c:a", "aac",
-								"-strict", "experimental",
-								"-ab", Math.min(configuration.getAudioBitrate(), 320) + "k",
-								"-y",
-								ffAudioPipe[i].getInputPipe()
-							};
+							ArrayList<String> tempFFmpegCommands = new ArrayList<String>();
+							Player ffmpeg = PlayerFactory.getPlayer(StandardPlayerId.FFMPEG_VIDEO, false, false);
+							tempFFmpegCommands.add(ffmpeg.getExecutable());
+							tempFFmpegCommands.add("-ss");
+							tempFFmpegCommands.add(params.timeseek > 0 ? Double.toString(params.timeseek) : "0");
+							tempFFmpegCommands.add("-i");
+							tempFFmpegCommands.add(filename);
+							tempFFmpegCommands.add("-ac");
+							tempFFmpegCommands.add(Integer.toString(channels));
+							tempFFmpegCommands.add("-f");
+							tempFFmpegCommands.add("adts");
+							if (singleMediaAudio) {
+								tempFFmpegCommands.add("-y");
+								tempFFmpegCommands.add("-y");
+							} else {
+								tempFFmpegCommands.add("-map");
+								tempFFmpegCommands.add("0:a:" + media.getAudioTracksList().indexOf(audio));
+							}
+							tempFFmpegCommands.add("-c:a");
+							tempFFmpegCommands.add("aac");
+							ExecutableInfo executableInfo = ffmpeg.getExecutableInfo();
+							if (executableInfo instanceof FFmpegExecutableInfo) {
+								/*
+								 * Check if the experimental flag is required for the "aac"
+								 * encoder. This can also be determined by checking the
+								 * libavcodec version (return true == experimental):
+								 *
+								 * if (isLibraryFFmpeg(libavcodecVersion)) {
+								 *     // FFMpeg made it non-experimental in version libavcodec 57.16.101 (d9791a8656b5580756d5b7ecc315057e8cd4255e)
+								 *     return libavcodecVersion.isLessThanOrEqualTo(new Version(57, 16, 101, 0));
+								 * } // Libav has yet to make it non-experimental
+								 * return true;
+								 */
+								Codec aac = ((FFmpegExecutableInfo) executableInfo).getCodecs().get("aac");
+								if (aac.containsEncoderFlag(CoderFlags.EXPERIMENTAL)) {
+									tempFFmpegCommands.add("-strict");
+									tempFFmpegCommands.add("experimental");
+								}
+							}
+							tempFFmpegCommands.add("-ab");
+							tempFFmpegCommands.add(Math.min(configuration.getAudioBitrate(), 320) + "k");
+							tempFFmpegCommands.add("-y");
+							tempFFmpegCommands.add(ffAudioPipe[i].getInputPipe());
+							ffmpegCommands = tempFFmpegCommands.toArray(new String[tempFFmpegCommands.size()]);
 							aacTranscode = true;
 						} else {
 							// AC-3 remux or encoding
