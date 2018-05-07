@@ -99,6 +99,7 @@ public final class Languages {
 		"pt-BR",   // Brazilian Portuguese
 		"bg",      // Bulgarian
 		"ca",      // Catalan, Valencian
+		"ceb",     // Cebuano
 		"zh-Hans", // Chinese, Han (Simplified variant)
 		"zh-Hant", // Chinese, Han (Traditional variant)
 		"cs",      // Czech
@@ -106,6 +107,7 @@ public final class Languages {
 		"nl",      // Dutch, Flemish
 		"en-GB",   // English, United Kingdom
 		"en-US",   // English, United States
+		"fil",     // Filipino
 		"fi",      // Finnish
 		"fr",      // French
 		"de",      // German
@@ -113,9 +115,11 @@ public final class Languages {
 		"iw",      // Hebrew (Java prefers the deprecated "iw" to "he")
 		"hu",      // Hungarian
 		"is",      // Icelandic
+		"id",      // Indonesian
 		"it",      // Italian
 		"ja",      // Japanese
 		"ko",      // Korean
+		"pcm",     // Nigerian Pidgin
 		"no",      // Norwegian
 		"fa",      // Persian (Farsi)
 		"pl",      // Polish
@@ -127,6 +131,7 @@ public final class Languages {
 		"sl",      // Slovenian
 		"es",      // Spanish, Castilian
 		"sv",      // Swedish
+		"tl",      // Tagalog
 		"th",      // Thai
 		"tr",      // Turkish
 		"uk",      // Ukrainian
@@ -326,7 +331,7 @@ public final class Languages {
 				} else if (languageTag.equalsIgnoreCase("en")) {
 					return "en-US";
 				} else {
-					return languageTag.toLowerCase(Locale.US);
+					return languageTag.toLowerCase(Locale.ROOT);
 				}
 		}
 	}

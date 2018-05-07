@@ -25,3 +25,4 @@ cede0c88fafcd59229f25666b0dbb871e65eea57 Fixed "By Date" virtual folders on join
 b9268bbd67a332054b898fcfc03e55e12e8e9d5e Order the "By date" folders from newest to oldest
 2d0dacd6b9231197a3df4d73ac773520ca275072 Fix bug in updating the database when is not created.
 1e6b1151faa47e0687d6ff6bce5bacf1d857aed4 Bump to 7.0.0-SNAPSHOT
+761995b7de52fe3af76dbae68efe1891e16f719d Sync translations with Crowdin
