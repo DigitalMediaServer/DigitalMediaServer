@@ -37,7 +37,6 @@ import net.pms.formats.Format;
 import net.pms.io.OutputParams;
 import net.pms.io.ProcessWrapper;
 import net.pms.io.ProcessWrapperImpl;
-import net.pms.network.HTTPResource;
 import net.pms.newgui.GuiUtil;
 import net.pms.util.PlayerUtil;
 import org.slf4j.Logger;
@@ -120,11 +119,6 @@ public class FFmpegAudio extends FFMpegVideo {
 	public String[] args() {
 		// unused: kept for backwards compatibility
 		return new String[] {"-f", "s16be", "-ar", "48000"};
-	}
-
-	@Override
-	public String mimeType() {
-		return HTTPResource.AUDIO_TRANSCODE;
 	}
 
 	@Override

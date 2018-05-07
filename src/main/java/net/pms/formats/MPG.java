@@ -18,10 +18,11 @@
  */
 package net.pms.formats;
 
+import net.pms.dlna.protocolinfo.MimeType;
+import net.pms.dlna.protocolinfo.KnownMimeTypes;
+
 public class MPG extends Format {
-	/**
-	 * {@inheritDoc}
-	 */
+
 	@Override
 	public Identifier getIdentifier() {
 		return Identifier.MPG;
@@ -36,9 +37,6 @@ public class MPG extends Format {
 		type = VIDEO;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public String[] getSupportedExtensions() {
 		return new String[] {
@@ -71,5 +69,10 @@ public class MPG extends Format {
 			"wmv",
 			"wtv"
 		};
+	}
+
+	@Override
+	public MimeType getStandardMimeType() {
+		return KnownMimeTypes.MPEG;
 	}
 }

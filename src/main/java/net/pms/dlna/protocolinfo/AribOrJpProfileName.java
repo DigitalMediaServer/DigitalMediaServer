@@ -83,7 +83,7 @@ public interface AribOrJpProfileName extends ProfileName {
 		/**
 		 * MPEG2-Video ({@code ISO/IEC 13818-2}) and MPEG2-AAC (
 		 * {@code ISO/IEC 13818-7}) partial transport stream format with time
-		 * stamp with mime-type
+		 * stamp with MIME type
 		 * {@code application/X-arib-cp;CONTENTFORMAT=<content-mimetype>}.
 		 * <p>
 		 * For full specification, see <a href=

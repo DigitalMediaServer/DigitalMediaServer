@@ -8,12 +8,12 @@ import java.net.URLEncoder;
 import java.util.HashMap;
 import java.util.List;
 import net.pms.PMS;
-import net.pms.configuration.FormatConfiguration;
 import net.pms.configuration.PmsConfiguration;
 import net.pms.configuration.WebRender;
 import net.pms.dlna.DLNAResource;
 import net.pms.dlna.Playlist;
 import net.pms.dlna.RootFolder;
+import net.pms.dlna.protocolinfo.MimeType;
 import net.pms.dlna.virtual.VirtualVideoAction;
 import net.pms.encoders.Player;
 import net.pms.formats.Format;
@@ -115,22 +115,17 @@ public class RemotePlayHandler implements HttpHandler {
 		root.getDefaultRenderer().setRootFolder(root);
 		String id1 = URLEncoder.encode(id, "UTF-8");
 		String name = StringEscapeUtils.escapeHtml3(r.resumeName());
-		String mime = root.getDefaultRenderer().getMimeType(r.mimeType(), r.getMedia());
+		MimeType mimeType = r.getMimeType(renderer);
 		String mediaType = isVideo ? "video" : isAudio ? "audio" : isImage ? "image" : "";
 		String auto = "autoplay";
 		@SuppressWarnings("unused")
 		String coverImage = "";
 
 		if (isVideo) {
-			if (mime.equals(FormatConfiguration.MIMETYPE_AUTO)) {
-				if (r.getMedia() != null && r.getMedia().getMimeType() != null) {
-					mime = r.getMedia().getMimeType();
-				}
-			}
 			if (!flowplayer) {
-				if (!RemoteUtil.directmime(mime) || RemoteUtil.transMp4(mime, r.getMedia()) || r.isResume()) {
+				if (!RemoteUtil.directmime(mimeType) || RemoteUtil.transMp4(mimeType, r.getMedia()) || r.isResume()) {
 					WebRender render = (WebRender) r.getDefaultRenderer();
-					mime = render != null ? render.getVideoMimeType() : RemoteUtil.transMime();
+					mimeType = render != null ? render.getVideoMimeType() : RemoteUtil.transMime();
 				}
 			}
 		}
@@ -160,11 +155,11 @@ public class RemotePlayHandler implements HttpHandler {
 		} else {
 			vars.put("mediaType", mediaType);
 			vars.put("auto", auto);
-			vars.put("mime", mime);
+			vars.put("mime", mimeType);
 			if (flowplayer) {
 				if (
-					RemoteUtil.directmime(mime) &&
-					!RemoteUtil.transMp4(mime, r.getMedia()) &&
+					RemoteUtil.directmime(mimeType) &&
+					!RemoteUtil.transMp4(mimeType, r.getMedia()) &&
 					!r.isResume() &&
 					!forceFlash
 				) {

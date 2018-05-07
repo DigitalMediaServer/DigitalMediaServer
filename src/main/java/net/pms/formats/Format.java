@@ -23,6 +23,7 @@ import java.util.Locale;
 import net.pms.configuration.RendererConfiguration;
 import net.pms.dlna.DLNAMediaInfo;
 import net.pms.dlna.InputFile;
+import net.pms.dlna.protocolinfo.MimeType;
 import net.pms.network.HTTPResource;
 import net.pms.util.FileUtil;
 import net.pms.util.GenericIcons;
@@ -215,9 +216,10 @@ public abstract class Format implements Cloneable {
 
 	public abstract boolean transcodable();
 
-	public String mimeType() {
-		return HTTPResource.getDefaultMimeType(type);
-	}
+	/**
+	 * @return The standard MIME type for this {@link Format}.
+	 */
+	public abstract MimeType getStandardMimeType();
 
 	/**
 	 * Not in use, handled by {@link GenericIcons}
@@ -366,4 +368,28 @@ public abstract class Format implements Cloneable {
 	 * @return The identifier.
 	 */
 	public abstract Identifier getIdentifier();
+
+	/**
+	 * This is a terrible method whose only merit is that it's guaranteed to be
+	 * wrong. It is implemented as a replacement for the former
+	 * {@link HTTPResource#getDefaultMimeType(int)}, but should be avoided if
+	 * the goal is anything but to get <i>some</i> MIME type.
+	 *
+	 * @param type the {@link Format} type constant.
+	 * @return The wrong MIME type.
+	 *
+	 * @deprecated This method should be avoided almost at any cost.
+	 */
+	@Deprecated
+	public static MimeType getFallbackMimeType(int type) {
+		switch (type) {
+			case AUDIO:
+				return MimeType.FACTORY.audioDefault;
+			case IMAGE:
+				return MimeType.FACTORY.imageDefault;
+			case VIDEO:
+			default:
+				return MimeType.FACTORY.videoDefault;
+		}
+	}
 }

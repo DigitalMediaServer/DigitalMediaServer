@@ -145,7 +145,7 @@ public class ProtocolInfo implements Comparable<ProtocolInfo>, Serializable {
 	 *            {@code null} for "any".
 	 * @param network the network for the new instance. Use {@code null} or
 	 *            blank for "any".
-	 * @param mimeType the mime-type for the new instance. Use {@code null} or
+	 * @param mimeType the MIME type for the new instance. Use {@code null} or
 	 *            {@link MimeType#ANYANY} for "any".
 	 * @param additionalInfo the additional information for the new instance.
 	 */
@@ -195,7 +195,7 @@ public class ProtocolInfo implements Comparable<ProtocolInfo>, Serializable {
 	 *            {@code null} for "any".
 	 * @param network the network for the new instance. Use {@code null} or
 	 *            blank for "any".
-	 * @param mimeType the mime-type for the new instance. Use {@code null} or
+	 * @param mimeType the MIME type for the new instance. Use {@code null} or
 	 *            {@link MimeType#ANYANY} for "any".
 	 * @param attributes a {@link Map} of {@link ProtocolInfoAttributeName} and
 	 *            {@link ProtocolInfoAttribute} pairs for the new instance.
@@ -251,7 +251,7 @@ public class ProtocolInfo implements Comparable<ProtocolInfo>, Serializable {
 	 *            {@code null} for "any".
 	 * @param network the network for the new instance. Use {@code null} or
 	 *            blank for "any".
-	 * @param mimeType the mime-type for the new instance. Use {@code null} or
+	 * @param mimeType the MIME type for the new instance. Use {@code null} or
 	 *            {@link MimeType#ANYANY} for "any".
 	 * @param attributes an {@link EnumMap} with {@link DLNAAttribute}s for the
 	 *            new instance.
@@ -467,7 +467,7 @@ public class ProtocolInfo implements Comparable<ProtocolInfo>, Serializable {
 	 */
 	protected MimeType createMimeType(String contentFormat) {
 		try {
-			return MimeType.valueOf(contentFormat);
+			return MimeType.FACTORY.createMimeType(contentFormat);
 		} catch (ParseException e) {
 			LOGGER.error("Error parsing MimeType from \"{}\": {}", contentFormat, e.getMessage());
 			LOGGER.trace("", e);
@@ -578,20 +578,20 @@ public class ProtocolInfo implements Comparable<ProtocolInfo>, Serializable {
 
 		sb	.append("Protocol: ").append(protocol)
 			.append(", Network: ").append(network)
-			.append(", ContentFormat/MimeType: ").append(mimeType);
+			.append(", ContentFormat/MIME Type: ").append(mimeType);
 
 		if (isNotBlank(additionalInfo)) {
 			sb.append(", AdditionalInfo: ").append(additionalInfo);
 		}
 
 		if (!mimeType.toString().equals(mimeType.toStringWithoutParameters())) {
-			sb.append(", Simple MimeType: ").append(mimeType.toStringWithoutParameters());
+			sb.append(", Base MIME Type: ").append(mimeType.toStringWithoutParameters());
 		}
 		if (mimeType.isDRM()) {
 			sb.append(", DRM");
 		}
 		if (!mimeType.getParameters().isEmpty()) {
-			sb.append(", MimeType Parameters: ").append(mimeType.getParameters());
+			sb.append(", MIME Type Parameters: ").append(mimeType.getParameters());
 		}
 
 		if (attributes != null && !attributes.isEmpty()) {
@@ -663,7 +663,7 @@ public class ProtocolInfo implements Comparable<ProtocolInfo>, Serializable {
 			if (other.mimeType != null) {
 				return false;
 			}
-		} else if (!mimeType.equals(other.mimeType)) {
+		} else if (!mimeType.equalValue(other.mimeType)) {
 			return false;
 		}
 		if (network == null) {
@@ -860,7 +860,7 @@ public class ProtocolInfo implements Comparable<ProtocolInfo>, Serializable {
 			return -1;
 		}
 		if (mimeType != null && other.mimeType != null) {
-			result = mimeType.compareTo(other.mimeType);
+			result = mimeType.toString().compareTo(other.mimeType.toString());
 			if (result != 0) {
 				return result;
 			}
