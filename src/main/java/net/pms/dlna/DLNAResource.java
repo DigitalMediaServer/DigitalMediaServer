@@ -3540,9 +3540,9 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 			configurationSpecificToRenderer.isThumbnailGenerationEnabled() &&
 			(renderer == null || renderer.isThumbnails())
 		) {
-			Double seekPosition = (double) configurationSpecificToRenderer.getThumbnailSeekPos();
+			double seekPosition = configurationSpecificToRenderer.getThumbnailSeekPos();
 			if (isResume()) {
-				Double resumePosition = (double) (resume.getTimeOffset() / 1000);
+				double resumePosition = ((double) resume.getTimeOffset() / 1000);
 
 				if (media.getDurationInSeconds() > 0 && resumePosition < media.getDurationInSeconds()) {
 					seekPosition = resumePosition;

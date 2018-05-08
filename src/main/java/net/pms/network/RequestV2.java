@@ -1011,8 +1011,16 @@ public class RequestV2 extends HTTPResource {
 				String timeseekValue = StringUtil.formatDLNADuration(range.getStartOrZero());
 				String timetotalValue = dlna.getMedia().getDurationString();
 				String timeEndValue = range.isEndLimitAvailable() ? StringUtil.formatDLNADuration(range.getEnd()) : timetotalValue;
-				output.headers().set("TimeSeekRange.dlna.org", "npt=" + timeseekValue + "-" + timeEndValue + "/" + timetotalValue);
-				output.headers().set("X-Seek-Range", "npt=" + timeseekValue + "-" + timeEndValue + "/" + timetotalValue);
+				output.headers().set(
+					"TimeSeekRange.dlna.org",
+					"npt=" + timeseekValue + "-" + (timeEndValue == null ? "" : timeEndValue) + "/" +
+					(isBlank(timetotalValue) ? "*" : timetotalValue)
+				);
+				output.headers().set(
+					"X-Seek-Range",
+					"npt=" + timeseekValue + "-" + (timeEndValue == null ? "" : timeEndValue) + "/" +
+					(isBlank(timetotalValue) ? "*" : timetotalValue)
+				);
 			}
 
 			// Send the response headers to the client.

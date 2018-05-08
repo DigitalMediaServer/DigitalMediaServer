@@ -127,6 +127,7 @@ public class DLNAMediaInfo implements Cloneable {
 	private Boolean videoWithinH264LevelLimits = null;
 
 	// Stored in database
+	@Nullable
 	private Double durationSec;
 
 	/**
@@ -558,13 +559,15 @@ public class DLNAMediaInfo implements Cloneable {
 		generateThumbnail(input, ext, type, seekPosition, resume, null);
 	}
 
-	public void generateThumbnail(InputFile input, Format ext, int type, Double seekPosition, boolean resume, RendererConfiguration renderer) {
+	public void generateThumbnail(InputFile input, Format ext, int type, double seekPosition, boolean resume, RendererConfiguration renderer) {
 		DLNAMediaInfo forThumbnail = new DLNAMediaInfo();
 		forThumbnail.setMediaparsed(mediaparsed);  // check if file was already parsed by MediaInfo
 		forThumbnail.setImageInfo(imageInfo);
-		forThumbnail.durationSec = getDurationInSeconds();
-		if (seekPosition <= forThumbnail.durationSec) {
-			forThumbnail.durationSec = seekPosition;
+		forThumbnail.durationSec = getDuration();
+		if (forThumbnail.durationSec == null) {
+			forThumbnail.durationSec = Double.valueOf(0d);
+		} else if (seekPosition <= forThumbnail.durationSec.doubleValue()) {
+			forThumbnail.durationSec = Double.valueOf(seekPosition);
 		} else {
 			forThumbnail.durationSec /= 2;
 		}
@@ -785,7 +788,7 @@ public class DLNAMediaInfo implements Cloneable {
 							}
 
 							audio.setSampleFrequency("" + rate);
-							durationSec = (double) length;
+							durationSec = Integer.valueOf(length).doubleValue();
 							bitrate = (int) ah.getBitRateAsNumber();
 
 							String channels = ah.getChannels().trim().toLowerCase(Locale.ROOT);
@@ -1017,7 +1020,7 @@ public class DLNAMediaInfo implements Cloneable {
 					try {
 						int length = MpegUtil.getDurationFromMpeg(file);
 						if (length > 0) {
-							durationSec = (double) length;
+							durationSec = Integer.valueOf(length).doubleValue();
 						}
 					} catch (IOException e) {
 						LOGGER.trace("Error retrieving length: " + e.getMessage());
@@ -1404,26 +1407,37 @@ public class DLNAMediaInfo implements Cloneable {
 		return (int) (getDurationInSeconds() * fr);
 	}
 
-	public void setDuration(Double d) {
-		this.durationSec = d;
+	public void setDuration(@Nullable Double durationSec) {
+		this.durationSec = durationSec;
 	}
 
 	/**
-	 * This is the object {@link Double} and might return <code>null</code>.
-	 * To get <code>0</code> instead of <code>null</code>, use
-	 * {@link #getDurationInSeconds()}
+	 * Returns the duration in seconds as a {@link Double} or {@code null} if
+	 * unknown.
+	 * <p>
+	 * <b>To avoid the possibility of a {@code null} value</b>, use
+	 * {@link #getDurationInSeconds()} instead.
+	 *
+	 * @return The duration in seconds or {@code null}.
 	 */
+	@Nullable
 	public Double getDuration() {
 		return durationSec;
 	}
 
 	/**
-	 * @return 0 if nothing is specified, otherwise the duration
+	 * Returns the duration in seconds as a {@code double} or {@code 0} if
+	 * unknown.
+	 * <p>
+	 * To get {@code null} if unknown, use {@link #getDuration()}.
+	 *
+	 * @return The duration in seconds or {@code 0}.
 	 */
 	public double getDurationInSeconds() {
-		return durationSec != null ? durationSec : 0;
+		return durationSec != null ? durationSec.doubleValue() : 0d;
 	}
 
+	@Nullable
 	public String getDurationString() {
 		return durationSec != null ? StringUtil.formatDLNADuration(durationSec) : null;
 	}
@@ -1436,7 +1450,8 @@ public class DLNAMediaInfo implements Cloneable {
 		return StringUtil.formatDLNADuration(d);
 	}
 
-	public static Double parseDurationString(String duration) {
+	@Nullable
+	public static Double parseDurationString(@Nullable String duration) {
 		return duration != null ? convertStringToTime(duration) : null;
 	}
 
