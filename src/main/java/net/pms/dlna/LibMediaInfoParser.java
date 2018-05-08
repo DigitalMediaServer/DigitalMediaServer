@@ -8,6 +8,7 @@ import java.util.Locale;
 import java.util.StringTokenizer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import javax.annotation.Nullable;
 import net.pms.configuration.FormatConfiguration;
 import net.pms.configuration.RendererConfiguration;
 import net.pms.dlna.MediaInfo.StreamType;
@@ -74,8 +75,7 @@ public class LibMediaInfoParser {
 			// Set General
 			getFormat(StreamType.General, media, currentAudioTrack, MI.Get(StreamType.General, 0, "Format"), file);
 			getFormat(StreamType.General, media, currentAudioTrack, MI.Get(StreamType.General, 0, "CodecID").trim(), file);
-			// TODO: (Nad) Should use parseDuration() and "Duration" instead, but that returns null instead of 0.0 if it can't be parsed whose effects must be checked
-			media.setDuration(getDuration(MI.Get(StreamType.General, 0, "Duration/String1")));
+			media.setDuration(parseDuration(MI.Get(StreamType.General, 0, "Duration")));
 			media.setBitrate(getBitrate(MI.Get(StreamType.General, 0, "OverallBitRate")));
 			media.setStereoscopy(MI.Get(StreamType.General, 0, "StereoscopicLayout"));
 			value = MI.Get(StreamType.General, 0, "Cover_Data");
@@ -1005,7 +1005,10 @@ public class LibMediaInfoParser {
 
 	/**
 	 * Parses the "Duration/String1" format.
+	 *
+	 * @deprecated Parse "Duration" with {@link #parseDuration(String)} instead.
 	 */
+	@Deprecated
 	private static double getDuration(String value) {
 		int h = 0, m = 0, s = 0;
 		StringTokenizer st = new StringTokenizer(value, " ");
@@ -1042,9 +1045,14 @@ public class LibMediaInfoParser {
 	/**
 	 * Parses the "Duration" format.
 	 */
+	@Nullable
 	private static Double parseDuration(String value) {
 		if (isBlank(value)) {
 			return null;
+		}
+		int separator = value.indexOf(".");
+		if (separator > 0) {
+			value = value.substring(0, separator);
 		}
 		try {
 			long longValue = Long.parseLong(value);

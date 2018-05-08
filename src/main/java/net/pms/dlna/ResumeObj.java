@@ -147,7 +147,7 @@ public class ResumeObj {
 		if (range.isStartOffsetAvailable() && range.getStartOrZero() > 0.0) {
 			long now = System.currentTimeMillis();
 			if (r.getMedia() != null) {
-				stop(now + getTimeOffset() - (long) (range.getStart() * 1000), (long) (r.getMedia().getDuration() * 1000));
+				stop(now + getTimeOffset() - (long) (range.getStart() * 1000), (long) (r.getMedia().getDurationInSeconds() * 1000));
 			} else {
 				stop(now + getTimeOffset() - (long) (range.getStart() * 1000), 0);
 			}
