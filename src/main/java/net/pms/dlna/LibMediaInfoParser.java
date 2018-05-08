@@ -75,7 +75,7 @@ public class LibMediaInfoParser {
 			// Set General
 			getFormat(StreamType.General, media, currentAudioTrack, MI.Get(StreamType.General, 0, "Format"), file);
 			getFormat(StreamType.General, media, currentAudioTrack, MI.Get(StreamType.General, 0, "CodecID").trim(), file);
-			media.setDuration(getDuration(MI.Get(StreamType.General, 0, "Duration/String1")));
+			media.setDuration(parseDuration(MI.Get(StreamType.General, 0, "Duration")));
 			media.setBitrate(getBitrate(MI.Get(StreamType.General, 0, "OverallBitRate")));
 			media.setStereoscopy(MI.Get(StreamType.General, 0, "StereoscopicLayout"));
 			value = MI.Get(StreamType.General, 0, "Cover_Data");
@@ -1005,7 +1005,10 @@ public class LibMediaInfoParser {
 
 	/**
 	 * Parses the "Duration/String1" format.
+	 *
+	 * @deprecated Parse "Duration" with {@link #parseDuration(String)} instead.
 	 */
+	@Deprecated
 	private static double getDuration(String value) {
 		int h = 0, m = 0, s = 0;
 		StringTokenizer st = new StringTokenizer(value, " ");
