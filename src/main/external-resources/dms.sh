@@ -47,7 +47,7 @@ if $cygwin; then
     DMS_HOME=`cygpath --path --windows "$DMS_HOME"`
     JAVA_HOME=`cygpath --path --windows "$JAVA_HOME"`
 fi
- 
+
 # Configure fontconfig (used by our build of FFmpeg)
 if [ "x$FONTCONFIG_PATH" = "x" ]; then
     FONTCONFIG_PATH=/etc/fonts
