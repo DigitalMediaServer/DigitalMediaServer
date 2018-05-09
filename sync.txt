@@ -25,4 +25,14 @@ cede0c88fafcd59229f25666b0dbb871e65eea57 Fixed "By Date" virtual folders on join
 b9268bbd67a332054b898fcfc03e55e12e8e9d5e Order the "By date" folders from newest to oldest
 2d0dacd6b9231197a3df4d73ac773520ca275072 Fix bug in updating the database when is not created.
 1e6b1151faa47e0687d6ff6bce5bacf1d857aed4 Bump to 7.0.0-SNAPSHOT
+a83d67c77df019c316eb253511202c2ffaf6ad03 Enabled automatic updating on Windows to 7.0.0
+79a4c750a4f3735127179dc0b156b15f74c0365a Added config for newer Roku devices
+60f8de4cd37e58f544588c89dbc359503019ee20 Create Roku-TV8.conf
+041ea221e236c5d0e4747ca83c8e99421aa89cd0 Delete Roku-TV8.conf during UMS unistalling
+39e6259c1261cc642b409d7d300b2a9d0174f69b Cleaned up Rokus and added detection tests
+e4524f079d1eea57ebdea872e06817b6f1c703c4 Post-7.0.0 updated to UMS.conf (partial pick)
+2f0d303521cac6f299a179b57021d6192063dcea Fixed "unique index or primary key violation" error on clean installs
+401b94f671b07701908c373e7db7e2bbff97e0a6 Fixed bug with JPEG_LRG profile check
+1a15b38761b610b8cf10cceca1ea71024da9656d Faster hashing v2
+a8ea983105a88083d088e2138020591d5787af81 Drop experimental FFmpeg flag
 761995b7de52fe3af76dbae68efe1891e16f719d Sync translations with Crowdin
