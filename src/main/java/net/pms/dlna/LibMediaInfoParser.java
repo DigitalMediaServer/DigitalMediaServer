@@ -857,21 +857,21 @@ public class LibMediaInfoParser {
 	}
 
 	/**
-	 * @param value {@code Format_Settings_RefFrames/String} value to parse.
-	 * @return reference frame count or {@code -1} if could not parse.
+	 * Parses the reference frame count.
+	 *
+	 * @param value the {@code Format_Settings_RefFrames} value to parse.
+	 * @return The reference frame count or {@code -1} if the parsing fails.
 	 */
-	public static byte getReferenceFrameCount(String value) {
+	public static int getReferenceFrameCount(String value) {
 		if (isBlank(value)) {
 			return -1;
 		}
 
 		try {
-			// Values like "16 frame3"
-			return Byte.parseByte(substringBefore(value, " "));
-		} catch (NumberFormatException ex) {
-			// Not parsed
-			LOGGER.warn("Could not parse ReferenceFrameCount value {}." , value);
-			LOGGER.warn("Exception: ", ex);
+			return Integer.parseInt(value);
+		} catch (NumberFormatException e) {
+			LOGGER.debug("Could not parse ReferenceFrameCount \"{}\": {}", value, e.getMessage());
+			LOGGER.trace("", e);
 			return -1;
 		}
 	}
