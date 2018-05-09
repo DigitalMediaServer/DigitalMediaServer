@@ -21,9 +21,9 @@
 			<lineEnding>keep</lineEnding>
 		</file>
 
-		<!-- Include executable script DMS.sh -->
+		<!-- Include executable script dms.sh -->
 		<file>
-			<source>${project.external-resources}/${project.name.short}.sh</source>
+			<source>${project.external-resources}/${project.artifactId}.sh</source>
 			<fileMode>0755</fileMode>
 			<lineEnding>unix</lineEnding>
 		</file>
