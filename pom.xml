@@ -121,7 +121,6 @@
 		<!-- Use makensis.exe for Windows builds -->
 		<makensis-bin>${project.external-resources}/third-party/nsis/makensis.exe</makensis-bin>
 		<release>false</release> <!-- mvn -Drelease=true -->
-		<P>none</P>
 	</properties>
 	<repositories>
 		<repository>
@@ -1246,25 +1245,6 @@
 						<version>1.8</version>
 						<executions>
 							<execution>
-								<id>download-binaries-linux</id>
-								<phase>process-resources</phase>
-								<goals>
-									<goal>run</goal>
-								</goals>
-								<configuration>
-									<target unless="offline">
-										<!-- Make sure the binaries folder exists -->
-										<mkdir dir="${project.binaries}" />
-										<mkdir dir="${project.binaries}/linux" />
-										<!-- Download binaries -->
-										<get src="${project.binaries-base}/linux/ffmpeg?p=${binary-revision}" dest="${project.binaries}/linux/ffmpeg" usetimestamp="true" />
-										<get src="${project.binaries-base}/linux/ffmpeg64?p=${binary-revision}" dest="${project.binaries}/linux/ffmpeg64" usetimestamp="true" />
-										<get src="${project.binaries-base}/linux/tsMuxeR-new?p=${binary-revision}" dest="${project.binaries}/linux/tsMuxeR" usetimestamp="true" />
-										<get src="${project.binaries-base}/linux/tsMuxeR_licence.txt?p=${binary-revision}" dest="${project.binaries}/linux/tsMuxeR_license.txt" usetimestamp="true" />
-									</target>
-								</configuration>
-							</execution>
-							<execution>
 								<id>create-control-linux</id>
 								<phase>process-resources</phase>
 								<goals>
@@ -1280,8 +1260,8 @@
 										<echo file="${project.build.directory}/control/control" append="true">Priority: standard${line.separator}</echo>
 										<echo file="${project.build.directory}/control/control" append="true">Architecture: all${line.separator}</echo>
 										<echo file="${project.build.directory}/control/control" append="true">Depends: default-jre-headless (>= 1.7) | default-jre (>= 1.7) | java7-runtime | java8-runtime | jdk (>= 1.7)${line.separator}</echo>
-										<echo file="${project.build.directory}/control/control" append="true">Recommends: dcraw, ffmpeg, mediainfo${line.separator}</echo>
-										<echo file="${project.build.directory}/control/control" append="true">Suggests: mencoder, tsmuxer, tsmuxer-bin${line.separator}</echo>
+										<echo file="${project.build.directory}/control/control" append="true">Recommends: dcraw, ffmpeg, mediainfo, tsmuxer, tsmuxer-bin${line.separator}</echo>
+										<echo file="${project.build.directory}/control/control" append="true">Suggests: mencoder, vlc${line.separator}</echo>
 										<echo file="${project.build.directory}/control/control" append="true">Maintainer: Nadahar &lt;nadahar@dms.com&gt;${line.separator}</echo>
 										<echo file="${project.build.directory}/control/control" append="true">Description: Media server${line.separator}</echo>
 										<echo file="${project.build.directory}/control/control" append="true">Distribution: stable${line.separator}</echo>
@@ -1322,8 +1302,8 @@
 										<priority>standard</priority>
 										<architecture>all</architecture>
 										<depends>default-jre-headless (>= 1.7) | default-jre (>= 1.7) | java7-runtime | java8-runtime | jdk (>= 1.7)</depends>
-										<recommends>dcraw, ffmpeg, mediainfo</recommends>
-										<suggests>mencoder, tsmuxer, tsmuxer-bin</suggests>
+										<recommends>dcraw, ffmpeg, mediainfo, tsmuxer, tsmuxer-bin</recommends>
+										<suggests>mencoder, vlc</suggests>
 										<description>Media server</description>
 										<maintainer>Nadahar</maintainer>
 										<distribution>stable</distribution>
@@ -1365,15 +1345,6 @@
 											</mapper>
 										</data>
 										<data>
-											<src>${project.binaries}/linux</src>
-											<type>directory</type>
-											<mapper>
-												<type>perm</type>
-												<prefix>/usr/local/lib/${project.artifactId}/linux</prefix>
-												<filemode>755</filemode>
-											</mapper>
-										</data>
-										<data>
 											<src>${project.external-resources}</src>
 											<type>directory</type>
 											<includes>*.*</includes>
@@ -1392,7 +1363,7 @@
 											<mapper>
 												<type>perm</type>
 												<strip>1</strip>
-												<prefix>/etc/skel/.config</prefix>
+												<prefix>/etc/skel/.config/${project.name.camel}</prefix>
 											</mapper>
 										</data>
 										<data>
@@ -1401,8 +1372,8 @@
 											<type>file</type>
 										</data>
 										<data>
-											<src>${project.external-resources}/${project.name.short}.sh</src>
-											<dst>/usr/local/lib/${project.artifactId}/${project.name.short}.sh</dst>
+											<src>${project.external-resources}/${project.artifactId}.sh</src>
+											<dst>/usr/local/lib/${project.artifactId}/${project.artifactId}.sh</dst>
 											<type>file</type>
 											<mapper>
 												<type>perm</type>
@@ -1411,7 +1382,7 @@
 										</data>
 										<data>
 											<linkName>/usr/local/bin/${project.artifactId}</linkName>
-											<linkTarget>/usr/local/lib/${project.artifactId}/${project.name.short}.sh</linkTarget>
+											<linkTarget>/usr/local/lib/${project.artifactId}/${project.artifactId}.sh</linkTarget>
 											<symlink>true</symlink>
 											<type>link</type>
 										</data>

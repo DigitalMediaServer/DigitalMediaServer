@@ -160,7 +160,7 @@ Section "!$(SectionServer)" sec1
 	File /r "${PROJECT_BASEDIR}\src\main\external-resources\renderers"
 	File /r /x "ffmpeg*.exe" /x "avisynth" /x "MediaInfo64.dll" "${PROJECT_BINARIES}\win32"
 	File "${PROJECT_BUILD_DIR}\${PROJECT_NAME_SHORT}.exe"
-	File "${PROJECT_BASEDIR}\src\main\external-resources\${PROJECT_NAME_SHORT}.bat"
+	File "${PROJECT_BASEDIR}\src\main\external-resources\${PROJECT_ARTIFACT_ID}.bat"
 	File /r "${PROJECT_BASEDIR}\src\main\external-resources\web"
 	File "${PROJECT_BUILD_DIR}\${PROJECT_ARTIFACT_ID}.jar"
 ;	File "${PROJECT_BASEDIR}\CHANGELOG.txt"
