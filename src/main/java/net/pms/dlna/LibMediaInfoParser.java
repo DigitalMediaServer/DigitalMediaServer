@@ -753,15 +753,7 @@ public class LibMediaInfoParser {
 			}
 		} else if (value.startsWith("adpcm")) {
 			format = FormatConfiguration.ADPCM;
-		} else if (
-			value.equals("pcm") || (
-				value.equals("1") && (
-					audio.getCodecA() == null ||
-					!audio.getCodecA().equals(FormatConfiguration.DTS) ||
-					!audio.getCodecA().equals(FormatConfiguration.DTSHD)
-				)
-			)
-		) {
+		} else if (value.equals("pcm")) {
 			format = FormatConfiguration.LPCM;
 		} else if (value.equals("alac")) {
 			format = FormatConfiguration.ALAC;
