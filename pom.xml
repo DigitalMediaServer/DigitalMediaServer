@@ -25,6 +25,9 @@
 			mvn site
 
 		After generating, the "target/site" directory will contain the reports.
+		
+		Note:
+		Maven version 3.3.3 or above should be prefered, also if the version 3.2.0 will be able to build.
 	-->
 
 	<modelVersion>4.0.0</modelVersion>
@@ -35,7 +38,6 @@
 	<version>0.0.2-SNAPSHOT</version>
 	<url>http://www.digitalmediaserver.org/</url>
 	<inceptionYear>2016</inceptionYear>
-
 	<organization>
 		<name>Digital Media Server</name>
 		<url>http://www.digitalmediaserver.org/</url>
@@ -72,6 +74,7 @@
 	<properties>
 		<project.name.short>DMS</project.name.short>
 		<project.name.camel>DigitalMediaServer</project.name.camel>
+		<project.skelprofile.dir>/etc/skel/.config</project.skelprofile.dir>
 		<cuelib-version>1.2.1-2008-06-13</cuelib-version>
 
 		<!-- In versions after 1.6.0, they removed code that the MovieInfo plugin relies on -->
@@ -924,6 +927,8 @@
 	</reporting>
 
 	<profiles>
+
+		<!-- System's Makensis profile -->
 		<profile>
 			<!-- https://packages.debian.org/sid/nsis -->
 			<id>system-makensis</id>
@@ -939,6 +944,7 @@
 			</properties>
 		</profile>
 
+		<!-- JAR profile -->
 		<profile>
 			<id>jar</id>
 			<activation>
@@ -1022,9 +1028,7 @@
 			</build>
 		</profile>
 
-		<!--
-			Build a Windows installer using the nullsoft scriptable install system (NSIS). "generate-headerfile" goal generates a file "target/project.nsh".
-		-->
+		<!-- Windows EXE profile -->
 		<profile>
 			<id>exe</id>
 			<activation>
@@ -1150,9 +1154,7 @@
 			</build>
 		</profile>
 
-		<!--
-			Build the final TAR.GZ package for Linux
-		-->
+		<!-- Linux TAR.GZ profile -->
 		<profile>
 			<id>tgz</id>
 			<activation>
@@ -1223,9 +1225,7 @@
 			</build>
 		</profile>
 
-		<!--
-			Linux DEB profile: takes care of building the final package for Linux
-		-->
+		<!-- Linux DEB profile -->
 		<profile>
 			<id>deb</id>
 			<activation>
@@ -1251,6 +1251,16 @@
 									<goal>run</goal>
 								</goals>
 								<configuration>
+									<!--
+										Latest MediaInfo:
+										deb http://ftp.de.debian.org/debian sid main
+										Latest tsMuxeR:
+										deb http://archive.getdeb.net/ubuntu xenial-getdeb apps
+										Latest FFmpeg:
+										deb http://ftp.de.debian.org/debian experimental main
+										Latest VLC:
+										deb http://ftp.de.debian.org/debian buster main
+									-->
 									<target>
 										<mkdir dir="${project.build.directory}/control" />
 										<chmod dir="${project.build.directory}/control" type="dir" perm="0755"/>
@@ -1259,9 +1269,9 @@
 										<echo file="${project.build.directory}/control/control" append="true">Section: java${line.separator}</echo>
 										<echo file="${project.build.directory}/control/control" append="true">Priority: standard${line.separator}</echo>
 										<echo file="${project.build.directory}/control/control" append="true">Architecture: all${line.separator}</echo>
-										<echo file="${project.build.directory}/control/control" append="true">Depends: default-jre-headless (>= 1.7) | default-jre (>= 1.7) | java7-runtime | java8-runtime | jdk (>= 1.7)${line.separator}</echo>
-										<echo file="${project.build.directory}/control/control" append="true">Recommends: dcraw, ffmpeg, mediainfo, tsmuxer, tsmuxer-bin${line.separator}</echo>
-										<echo file="${project.build.directory}/control/control" append="true">Suggests: mencoder, vlc${line.separator}</echo>
+										<echo file="${project.build.directory}/control/control" append="true">Depends: default-jre-headless (>= 1.7) | default-jre (>= 1.7) | java-runtime-headless (>= 1.7) | java-runtime (>= 1.7) | java-sdk (>= 1.7) | openjdk-7-jdk | openjdk-7-jre | openjdk-8-jdk | openjdk-8-jre |  openjdk-7-jre-headless | openjdk-8-jre-headless | oracle-java7-jdk | oracle-java8-jdk | oracle-java7-jre | oracle-java8-jre | java7-runtime | java8-runtime | java7-runtime-headless | java8-runtime-headless ${line.separator}</echo>
+										<echo file="${project.build.directory}/control/control" append="true">Recommends: dcraw, ffmpeg, mediainfo, tsmuxer${line.separator}</echo>
+										<echo file="${project.build.directory}/control/control" append="true">Suggests: mencoder, vlc (>= 3.0.0), ffmpeg (>= 4.0.0)${line.separator}</echo>
 										<echo file="${project.build.directory}/control/control" append="true">Maintainer: Nadahar &lt;nadahar@dms.com&gt;${line.separator}</echo>
 										<echo file="${project.build.directory}/control/control" append="true">Description: Media server${line.separator}</echo>
 										<echo file="${project.build.directory}/control/control" append="true">Distribution: stable${line.separator}</echo>
@@ -1301,9 +1311,9 @@
 										<section>java</section>
 										<priority>standard</priority>
 										<architecture>all</architecture>
-										<depends>default-jre-headless (>= 1.7) | default-jre (>= 1.7) | java7-runtime | java8-runtime | jdk (>= 1.7)</depends>
-										<recommends>dcraw, ffmpeg, mediainfo, tsmuxer, tsmuxer-bin</recommends>
-										<suggests>mencoder, vlc</suggests>
+										<depends>default-jre-headless (>= 1.7) | default-jre (>= 1.7) | java-runtime-headless (>= 1.7) | java-runtime (>= 1.7) | java-sdk (>= 1.7) | openjdk-7-jdk | openjdk-7-jre | openjdk-8-jdk | openjdk-8-jre |  openjdk-7-jre-headless | openjdk-8-jre-headless | oracle-java7-jdk | oracle-java8-jdk | oracle-java7-jre | oracle-java8-jre | java7-runtime | java8-runtime | java7-runtime-headless | java8-runtime-headless</depends>
+										<recommends>dcraw, ffmpeg, mediainfo, tsmuxer</recommends>
+										<suggests>mencoder, vlc (>= 3.0.0), ffmpeg (>= 4.0.0)</suggests>
 										<description>Media server</description>
 										<maintainer>Nadahar</maintainer>
 										<distribution>stable</distribution>
@@ -1386,10 +1396,233 @@
 											<symlink>true</symlink>
 											<type>link</type>
 										</data>
+										<data>
+											<linkName>/usr/local/bin/${project.name.short}</linkName>
+											<linkTarget>/usr/local/lib/${project.artifactId}/${project.artifactId}.sh</linkTarget>
+											<symlink>true</symlink>
+											<type>link</type>
+										</data>
 									</dataSet>
 								</configuration>
 							</execution>
 						</executions>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+
+		<!-- Linux RPM profile -->
+		<profile>
+			<id>rpm</id>
+			<activation>
+				<activeByDefault>false</activeByDefault>
+				<jdk>[1.8,)</jdk>
+				<property>
+					<name>release</name>
+					<value>true</value>
+				</property>
+			</activation>
+
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>de.dentrassi.maven</groupId>
+						<artifactId>rpm</artifactId>
+						<version>0.10.2</version>
+						<executions>
+							<execution>
+								<goals>
+									<goal>rpm</goal>
+								</goals>
+							</execution>
+						</executions>
+						<configuration>
+							<attach>false</attach>
+							<group> Application/Internet </group>
+							<license>GPLv2+</license>
+							<skipSigning>true</skipSigning>
+							<script>echo "HAVE FUN !"</script>
+							<!--<outputFileName>${project.artifactId}-${project.version}.rpm</outputFileName>-->
+							<leadOverrideArchitecture/>
+							<leadOverrideOperatingSystem/>
+							<!--http://rpm5.org/docs/api/dependencies.html-->
+							<requires>
+								<!--
+									Boolean dependencies have only been introcuded since RPM 4.13
+									http://rpm.org/user_doc/boolean_dependencies.html
+									http://ftp.rpm.org/api/4.4.2.2/dependencies.html
+									http://ftp.rpm.org/max-rpm/s1-rpm-depend-manual-dependencies.html
+									https://github.com/puzzle/java-oracle-rpm/blob/master/java-1.7.0-oracle-devel.spec
+									(jre &gt;= 1:1.7.0 or java &gt;= 1.8 or java-headless &gt;= 1:1.7.0)
+								-->
+								<require>java &gt;= 1.7</require>
+								<require>dcraw</require>
+								<require>ffmpeg</require>
+								<require>mediainfo</require>
+								<require>tsmuxer</require>
+							</requires>
+							<rulesets>
+								<ruleset>
+									<id>default-settings</id>
+									<rules>
+										<rule>
+											<user>root</user>
+											<group>root</group>
+										</rule>
+										<rule>
+											<when>
+												<type>directory</type>
+											</when>
+											<mode>0755</mode>
+										</rule>
+										<rule>
+											<when>
+												<type>file</type>
+											</when>
+											<mode>0644</mode>
+										</rule>
+										<rule>
+											<when>
+												<prefix>/etc/skel/.config/</prefix>
+											</when>
+											<configuration>true</configuration>
+											<missingOk>true</missingOk>
+											<noreplace>true</noreplace>
+										</rule>
+										<file>
+											<when>
+												<suffix>README.txt</suffix>
+											</when>
+											<readme>true</readme>
+										</file>
+									</rules>
+								</ruleset>
+							</rulesets>
+							<entries>
+								<entry>
+									<name>/usr/local/lib/${project.artifactId}</name>
+									<directory>true</directory>
+									<ruleset>default-settings</ruleset>
+								</entry>
+								<entry>
+									<name>/etc/skel/.config/${project.name.camel}</name>
+									<directory>true</directory>
+									<ruleset>default-settings</ruleset>
+								</entry>
+								<entry>
+									<name>/usr/local/lib/${project.artifactId}/documentation</name>
+									<directory>true</directory>
+									<ruleset>default-settings</ruleset>
+								</entry>
+								<entry>
+									<name>/usr/local/lib/${project.artifactId}/documentation</name>
+									<collect>
+										<from>${project.external-resources}/documentation</from>
+										<directories>true</directories>
+									</collect>
+									<ruleset>default-settings</ruleset>
+									<documentation>true</documentation>
+								</entry>
+								<entry>
+									<name>/usr/local/lib/${project.artifactId}/plugins</name>
+									<directory>true</directory>
+									<ruleset>default-settings</ruleset>
+								</entry>
+								<entry>
+									<name>/usr/local/lib/${project.artifactId}/plugins</name>
+									<collect>
+										<from>${project.external-resources}/plugins</from>
+										<directories>true</directories>
+									</collect>
+									<ruleset>default-settings</ruleset>
+								</entry>
+								<entry>
+									<name>/usr/local/lib/${project.artifactId}/renderers</name>
+									<directory>true</directory>
+									<ruleset>default-settings</ruleset>
+								</entry>
+								<entry>
+									<name>/usr/local/lib/${project.artifactId}/renderers</name>
+									<collect>
+										<from>${project.external-resources}/renderers</from>
+										<directories>false</directories>
+									</collect>
+									<ruleset>default-settings</ruleset>
+								</entry>
+								<entry>
+									<name>/usr/local/lib/${project.artifactId}/web</name>
+									<directory>true</directory>
+									<ruleset>default-settings</ruleset>
+								</entry>
+								<entry>
+									<name>/usr/local/lib/${project.artifactId}/web</name>
+									<collect>
+										<from>${project.external-resources}/web</from>
+										<directories>true</directories>
+									</collect>
+									<ruleset>default-settings</ruleset>
+								</entry>
+								<entry>
+									<name>/usr/local/lib/${project.artifactId}/${project.artifactId}.sh</name>
+									<file>${project.external-resources}/${project.artifactId}.sh</file>
+									<ruleset>default-settings</ruleset>
+									<mode>0755</mode>
+								</entry>
+								<entry>
+									<name>/usr/local/lib/${project.artifactId}/logback.xml</name>
+									<file>${project.external-resources}/logback.xml</file>
+									<ruleset>default-settings</ruleset>
+								</entry>
+								<entry>
+									<name>/usr/local/lib/${project.artifactId}/logback.headless.xml</name>
+									<file>${project.external-resources}/logback.headless.xml</file>
+									<ruleset>default-settings</ruleset>
+								</entry>
+								<entry>
+									<name>/usr/local/lib/${project.artifactId}/DummyInput.jpg</name>
+									<file>${project.external-resources}/DummyInput.jpg</file>
+									<ruleset>default-settings</ruleset>
+								</entry>
+								<entry>
+									<name>/usr/local/lib/${project.artifactId}/DummyInput.ass</name>
+									<file>${project.external-resources}/DummyInput.ass</file>
+									<ruleset>default-settings</ruleset>
+								</entry>
+								<entry>
+									<name>/usr/local/lib/${project.artifactId}/${project.artifactId}.jar</name>
+									<file>${project.build.directory}/${project.artifactId}.jar</file>
+									<ruleset>default-settings</ruleset>
+								</entry>
+								<entry>
+									<name>/etc/skel/.config/${project.name.camel}/WEB.conf</name>
+									<file>${project.external-resources}/WEB.conf</file>
+									<ruleset>default-settings</ruleset>
+								</entry>
+								<entry>
+									<name>/etc/skel/.config/${project.name.camel}/${project.name.short}.conf</name>
+									<file>${project.external-resources}/${project.name.short}.conf</file>
+									<ruleset>default-settings</ruleset>
+								</entry>
+								<entry>
+									<name>/etc/skel/.config/${project.name.camel}/VirtualFolders.conf</name>
+									<file>${project.external-resources}/VirtualFolders.conf</file>
+									<ruleset>default-settings</ruleset>
+								</entry>
+								<entry>
+									<name>/etc/skel/.config/${project.name.camel}/ffmpeg.webfilters</name>
+									<file>${project.external-resources}/ffmpeg.webfilters</file>
+									<ruleset>default-settings</ruleset>
+								</entry>
+								<entry>
+									<name>/usr/local/bin/${project.artifactId}</name>
+									<linkTo>/usr/local/lib/${project.artifactId}/${project.artifactId}.sh</linkTo>
+								</entry>
+								<entry>
+									<name>/usr/local/bin/${project.name.short}</name>
+									<linkTo>/usr/local/lib/${project.artifactId}/${project.artifactId}.sh</linkTo>
+								</entry>
+							</entries>
+						</configuration>
 					</plugin>
 				</plugins>
 			</build>
@@ -1557,9 +1790,7 @@
 			</build>
 		</profile>
 
-		<!--
-			This profile produce the checksums
-		-->
+		<!-- Builds checksums profile-->
 		<profile>
 			<id>checksum</id>
 			<activation>
