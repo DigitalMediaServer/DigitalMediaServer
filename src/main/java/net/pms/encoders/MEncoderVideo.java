@@ -261,10 +261,10 @@ public class MEncoderVideo extends Player {
 					fakemedia.setCodecV("mpeg4");
 					fakemedia.setContainer("matroska");
 					fakemedia.setDuration(45d*60);
-					audio.getAudioProperties().setNumberOfChannels(2);
+					audio.setNumberOfChannels(2);
 					fakemedia.setWidth(1280);
 					fakemedia.setHeight(720);
-					audio.setSampleFrequency("48000");
+					audio.setSampleFrequency(48000);
 					fakemedia.setFrameRate("23.976");
 					fakemedia.getAudioTracksList().add(audio);
 					String result[] = getSpecificCodecOptions(newCodecparam, fakemedia, new OutputParams(configuration), "dummy.mpg", "dummy.srt", false, true);
@@ -1050,12 +1050,12 @@ public class MEncoderVideo extends Player {
 		 * Commented out until we can find a way to detect when a video has an audio track that switches from 2 to 6 channels
 		 * because MEncoder can't handle those files, which are very common these days.
 		boolean ps3_and_stereo_and_384_kbits = params.aid != null &&
-			(params.mediaRenderer.isPS3() && params.aid.getAudioProperties().getNumberOfChannels() == 2) &&
+			(params.mediaRenderer.isPS3() && params.aid.getNumberOfChannels() == 2) &&
 			(params.aid.getBitRate() > 370000 && params.aid.getBitRate() < 400000);
 		 */
 
 		final boolean isTsMuxeRVideoEngineActive = PlayerFactory.isPlayerActive(TsMuxeRVideo.ID);
-		final boolean mencoderAC3RemuxAudioDelayBug = (params.aid != null) && (params.aid.getAudioProperties().getAudioDelay() != 0) && (params.timeseek == 0);
+		final boolean mencoderAC3RemuxAudioDelayBug = (params.aid != null) && (params.aid.getDelay() != 0) && (params.timeseek == 0);
 
 		encodedAudioPassthrough = isTsMuxeRVideoEngineActive &&
 			configuration.isEncodedAudioPassthrough() &&
@@ -1079,7 +1079,7 @@ public class MEncoderVideo extends Player {
 			!combinedCustomOptions.contains("acodec=") &&
 			!encodedAudioPassthrough &&
 			!isXboxOneWebVideo &&
-			params.aid.getAudioProperties().getNumberOfChannels() <= configuration.getAudioChannelCount()
+			params.aid.getNumberOfChannels() <= configuration.getAudioChannelCount()
 		) {
 			ac3Remux = true;
 		} else {
@@ -1104,7 +1104,7 @@ public class MEncoderVideo extends Player {
 				&& !(media.getContainer().equals("mp4") && !media.isH264())
 				&& params.aid != null &&
 				(
-					(params.aid.isDTS() && params.aid.getAudioProperties().getNumberOfChannels() <= 6) || // disable 7.1 DTS-HD => LPCM because of channels mapping bug
+					(params.aid.isDTS() && params.aid.getNumberOfChannels() <= 6) || // disable 7.1 DTS-HD => LPCM because of channels mapping bug
 					params.aid.isLossless() ||
 					params.aid.isTrueHD() ||
 					(
@@ -1144,11 +1144,11 @@ public class MEncoderVideo extends Player {
 
 		int channels;
 		if (ac3Remux) {
-			channels = params.aid.getAudioProperties().getNumberOfChannels(); // AC-3 remux
+			channels = params.aid.getNumberOfChannels(); // AC-3 remux
 		} else if (dtsRemux || encodedAudioPassthrough || (!params.mediaRenderer.isXbox360() && wmv)) {
 			channels = 2;
 		} else if (pcm) {
-			channels = params.aid.getAudioProperties().getNumberOfChannels();
+			channels = params.aid.getNumberOfChannels();
 		} else {
 			/**
 			 * Note: MEncoder will output 2 audio channels if the input video had 2 channels
@@ -2417,7 +2417,7 @@ public class MEncoderVideo extends Player {
 					 */
 					String timeshift = "";
 					if (mencoderAC3RemuxAudioDelayBug) {
-						timeshift = "timeshift=" + params.aid.getAudioProperties().getAudioDelay() + "ms, ";
+						timeshift = "timeshift=" + params.aid.getDelay() + "ms, ";
 					}
 
 					pwMux.println(videoType + ", \"" + ffVideoPipe.getOutputPipe() + "\", " + fps + "level=4.1, insertSEI, contSPS, track=1");
@@ -2570,7 +2570,7 @@ public class MEncoderVideo extends Player {
 			interpreter.set("srtfile", externalSubtitlesFileName);
 
 			if (params.aid != null) {
-				interpreter.set("samplerate", params.aid.getSampleRate());
+				interpreter.set("samplerate", params.aid.getSampleFrequency());
 			}
 
 			String frameRateNumber = media.getValidFps(false);
@@ -2586,7 +2586,7 @@ public class MEncoderVideo extends Player {
 			interpreter.set("duration", media.getDurationInSeconds());
 
 			if (params.aid != null) {
-				interpreter.set("channels", params.aid.getAudioProperties().getNumberOfChannels());
+				interpreter.set("channels", params.aid.getNumberOfChannels());
 			}
 
 			interpreter.set("height", media.getHeight());

@@ -792,19 +792,19 @@ public class DLNAMediaInfo implements Cloneable {
 								audio.setBitsperSample(24);
 							}
 
-							audio.setSampleFrequency("" + rate);
+							audio.setSampleFrequency(rate);
 							durationSec = Integer.valueOf(length).doubleValue();
 							bitrate = (int) ah.getBitRateAsNumber();
 
 							String channels = ah.getChannels().trim().toLowerCase(Locale.ROOT);
 							if (StringUtils.isNotBlank(channels)) {
 								if (channels.equals("1") || channels.contains("mono")) {
-									audio.getAudioProperties().setNumberOfChannels(1);
+									audio.setNumberOfChannels(1);
 								} else if (channels.equals("2") || channels.contains("stereo")) {
-									audio.getAudioProperties().setNumberOfChannels(2);
+									audio.setNumberOfChannels(2);
 								} else {
 									try {
-										audio.getAudioProperties().setNumberOfChannels(Integer.parseInt(channels));
+										audio.setNumberOfChannels(Integer.parseInt(channels));
 									} catch (IllegalArgumentException e) { // Includes NumberFormatException
 										LOGGER.error(
 											"Couldn't parse the number of audio channels ({}) for file: \"{}\"",
@@ -814,13 +814,13 @@ public class DLNAMediaInfo implements Cloneable {
 									}
 								}
 							}
-							if (audio.getAudioProperties().getNumberOfChannels() < 1) {
+							if (audio.isNumberOfChannelsUnknown()) {
 								LOGGER.error(
 									"Invalid number of audio channels parsed ({}) for file \"{}\", defaulting to stereo",
-									audio.getAudioProperties().getNumberOfChannels(),
+									audio.getNumberOfChannelsRaw(),
 									af.getFile().getName()
 								);
-								audio.getAudioProperties().setNumberOfChannels(2); // set default value of channels to 2
+								audio.setNumberOfChannels(DLNAMediaAudio.NUMBEROFCHANNELS_DEFAULT); // set default number of channels
 							}
 
 							if (StringUtils.isNotBlank(ah.getEncodingType())) {
@@ -1195,19 +1195,23 @@ public class DLNAMediaInfo implements Cloneable {
 							if (token.startsWith("Stream")) {
 								audio.setCodecA(token.substring(token.indexOf("Audio: ") + 7));
 							} else if (token.endsWith("Hz")) {
-								audio.setSampleFrequency(token.substring(0, token.indexOf("Hz")).trim());
+								try {
+									audio.setSampleFrequency(Integer.parseInt(token.substring(0, token.indexOf("Hz")).trim()));
+								} catch (NumberFormatException e) {
+									LOGGER.warn("Can't parse the sample rate from \"{}\"", token);
+								}
 							} else if (token.equals("mono")) {
-								audio.getAudioProperties().setNumberOfChannels(1);
+								audio.setNumberOfChannels(1);
 							} else if (token.equals("stereo")) {
-								audio.getAudioProperties().setNumberOfChannels(2);
+								audio.setNumberOfChannels(2);
 							} else if (token.equals("5:1") || token.equals("5.1") || token.equals("6 channels")) {
-								audio.getAudioProperties().setNumberOfChannels(6);
+								audio.setNumberOfChannels(6);
 							} else if (token.equals("5 channels")) {
-								audio.getAudioProperties().setNumberOfChannels(5);
+								audio.setNumberOfChannels(5);
 							} else if (token.equals("4 channels")) {
-								audio.getAudioProperties().setNumberOfChannels(4);
+								audio.setNumberOfChannels(4);
 							} else if (token.equals("2 channels")) {
-								audio.getAudioProperties().setNumberOfChannels(2);
+								audio.setNumberOfChannels(2);
 							} else if (token.equals("s32")) {
 								audio.setBitsperSample(32);
 							} else if (token.equals("s24")) {
@@ -1647,7 +1651,7 @@ public class DLNAMediaInfo implements Cloneable {
 			}
 		}
 
-		if (getFirstAudioTrack() == null || !(type == Format.AUDIO && getFirstAudioTrack().getBitsperSample() == 24 && getFirstAudioTrack().getSampleRate() > 48000)) {
+		if (getFirstAudioTrack() == null || !(type == Format.AUDIO && getFirstAudioTrack().getBitsperSample() == 24 && getFirstAudioTrack().getSampleFrequency() > 48000)) {
 			secondaryFormatValid = false;
 		}
 
@@ -3404,4 +3408,38 @@ public class DLNAMediaInfo implements Cloneable {
 			}
 		}
 	}
+
+	/**
+	 * This {@code enum} represents constant or variable rate modes, for example
+	 * for bitrate of framerate.
+	 */
+	public static enum RateMode {
+		CONSTANT,
+		VARIABLE;
+
+		@Nullable
+		public static RateMode typeOf(@Nullable String value) {
+			if (isBlank(value)) {
+				return null;
+			}
+
+			switch (value.trim().toLowerCase(Locale.ROOT)) {
+				case "c":
+				case "cbr":
+				case "cfr":
+				case "const":
+				case "constant":
+					return CONSTANT;
+				case "v":
+				case "var":
+				case "vbr":
+				case "vfr":
+				case "variable":
+					return VARIABLE;
+				default:
+					return null;
+			}
+		}
+	}
+
 }

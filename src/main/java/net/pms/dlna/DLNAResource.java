@@ -2527,11 +2527,11 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 
 					addAttribute(sb, "bitrate", media.getRealVideoBitrate());
 					if (firstAudioTrack != null) {
-						if (firstAudioTrack.getAudioProperties().getNumberOfChannels() > 0) {
-							addAttribute(sb, "nrAudioChannels", firstAudioTrack.getAudioProperties().getNumberOfChannels());
+						if (!firstAudioTrack.isNumberOfChannelsUnknown()) {
+							addAttribute(sb, "nrAudioChannels", firstAudioTrack.getNumberOfChannels());
 						}
 
-						if (firstAudioTrack.getSampleFrequency() != null) {
+						if (!firstAudioTrack.isSampleFrequencyUnknown()) {
 							addAttribute(sb, "sampleFrequency", firstAudioTrack.getSampleFrequency());
 						}
 					}
@@ -2563,19 +2563,19 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 						int transcodeNumberOfChannels = -1;
 						if (firstAudioTrack != null) {
 							if (player == null) {
-								if (firstAudioTrack.getSampleFrequency() != null) {
+								if (!firstAudioTrack.isSampleFrequencyUnknown()) {
 									addAttribute(sb, "sampleFrequency", firstAudioTrack.getSampleFrequency());
 								}
-								if (firstAudioTrack.getAudioProperties().getNumberOfChannels() > 0) {
-									addAttribute(sb, "nrAudioChannels", firstAudioTrack.getAudioProperties().getNumberOfChannels());
+								if (!firstAudioTrack.isNumberOfChannelsUnknown()) {
+									addAttribute(sb, "nrAudioChannels", firstAudioTrack.getNumberOfChannels());
 								}
 							} else {
 								if (configurationSpecificToRenderer.isAudioResample()) {
 									transcodeFrequency = mediaRenderer.isTranscodeAudioTo441() ? 44100 : 48000;
 									transcodeNumberOfChannels = 2;
 								} else {
-									transcodeFrequency = firstAudioTrack.getSampleRate();
-									transcodeNumberOfChannels = firstAudioTrack.getAudioProperties().getNumberOfChannels();
+									transcodeFrequency = firstAudioTrack.getSampleFrequency();
+									transcodeNumberOfChannels = firstAudioTrack.getNumberOfChannels();
 								}
 								if (transcodeFrequency > 0) {
 									addAttribute(sb, "sampleFrequency", transcodeFrequency);

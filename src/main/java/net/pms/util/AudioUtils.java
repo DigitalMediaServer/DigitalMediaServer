@@ -105,7 +105,7 @@ public final class AudioUtils {
 		//  SR : Surround Right
 		//  LFE : Low Frequency Effects (Sub)
 		String mixer = null;
-		int numberOfInputChannels = audioTrack.getAudioProperties().getNumberOfChannels();
+		int numberOfInputChannels = audioTrack.getNumberOfChannels();
 
 		if (numberOfInputChannels == 6) { // 5.1
 			// we are using PCM output and have to manually remap channels because of MEncoder's incorrect PCM mappings
@@ -177,8 +177,8 @@ public final class AudioUtils {
 			int reportedDataSize = 0;
 			if (version == 3) {
 				audio.setCodecA(FormatConfiguration.REALAUDIO_14_4);
-				audio.getAudioProperties().setNumberOfChannels(1);
-				audio.getAudioProperties().setSampleFrequency(8000);
+				audio.setNumberOfChannels(1);
+				audio.setSampleFrequency(8000);
 				short headerSize = buffer.getShort();
 
 				buffer = ByteBuffer.allocate(headerSize);
@@ -281,8 +281,8 @@ public final class AudioUtils {
 				audio.setBitRate((int) (bytesPerMinute * 8 / 60));
 				media.setBitrate((int) (bytesPerMinute * 8 / 60));
 				audio.setBitsperSample(sampleSize);
-				audio.getAudioProperties().setNumberOfChannels(nrChannels);
-				audio.getAudioProperties().setSampleFrequency(sampleRate);
+				audio.setNumberOfChannels(nrChannels);
+				audio.setSampleFrequency(sampleRate);
 			} else {
 				LOGGER.error("Could not parse RealAudio format - unknown format version {}", version);
 				return false;

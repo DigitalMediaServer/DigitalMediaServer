@@ -833,7 +833,7 @@ public class FFMpegVideo extends Player {
 			!avisynth() &&
 			renderer.isTranscodeToAC3() &&
 			!isXboxOneWebVideo &&
-			params.aid.getAudioProperties().getNumberOfChannels() <= configuration.getAudioChannelCount()
+			params.aid.getNumberOfChannels() <= configuration.getAudioChannelCount()
 		) {
 			// AC-3 remux takes priority
 			ac3Remux = true;
@@ -1025,7 +1025,7 @@ public class FFMpegVideo extends Player {
 					)
 				) {
 					channels = 2;
-				} else if (params.aid != null && params.aid.getAudioProperties().getNumberOfChannels() > configuration.getAudioChannelCount()) {
+				} else if (params.aid != null && params.aid.getNumberOfChannels() > configuration.getAudioChannelCount()) {
 					channels = configuration.getAudioChannelCount();
 				}
 

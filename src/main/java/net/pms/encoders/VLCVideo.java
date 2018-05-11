@@ -260,7 +260,7 @@ public class VLCVideo extends Player {
 		int channels = 2;
 		if (
 			!isXboxOneWebVideo &&
-			params.aid.getAudioProperties().getNumberOfChannels() > 2 &&
+			params.aid.getNumberOfChannels() > 2 &&
 			configuration.getAudioChannelCount() == 6 &&
 			!params.mediaRenderer.isTranscodeToAC3()
 		) {

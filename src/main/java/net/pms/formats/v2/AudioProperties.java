@@ -69,9 +69,6 @@ public class AudioProperties {
 	 * @param numberOfChannels number of channels to set.
 	 */
 	public void setNumberOfChannels(int numberOfChannels) {
-		if (numberOfChannels < 1) {
-			throw new IllegalArgumentException("The number of channels can't be less than 1.");
-		}
 		this.numberOfChannels = numberOfChannels;
 	}
 
@@ -126,9 +123,6 @@ public class AudioProperties {
 	 * @param sampleFrequency sample frequency in Hz.
 	 */
 	public void setSampleFrequency(int sampleFrequency) {
-		if (sampleFrequency < 1) {
-			throw new IllegalArgumentException("Sample frequency can't be less than 1 Hz.");
-		}
 		this.sampleFrequency = sampleFrequency;
 	}
 

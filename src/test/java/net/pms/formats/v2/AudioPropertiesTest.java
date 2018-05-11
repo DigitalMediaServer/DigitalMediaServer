@@ -43,16 +43,6 @@ public class AudioPropertiesTest {
 		assertThat(properties.getSampleFrequency()).isEqualTo(48000);
 	}
 
-	@Test(expected = IllegalArgumentException.class)
-	public void testSetNumberOfChannels_withIllegalArgument() {
-		properties.setNumberOfChannels(0);
-	}
-
-	@Test(expected = IllegalArgumentException.class)
-	public void testSampleFrequency_withIllegalArgument() {
-		properties.setSampleFrequency(0);
-	}
-
 	@Test
 	public void testGetAttribute_shouldReturnValueForAllPossibleAttributes() {
 		for (AudioAttribute attribute : AudioAttribute.values()) {

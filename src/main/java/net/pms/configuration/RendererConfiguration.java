@@ -1304,11 +1304,11 @@ public class RendererConfiguration extends UPNPHelper.Renderer {
 								matchedMimeType += ";rate=48000;channels=2";
 							}
 						} else if (media != null && media.getFirstAudioTrack() != null) {
-							AudioProperties audio = media.getFirstAudioTrack().getAudioProperties();
-							if (audio.getSampleFrequency() > 0) {
+							DLNAMediaAudio audio = media.getFirstAudioTrack();
+							if (!audio.isSampleFrequencyUnknown()) {
 								matchedMimeType += ";rate=" + Integer.toString(audio.getSampleFrequency());
 							}
-							if (audio.getNumberOfChannels() > 0) {
+							if (!audio.isNumberOfChannelsUnknown()) {
 								matchedMimeType += ";channels=" + Integer.toString(audio.getNumberOfChannels());
 							}
 						}
@@ -1342,11 +1342,11 @@ public class RendererConfiguration extends UPNPHelper.Renderer {
 							matchedMimeType += ";rate=48000;channels=2";
 						}
 					} else if (media != null) {
-						AudioProperties audio = media.getFirstAudioTrack().getAudioProperties();
-						if (audio.getSampleFrequency() > 0) {
+						DLNAMediaAudio audio = media.getFirstAudioTrack();
+						if (!audio.isSampleFrequencyUnknown()) {
 							matchedMimeType += ";rate=" + Integer.toString(audio.getSampleFrequency());
 						}
-						if (audio.getNumberOfChannels() > 0) {
+						if (!audio.isNumberOfChannelsUnknown()) {
 							matchedMimeType += ";channels=" + Integer.toString(audio.getNumberOfChannels());
 						}
 					}
