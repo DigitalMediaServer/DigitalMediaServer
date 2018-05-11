@@ -130,11 +130,10 @@ public class DLNAMediaInfo implements Cloneable {
 	@Nullable
 	private Double durationSec;
 
-	/**
-	 * @deprecated Use standard getter and setter to access this variable.
-	 */
-	@Deprecated
-	public int bitrate;
+	private int bitRate;
+
+	@Nullable
+	private RateMode bitRateMode;
 
 	/**
 	 * @deprecated Use standard getter and setter to access this variable.
@@ -789,22 +788,22 @@ public class DLNAMediaInfo implements Cloneable {
 							int rate = ah.getSampleRateAsNumber();
 
 							if (ah.getEncodingType() != null && ah.getEncodingType().toLowerCase().contains("flac 24")) {
-								audio.setBitsperSample(24);
+								audio.setBitsPerSample(24);
 							}
 
-							audio.setSampleFrequency("" + rate);
+							audio.setSampleFrequency(rate);
 							durationSec = Integer.valueOf(length).doubleValue();
-							bitrate = (int) ah.getBitRateAsNumber();
+							bitRate = (int) ah.getBitRateAsNumber();
 
 							String channels = ah.getChannels().trim().toLowerCase(Locale.ROOT);
 							if (StringUtils.isNotBlank(channels)) {
 								if (channels.equals("1") || channels.contains("mono")) {
-									audio.getAudioProperties().setNumberOfChannels(1);
+									audio.setNumberOfChannels(1);
 								} else if (channels.equals("2") || channels.contains("stereo")) {
-									audio.getAudioProperties().setNumberOfChannels(2);
+									audio.setNumberOfChannels(2);
 								} else {
 									try {
-										audio.getAudioProperties().setNumberOfChannels(Integer.parseInt(channels));
+										audio.setNumberOfChannels(Integer.parseInt(channels));
 									} catch (IllegalArgumentException e) { // Includes NumberFormatException
 										LOGGER.error(
 											"Couldn't parse the number of audio channels ({}) for file: \"{}\"",
@@ -814,13 +813,13 @@ public class DLNAMediaInfo implements Cloneable {
 									}
 								}
 							}
-							if (audio.getAudioProperties().getNumberOfChannels() < 1) {
+							if (audio.isNumberOfChannelsUnknown()) {
 								LOGGER.error(
 									"Invalid number of audio channels parsed ({}) for file \"{}\", defaulting to stereo",
-									audio.getAudioProperties().getNumberOfChannels(),
+									audio.getNumberOfChannelsRaw(),
 									af.getFile().getName()
 								);
-								audio.getAudioProperties().setNumberOfChannels(2); // set default value of channels to 2
+								audio.setNumberOfChannels(DLNAMediaAudio.NUMBEROFCHANNELS_DEFAULT); // set default number of channels
 							}
 
 							if (StringUtils.isNotBlank(ah.getEncodingType())) {
@@ -1156,12 +1155,12 @@ public class DLNAMediaInfo implements Cloneable {
 								if (spacepos > -1) {
 									String value = bitr.substring(0, spacepos);
 									String unit = bitr.substring(spacepos + 1);
-									bitrate = Integer.parseInt(value);
+									bitRate = Integer.parseInt(value);
 									if (unit.equals("kb/s")) {
-										bitrate = 1024 * bitrate;
+										bitRate = 1024 * bitRate;
 									}
 									if (unit.equals("mb/s")) {
-										bitrate = 1048576 * bitrate;
+										bitRate = 1048576 * bitRate;
 									}
 								}
 							}
@@ -1195,25 +1194,29 @@ public class DLNAMediaInfo implements Cloneable {
 							if (token.startsWith("Stream")) {
 								audio.setCodecA(token.substring(token.indexOf("Audio: ") + 7));
 							} else if (token.endsWith("Hz")) {
-								audio.setSampleFrequency(token.substring(0, token.indexOf("Hz")).trim());
+								try {
+									audio.setSampleFrequency(Integer.parseInt(token.substring(0, token.indexOf("Hz")).trim()));
+								} catch (NumberFormatException e) {
+									LOGGER.warn("Can't parse the sample rate from \"{}\"", token);
+								}
 							} else if (token.equals("mono")) {
-								audio.getAudioProperties().setNumberOfChannels(1);
+								audio.setNumberOfChannels(1);
 							} else if (token.equals("stereo")) {
-								audio.getAudioProperties().setNumberOfChannels(2);
+								audio.setNumberOfChannels(2);
 							} else if (token.equals("5:1") || token.equals("5.1") || token.equals("6 channels")) {
-								audio.getAudioProperties().setNumberOfChannels(6);
+								audio.setNumberOfChannels(6);
 							} else if (token.equals("5 channels")) {
-								audio.getAudioProperties().setNumberOfChannels(5);
+								audio.setNumberOfChannels(5);
 							} else if (token.equals("4 channels")) {
-								audio.getAudioProperties().setNumberOfChannels(4);
+								audio.setNumberOfChannels(4);
 							} else if (token.equals("2 channels")) {
-								audio.getAudioProperties().setNumberOfChannels(2);
+								audio.setNumberOfChannels(2);
 							} else if (token.equals("s32")) {
-								audio.setBitsperSample(32);
+								audio.setBitsPerSample(32);
 							} else if (token.equals("s24")) {
-								audio.setBitsperSample(24);
+								audio.setBitsPerSample(24);
 							} else if (token.equals("s16")) {
-								audio.setBitsperSample(16);
+								audio.setBitsPerSample(16);
 							}
 						}
 						int FFmpegMetaDataNr = FFmpegMetaData.nextIndex();
@@ -1647,7 +1650,7 @@ public class DLNAMediaInfo implements Cloneable {
 			}
 		}
 
-		if (getFirstAudioTrack() == null || !(type == Format.AUDIO && getFirstAudioTrack().getBitsperSample() == 24 && getFirstAudioTrack().getSampleRate() > 48000)) {
+		if (getFirstAudioTrack() == null || !(type == Format.AUDIO && getFirstAudioTrack().getBitsPerSample() == 24 && getFirstAudioTrack().getSampleFrequency() > 48000)) {
 			secondaryFormatValid = false;
 		}
 
@@ -1793,7 +1796,10 @@ public class DLNAMediaInfo implements Cloneable {
 		}
 		result.append("Size: ").append(getSize());
 		if (isVideo()) {
-			result.append(", Video Bitrate: ").append(getBitrate());
+			result.append(", Video Bitrate: ").append(getBitRate());
+			if (bitRateMode != null) {
+				result.append(", Video Bitrate Mode: ").append(bitRateMode);
+			}
 			result.append(", Video Tracks: ").append(getVideoTrackCount());
 			result.append(", Video Codec: ").append(getCodecV());
 			result.append(", Duration: ").append(getDurationString());
@@ -1861,7 +1867,10 @@ public class DLNAMediaInfo implements Cloneable {
 			}
 
 		} else if (getAudioTrackCount() > 0) {
-			result.append(", Bitrate: ").append(getBitrate());
+			result.append(", Bitrate: ").append(getBitRate());
+			if (bitRateMode != null) {
+				result.append(", Bitrate Mode: ").append(bitRateMode);
+			}
 			result.append(", Duration: ").append(getDurationString());
 			appendAudioTracks(result);
 		}
@@ -2000,18 +2009,18 @@ public class DLNAMediaInfo implements Cloneable {
 		return null;
 	}
 
-	public int getRealVideoBitrate() {
-		if (bitrate > 0) {
-			return (bitrate / 8);
+	public int getRealVideoBitRate() {
+		if (bitRate > 0) {
+			return (bitRate / 8);
 		}
 
-		int realBitrate = 10000000;
+		int realBitRate = 10000000;
 
 		if (getDurationInSeconds() > 0) {
-			realBitrate = (int) (size / getDurationInSeconds());
+			realBitRate = (int) (size / getDurationInSeconds());
 		}
 
-		return realBitrate;
+		return realBitRate;
 	}
 
 	public boolean isHDVideo() {
@@ -2129,19 +2138,38 @@ public class DLNAMediaInfo implements Cloneable {
 	}
 
 	/**
+	 * Returns the bitrate for this media.
+	 *
 	 * @return The bitrate.
 	 * @since 1.50.0
 	 */
-	public int getBitrate() {
-		return bitrate;
+	public int getBitRate() {
+		return bitRate;
 	}
 
 	/**
-	 * @param bitrate the bitrate to set.
+	 * @param bitRate the bitrate to set.
 	 * @since 1.50.0
 	 */
-	public void setBitrate(int bitrate) {
-		this.bitrate = bitrate;
+	public void setBitRate(int bitRate) {
+		this.bitRate = bitRate;
+	}
+
+	/**
+	 * @return the bitrate mode.
+	 */
+	@Nullable
+	public RateMode getBitRateMode() {
+		return bitRateMode;
+	}
+
+	/**
+	 * Sets the bitrate mode.
+	 *
+	 * @param bitRateMode the bitrate mode to set.
+	 */
+	public void setBitRateMode(@Nullable RateMode bitRateMode) {
+		this.bitRateMode = bitRateMode;
 	}
 
 	/**
@@ -3404,4 +3432,38 @@ public class DLNAMediaInfo implements Cloneable {
 			}
 		}
 	}
+
+	/**
+	 * This {@code enum} represents constant or variable rate modes, for example
+	 * for bitrate of framerate.
+	 */
+	public static enum RateMode {
+		CONSTANT,
+		VARIABLE;
+
+		@Nullable
+		public static RateMode typeOf(@Nullable String value) {
+			if (isBlank(value)) {
+				return null;
+			}
+
+			switch (value.trim().toLowerCase(Locale.ROOT)) {
+				case "c":
+				case "cbr":
+				case "cfr":
+				case "const":
+				case "constant":
+					return CONSTANT;
+				case "v":
+				case "var":
+				case "vbr":
+				case "vfr":
+				case "variable":
+					return VARIABLE;
+				default:
+					return null;
+			}
+		}
+	}
+
 }
