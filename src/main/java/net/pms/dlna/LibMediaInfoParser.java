@@ -11,9 +11,9 @@ import java.util.regex.Pattern;
 import javax.annotation.Nullable;
 import net.pms.configuration.FormatConfiguration;
 import net.pms.configuration.RendererConfiguration;
+import net.pms.dlna.DLNAMediaInfo.RateMode;
 import net.pms.dlna.MediaInfo.StreamType;
 import net.pms.formats.Format;
-import net.pms.formats.v2.AudioProperties;
 import net.pms.formats.v2.SubtitleType;
 import net.pms.image.ImageFormat;
 import net.pms.image.ImagesUtil;
@@ -34,6 +34,9 @@ public class LibMediaInfoParser {
 
 	// Pattern to parse the year from a string
 	private static final Pattern yearPattern = Pattern.compile(YEAR_REGEX);
+
+	private static final Pattern intPattern = Pattern.compile("([\\+-]?\\d+)([eE][\\+-]?\\d+)?");
+	private static final Pattern lastIntPattern = Pattern.compile("([\\+-]?\\d+)([eE][\\+-]?\\d+)?\\s*$");
 
 	private static MediaInfo MI;
 
@@ -77,7 +80,8 @@ public class LibMediaInfoParser {
 			getFormat(StreamType.General, media, currentAudioTrack, MI.Get(StreamType.General, 0, "Format"), file);
 			getFormat(StreamType.General, media, currentAudioTrack, MI.Get(StreamType.General, 0, "CodecID").trim(), file);
 			media.setDuration(parseDuration(MI.Get(StreamType.General, 0, "Duration")));
-			media.setBitrate(getBitrate(MI.Get(StreamType.General, 0, "OverallBitRate")));
+			media.setBitRate(parseBitRate(MI.Get(StreamType.General, 0, "OverallBitRate"), false));
+			media.setBitRateMode(parseBitRateMode(MI.Get(StreamType.General, 0, "OverallBitRate_Mode")));
 			media.setStereoscopy(MI.Get(StreamType.General, 0, "StereoscopicLayout"));
 			value = MI.Get(StreamType.General, 0, "Cover_Data");
 			if (isNotBlank(value)) {
@@ -200,11 +204,15 @@ public class LibMediaInfoParser {
 						currentAudioTrack.setCodecA(FormatConfiguration.WMA10);
 					}
 					currentAudioTrack.setLang(getLang(MI.Get(StreamType.Audio, i, "Language/String")));
-					currentAudioTrack.setAudioTrackTitleFromMetadata((MI.Get(StreamType.Audio, i, "Title")).trim());
-					currentAudioTrack.getAudioProperties().setNumberOfChannels(MI.Get(StreamType.Audio, i, "Channel(s)_Original"));
-					currentAudioTrack.setDelay(AudioProperties.getAudioDelayFromLibMediaInfo(MI.Get(StreamType.Audio, i, "Video_Delay")));
-					currentAudioTrack.setSampleFrequency(getSampleFrequency(MI.Get(StreamType.Audio, i, "SamplingRate")));
-					currentAudioTrack.setBitRate(getBitrate(MI.Get(StreamType.Audio, i, "BitRate")));
+					currentAudioTrack.setAudioTrackTitleFromMetadata(MI.Get(StreamType.Audio, i, "Title").trim());
+					currentAudioTrack.setNumberOfChannels(parseNumberOfChannels(MI.Get(StreamType.Audio, i, "Channel(s)_Original")));
+					if (currentAudioTrack.isNumberOfChannelsUnknown()) {
+						currentAudioTrack.setNumberOfChannels(parseNumberOfChannels(MI.Get(StreamType.Audio, i, "Channel(s)")));
+					}
+					currentAudioTrack.setDelay(parseDelay(MI.Get(StreamType.Audio, i, "Video_Delay")));
+					currentAudioTrack.setSampleFrequency(parseSamplingRate(MI.Get(StreamType.Audio, i, "SamplingRate")));
+					currentAudioTrack.setBitRate(parseBitRate(MI.Get(StreamType.Audio, i, "BitRate"), false));
+					currentAudioTrack.setBitRateMode(parseBitRateMode(MI.Get(StreamType.Audio, i, "BitRate_Mode")));
 					currentAudioTrack.setSongname(MI.Get(StreamType.General, 0, "Track"));
 
 					if (
@@ -250,12 +258,8 @@ public class LibMediaInfoParser {
 					}
 
 					value = MI.Get(StreamType.Audio, i, "BitDepth");
-					if (!value.isEmpty()) {
-						try {
-							currentAudioTrack.setBitsperSample(Integer.parseInt(value));
-						} catch (NumberFormatException nfe) {
-							LOGGER.debug("Could not parse bits per sample \"" + value + "\"");
-						}
+					if (isNotBlank(value)) {
+						currentAudioTrack.setBitsPerSample(parseBitsperSample(value));
 					}
 
 					addAudio(currentAudioTrack, media);
@@ -932,36 +936,6 @@ public class LibMediaInfoParser {
 		return null;
 	}
 
-	public static int getVideoBitrate(String value) {
-		if (isBlank(value)) {
-			return 0;
-		}
-
-		try {
-			return Integer.parseInt(value);
-		} catch (NumberFormatException e) {
-			LOGGER.trace("Could not parse video bitrate \"{}\": ", value, e.getMessage());
-			return 0;
-		}
-	}
-
-	public static int getBitrate(String value) {
-		if (value.isEmpty()) {
-			return 0;
-		}
-
-		if (value.contains("/")) {
-			value = value.substring(0, value.indexOf('/')).trim();
-		}
-
-		try {
-			return Integer.parseInt(value);
-		} catch (NumberFormatException e) {
-			LOGGER.trace("Could not parse bitrate \"{}\": ", value, e.getMessage());
-			return 0;
-		}
-	}
-
 	public static int getSpecificID(String value) {
 		// If ID is given as 'streamID-substreamID' use the second (which is hopefully unique).
 		// For example in vob audio ID can be '189 (0xBD)-32 (0x80)' and text ID '189 (0xBD)-128 (0x20)'
@@ -976,21 +950,145 @@ public class LibMediaInfoParser {
 		return id;
 	}
 
-	public static String getSampleFrequency(String value) {
-		/*
-		 * Some tracks show several values, e.g. "48000 / 48000 / 24000" for
-		 * HE-AAC. We store the first value only.
-		 */
-		if (value.indexOf('/') > -1) {
-			value = value.substring(0, value.indexOf('/'));
+	protected static int parseNumberOfChannels(String value) {
+		if (isBlank(value)) {
+			return -1;
 		}
 
-		if (value.contains("khz")) {
-			value = value.substring(0, value.indexOf("khz"));
+		// Examples of libmediainfo  (mediainfo --Full --Language=raw file):
+		// Channel(s) : 2
+		// Channel(s) : 6
+		// Channel(s) : 2 channels / 1 channel / 1 channel
+		// The first value is used
+
+		Matcher intMatcher = intPattern.matcher(value);
+		if (intMatcher.find()) {
+			String matchResult = intMatcher.group();
+			try {
+				return Integer.parseInt(matchResult);
+			} catch (NumberFormatException ex) {
+				LOGGER.warn("NumberFormatException while parsing substring \"{}\" from value \"{}\"", matchResult, value);
+			}
 		}
 
-		value = value.trim();
-		return value;
+		LOGGER.warn("Can't parse the number of channels from \"{}\", returning -1", value);
+		return -1;
+	}
+
+	protected static int parseBitsperSample(String value) {
+		if (isBlank(value)) {
+			return -1;
+		}
+
+		// examples of libmediainfo  (mediainfo --Full --Language=raw file):
+		// Bit depth : 16
+		// Bit depth : 24
+		// Bit depth : / 24 / 24
+		// The last value is used
+
+		Matcher intMatcher = lastIntPattern.matcher(value);
+		if (intMatcher.find()) {
+			String matchResult = intMatcher.group();
+			try {
+				return Integer.parseInt(matchResult);
+			} catch (NumberFormatException ex) {
+				LOGGER.warn("NumberFormatException while parsing substring \"{}\" from value \"{}\"", matchResult, value);
+			}
+		}
+
+		LOGGER.warn("Can't parse bits per sample from \"{}\", returning -1", value);
+		return -1;
+	}
+
+	protected static int parseSamplingRate(String value) {
+		if (isBlank(value)) {
+			return -1;
+		}
+
+		// Examples of libmediainfo output (mediainfo --Full --Language=raw file):
+		// SamplingRate : 48000
+		// SamplingRate : 44100 / 22050
+		// SamplingRate : 48000 / 48000 / 24000
+		// The first value is used
+
+		Matcher intMatcher = intPattern.matcher(value);
+		if (intMatcher.find()) {
+			String matchResult = intMatcher.group();
+			try {
+				return Integer.parseInt(matchResult);
+			} catch (NumberFormatException ex) {
+				LOGGER.warn("NumberFormatException while parsing substring \"{}\" from value \"{}\"", matchResult, value);
+			}
+		}
+
+		LOGGER.warn("Can't parse the sample rate from \"{}\", returning -1", value);
+		return -1;
+	}
+
+	protected static int parseDelay(String value) {
+		if (isBlank(value)) {
+			return Integer.MIN_VALUE;
+		}
+
+		// Examples of libmediainfo output (mediainfo --Full --Language=raw file):
+		// Video_Delay : -408
+
+		Matcher intMatcher = intPattern.matcher(value);
+		if (intMatcher.find()) {
+			String matchResult = intMatcher.group();
+			try {
+				return Integer.parseInt(matchResult);
+			} catch (NumberFormatException ex) {
+				LOGGER.warn("NumberFormatException while parsing substring \"{}\" from value \"{}\"", matchResult, value);
+			}
+		}
+		LOGGER.warn("Unable to parse delay from \"{}\"", value);
+		return Integer.MIN_VALUE;
+	}
+
+	protected static int parseBitRate(String value, boolean video) {
+		if (isBlank(value)) {
+			return -1;
+		}
+
+		// examples of libmediainfo output (mediainfo --Full --Language=raw file):
+		// BitRate : 1509000
+		// BitRate : Unknown / Unknown / 1509000
+
+		Matcher intMatcher = intPattern.matcher(value);
+		if (intMatcher.find()) {
+			String matchResult = intMatcher.group();
+			try {
+				return Integer.parseInt(matchResult);
+			} catch (NumberFormatException ex) {
+				LOGGER.warn("NumberFormatException during parsing substring \"{}\" from value \"{}\"", matchResult, value);
+			}
+		}
+
+		LOGGER.warn("Can't parse {}bitrate \"{}\". Returning -1", video ? "video " : "", value);
+		return -1;
+	}
+
+	@Nullable
+	protected static RateMode parseBitRateMode(String value) {
+		if (isBlank(value)) {
+			return null;
+		}
+
+		// Examples of libmediainfo output (mediainfo --Full --Language=raw file):
+		// Bit rate mode : Variable / Variable / Constant
+		// Bit rate mode : Variable
+
+		String[] values = value.split("/");
+		for (String singleValue : values) {
+			RateMode bitRateMode = RateMode.typeOf(singleValue);
+			if (bitRateMode != null) {
+				return bitRateMode;
+			}
+		}
+
+		LOGGER.warn("Unable to parse bitrate mode from \"{}\", returning null", value);
+		return null;
 	}
 
 	public static String getFPSValue(String value) {
@@ -1080,6 +1178,8 @@ public class LibMediaInfoParser {
 		if (isBlank(value)) {
 			return null;
 		}
+		String[] parts = value.split("\\s*/\\s*");
+		value = parts[parts.length - 1];
 		int separator = value.indexOf(".");
 		if (separator > 0) {
 			value = value.substring(0, separator);
@@ -1469,7 +1569,6 @@ public class LibMediaInfoParser {
 			first &= !appendString("Lang", MI.Get(StreamType.Audio, idx, "Language"), first, true, true);
 			first &= !appendString("Channel(s)", MI.Get(StreamType.Audio, idx, "Channel(s)_Original"), first, false, true);
 			first &= !appendString("Samplerate", MI.Get(StreamType.Audio, idx, "SamplingRate"), first, false, true);
-			first &= !appendString("Bitrate", MI.Get(StreamType.Audio, idx, "BitRate"), first, false, true);
 			first &= !appendString("Track", MI.Get(StreamType.General, idx, "Track/Position"), first, false, true);
 			first &= !appendString("Bit Depth", MI.Get(StreamType.Audio, idx, "BitDepth"), first, false, true);
 			first &= !appendString("Delay", MI.Get(StreamType.Audio, idx, "Delay"), first, false, true);
@@ -1505,7 +1604,6 @@ public class LibMediaInfoParser {
 			appendStringNextColumn(streamColumns, "Lang", MI.Get(StreamType.Audio, idx, "Language"), true, true);
 			appendStringNextColumn(streamColumns, "Channel(s)", MI.Get(StreamType.Audio, idx, "Channel(s)"), false, true);
 			appendStringNextColumn(streamColumns, "Samplerate", MI.Get(StreamType.Audio, idx, "SamplingRate"), false, true);
-			appendStringNextColumn(streamColumns, "Bitrate", MI.Get(StreamType.Audio, idx, "BitRate"), false, true);
 			appendStringNextColumn(streamColumns, "Track", MI.Get(StreamType.General, idx, "Track/Position"), false, true);
 			appendStringNextColumn(streamColumns, "Bit Depth", MI.Get(StreamType.Audio, idx, "BitDepth"), false, true);
 			appendStringNextColumn(streamColumns, "Delay", MI.Get(StreamType.Audio, idx, "Delay"), false, true);
