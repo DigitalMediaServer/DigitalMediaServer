@@ -173,7 +173,7 @@ public class FFmpegAudio extends FFMpegVideo {
 			cmdList.add("" + params.timeseek);
 		}
 
-		// Decoder threads
+		// Decoder threads - (Sami32) Why don't use "auto" instead and leave FFmpeg deal with it ?
 		if (nThreads > 0) {
 			cmdList.add("-threads");
 			cmdList.add("" + nThreads);
@@ -185,7 +185,7 @@ public class FFmpegAudio extends FFMpegVideo {
 		// Make sure FFmpeg doesn't try to encode embedded images into the stream
 		cmdList.add("-vn");
 
-		// Encoder threads
+		// Encoder threads - (Sami32) Why don't use "auto" instead ?
 		if (nThreads > 0) {
 			cmdList.add("-threads");
 			cmdList.add("" + nThreads);
@@ -204,6 +204,9 @@ public class FFmpegAudio extends FFMpegVideo {
 		} else if (params.mediaRenderer.isTranscodeToWAV()) {
 			cmdList.add("-f");
 			cmdList.add("wav");
+		} else if (params.mediaRenderer.isAudio24BitSupported()) {
+			cmdList.add("-f");
+			cmdList.add("s24be");
 		} else { // default: LPCM
 			cmdList.add("-f");
 			cmdList.add("s16be");
