@@ -130,11 +130,10 @@ public class DLNAMediaInfo implements Cloneable {
 	@Nullable
 	private Double durationSec;
 
-	/**
-	 * @deprecated Use standard getter and setter to access this variable.
-	 */
-	@Deprecated
-	public int bitrate;
+	private int bitRate;
+
+	@Nullable
+	private RateMode bitRateMode;
 
 	/**
 	 * @deprecated Use standard getter and setter to access this variable.
@@ -789,12 +788,12 @@ public class DLNAMediaInfo implements Cloneable {
 							int rate = ah.getSampleRateAsNumber();
 
 							if (ah.getEncodingType() != null && ah.getEncodingType().toLowerCase().contains("flac 24")) {
-								audio.setBitsperSample(24);
+								audio.setBitsPerSample(24);
 							}
 
 							audio.setSampleFrequency(rate);
 							durationSec = Integer.valueOf(length).doubleValue();
-							bitrate = (int) ah.getBitRateAsNumber();
+							bitRate = (int) ah.getBitRateAsNumber();
 
 							String channels = ah.getChannels().trim().toLowerCase(Locale.ROOT);
 							if (StringUtils.isNotBlank(channels)) {
@@ -1156,12 +1155,12 @@ public class DLNAMediaInfo implements Cloneable {
 								if (spacepos > -1) {
 									String value = bitr.substring(0, spacepos);
 									String unit = bitr.substring(spacepos + 1);
-									bitrate = Integer.parseInt(value);
+									bitRate = Integer.parseInt(value);
 									if (unit.equals("kb/s")) {
-										bitrate = 1024 * bitrate;
+										bitRate = 1024 * bitRate;
 									}
 									if (unit.equals("mb/s")) {
-										bitrate = 1048576 * bitrate;
+										bitRate = 1048576 * bitRate;
 									}
 								}
 							}
@@ -1213,11 +1212,11 @@ public class DLNAMediaInfo implements Cloneable {
 							} else if (token.equals("2 channels")) {
 								audio.setNumberOfChannels(2);
 							} else if (token.equals("s32")) {
-								audio.setBitsperSample(32);
+								audio.setBitsPerSample(32);
 							} else if (token.equals("s24")) {
-								audio.setBitsperSample(24);
+								audio.setBitsPerSample(24);
 							} else if (token.equals("s16")) {
-								audio.setBitsperSample(16);
+								audio.setBitsPerSample(16);
 							}
 						}
 						int FFmpegMetaDataNr = FFmpegMetaData.nextIndex();
@@ -1651,7 +1650,7 @@ public class DLNAMediaInfo implements Cloneable {
 			}
 		}
 
-		if (getFirstAudioTrack() == null || !(type == Format.AUDIO && getFirstAudioTrack().getBitsperSample() == 24 && getFirstAudioTrack().getSampleFrequency() > 48000)) {
+		if (getFirstAudioTrack() == null || !(type == Format.AUDIO && getFirstAudioTrack().getBitsPerSample() == 24 && getFirstAudioTrack().getSampleFrequency() > 48000)) {
 			secondaryFormatValid = false;
 		}
 
@@ -1797,7 +1796,10 @@ public class DLNAMediaInfo implements Cloneable {
 		}
 		result.append("Size: ").append(getSize());
 		if (isVideo()) {
-			result.append(", Video Bitrate: ").append(getBitrate());
+			result.append(", Video Bitrate: ").append(getBitRate());
+			if (bitRateMode != null) {
+				result.append(", Video Bitrate Mode: ").append(bitRateMode);
+			}
 			result.append(", Video Tracks: ").append(getVideoTrackCount());
 			result.append(", Video Codec: ").append(getCodecV());
 			result.append(", Duration: ").append(getDurationString());
@@ -1865,7 +1867,10 @@ public class DLNAMediaInfo implements Cloneable {
 			}
 
 		} else if (getAudioTrackCount() > 0) {
-			result.append(", Bitrate: ").append(getBitrate());
+			result.append(", Bitrate: ").append(getBitRate());
+			if (bitRateMode != null) {
+				result.append(", Bitrate Mode: ").append(bitRateMode);
+			}
 			result.append(", Duration: ").append(getDurationString());
 			appendAudioTracks(result);
 		}
@@ -2004,18 +2009,18 @@ public class DLNAMediaInfo implements Cloneable {
 		return null;
 	}
 
-	public int getRealVideoBitrate() {
-		if (bitrate > 0) {
-			return (bitrate / 8);
+	public int getRealVideoBitRate() {
+		if (bitRate > 0) {
+			return (bitRate / 8);
 		}
 
-		int realBitrate = 10000000;
+		int realBitRate = 10000000;
 
 		if (getDurationInSeconds() > 0) {
-			realBitrate = (int) (size / getDurationInSeconds());
+			realBitRate = (int) (size / getDurationInSeconds());
 		}
 
-		return realBitrate;
+		return realBitRate;
 	}
 
 	public boolean isHDVideo() {
@@ -2133,19 +2138,38 @@ public class DLNAMediaInfo implements Cloneable {
 	}
 
 	/**
+	 * Returns the bitrate for this media.
+	 *
 	 * @return The bitrate.
 	 * @since 1.50.0
 	 */
-	public int getBitrate() {
-		return bitrate;
+	public int getBitRate() {
+		return bitRate;
 	}
 
 	/**
-	 * @param bitrate the bitrate to set.
+	 * @param bitRate the bitrate to set.
 	 * @since 1.50.0
 	 */
-	public void setBitrate(int bitrate) {
-		this.bitrate = bitrate;
+	public void setBitRate(int bitRate) {
+		this.bitRate = bitRate;
+	}
+
+	/**
+	 * @return the bitrate mode.
+	 */
+	@Nullable
+	public RateMode getBitRateModeRaw() {
+		return bitRateMode;
+	}
+
+	/**
+	 * Sets the bitrate mode.
+	 *
+	 * @param bitRateMode the bitrate mode to set.
+	 */
+	public void setBitRateMode(@Nullable RateMode bitRateMode) {
+		this.bitRateMode = bitRateMode;
 	}
 
 	/**

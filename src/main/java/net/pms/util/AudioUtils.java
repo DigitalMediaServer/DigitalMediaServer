@@ -202,7 +202,7 @@ public final class AudioUtils {
 					audio.setArtist(new String(artist, StandardCharsets.US_ASCII));
 				}
 				audio.setBitRate(bytesPerMinute * 8 / 60);
-				media.setBitrate(bytesPerMinute * 8 / 60);
+				media.setBitRate(bytesPerMinute * 8 / 60);
 			} else if (version == 4 || version == 5) {
 				buffer = ByteBuffer.allocate(14);
 				channel.read(buffer);
@@ -279,8 +279,8 @@ public final class AudioUtils {
 				}
 
 				audio.setBitRate((int) (bytesPerMinute * 8 / 60));
-				media.setBitrate((int) (bytesPerMinute * 8 / 60));
-				audio.setBitsperSample(sampleSize);
+				media.setBitRate((int) (bytesPerMinute * 8 / 60));
+				audio.setBitsPerSample(sampleSize);
 				audio.setNumberOfChannels(nrChannels);
 				audio.setSampleFrequency(sampleRate);
 			} else {

@@ -947,9 +947,9 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 				} else if (!renderer.isResolutionCompatibleWithRenderer(media.getWidth(), media.getHeight())) {
 					isIncompatible = true;
 					LOGGER.trace(prependTraceReason + "the resolution is incompatible with the renderer.", getName());
-				} else if (media.getBitrate() > maxBandwidth) {
+				} else if (media.getBitRate() > maxBandwidth) {
 					isIncompatible = true;
-					LOGGER.trace(prependTraceReason + "the bitrate ({} b/s) is too high ({} b/s).", getName(), media.getBitrate(), maxBandwidth);
+					LOGGER.trace(prependTraceReason + "the bitrate ({} b/s) is too high ({} b/s).", getName(), media.getBitRate(), maxBandwidth);
 				} else if (!renderer.isVideoBitDepthSupported(media.getVideoBitDepth())) {
 					isIncompatible = true;
 					LOGGER.trace(prependTraceReason + "the video bit depth ({}) is not supported.", getName(), media.getVideoBitDepth());
@@ -2525,7 +2525,7 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 
 					}
 
-					addAttribute(sb, "bitrate", media.getRealVideoBitrate());
+					addAttribute(sb, "bitrate", media.getRealVideoBitRate());
 					if (firstAudioTrack != null) {
 						if (!firstAudioTrack.isNumberOfChannelsUnknown()) {
 							addAttribute(sb, "nrAudioChannels", firstAudioTrack.getNumberOfChannels());
@@ -2551,8 +2551,8 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 					}
 				} else if (getFormat() != null && getFormat().isAudio()) {
 					if (media != null && media.isMediaparsed()) {
-						if (media.getBitrate() > 0) {
-							addAttribute(sb, "bitrate", media.getBitrate());
+						if (media.getBitRate() > 0) {
+							addAttribute(sb, "bitrate", media.getBitRate());
 						}
 						if (media.getDuration() != null && media.getDuration().doubleValue() != 0.0) {
 							wireshark.append(" duration=").append(StringUtil.formatDLNADuration(media.getDuration()));
@@ -3302,10 +3302,10 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 			}
 		}
 
-		if (low > 0 && media.getBitrate() > 0) {
-			lastStartPosition = (low * 8) / media.getBitrate();
+		if (low > 0 && media.getBitRate() > 0) {
+			lastStartPosition = (low * 8) / media.getBitRate();
 			LOGGER.trace("Estimating seek position from byte range:");
-			LOGGER.trace("   media.getBitrate: " + media.getBitrate());
+			LOGGER.trace("   media.getBitrate: " + media.getBitRate());
 			LOGGER.trace("   low: " + low);
 			LOGGER.trace("   lastStartPosition: " + lastStartPosition);
 		} else {

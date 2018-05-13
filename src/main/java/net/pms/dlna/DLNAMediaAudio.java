@@ -46,15 +46,15 @@ public class DLNAMediaAudio extends DLNAMediaLang implements Cloneable {
 
 	private AudioProperties audioProperties = new AudioProperties();
 
-	private int bitsperSample = -1;
+	private int bitsPerSample = -1;
 
 	private int bitRate = -1;
+
+	private RateMode bitRateMode;
 
 	private int sampleFrequency = -1;
 
 	private int numberOfChannels = -1;
-
-	private RateMode bitRateMode;
 
 	/**
 	 * @deprecated Use standard getter and setter to access this variable.
@@ -544,7 +544,7 @@ public class DLNAMediaAudio extends DLNAMediaLang implements Cloneable {
 	@Override
 	public String toString() {
 		StringBuilder result = new StringBuilder();
-		if (getLang() != null && !getLang().equals("und")) {
+		if (isNotBlank(getLang()) && !getLang().equals("und")) {
 			result.append("Id: ").append(getId());
 			result.append(", Language Code: ").append(getLang());
 		}
@@ -568,13 +568,13 @@ public class DLNAMediaAudio extends DLNAMediaLang implements Cloneable {
 			result.append(", Bitrate Mode: ").append(getBitRateMode());
 		}
 		if (!isBitsPerSampleUnknown()) {
-			result.append(", Bits per Sample: ").append(getBitsperSample());
+			result.append(", Bits per Sample: ").append(getBitsPerSample());
 		}
 		if (!isNumberOfChannelsUnknown()) {
 			if (getNumberOfChannels() == 1) {
-				result.append("Channel: ").append(getNumberOfChannels());
+				result.append(", Channel: ").append(getNumberOfChannels());
 			} else {
-				result.append("Channels: ").append(getNumberOfChannels());
+				result.append(", Channels: ").append(getNumberOfChannels());
 			}
 		}
 		if (!isSampleFrequencyUnknown()) {
@@ -621,8 +621,8 @@ public class DLNAMediaAudio extends DLNAMediaLang implements Cloneable {
 	 * @return The number of bits per sample.
 	 * @since 1.50
 	 */
-	public int getBitsperSample() {
-		return bitsperSample > 0 ? bitsperSample : BITSPERSAMPLE_DEFAULT;
+	public int getBitsPerSample() {
+		return bitsPerSample > 0 ? bitsPerSample : BITSPERSAMPLE_DEFAULT;
 	}
 
 	/**
@@ -631,8 +631,8 @@ public class DLNAMediaAudio extends DLNAMediaLang implements Cloneable {
 	 *
 	 * @return The raw number of bits per sample.
 	 */
-	public int getBitsperSampleRaw() {
-		return bitsperSample;
+	public int getBitsPerSampleRaw() {
+		return bitsPerSample;
 	}
 
 	/**
@@ -640,17 +640,17 @@ public class DLNAMediaAudio extends DLNAMediaLang implements Cloneable {
 	 *         used, {@code false} otherwise.
 	 */
 	public boolean isBitsPerSampleUnknown() {
-		return bitsperSample <= 0;
+		return bitsPerSample <= 0;
 	}
 
 	/**
 	 * Sets the number of bits per sample for the audio.
 	 *
-	 * @param bitsperSample The number of bits per sample to set.
+	 * @param bitsPerSample The number of bits per sample to set.
 	 * @since 1.50
 	 */
-	public void setBitsperSample(int bitsperSample) {
-		this.bitsperSample = bitsperSample;
+	public void setBitsPerSample(int bitsPerSample) {
+		this.bitsPerSample = bitsPerSample;
 	}
 
 	/**
@@ -960,7 +960,7 @@ public class DLNAMediaAudio extends DLNAMediaLang implements Cloneable {
 	 *         used, {@code false} otherwise.
 	 */
 	public boolean isDelayUnknown() {
-		return bitRate == Integer.MIN_VALUE;
+		return delay == Integer.MIN_VALUE;
 	}
 
 	/**

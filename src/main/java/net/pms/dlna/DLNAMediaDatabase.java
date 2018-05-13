@@ -427,7 +427,7 @@ public class DLNAMediaDatabase implements Runnable {
 					DLNAMediaInfo media = new DLNAMediaInfo();
 					int id = rs.getInt("ID");
 					media.setDuration(toDouble(rs, "DURATION"));
-					media.setBitrate(rs.getInt("BITRATE"));
+					media.setBitRate(rs.getInt("BITRATE"));
 					media.setWidth(rs.getInt("WIDTH"));
 					media.setHeight(rs.getInt("HEIGHT"));
 					media.setSize(rs.getLong("SIZE"));
@@ -465,7 +465,7 @@ public class DLNAMediaDatabase implements Runnable {
 							audio.setNumberOfChannels(elements.getInt("NRAUDIOCHANNELS"));
 							audio.setSampleFrequency(elements.getInt("SAMPLEFREQ"));
 							audio.setCodecA(elements.getString("CODECA"));
-							audio.setBitsperSample(elements.getInt("BITSPERSAMPLE"));
+							audio.setBitsPerSample(elements.getInt("BITSPERSAMPLE"));
 							audio.setAlbum(elements.getString("ALBUM"));
 							audio.setArtist(elements.getString("ARTIST"));
 							audio.setSongname(elements.getString("SONGNAME"));
@@ -599,7 +599,7 @@ public class DLNAMediaDatabase implements Runnable {
 						rs.updateInt("NRAUDIOCHANNELS", audioTrack.getNumberOfChannelsRaw());
 						rs.updateInt("SAMPLEFREQ", audioTrack.getSampleFrequencyRaw());
 						rs.updateString("CODECA", left(audioTrack.getCodecA(), SIZE_CODECA));
-						rs.updateInt("BITSPERSAMPLE", audioTrack.getBitsperSampleRaw());
+						rs.updateInt("BITSPERSAMPLE", audioTrack.getBitsPerSampleRaw());
 						rs.updateString("ALBUM", left(trimToEmpty(audioTrack.getAlbum()), SIZE_ALBUM));
 						rs.updateString("ARTIST", left(trimToEmpty(audioTrack.getArtist()), SIZE_ARTIST));
 						rs.updateString("SONGNAME", left(trimToEmpty(audioTrack.getSongname()), SIZE_SONGNAME));
@@ -620,7 +620,7 @@ public class DLNAMediaDatabase implements Runnable {
 						insertStatement.setInt(5, audioTrack.getNumberOfChannelsRaw());
 						insertStatement.setInt(6, audioTrack.getSampleFrequencyRaw());
 						insertStatement.setString(7, left(audioTrack.getCodecA(), SIZE_CODECA));
-						insertStatement.setInt(8, audioTrack.getBitsperSampleRaw());
+						insertStatement.setInt(8, audioTrack.getBitsPerSampleRaw());
 						insertStatement.setString(9, left(trimToEmpty(audioTrack.getAlbum()), SIZE_ALBUM));
 						insertStatement.setString(10, left(trimToEmpty(audioTrack.getArtist()), SIZE_ARTIST));
 						insertStatement.setString(11, left(trimToEmpty(audioTrack.getSongname()), SIZE_SONGNAME));
@@ -699,10 +699,10 @@ public class DLNAMediaDatabase implements Runnable {
 							}
 
 							if (type != Format.IMAGE) {
-								if (media.getBitrate() == 0) {
+								if (media.getBitRate() == 0) {
 									LOGGER.debug("Could not parse the bitrate for: " + name);
 								}
-								rs.updateInt("BITRATE", media.getBitrate());
+								rs.updateInt("BITRATE", media.getBitRate());
 							} else {
 								rs.updateInt("BITRATE", 0);
 							}
@@ -758,7 +758,7 @@ public class DLNAMediaDatabase implements Runnable {
 
 						int databaseBitrate = 0;
 						if (type != Format.IMAGE) {
-							databaseBitrate = media.getBitrate();
+							databaseBitrate = media.getBitRate();
 							if (databaseBitrate == 0) {
 								LOGGER.debug("Could not parse the bitrate for: " + name);
 							}
