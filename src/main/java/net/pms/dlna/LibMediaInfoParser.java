@@ -1450,8 +1450,8 @@ public class LibMediaInfoParser {
 			sb.append("\n    - Video - ");
 			boolean first = true;
 			first &= !appendString("Format", MI.Get(StreamType.Video, idx, "Format"), first, true, true);
-			first &= !appendString("FormatV", MI.Get(StreamType.Video, idx, "Format_Version"), first, true, true);
-			first &= !appendString("FormatP", MI.Get(StreamType.Video, idx, "Format_Profile"), first, true, true);
+			first &= !appendString("Version", MI.Get(StreamType.Video, idx, "Format_Version"), first, true, true);
+			first &= !appendString("Profile", MI.Get(StreamType.Video, idx, "Format_Profile"), first, true, true);
 			first &= !appendString("ID", MI.Get(StreamType.Video, idx, "ID"), first, false, true);
 			first &= !appendString("CodecID", MI.Get(StreamType.Video, idx, "CodecID"), first, true, true);
 			Double durationSec = parseDuration(MI.Get(StreamType.Video, 0, "Duration"));
@@ -1501,8 +1501,8 @@ public class LibMediaInfoParser {
 			streamColumns.reset();
 			sb.append("\n");
 			appendStringNextColumn(streamColumns, "Format", MI.Get(StreamType.Video, idx, "Format"), true, true);
-			appendStringNextColumn(streamColumns, "FormatV", MI.Get(StreamType.Video, idx, "Format_Version"), true, true);
-			appendStringNextColumn(streamColumns, "FormatP", MI.Get(StreamType.Video, idx, "Format_Profile"), true, true);
+			appendStringNextColumn(streamColumns, "Version", MI.Get(StreamType.Video, idx, "Format_Version"), true, true);
+			appendStringNextColumn(streamColumns, "Profile", MI.Get(StreamType.Video, idx, "Format_Profile"), true, true);
 			appendStringNextColumn(streamColumns, "CodecID", MI.Get(StreamType.Video, idx, "CodecID"), true, true);
 			Double durationSec = parseDuration(MI.Get(StreamType.Video, 0, "Duration"));
 			if (durationSec != null) {
@@ -1550,8 +1550,8 @@ public class LibMediaInfoParser {
 			boolean first = true;
 			first &= !appendString("Title", MI.Get(StreamType.Audio, idx, "Title"), first, true, true);
 			first &= !appendString("Format", MI.Get(StreamType.Audio, idx, "Format"), first, true, true);
-			first &= !appendString("FormatV", MI.Get(StreamType.Audio, idx, "Format_Version"), first, true, true);
-			first &= !appendString("FormatP", MI.Get(StreamType.Audio, idx, "Format_Profile"), first, true, true);
+			first &= !appendString("Version", MI.Get(StreamType.Audio, idx, "Format_Version"), first, true, true);
+			first &= !appendString("Profile", MI.Get(StreamType.Audio, idx, "Format_Profile"), first, true, true);
 			first &= !appendString("ID", MI.Get(StreamType.Audio, idx, "ID"), first, false, true);
 			first &= !appendString("CodecID", MI.Get(StreamType.Audio, idx, "CodecID"), first, true, true);
 			first &= !appendString("CodecID Desc", MI.Get(StreamType.Audio, idx, "CodecID_Description"), first, true, true);
@@ -1586,8 +1586,8 @@ public class LibMediaInfoParser {
 			streamColumns.reset();
 			sb.append("\n");
 			appendStringNextColumn(streamColumns, "Format", MI.Get(StreamType.Audio, idx, "Format"), true, true);
-			appendStringNextColumn(streamColumns, "FormatV", MI.Get(StreamType.Audio, idx, "Format_Version"), true, true);
-			appendStringNextColumn(streamColumns, "FormatP", MI.Get(StreamType.Audio, idx, "Format_Profile"), true, true);
+			appendStringNextColumn(streamColumns, "Version", MI.Get(StreamType.Audio, idx, "Format_Version"), true, true);
+			appendStringNextColumn(streamColumns, "Profile", MI.Get(StreamType.Audio, idx, "Format_Profile"), true, true);
 			appendStringNextColumn(streamColumns, "CodecID", MI.Get(StreamType.Audio, idx, "CodecID"), true, true);
 			appendStringNextColumn(streamColumns, "CodecID Desc", MI.Get(StreamType.Audio, idx, "CodecID_Description"), true, true);
 			Double durationSec = parseDuration(MI.Get(StreamType.Audio, 0, "Duration"));
@@ -1618,8 +1618,8 @@ public class LibMediaInfoParser {
 			sb.append("\n    - Image - ");
 			boolean first = true;
 			first &= !appendString("Format", MI.Get(StreamType.Image, idx, "Format"), first, true, true);
-			first &= !appendString("FormatV", MI.Get(StreamType.Image, idx, "Format_Version"), first, true, true);
-			first &= !appendString("FormatP", MI.Get(StreamType.Image, idx, "Format_Profile"), first, true, true);
+			first &= !appendString("Version", MI.Get(StreamType.Image, idx, "Format_Version"), first, true, true);
+			first &= !appendString("Profile", MI.Get(StreamType.Image, idx, "Format_Profile"), first, true, true);
 			first &= !appendString("ID", MI.Get(StreamType.Image, idx, "ID"), first, false, true);
 			first &= !appendString("Width", MI.Get(StreamType.Image, idx, "Width"), first, false, true);
 			first &= !appendString("Height", MI.Get(StreamType.Image, idx, "Height"), first, false, true);
@@ -1635,8 +1635,8 @@ public class LibMediaInfoParser {
 			streamColumns.reset();
 			sb.append("\n");
 			appendStringNextColumn(streamColumns, "Format", MI.Get(StreamType.Image, idx, "Format"), true, true);
-			appendStringNextColumn(streamColumns, "FormatV", MI.Get(StreamType.Image, idx, "Format_Version"), true, true);
-			appendStringNextColumn(streamColumns, "FormatP", MI.Get(StreamType.Image, idx, "Format_Profile"), true, true);
+			appendStringNextColumn(streamColumns, "Version", MI.Get(StreamType.Image, idx, "Format_Version"), true, true);
+			appendStringNextColumn(streamColumns, "Profile", MI.Get(StreamType.Image, idx, "Format_Profile"), true, true);
 			appendStringNextColumn(streamColumns, "Width", MI.Get(StreamType.Image, idx, "Width"), false, true);
 			appendStringNextColumn(streamColumns, "Height", MI.Get(StreamType.Image, idx, "Height"), false, true);
 		}
@@ -1651,14 +1651,14 @@ public class LibMediaInfoParser {
 			if (videoSubtitle) {
 				first &= !appendString("Title", MI.Get(StreamType.Video, idx, "Title"), first, true, true);
 				first &= !appendString("Format", MI.Get(StreamType.Video, idx, "Format"), first, true, true);
-				first &= !appendString("FormatV", MI.Get(StreamType.Video, idx, "Format_Version"), first, true, true);
-				first &= !appendString("FormatP", MI.Get(StreamType.Video, idx, "Format_Profile"), first, true, true);
+				first &= !appendString("Version", MI.Get(StreamType.Video, idx, "Format_Version"), first, true, true);
+				first &= !appendString("Profile", MI.Get(StreamType.Video, idx, "Format_Profile"), first, true, true);
 				first &= !appendString("ID", MI.Get(StreamType.Video, idx, "ID"), first, false, true);
 			} else {
 				first &= !appendString("Title", MI.Get(StreamType.Text, idx, "Title"), first, true, true);
 				first &= !appendString("Format", MI.Get(StreamType.Text, idx, "Format"), first, true, true);
-				first &= !appendString("FormatV", MI.Get(StreamType.Text, idx, "Format_Version"), first, true, true);
-				first &= !appendString("FormatP", MI.Get(StreamType.Text, idx, "Format_Profile"), first, true, true);
+				first &= !appendString("Version", MI.Get(StreamType.Text, idx, "Format_Version"), first, true, true);
+				first &= !appendString("Profile", MI.Get(StreamType.Text, idx, "Format_Profile"), first, true, true);
 				first &= !appendString("ID", MI.Get(StreamType.Text, idx, "ID"), first, false, true);
 				first &= !appendString("Lang", MI.Get(StreamType.Text, idx, "Language"), first, true, true);
 			}
@@ -1676,15 +1676,15 @@ public class LibMediaInfoParser {
 				appendString("Title", MI.Get(StreamType.Video, idx, "Title"), false, true, true);
 				sb.append("\n");
 				appendStringNextColumn(streamColumns, "Format", MI.Get(StreamType.Video, idx, "Format"), true, true);
-				appendStringNextColumn(streamColumns, "FormatV", MI.Get(StreamType.Video, idx, "Format_Version"), true, true);
-				appendStringNextColumn(streamColumns, "FormatP", MI.Get(StreamType.Video, idx, "Format_Profile"), true, true);
+				appendStringNextColumn(streamColumns, "Version", MI.Get(StreamType.Video, idx, "Format_Version"), true, true);
+				appendStringNextColumn(streamColumns, "Profile", MI.Get(StreamType.Video, idx, "Format_Profile"), true, true);
 			} else {
 				appendString("ID", MI.Get(StreamType.Text, idx, "ID"), true, false, false);
 				appendString("Title", MI.Get(StreamType.Text, idx, "Title"), false, true, true);
 				sb.append("\n");
 				appendStringNextColumn(streamColumns, "Format", MI.Get(StreamType.Text, idx, "Format"), true, true);
-				appendStringNextColumn(streamColumns, "FormatV", MI.Get(StreamType.Text, idx, "Format_Version"), true, true);
-				appendStringNextColumn(streamColumns, "FormatP", MI.Get(StreamType.Text, idx, "Format_Profile"), true, true);
+				appendStringNextColumn(streamColumns, "Version", MI.Get(StreamType.Text, idx, "Format_Version"), true, true);
+				appendStringNextColumn(streamColumns, "Profile", MI.Get(StreamType.Text, idx, "Format_Profile"), true, true);
 				appendStringNextColumn(streamColumns, "Lang", MI.Get(StreamType.Text, idx, "Language"), true, true);
 			}
 		}
