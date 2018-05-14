@@ -295,6 +295,16 @@ Section /o $(SectionDownloadJava) sec3 ; http://www.oracle.com/technetwork/java/
 		StrCpy $0 "http://javadl.oracle.com/webapps/download/AutoDL?BundleId=227552_e758a0de34e24606bca991d704f6dcbf"
 		StrCpy $1 "jre-8u151-windows-x64.exe"
 	${EndIf}
+	${If} ${IsWinXP}
+	${AndIfNot} ${RunningX64}
+		NSISdl::download /TIMEOUT=30000 "$0" "$PLUGINSDIR\$1"
+		; /TRANSLATE2 downloading connecting second minute hour seconds minutes hours progress
+		Pop $0
+		StrCmp $0 "success" JavaDownloadOK
+		${WordReplaceS} $(DownloadError) "%s" $0 "+1" $0
+		MessageBox MB_ICONEXCLAMATION $0
+		Goto End
+	${EndIf}
 	${WordReplaceS} $(Downloading) "%s" "Oracle Java 8" "+1" $2
 	inetc::get /WEAKSECURITY /RESUME "" /CONNECTTIMEOUT 30 /MODERNPOPUP "$1" /CAPTION "$2" /QUESTION $(ConfirmCancel) /TRANSLATE $(DownloadingFile) $(Downloaded) $(TimeRemaining) $(Speed) $(CancelButton) /USERAGENT "Mozilla/5.0 (Windows NT 6.3; rv:48.0) Gecko/20100101 Firefox/48.0" /HEADER "Cookie: oraclelicense=accept-securebackup-cookie" /NOCOOKIES "$0" "$PLUGINSDIR\$1" /END
 	Pop $0
