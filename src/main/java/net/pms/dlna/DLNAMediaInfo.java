@@ -2159,7 +2159,7 @@ public class DLNAMediaInfo implements Cloneable {
 	 * @return the bitrate mode.
 	 */
 	@Nullable
-	public RateMode getBitRateModeRaw() {
+	public RateMode getBitRateMode() {
 		return bitRateMode;
 	}
 

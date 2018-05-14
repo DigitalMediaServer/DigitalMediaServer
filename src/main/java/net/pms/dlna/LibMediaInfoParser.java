@@ -1178,6 +1178,8 @@ public class LibMediaInfoParser {
 		if (isBlank(value)) {
 			return null;
 		}
+		String[] parts = value.split("\\s*/\\s*");
+		value = parts[parts.length - 1];
 		int separator = value.indexOf(".");
 		if (separator > 0) {
 			value = value.substring(0, separator);
