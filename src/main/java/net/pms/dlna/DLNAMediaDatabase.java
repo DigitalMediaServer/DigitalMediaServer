@@ -33,6 +33,7 @@ import net.pms.formats.Format;
 import net.pms.formats.v2.SubtitleType;
 import net.pms.image.ImageInfo;
 import net.pms.util.BitRate;
+import net.pms.util.BitRateMode;
 import net.pms.util.Rational;
 import org.apache.commons.io.FileUtils;
 import static org.apache.commons.lang3.StringUtils.*;
@@ -479,7 +480,7 @@ public class DLNAMediaDatabase implements Runnable {
 							audio.setMuxingModeAudio(elements.getString("MUXINGMODE"));
 							audio.setBitRates((BitRate[]) elements.getObject("BITRATE"));
 							audio.setBitRateModes((BitRateMode[]) elements.getObject("BITRATEMODE"));
-							media.getAudioTracksList().add(audio);
+							media.getAudioTracks().add(audio);
 						}
 					}
 					subs.setInt(1, id);

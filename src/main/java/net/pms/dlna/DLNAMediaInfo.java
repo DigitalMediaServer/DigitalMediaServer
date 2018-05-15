@@ -814,10 +814,9 @@ public class DLNAMediaInfo implements Cloneable {
 									}
 								}
 							}
-							if (audio.isNumberOfChannelsUnknown()) {
-								LOGGER.error(
-									"Invalid number of audio channels parsed ({}) for file \"{}\", defaulting to stereo",
-									audio.getNumberOfChannelsRaw(),
+							if (!audio.isNumberOfChannelsKnown()) {
+								LOGGER.warn(
+									"The number of audio channels for file \"{}\" is unknown, defaulting to stereo",
 									af.getFile().getName()
 								);
 								audio.setNumberOfChannels(DLNAMediaAudio.NUMBEROFCHANNELS_DEFAULT); // set default number of channels
@@ -2193,7 +2192,7 @@ public class DLNAMediaInfo implements Cloneable {
 				return true;
 			}
 		}
-		return bitrate > 0;
+		return false;
 	}
 
 	/**
@@ -2222,10 +2221,6 @@ public class DLNAMediaInfo implements Cloneable {
 			System.arraycopy(bitRates, 0, result, 0, bitRates.length);
 			return result;
 		}
-		// Backwards compatibility
-		if (bitrate > 0) {
-			return new BitRate[] {new BitRate(BitRateMode.CONSTANT, bitrate, null)};
-		}
 		return new BitRate[0];
 	}
 
@@ -2236,8 +2231,8 @@ public class DLNAMediaInfo implements Cloneable {
 	 * bitrate value.
 	 *
 	 * @return The {@link BitRate} or {@code null} if unknown.
-	 * @since 6.7.2
 	 */
+	@Nullable
 	public BitRate getBitRate() {
 		if (bitRates != null && bitRates.length > 0) {
 			BitRate highest = null;
@@ -2255,8 +2250,7 @@ public class DLNAMediaInfo implements Cloneable {
 				return highest;
 			}
 		}
-		// Backwards compatibility
-		return bitrate > 0 ? new BitRate(BitRateMode.CONSTANT, bitrate, null) : null;
+		return null;
 	}
 
 	/**

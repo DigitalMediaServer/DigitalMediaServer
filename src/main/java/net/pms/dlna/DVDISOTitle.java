@@ -459,7 +459,7 @@ public class DVDISOTitle extends DLNAResource {
 					// Only 48 kHz is allowed;
 				case FormatConfiguration.AC3:
 					// Only 48 kHz is allowed;
-					audio.setSampleFrequency(48000);
+					audio.setSampleRate(48000);
 					break;
 				default:
 					// Shouldn't happen

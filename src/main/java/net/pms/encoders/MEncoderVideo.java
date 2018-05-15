@@ -2570,7 +2570,7 @@ public class MEncoderVideo extends Player {
 			interpreter.set("srtfile", externalSubtitlesFileName);
 
 			if (params.aid != null) {
-				interpreter.set("samplerate", params.aid.getSampleFrequency());
+				interpreter.set("samplerate", params.aid.getSampleRate());
 			}
 
 			String frameRateNumber = media.getValidFps(false);

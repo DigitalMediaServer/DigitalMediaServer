@@ -24,7 +24,6 @@ import net.pms.encoders.PlayerFactory;
 import net.pms.encoders.StandardPlayerId;
 import net.pms.formats.Format;
 import net.pms.formats.Format.Identifier;
-import net.pms.formats.v2.AudioProperties;
 import net.pms.io.OutputParams;
 import net.pms.network.HTTPResource;
 import net.pms.network.SpeedStats;
@@ -1305,10 +1304,10 @@ public class RendererConfiguration extends UPNPHelper.Renderer {
 							}
 						} else if (media != null && media.getFirstAudioTrack() != null) {
 							DLNAMediaAudio audio = media.getFirstAudioTrack();
-							if (!audio.isSampleFrequencyUnknown()) {
-								matchedMimeType += ";rate=" + Integer.toString(audio.getSampleFrequency());
+							if (audio.isSampleRateKnown()) {
+								matchedMimeType += ";rate=" + Integer.toString(audio.getSampleRate());
 							}
-							if (!audio.isNumberOfChannelsUnknown()) {
+							if (audio.isNumberOfChannelsKnown()) {
 								matchedMimeType += ";channels=" + Integer.toString(audio.getNumberOfChannels());
 							}
 						}
@@ -1343,10 +1342,10 @@ public class RendererConfiguration extends UPNPHelper.Renderer {
 						}
 					} else if (media != null) {
 						DLNAMediaAudio audio = media.getFirstAudioTrack();
-						if (!audio.isSampleFrequencyUnknown()) {
-							matchedMimeType += ";rate=" + Integer.toString(audio.getSampleFrequency());
+						if (audio.isSampleRateKnown()) {
+							matchedMimeType += ";rate=" + Integer.toString(audio.getSampleRate());
 						}
-						if (!audio.isNumberOfChannelsUnknown()) {
+						if (audio.isNumberOfChannelsKnown()) {
 							matchedMimeType += ";channels=" + Integer.toString(audio.getNumberOfChannels());
 						}
 					}

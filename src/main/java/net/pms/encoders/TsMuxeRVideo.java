@@ -226,8 +226,8 @@ public class TsMuxeRVideo extends Player {
 					depth = "pcm_s24le";
 				}
 
-				if (media.getFirstAudioTrack().getSampleFrequency() > 48000) {
-					rate = "" + media.getFirstAudioTrack().getSampleFrequency();
+				if (media.getFirstAudioTrack().getSampleRate() > 48000) {
+					rate = "" + media.getFirstAudioTrack().getSampleRate();
 				}
 
 				String[] flacCmd = new String[] {
@@ -346,7 +346,7 @@ public class TsMuxeRVideo extends Player {
 						sm.setDtsEmbed(dtsRemux);
 						sm.setEncodedAudioPassthrough(encodedAudioPassthrough);
 						sm.setNbChannels(channels);
-						sm.setSampleFrequency(params.aid.getSampleFrequency() < 48000 ? 48000 : params.aid.getSampleFrequency());
+						sm.setSampleFrequency(params.aid.getSampleRate() < 48000 ? 48000 : params.aid.getSampleRate());
 						sm.setBitsPerSample(16);
 
 						ffmpegCommands = new String[] {
@@ -446,7 +446,7 @@ public class TsMuxeRVideo extends Player {
 							sm.setDtsEmbed(dtsRemux);
 							sm.setEncodedAudioPassthrough(encodedAudioPassthrough);
 							sm.setNbChannels(channels);
-							sm.setSampleFrequency(audio.getSampleFrequency() < 48000 ? 48000 : audio.getSampleFrequency());
+							sm.setSampleFrequency(audio.getSampleRate() < 48000 ? 48000 : audio.getSampleRate());
 							sm.setBitsPerSample(16);
 							if (!params.mediaRenderer.isMuxDTSToMpeg()) {
 								ffAudioPipe[i].setModifier(sm);

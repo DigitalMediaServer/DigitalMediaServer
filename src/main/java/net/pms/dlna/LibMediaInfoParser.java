@@ -209,7 +209,7 @@ public class LibMediaInfoParser {
 					currentAudioTrack.setLang(getLang(MI.Get(StreamType.Audio, i, "Language/String")));
 					currentAudioTrack.setAudioTrackTitleFromMetadata(MI.Get(StreamType.Audio, i, "Title").trim());
 					currentAudioTrack.setNumberOfChannels(parseNumberOfChannels(MI.Get(StreamType.Audio, i, "Channel(s)_Original")));
-					if (currentAudioTrack.isNumberOfChannelsUnknown()) {
+					if (!currentAudioTrack.isNumberOfChannelsKnown()) {
 						currentAudioTrack.setNumberOfChannels(parseNumberOfChannels(MI.Get(StreamType.Audio, i, "Channel(s)")));
 					}
 					currentAudioTrack.setDelay(parseDelay(MI.Get(StreamType.Audio, i, "Video_Delay")));
