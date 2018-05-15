@@ -65,7 +65,7 @@ public class DLNAMediaDatabase implements Runnable {
 	 * The database version should be incremented when we change anything to
 	 * do with the database since the last released version.
 	 */
-	private final String latestVersion = "11";
+	private final String latestVersion = "12";
 
 	// Database column sizes
 	private final int SIZE_CODECV = 32;
@@ -627,6 +627,7 @@ public class DLNAMediaDatabase implements Runnable {
 							rs.updateObject("BITRATE", audioTrack.getBitRates(false));
 						} else {
 							rs.updateNull("BITRATE");
+						}
 						updateSerialized(rs, audioTrack.getBitRateModeRaw(), "BITRATEMODE"); //TODO: (Nad) Fix
 						if (audioTrack.getBitRateModes() != null) {
 							rs.updateObject("BITRATEMODE", audioTrack.getBitRateModes());
