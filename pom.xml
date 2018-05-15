@@ -74,7 +74,7 @@
 	<properties>
 		<project.name.short>DMS</project.name.short>
 		<project.name.camel>DigitalMediaServer</project.name.camel>
-		<project.skelprofile.dir>/etc/skel/.config</project.skelprofile.dir>
+		<project.skelprofile.dir>/etc/skel/.config/</project.skelprofile.dir>
 		<cuelib-version>1.2.1-2008-06-13</cuelib-version>
 
 		<!-- In versions after 1.6.0, they removed code that the MovieInfo plugin relies on -->
@@ -1326,7 +1326,7 @@
 											<missingSrc>ignore</missingSrc>
 											<mapper>
 												<type>perm</type>
-												<prefix>/usr/local/lib/${project.artifactId}/documentation</prefix>
+												<prefix>/usr/lib/${project.artifactId}/documentation</prefix>
 											</mapper>
 										</data>
 										<data>
@@ -1335,7 +1335,7 @@
 											<missingSrc>ignore</missingSrc>
 											<mapper>
 												<type>perm</type>
-												<prefix>/usr/local/lib/${project.artifactId}/plugins</prefix>
+												<prefix>/usr/lib/${project.artifactId}/plugins</prefix>
 											</mapper>
 										</data>
 										<data>
@@ -1343,7 +1343,7 @@
 											<type>directory</type>
 											<mapper>
 												<type>perm</type>
-												<prefix>/usr/local/lib/${project.artifactId}/renderers</prefix>
+												<prefix>/usr/lib/${project.artifactId}/renderers</prefix>
 											</mapper>
 										</data>
 										<data>
@@ -1351,7 +1351,7 @@
 											<type>directory</type>
 											<mapper>
 												<type>perm</type>
-												<prefix>/usr/local/lib/${project.artifactId}/web</prefix>
+												<prefix>/usr/lib/${project.artifactId}/web</prefix>
 											</mapper>
 										</data>
 										<data>
@@ -1362,7 +1362,7 @@
 											<mapper>
 												<type>perm</type>
 												<strip>1</strip>
-												<prefix>/usr/local/lib/${project.artifactId}</prefix>
+												<prefix>/usr/lib/${project.artifactId}</prefix>
 											</mapper>
 										</data>
 										<data>
@@ -1373,17 +1373,17 @@
 											<mapper>
 												<type>perm</type>
 												<strip>1</strip>
-												<prefix>/etc/skel/.config/${project.name.camel}</prefix>
+												<prefix>${project.skelprofile.dir}${project.name.camel}</prefix>
 											</mapper>
 										</data>
 										<data>
 											<src>${project.build.directory}/${project.artifactId}.jar</src>
-											<dst>/usr/local/lib/${project.artifactId}/${project.artifactId}.jar</dst>
+											<dst>/usr/lib/${project.artifactId}/${project.artifactId}.jar</dst>
 											<type>file</type>
 										</data>
 										<data>
 											<src>${project.external-resources}/${project.artifactId}.sh</src>
-											<dst>/usr/local/lib/${project.artifactId}/${project.artifactId}.sh</dst>
+											<dst>/usr/lib/${project.artifactId}/${project.artifactId}.sh</dst>
 											<type>file</type>
 											<mapper>
 												<type>perm</type>
@@ -1391,14 +1391,14 @@
 											</mapper>
 										</data>
 										<data>
-											<linkName>/usr/local/bin/${project.artifactId}</linkName>
-											<linkTarget>/usr/local/lib/${project.artifactId}/${project.artifactId}.sh</linkTarget>
+											<linkName>/usr/bin/${project.artifactId}</linkName>
+											<linkTarget>/usr/lib/${project.artifactId}/${project.artifactId}.sh</linkTarget>
 											<symlink>true</symlink>
 											<type>link</type>
 										</data>
 										<data>
-											<linkName>/usr/local/bin/${project.name.short}</linkName>
-											<linkTarget>/usr/local/lib/${project.artifactId}/${project.artifactId}.sh</linkTarget>
+											<linkName>/usr/bin/${project.name.short}</linkName>
+											<linkTarget>/usr/lib/${project.artifactId}/${project.artifactId}.sh</linkTarget>
 											<symlink>true</symlink>
 											<type>link</type>
 										</data>
@@ -1438,10 +1438,12 @@
 						</executions>
 						<configuration>
 							<attach>false</attach>
-							<group> Application/Internet </group>
+							<group>Application/Internet</group>
 							<license>GPLv2+</license>
 							<skipSigning>true</skipSigning>
-							<script>echo "HAVE FUN !"</script>
+							<script>
+								echo "HAVE FUN !"
+							</script>
 							<!--<outputFileName>${project.artifactId}-${project.version}.rpm</outputFileName>-->
 							<leadOverrideArchitecture/>
 							<leadOverrideOperatingSystem/>
@@ -1459,7 +1461,6 @@
 								<require>dcraw</require>
 								<require>ffmpeg</require>
 								<require>mediainfo</require>
-								<require>tsmuxer</require>
 							</requires>
 							<rulesets>
 								<ruleset>
@@ -1483,7 +1484,7 @@
 										</rule>
 										<rule>
 											<when>
-												<prefix>/etc/skel/.config/</prefix>
+												<prefix>${project.skelprofile.dir}</prefix>
 											</when>
 											<configuration>true</configuration>
 											<missingOk>true</missingOk>
@@ -1505,7 +1506,12 @@
 									<ruleset>default-settings</ruleset>
 								</entry>
 								<entry>
-									<name>/etc/skel/.config/${project.name.camel}</name>
+									<name>${project.skelprofile.dir}${project.name.camel}</name>
+									<directory>true</directory>
+									<ruleset>default-settings</ruleset>
+								</entry>
+								<entry>
+									<name>${project.skelprofile.dir}${project.name.camel}/data</name>
 									<directory>true</directory>
 									<ruleset>default-settings</ruleset>
 								</entry>
@@ -1594,22 +1600,22 @@
 									<ruleset>default-settings</ruleset>
 								</entry>
 								<entry>
-									<name>/etc/skel/.config/${project.name.camel}/WEB.conf</name>
+									<name>${project.skelprofile.dir}${project.name.camel}/WEB.conf</name>
 									<file>${project.external-resources}/WEB.conf</file>
 									<ruleset>default-settings</ruleset>
 								</entry>
 								<entry>
-									<name>/etc/skel/.config/${project.name.camel}/${project.name.short}.conf</name>
+									<name>${project.skelprofile.dir}${project.name.camel}/${project.name.short}.conf</name>
 									<file>${project.external-resources}/${project.name.short}.conf</file>
 									<ruleset>default-settings</ruleset>
 								</entry>
 								<entry>
-									<name>/etc/skel/.config/${project.name.camel}/VirtualFolders.conf</name>
+									<name>${project.skelprofile.dir}${project.name.camel}/VirtualFolders.conf</name>
 									<file>${project.external-resources}/VirtualFolders.conf</file>
 									<ruleset>default-settings</ruleset>
 								</entry>
 								<entry>
-									<name>/etc/skel/.config/${project.name.camel}/ffmpeg.webfilters</name>
+									<name>${project.skelprofile.dir}${project.name.camel}/ffmpeg.webfilters</name>
 									<file>${project.external-resources}/ffmpeg.webfilters</file>
 									<ruleset>default-settings</ruleset>
 								</entry>
