@@ -440,6 +440,10 @@ public class FFMpegVideo extends Player {
 			}
 
 			if (!customFFmpegOptions.contains("-f")) {
+				if (configuration.isDisableSubtitles() || params.sid == null) {
+					transcodeOptions.add("-sn");
+				}
+				transcodeOptions.add("-dn");
 				// Output file format
 				transcodeOptions.add("-f");
 				if (dtsRemux) {
