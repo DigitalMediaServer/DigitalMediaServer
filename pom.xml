@@ -1269,7 +1269,7 @@
 										<echo file="${project.build.directory}/control/control" append="true">Section: java${line.separator}</echo>
 										<echo file="${project.build.directory}/control/control" append="true">Priority: standard${line.separator}</echo>
 										<echo file="${project.build.directory}/control/control" append="true">Architecture: all${line.separator}</echo>
-										<echo file="${project.build.directory}/control/control" append="true">Depends: default-jre-headless (>= 1.7) | default-jre (>= 1.7) | java-runtime-headless (>= 1.7) | java-runtime (>= 1.7) | java-sdk (>= 1.7) | openjdk-7-jdk | openjdk-7-jre | openjdk-8-jdk | openjdk-8-jre |  openjdk-7-jre-headless | openjdk-8-jre-headless | oracle-java7-jdk | oracle-java8-jdk | oracle-java7-jre | oracle-java8-jre | java7-runtime | java8-runtime | java7-runtime-headless | java8-runtime-headless ${line.separator}</echo>
+										<echo file="${project.build.directory}/control/control" append="true">Depends: default-jre-headless (>= 1.7) | default-jre (>= 1.7) | java-runtime-headless (>= 1.7) | java-runtime (>= 1.7) | java-sdk (>= 1.7) | openjdk-7-jdk | openjdk-7-jre | openjdk-8-jdk | openjdk-8-jre | openjdk-7-jre-headless | openjdk-8-jre-headless | oracle-java7-jdk | oracle-java8-jdk | oracle-java7-jre | oracle-java8-jre | java7-runtime | java8-runtime | java7-runtime-headless | java8-runtime-headless ${line.separator}</echo>
 										<echo file="${project.build.directory}/control/control" append="true">Recommends: dcraw, ffmpeg, mediainfo, tsmuxer${line.separator}</echo>
 										<echo file="${project.build.directory}/control/control" append="true">Suggests: mencoder, vlc (>= 3.0.0), ffmpeg (>= 4.0.0)${line.separator}</echo>
 										<echo file="${project.build.directory}/control/control" append="true">Maintainer: Nadahar &lt;nadahar@dms.com&gt;${line.separator}</echo>
@@ -1311,7 +1311,7 @@
 										<section>java</section>
 										<priority>standard</priority>
 										<architecture>all</architecture>
-										<depends>default-jre-headless (>= 1.7) | default-jre (>= 1.7) | java-runtime-headless (>= 1.7) | java-runtime (>= 1.7) | java-sdk (>= 1.7) | openjdk-7-jdk | openjdk-7-jre | openjdk-8-jdk | openjdk-8-jre |  openjdk-7-jre-headless | openjdk-8-jre-headless | oracle-java7-jdk | oracle-java8-jdk | oracle-java7-jre | oracle-java8-jre | java7-runtime | java8-runtime | java7-runtime-headless | java8-runtime-headless</depends>
+										<depends>default-jre-headless (>= 1.7) | default-jre (>= 1.7) | java-runtime-headless (>= 1.7) | java-runtime (>= 1.7) | java-sdk (>= 1.7) | openjdk-7-jdk | openjdk-7-jre | openjdk-8-jdk | openjdk-8-jre | openjdk-7-jre-headless | openjdk-8-jre-headless | oracle-java7-jdk | oracle-java8-jdk | oracle-java7-jre | oracle-java8-jre | java7-runtime | java8-runtime | java7-runtime-headless | java8-runtime-headless</depends>
 										<recommends>dcraw, ffmpeg, mediainfo, tsmuxer</recommends>
 										<suggests>mencoder, vlc (>= 3.0.0), ffmpeg (>= 4.0.0)</suggests>
 										<description>Media server</description>
@@ -1441,13 +1441,27 @@
 							<group>Application/Internet</group>
 							<license>GPLv2+</license>
 							<skipSigning>true</skipSigning>
-							<script>
-								echo "HAVE FUN !"
-							</script>
-							<!--<outputFileName>${project.artifactId}-${project.version}.rpm</outputFileName>-->
+							<afterInstallation>
+								<script>#!/bin/bash
+set -e
+echo -n "Do you accept to install the required FFmpeg dependency from the RPMFusion repository [y/N]: " >/dev/tty
+if exec &lt;/dev/tty; then
+	read input;
+	if [ "$input" != "${input#[Yy]}" ] ;then
+		yum -y install https://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm https://download1.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm
+		yum -y install ffmpeg ffmpeg-devel
+	fi
+fi
+echo "Installing the DCRaw and MediaInfo required dependencies if they are not already installed..."
+yum -y install dcraw mediainfo</script>
+							</afterInstallation>
+							<!--
+								Currently it is created by default with "-arch.rpm" suffix, but the  convention is to use ".arch.rpm" so it will fail to install on some distributions.
+								http://ftp.rpm.org/max-rpm/ch-rpm-file-format.html
+							-->
+							<outputFileName>${project.artifactId}-${project.version}.noarch.rpm</outputFileName>
 							<leadOverrideArchitecture/>
 							<leadOverrideOperatingSystem/>
-							<!--http://rpm5.org/docs/api/dependencies.html-->
 							<requires>
 								<!--
 									Boolean dependencies have only been introcuded since RPM 4.13
@@ -1458,9 +1472,6 @@
 									(jre &gt;= 1:1.7.0 or java &gt;= 1.8 or java-headless &gt;= 1:1.7.0)
 								-->
 								<require>java &gt;= 1.7</require>
-								<require>dcraw</require>
-								<require>ffmpeg</require>
-								<require>mediainfo</require>
 							</requires>
 							<rulesets>
 								<ruleset>
