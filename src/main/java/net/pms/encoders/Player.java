@@ -606,7 +606,7 @@ public abstract class Player {
 			programInfo.setOriginalDefault();
 		} else {
 			programInfo.setDefault(ProgramExecutableType.CUSTOM);
-			LOGGER.debug("Custom executable path for {} was initialized to \"{}\"", programInfo, customPath);
+			LOGGER.debug("Custom executable path for {} was initialized to \"{}\"", programInfo.getName(), customPath);
 		}
 	}
 
@@ -646,12 +646,12 @@ public abstract class Player {
 			if (customPath == null) {
 				defaultType = DefaultExecutableType.ORIGINAL;
 				if (setConfiguration && LOGGER.isDebugEnabled()) {
-					LOGGER.debug("Custom executable path for {} was cleared", programInfo);
+					LOGGER.debug("Custom executable path for {} was cleared", programInfo.getName());
 				}
 			} else {
 				defaultType = DefaultExecutableType.CUSTOM;
 				if (setConfiguration && LOGGER.isDebugEnabled()) {
-					LOGGER.debug("Custom executable path for {} was set to \"{}\"", programInfo, customPath);
+					LOGGER.debug("Custom executable path for {} was set to \"{}\"", programInfo.getName(), customPath);
 				}
 			}
 			PlayerFactory.reEvaluateExecutable(this, ProgramExecutableType.CUSTOM, defaultType);

@@ -45,6 +45,8 @@ import net.pms.configuration.ExecutableInfo;
 import net.pms.configuration.ExecutableInfo.ExecutableInfoBuilder;
 import net.pms.configuration.ExternalProgramInfo;
 import net.pms.configuration.FFmpegExecutableInfo;
+import net.pms.configuration.FFmpegExecutableInfo.Codec;
+import net.pms.configuration.FFmpegExecutableInfo.CoderOptions;
 import net.pms.configuration.PmsConfiguration;
 import net.pms.configuration.RendererConfiguration;
 import net.pms.dlna.*;
@@ -488,12 +490,12 @@ public class TsMuxeRVideo extends Player {
 							tempFFmpegCommands.add("-c:a");
 							tempFFmpegCommands.add("aac");
 							ExecutableInfo executableInfo = ffmpeg.getExecutableInfo();
-							if (
-								executableInfo instanceof FFmpegExecutableInfo &&
-								((FFmpegExecutableInfo) executableInfo).isAACEncoderExperimental()
-							) {
-								tempFFmpegCommands.add("-strict");
-								tempFFmpegCommands.add("experimental");
+							if (executableInfo instanceof FFmpegExecutableInfo) {
+								Codec aac = ((FFmpegExecutableInfo) executableInfo).getCodecs().get("aac");
+								if (aac.containsEncoderOption(CoderOptions.EXPERIMENTAL)) {
+									tempFFmpegCommands.add("-strict");
+									tempFFmpegCommands.add("experimental");
+								}
 							}
 							tempFFmpegCommands.add("-ab");
 							tempFFmpegCommands.add(Math.min(configuration.getAudioBitrate(), 320) + "k");

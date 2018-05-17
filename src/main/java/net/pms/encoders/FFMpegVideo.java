@@ -1485,15 +1485,40 @@ public class FFMpegVideo extends Player {
 					FFmpegExecutableInfoBuilder builder = (FFmpegExecutableInfoBuilder) result;
 					FFmpegExecutableInfo.parseVersions(builder, output);;
 
-					List<String> protocols = FFmpegOptions.getSupportedProtocols(executableInfo.getPath());
-					builder.protocols(protocols);
-					if (protocols.size() == 0) {
+					FFmpegExecutableInfo.determineProtocols(builder);
+					if (builder.protocols() == null || builder.protocols().size() == 0) {
 						LOGGER.warn("Couldn't parse any supported protocols for \"{}\"", executableInfo.getPath());
-					} else {
-						LOGGER.debug("{} supported protocols: {}", executableInfo.getPath(), protocols);
+					} else if (LOGGER.isDebugEnabled()) {
+						LOGGER.debug(
+							"{} supported protocols: {}",
+							executableInfo.getPath(),
+							FFmpegExecutableInfo.toProtocolsString(builder.protocols())
+						);
+					}
+
+					FFmpegExecutableInfo.determineFormats(builder); //TODO: (Nad) Here
+					if (builder.formats() == null || builder.formats().size() == 0) {
+						LOGGER.warn("Couldn't parse any supported formats for \"{}\"", executableInfo.getPath());
+					} else if (LOGGER.isDebugEnabled()) {
+						LOGGER.debug(
+							"{} supported formats: {}",
+							executableInfo.getPath(),
+							FFmpegExecutableInfo.toFormatsString(builder.formats())
+						);
+					}
+
+					FFmpegExecutableInfo.determineCodecs(builder); //TODO: (Nad) Here
+					if (builder.codecs() == null || builder.codecs().size() == 0) {
+						LOGGER.warn("Couldn't parse any supported codecs for \"{}\"", executableInfo.getPath());
+					} else if (LOGGER.isDebugEnabled()) {
+						LOGGER.debug(
+							"{} supported codecs: {}",
+							executableInfo.getPath(),
+							FFmpegExecutableInfo.toCodecsString(builder.codecs())
+						);
 					}
 				} else {
-					LOGGER.error("Could not store FFmpeg supported protocols because of an internal error");
+					LOGGER.error("Could not determine FFmpeg details because of an internal error");
 				}
 			} else {
 				NTStatus ntStatus = Platform.isWindows() ? NTStatus.typeOf(output.getExitCode()) : null;
