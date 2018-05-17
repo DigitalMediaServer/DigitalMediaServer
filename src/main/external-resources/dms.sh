@@ -14,9 +14,9 @@ esac
 # For Cygwin, ensure paths are in UNIX format before anything is touched
 if $cygwin ; then
     [ -n "$DMS_HOME" ] &&
-		DMS_HOME=`cygpath --unix "$DMS_HOME"`
+        DMS_HOME=`cygpath --unix "$DMS_HOME"`
     [ -n "$JAVA_HOME" ] &&
-		JAVA_HOME=`cygpath --unix "$JAVA_HOME"`
+        JAVA_HOME=`cygpath --unix "$JAVA_HOME"`
 fi
 
 # Setup DMS_HOME
@@ -31,9 +31,9 @@ cd "$DMS_HOME"
 # Setup the JVM
 if [ "x$JAVA" = "x" ]; then
     if [ "x$JAVA_HOME" != "x" ]; then
-		JAVA="$JAVA_HOME/bin/java"
+        JAVA="$JAVA_HOME/bin/java"
     else
-		JAVA="java"
+        JAVA="java"
     fi
 fi
 
