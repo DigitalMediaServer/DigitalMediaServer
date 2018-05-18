@@ -1428,7 +1428,7 @@
 					<plugin>
 						<groupId>de.dentrassi.maven</groupId>
 						<artifactId>rpm</artifactId>
-						<version>0.10.2</version>
+						<version>0.10.3-SNAPSHOT</version>
 						<executions>
 							<execution>
 								<goals>
@@ -1441,20 +1441,6 @@
 							<group>Application/Internet</group>
 							<license>GPLv2+</license>
 							<skipSigning>true</skipSigning>
-							<afterInstallation>
-								<script>#!/bin/bash
-set -e
-echo -n "Do you accept to install the required FFmpeg dependency from the RPMFusion repository [y/N]: " >/dev/tty
-if exec &lt;/dev/tty; then
-	read input;
-	if [ "$input" != "${input#[Yy]}" ] ;then
-		yum -y install https://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm https://download1.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm
-		yum -y install ffmpeg ffmpeg-devel
-	fi
-fi
-echo "Installing the DCRaw and MediaInfo required dependencies if they are not already installed..."
-yum -y install dcraw mediainfo</script>
-							</afterInstallation>
 							<!--
 								Currently it is created by default with "-arch.rpm" suffix, but the  convention is to use ".arch.rpm" so it will fail to install on some distributions.
 								http://ftp.rpm.org/max-rpm/ch-rpm-file-format.html
@@ -1473,6 +1459,12 @@ yum -y install dcraw mediainfo</script>
 								-->
 								<require>java &gt;= 1.7</require>
 							</requires>
+							<recommends>
+								<recommend>ffmpeg</recommend>
+							</recommends>
+							<suggests>
+								<suggest>dcraw</suggest>
+							</suggests>
 							<rulesets>
 								<ruleset>
 									<id>default-settings</id>

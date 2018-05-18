@@ -1,0 +1,6 @@
+#NOTE: This is an Aether internal implementation file, its format can be changed without prior notice.
+#Fri May 18 22:03:05 CEST 2018
+rpm-0.10.3-SNAPSHOT-sources.jar>=
+rpm-0.10.3-SNAPSHOT.jar>=
+rpm-0.10.3-SNAPSHOT-javadoc.jar>=
+rpm-0.10.3-SNAPSHOT.pom>=

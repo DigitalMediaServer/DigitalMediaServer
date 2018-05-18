@@ -1,0 +1,13 @@
+#NOTE: This is an Aether internal implementation file, its format can be changed without prior notice.
+#Sat May 19 17:57:28 CEST 2018
+org.eclipse.packagedrone.utils.rpm-0.14.3.jar.asc>=
+org.eclipse.packagedrone.utils.rpm-0.14.3-sources.jar>=
+org.eclipse.packagedrone.utils.rpm-0.14.3-sources.jar>central=
+org.eclipse.packagedrone.utils.rpm-0.14.3-javadoc.jar>=
+org.eclipse.packagedrone.utils.rpm-0.14.3.jar>=
+org.eclipse.packagedrone.utils.rpm-0.14.3.pom>=
+org.eclipse.packagedrone.utils.rpm-0.14.3-sources.jar.asc>=
+org.eclipse.packagedrone.utils.rpm-0.14.3.pom>central=
+org.eclipse.packagedrone.utils.rpm-0.14.3-javadoc.jar.asc>=
+org.eclipse.packagedrone.utils.rpm-0.14.3.pom.asc>=
+org.eclipse.packagedrone.utils.rpm-0.14.3.jar>central=
