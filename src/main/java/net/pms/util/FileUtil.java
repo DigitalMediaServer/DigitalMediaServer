@@ -467,6 +467,10 @@ public class FileUtil {
 	private static final String COMMON_FILE_EDITIONS = "(?i)(?!\\()(Special[\\s\\.]Edition|Unrated|Final[\\s\\.]Cut|Remastered|Extended[\\s\\.]Cut|IMAX[\\s\\.]Edition|Uncensored|Directors[\\s\\.]Cut|Uncut)(?!\\))";
 	private static final Pattern COMMON_FILE_EDITIONS_PATTERN = Pattern.compile(COMMON_FILE_EDITIONS);
 
+	public static String getFileNamePrettified(String f) {
+		return getFileNamePrettified(f, null);
+	}
+
 	/**
 	 * Returns the filename after being "prettified", which involves
 	 * attempting to strip away certain things like information about the

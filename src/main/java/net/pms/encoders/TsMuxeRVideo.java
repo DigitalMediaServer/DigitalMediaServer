@@ -197,8 +197,8 @@ public class TsMuxeRVideo extends Player {
 
 			if (
 				filename.toLowerCase().endsWith(".flac") &&
-				media.getFirstAudioTrack().getBitsperSample() >= 24 &&
-				media.getFirstAudioTrack().getSampleRate() % 48000 == 0
+				media.getFirstAudioTrack().getBitsPerSample() >= 24 &&
+				media.getFirstAudioTrack().getSampleFrequency() % 48000 == 0
 			) {
 				ffAudioPipe = new PipeIPCProcess[1];
 				ffAudioPipe[0] = new PipeIPCProcess(System.currentTimeMillis() + "flacaudio", System.currentTimeMillis() + "audioout", false, true);
@@ -222,12 +222,12 @@ public class TsMuxeRVideo extends Player {
 				String depth = "pcm_s16le";
 				String rate = "48000";
 
-				if (media.getFirstAudioTrack().getBitsperSample() >= 24) {
+				if (media.getFirstAudioTrack().getBitsPerSample() >= 24) {
 					depth = "pcm_s24le";
 				}
 
-				if (media.getFirstAudioTrack().getSampleRate() > 48000) {
-					rate = "" + media.getFirstAudioTrack().getSampleRate();
+				if (media.getFirstAudioTrack().getSampleFrequency() > 48000) {
+					rate = "" + media.getFirstAudioTrack().getSampleFrequency();
 				}
 
 				String[] flacCmd = new String[] {
@@ -313,7 +313,7 @@ public class TsMuxeRVideo extends Player {
 						media.isValidForLPCMTranscoding() &&
 						(
 							params.aid.isLossless() ||
-							(params.aid.isDTS() && params.aid.getAudioProperties().getNumberOfChannels() <= 6) ||
+							(params.aid.isDTS() && params.aid.getNumberOfChannels() <= 6) ||
 							params.aid.isTrueHD() ||
 							(
 								!configuration.isMencoderUsePcmForHQAudioOnly() &&
@@ -330,11 +330,11 @@ public class TsMuxeRVideo extends Player {
 
 					int channels;
 					if (ac3Remux) {
-						channels = params.aid.getAudioProperties().getNumberOfChannels(); // AC-3 remux
+						channels = params.aid.getNumberOfChannels(); // AC-3 remux
 					} else if (dtsRemux || encodedAudioPassthrough) {
 						channels = 2;
 					} else if (pcm) {
-						channels = params.aid.getAudioProperties().getNumberOfChannels();
+						channels = params.aid.getNumberOfChannels();
 					} else {
 						channels = configuration.getAudioChannelCount(); // 5.1 max for AC-3 encoding
 					}
@@ -346,7 +346,7 @@ public class TsMuxeRVideo extends Player {
 						sm.setDtsEmbed(dtsRemux);
 						sm.setEncodedAudioPassthrough(encodedAudioPassthrough);
 						sm.setNbChannels(channels);
-						sm.setSampleFrequency(params.aid.getSampleRate() < 48000 ? 48000 : params.aid.getSampleRate());
+						sm.setSampleFrequency(params.aid.getSampleFrequency() < 48000 ? 48000 : params.aid.getSampleFrequency());
 						sm.setBitsPerSample(16);
 
 						ffmpegCommands = new String[] {
@@ -413,7 +413,7 @@ public class TsMuxeRVideo extends Player {
 							media.isValidForLPCMTranscoding() &&
 							(
 								audio.isLossless() ||
-								(audio.isDTS() && audio.getAudioProperties().getNumberOfChannels() <= 6) ||
+								(audio.isDTS() && audio.getNumberOfChannels() <= 6) ||
 								audio.isTrueHD() ||
 								(
 									!configuration.isMencoderUsePcmForHQAudioOnly() &&
@@ -430,11 +430,11 @@ public class TsMuxeRVideo extends Player {
 
 						int channels;
 						if (ac3Remux) {
-							channels = audio.getAudioProperties().getNumberOfChannels(); // AC-3 remux
+							channels = audio.getNumberOfChannels(); // AC-3 remux
 						} else if (dtsRemux || encodedAudioPassthrough) {
 							channels = 2;
 						} else if (pcm) {
-							channels = audio.getAudioProperties().getNumberOfChannels();
+							channels = audio.getNumberOfChannels();
 						} else {
 							channels = configuration.getAudioChannelCount(); // 5.1 max for AC-3 encoding
 						}
@@ -446,7 +446,7 @@ public class TsMuxeRVideo extends Player {
 							sm.setDtsEmbed(dtsRemux);
 							sm.setEncodedAudioPassthrough(encodedAudioPassthrough);
 							sm.setNbChannels(channels);
-							sm.setSampleFrequency(audio.getSampleRate() < 48000 ? 48000 : audio.getSampleRate());
+							sm.setSampleFrequency(audio.getSampleFrequency() < 48000 ? 48000 : audio.getSampleFrequency());
 							sm.setBitsPerSample(16);
 							if (!params.mediaRenderer.isMuxDTSToMpeg()) {
 								ffAudioPipe[i].setModifier(sm);
@@ -544,7 +544,7 @@ public class TsMuxeRVideo extends Player {
 					media.isValidForLPCMTranscoding() &&
 					(
 						params.aid.isLossless() ||
-						(params.aid.isDTS() && params.aid.getAudioProperties().getNumberOfChannels() <= 6) ||
+						(params.aid.isDTS() && params.aid.getNumberOfChannels() <= 6) ||
 						params.aid.isTrueHD() ||
 						(
 							!configuration.isMencoderUsePcmForHQAudioOnly() &&
@@ -578,8 +578,8 @@ public class TsMuxeRVideo extends Player {
 						}
 					}
 				}
-				if (params.aid != null && params.aid.getAudioProperties().getAudioDelay() != 0 && params.timeseek == 0) {
-					timeshift = "timeshift=" + params.aid.getAudioProperties().getAudioDelay() + "ms, ";
+				if (params.aid != null && params.aid.getDelay() != 0 && params.timeseek == 0) {
+					timeshift = "timeshift=" + params.aid.getDelay() + "ms, ";
 				}
 				pw.println(type + ", \"" + ffAudioPipe[0].getOutputPipe() + "\", " + timeshift + "track=2");
 			} else if (ffAudioPipe != null) {
@@ -599,7 +599,7 @@ public class TsMuxeRVideo extends Player {
 						media.isValidForLPCMTranscoding() &&
 						(
 							lang.isLossless() ||
-							(lang.isDTS() && lang.getAudioProperties().getNumberOfChannels() <= 6) ||
+							(lang.isDTS() && lang.getNumberOfChannels() <= 6) ||
 							lang.isTrueHD() ||
 							(
 								!configuration.isMencoderUsePcmForHQAudioOnly() &&
@@ -631,8 +631,8 @@ public class TsMuxeRVideo extends Player {
 							}
 						}
 					}
-					if (lang.getAudioProperties().getAudioDelay() != 0 && params.timeseek == 0) {
-						timeshift = "timeshift=" + lang.getAudioProperties().getAudioDelay() + "ms, ";
+					if (lang.getDelay() != 0 && params.timeseek == 0) {
+						timeshift = "timeshift=" + lang.getDelay() + "ms, ";
 					}
 					pw.println(type + ", \"" + ffAudioPipe[i].getOutputPipe() + "\", " + timeshift + "track=" + (2 + i));
 				}

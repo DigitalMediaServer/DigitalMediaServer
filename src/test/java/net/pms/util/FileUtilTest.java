@@ -91,40 +91,47 @@ public class FileUtilTest {
 	@Test
 	public void testGetFileNameWithRewriting() throws Exception {
 		// Video of a TV episode
-		assertThat(FileUtil.getFileNamePrettified("Digital.Media.Server.S01E02.720p.mkv", null)).isEqualTo("Digital Media Server - 102");
+		assertThat(FileUtil.getFileNamePrettified("Digital.Media.Server.S01E02.720p.mkv")).isEqualTo("Digital Media Server - 102");
 
 		// Video of a TV episode in double-digit seasons
-		assertThat(FileUtil.getFileNamePrettified("Digital.Media.Server.S12E03.720p.mkv", null)).isEqualTo("Digital Media Server - 1203");
+		assertThat(FileUtil.getFileNamePrettified("Digital.Media.Server.S12E03.720p.mkv")).isEqualTo("Digital Media Server - 1203");
 
 		// Video spanning two TV episodes
-		assertThat(FileUtil.getFileNamePrettified("Digital.Media.Server.S01E02E03.720p.mkv", null)).isEqualTo("Digital Media Server - 102-03");
-		assertThat(FileUtil.getFileNamePrettified("Digital.Media.Server.S01E02-E03.720p.mkv", null)).isEqualTo("Digital Media Server - 102-03");
-		assertThat(FileUtil.getFileNamePrettified("Digital.Media.Server.S12E03-E04.720p.mkv", null)).isEqualTo("Digital Media Server - 1203-04");
+		assertThat(FileUtil.getFileNamePrettified("Digital.Media.Server.S01E02E03.720p.mkv")).isEqualTo("Digital Media Server - 102-03");
+		assertThat(FileUtil.getFileNamePrettified("Digital.Media.Server.S01E02-E03.720p.mkv")).isEqualTo("Digital Media Server - 102-03");
+		assertThat(FileUtil.getFileNamePrettified("Digital.Media.Server.S12E03-E04.720p.mkv")).isEqualTo("Digital Media Server - 1203-04");
 
 		// Video of an extended TV episode
-		assertThat(FileUtil.getFileNamePrettified("Digital.Media.Server.S01E02.EXTENDED.720p.mkv", null)).isEqualTo("Digital Media Server - 102");
+		assertThat(FileUtil.getFileNamePrettified("Digital.Media.Server.S01E02.EXTENDED.720p.mkv")).isEqualTo("Digital Media Server - 102");
 
 		// Video of a TV episode with the "Mysterious Wordplay" title
-		assertThat(FileUtil.getFileNamePrettified("Digital.Media.Server.S01E02.Mysterious.Wordplay.720p.mkv", null)).isEqualTo("Digital Media Server - 102 - Mysterious Wordplay");
+		assertThat(FileUtil.getFileNamePrettified("Digital.Media.Server.S01E02.Mysterious.Wordplay.720p.mkv")).isEqualTo("Digital Media Server - 102 - Mysterious Wordplay");
 
 		// Video of an uncut TV episode
-		assertThat(FileUtil.getFileNamePrettified("Digital.Media.Server.S01E02.UNCUT.720p.mkv", null)).isEqualTo("Digital Media Server - 102 (Uncut)");
+		assertThat(FileUtil.getFileNamePrettified("Digital.Media.Server.S01E02.UNCUT.720p.mkv")).isEqualTo("Digital Media Server - 102 (Uncut)");
 
 		// Video of an extended cut of a TV episode
-		assertThat(FileUtil.getFileNamePrettified("Digital.Media.Server.S01E02.Extended.Cut.720p.mkv", null)).isEqualTo("Digital Media Server - 102 (Extended Cut)");
+		assertThat(FileUtil.getFileNamePrettified("Digital.Media.Server.S01E02.Extended.Cut.720p.mkv")).isEqualTo("Digital Media Server - 102 (Extended Cut)");
 
 		// Video of a TV episode that airs very regularly
-		assertThat(FileUtil.getFileNamePrettified("Digital.Media.Server.2015.01.23.720p.mkv", null)).isEqualTo("Digital Media Server - 2015/01/23");
+		assertThat(FileUtil.getFileNamePrettified("Digital.Media.Server.2015.01.23.720p.mkv")).isEqualTo("Digital Media Server - 2015/01/23");
 
 		// Video of a TV episode that airs very regularly and has an episode title
-		assertThat(FileUtil.getFileNamePrettified("Digital.Media.Server.2015.01.23.Mysterious.Wordplay.720p.mkv", null)).isEqualTo("Digital Media Server - 2015/01/23 - Mysterious Wordplay");
+		assertThat(FileUtil.getFileNamePrettified("Digital.Media.Server.2015.01.23.Mysterious.Wordplay.720p.mkv")).isEqualTo("Digital Media Server - 2015/01/23 - Mysterious Wordplay");
 
 		// Video of a movie
-		assertThat(FileUtil.getFileNamePrettified("Digital.Media.Server.2015.720p.mkv", null)).isEqualTo("Digital Media Server (2015)");
+		assertThat(FileUtil.getFileNamePrettified("Digital.Media.Server.2015.720p.mkv")).isEqualTo("Digital Media Server (2015)");
+		//assertThat(FileUtil.getFileNamePrettified("Digital_Media_Server_(2015)_[720p,BluRay,flac,x264]_-_FANSUBBERS.mkv")).isEqualTo("Digital Media Server (2015)");
 
 		// Video of a special edition of a movie
-		assertThat(FileUtil.getFileNamePrettified("Digital.Media.Server.Special.Edition.2015.720p.mkv", null)).isEqualTo("Digital Media Server (2015) (Special Edition)");
-		assertThat(FileUtil.getFileNamePrettified("Digital.Media.Server.2015.Special.Edition.720p.mkv", null)).isEqualTo("Digital Media Server (2015) (Special Edition)");
+		assertThat(FileUtil.getFileNamePrettified("Digital.Media.Server.Special.Edition.2015.720p.mkv")).isEqualTo("Digital Media Server (2015) (Special Edition)");
+		assertThat(FileUtil.getFileNamePrettified("Digital.Media.Server.2015.Special.Edition.720p.mkv")).isEqualTo("Digital Media Server (2015) (Special Edition)");
+
+		// Video of an anime episode
+		//assertThat(FileUtil.getFileNamePrettified("Digital Media Server - 02 [BD.1080p] [700D423E].mkv")).isEqualTo("Digital Media Server - 102");
+		//assertThat(FileUtil.getFileNamePrettified("[FanSubbers]_Digital_Media_Server_02_[700D423E].mp4")).isEqualTo("Digital Media Server - 102");
+		//assertThat(FileUtil.getFileNamePrettified("[FanSubbers]_Digital_Media_Server_-_02_[720p][700D423E].mkv")).isEqualTo("Digital Media Server - 102");
+		//assertThat(FileUtil.getFileNamePrettified("[FanSubbers] Digital Media Server S1 EP02 (BD 1280x720 x264 AAC ASS(EN)) [700D423E].mkv")).isEqualTo("Digital Media Server - 102");
 	}
 
 	@Test

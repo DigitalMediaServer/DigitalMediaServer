@@ -403,7 +403,7 @@ public class DVDISOTitle extends DLNAResource {
 			}
 
 			audio.setCodecA(MPlayerDvdAudioStreamTypes.typeOf(matcher.group("Codec")).getFormatConfigurationCode());
-			audio.getAudioProperties().setNumberOfChannels(
+			audio.setNumberOfChannels(
 				MPlayerDvdAudioStreamChannels.typeOf(matcher.group("Channels")).getNumberOfChannels()
 			);
 			String languageCode = Iso639.getISOCode(matcher.group("Language"));
@@ -446,8 +446,8 @@ public class DVDISOTitle extends DLNAResource {
 				);
 			}
 			/*
-			 * MPlayer doesn't give information about bit rate, sampling rate
-			 * and bit depth, so we'll have to "guess" the sample rate. Bit rate
+			 * MPlayer doesn't give information about bitrate, sampling rate
+			 * and bit depth, so we'll have to "guess" the sample rate. Bitrate
 			 * and bit depth are impossible to guess.
 			 */
 			switch (audio.getCodecA()) {
@@ -459,7 +459,7 @@ public class DVDISOTitle extends DLNAResource {
 					// Only 48 kHz is allowed;
 				case FormatConfiguration.AC3:
 					// Only 48 kHz is allowed;
-					audio.getAudioProperties().setSampleFrequency(48000);
+					audio.setSampleFrequency(48000);
 					break;
 				default:
 					// Shouldn't happen

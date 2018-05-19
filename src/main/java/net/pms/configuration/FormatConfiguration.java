@@ -53,6 +53,7 @@ public class FormatConfiguration {
 	public static final String ACELP = "acelp";
 	public static final String ADPCM = "adpcm";
 	public static final String ADTS = "adts";
+	public static final String AIFC = "aifc";
 	public static final String AIFF = "aiff";
 	public static final String ALAC = "alac";
 	public static final String ALS = "als";
@@ -76,6 +77,7 @@ public class FormatConfiguration {
 	public static final String DTSHD = "dtshd";
 	public static final String DV = "dv";
 	public static final String EAC3 = "eac3";
+	public static final String ER_BSAC = "erbsac";
 	public static final String FFV1 = "ffv1";
 	public static final String FLAC = "flac";
 	public static final String FLV = "flv";
@@ -417,7 +419,7 @@ public class FormatConfiguration {
 			}
 
 			if (bitrate > 0 && iMaxBitrate > 0 && bitrate > iMaxBitrate) {
-				LOGGER.trace("Bit rate \"{}\" failed to match support line {}", bitrate, supportLine);
+				LOGGER.trace("Bitrate \"{}\" failed to match support line {}", bitrate, supportLine);
 				return false;
 			}
 
@@ -569,7 +571,7 @@ public class FormatConfiguration {
 				null,
 				0,
 				0,
-				media.getBitrate(),
+				media.getBitRate(),
 				frameRate,
 				media.getWidth(),
 				media.getHeight(),
@@ -593,8 +595,8 @@ public class FormatConfiguration {
 				media.getContainer(),
 				media.getCodecV(),
 				audio.getCodecA(),
-				audio.getAudioProperties().getNumberOfChannels(),
-				audio.getSampleRate(),
+				audio.getNumberOfChannels(),
+				audio.getSampleFrequency(),
 				audio.getBitRate(),
 				frameRate,
 				media.getWidth(),
@@ -610,9 +612,9 @@ public class FormatConfiguration {
 				media.getContainer(),
 				media.getCodecV(),
 				audio.getCodecA(),
-				audio.getAudioProperties().getNumberOfChannels(),
-				audio.getSampleRate(),
-				media.getBitrate(),
+				audio.getNumberOfChannels(),
+				audio.getSampleFrequency(),
+				media.getBitRate(),
 				frameRate,
 				media.getWidth(),
 				media.getHeight(),

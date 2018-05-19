@@ -233,6 +233,7 @@ public class StringUtil {
 	 * @param duration the duration in seconds.
 	 * @return The formatted duration.
 	 */
+	@Nonnull
 	public static String formatDLNADuration(double duration) {
 		double seconds;
 		int hours;
@@ -261,40 +262,41 @@ public class StringUtil {
 	 * Removes leading zeros up to the nth char of an hh:mm:ss time string,
 	 * normalizing it first if necessary.
 	 *
-	 * @param t time string.
+	 * @param time the time string.
 	 * @param n position to stop checking
 	 *
 	 * @return the Shortened String.
 	 */
-	public static String shortTime(String t, int n) {
+	@Nonnull
+	public static String shortTime(@Nullable String time, int n) {
 		n = n < 8 ? n : 8;
-		if (!isBlank(t)) {
-			if (t.startsWith("NOT_IMPLEMENTED")) {
-				return t.length() > 15 ? t.substring(15) : " ";
+		if (!isBlank(time)) {
+			if (time.startsWith("NOT_IMPLEMENTED")) {
+				return time.length() > 15 ? time.substring(15) : " ";
 			}
-			int i = t.indexOf('.');
+			int i = time.indexOf('.');
 			// Throw out the decimal portion, if any
 			if (i > -1) {
-				t = t.substring(0, i);
+				time = time.substring(0, i);
 			}
-			int l = t.length();
+			int l = time.length();
 			// Normalize if necessary
 			if (l < 8) {
-				t = "00:00:00".substring(0, 8 - l) + t;
+				time = "00:00:00".substring(0, 8 - l) + time;
 			} else if (l > 8) {
-				t = t.substring(l - 8);
+				time = time.substring(l - 8);
 			}
 			for (i = 0; i < n; i++) {
-				if (t.charAt(i) != "00:00:00".charAt(i)) {
+				if (time.charAt(i) != "00:00:00".charAt(i)) {
 					break;
 				}
 			}
-			return t.substring(i);
+			return time.substring(i);
 		}
 		return "00:00:00".substring(n);
 	}
 
-	public static boolean isZeroTime(String t) {
+	public static boolean isZeroTime(@Nullable String t) {
 		return isBlank(t) || "00:00:00.000".contains(t);
 	}
 
