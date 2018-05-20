@@ -72,6 +72,7 @@
 		<url>https://github.com/DigitalMediaServer/DigitalMediaServer/issues</url>
 	</issueManagement>
 	<properties>
+		<project.mainclass>net.pms.PMS</project.mainclass>
 		<project.name.short>DMS</project.name.short>
 		<project.name.camel>DigitalMediaServer</project.name.camel>
 		<project.skelprofile.dir>/etc/skel/.config/</project.skelprofile.dir>
@@ -100,6 +101,7 @@
 		<maven-assembly-plugin-version>3.1.0</maven-assembly-plugin-version>
 		<maven-resources-plugin-version>3.0.2</maven-resources-plugin-version>
 		<maven-enforcer-plugin-version>3.0.0-M1</maven-enforcer-plugin-version>
+		<appbundle-maven-plugin-version>1.2.0</appbundle-maven-plugin-version>
 
 		<!--
 			org.slf4j:slf4j-api is shared with
@@ -125,6 +127,22 @@
 		<makensis-bin>${project.external-resources}/third-party/nsis/makensis.exe</makensis-bin>
 		<release>false</release> <!-- mvn -Drelease=true -->
 	</properties>
+
+	<!-- Attempt to be able to use 1.2.1-SNAPSHOT
+		https://jwebswing.com/artifactory/libs-release/public/sh/tak/appbundler/appbundle-maven-plugin
+	-->
+	<pluginRepositories>
+		<pluginRepository>
+			<id>applauncher</id>
+			<name>appbundle-maven-plugin</name>
+			<url>https://github.com/federkasten/appbundle-maven-plugin</url>
+			<layout>default</layout>
+			<snapshots>
+				<enabled>true</enabled>
+			</snapshots>
+		</pluginRepository>
+	</pluginRepositories>
+
 	<repositories>
 		<repository>
 			<id>central</id>
@@ -710,6 +728,15 @@
 				</configuration>
 			</plugin>
 
+			<!--
+					This plugin's configuration is used to creates an Application Bundle for macOS containing all the project dependencies and the necessary
+				-->
+			<plugin>
+				<groupId>sh.tak.appbundler</groupId>
+				<artifactId>appbundle-maven-plugin</artifactId>
+				<version>${appbundle-maven-plugin-version}</version>
+			</plugin>
+
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-resources-plugin</artifactId>
@@ -876,6 +903,13 @@
 				</configuration>
 			</plugin>
 
+			<!-- AppBundler report -->
+			<plugin>
+					<groupId>sh.tak.appbundler</groupId>
+					<artifactId>appbundle-maven-plugin</artifactId>
+					<version>${appbundle-maven-plugin-version}</version>
+			</plugin>
+
 			<!-- Class dependency report -->
 			<plugin>
 				<groupId>org.codehaus.mojo</groupId>
@@ -1027,7 +1061,7 @@
 											implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
 										<transformer
 											implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-											<mainClass>net.pms.PMS</mainClass>
+											<mainClass>${project.mainclass}</mainClass>
 										</transformer>
 									</transformers>
 								</configuration>
@@ -1223,7 +1257,7 @@
 									<archive>
 										<manifest>
 											<addClasspath>true</addClasspath>
-											<mainClass>net.pms.PMS</mainClass>
+											<mainClass>${project.mainclass}</mainClass>
 											<addDefaultImplementationEntries>true</addDefaultImplementationEntries>
 										</manifest>
 									</archive>
@@ -1641,6 +1675,133 @@
 			</build>
 		</profile>
 
+		<!-- macOS DMG profile. Do not work on Windows for now -->
+		<profile>
+			<id>dmg</id>
+			<activation>
+				<activeByDefault>false</activeByDefault>
+				<jdk>[1.7,)</jdk>
+				<property>
+					<name>release</name>
+					<value>true</value>
+				</property>
+			</activation>
+
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>sh.tak.appbundler</groupId>
+						<artifactId>appbundle-maven-plugin</artifactId>
+						<version>${appbundle-maven-plugin-version}</version>
+						<configuration>
+							<mainClass>${project.mainclass}</mainClass>
+							<generateDiskImageFile>true</generateDiskImageFile>
+							<diskImageInternetEnable>false</diskImageInternetEnable>
+							<buildDirectory>${project.build.directory}/${project.name.camel}</buildDirectory>
+							<workingDirectory />
+							<dictionaryFile>resources/Info.plist</dictionaryFile>
+							<javaLauncherName />
+							<iconFile>src/main/resources/images/logo.icns</iconFile>
+							<includeApplicationsSymlink>true</includeApplicationsSymlink>
+							<!-- Option need for use the Shaded JAR. Need 1.2.1-SNAPSHOT
+							<excludeDependencies>true</excludeDependencies>-->
+							<bundleName>${project.name.short}</bundleName>
+							<jvmVersion>1.7+</jvmVersion>
+								<!--
+								<jvmOption>-XaddExports:java.desktop/com.apple.eawt=ALL-UNNAMED</jvmOption>
+								<jvmOption>-Dprol.stack.depth=512m</jvmOption>
+								<vmOptions>-XstartOnFirstThread</vmOptions>
+								<key>StartOnMainThread</key><true/>
+								
+								-->
+							<jvmOptions>
+								<jvmOption>-Xmx768M</jvmOption>
+								<jvmOption>-Xss16M</jvmOption>
+								<jvmOption>-Dapple.laf.useScreenMenuBar=true</jvmOption>
+								<jvmOption>-Dfile.encoding=UTF-8</jvmOption>
+								<jvmOption>-Djava.net.preferIPv4Stack=true</jvmOption>
+								<jvmOption>-Xdock:name=&quot;${project.name}&quot;</jvmOption>
+								<jvmOption>-XX:+UseParallelGC</jvmOption>
+								<jvmOption>-splash:$APP_ROOT/Contents/Resources/splash.png</jvmOption>
+								<jvmOption>-XX:+IgnoreUnrecognizedVMOptions</jvmOption>
+							</jvmOptions>
+							<additionalResources />
+							<additionalClasspath />
+							<!-- Add resources to the app file -->
+							<additionalBundledClasspathResources>
+								<fileSet>
+									<directory>target</directory>
+									<includes>
+										<include>${project.artifactId}.jar</include>
+									</includes>
+								</fileSet>
+								<fileSet>
+									<directory>src/main/resources/images</directory>
+									<includes>
+										<include>splash.png</include>
+										<include>splash@2x.png</include>
+									</includes>
+								</fileSet>
+								<fileSet>
+									<directory>src/main/external-resources/documentation</directory>
+									<includes>
+										<include>**/*</include>
+									</includes>
+								</fileSet>
+								<fileSet>
+									<directory>src/main/external-resources/web</directory>
+									<includes>
+										<include>**/**</include>
+									</includes>
+								</fileSet>
+								<fileSet>
+									<directory>src/main/external-resources/renderers</directory>
+									<includes>
+										<include>*</include>
+									</includes>
+								</fileSet>
+								<fileSet>
+									<directory>src/main/external-resources/plugins</directory>
+									<includes>
+										<include>**/*</include>
+									</includes>
+								</fileSet>
+							</additionalBundledClasspathResources>
+						</configuration>
+						<executions>
+							<execution>
+								<id>MakeDMG</id>
+								<configuration>
+									<diskImageFile>${project.build.directory}/${project.name.short}-${project.version}.dmg</diskImageFile>
+								</configuration>
+								<phase>package</phase>
+								<goals>
+									<goal>bundle</goal>
+								</goals>
+							</execution>
+							<execution>
+								<id>MakeDMGwithJRE</id>
+								<!-- Provide JRE when target environment doesn't have it
+									https://ymasory.github.io/OrangeExtensions/
+									https://java.com/en/download/help/mac_install.xml
+									http://www.oracle.com/technetwork/java/javase/downloads/jre8-downloads-2133155.html
+								<configuration>
+									<jrePath>/Library/Java/JavaVirtualMachines/jre1.8.0_151.jre</jrePath>
+									<jreFullPath />
+									<diskImageFile>${project.build.directory}/${project.artifactId}-${project.version}_with_JRE.dmg</diskImageFile>
+								</configuration>
+ 								<phase>package</phase>
+								<goals>
+									<goal>bundle</goal>
+								</goals>
+								-->
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+
 		<!--
 			Mac OSX profile: takes care of building the pre-final package for macOS.
 			Note: This does not make the .dmg so you will have to do that manually.
@@ -1729,17 +1890,17 @@
 								<configuration>
 									<target>
 										<taskdef name="bundleapp" classname="com.oracle.appbundler.AppBundlerTask"
-											classpath="${basedir}/src/main/external-resources/lib/appbundler-1.3.${project.name.short}.jar"/>
+											classpath="${project.external-resources}/lib/appbundler-1.3.${project.name.short}.jar"/>
 										<bundleapp  outputdirectory="${project.build.directory}/${project.artifactId}-${project.version}"
 													name="${project.name}"
 													displayname="${project.name}"
 													executableName="${project.name.short}"
-													identifier="net.pms.PMS"
+													identifier="${project.mainclass}"
 													version="${project.version}"
 													icon="${project.basedir}/src/main/resources/images/logo.icns"
 													applicationCategory="public.app-category.entertainment"
 													workingdirectory="$APP_ROOT/Contents/Resources"
-													mainclassname="net.pms.PMS">
+													mainclassname="${project.mainclass}">
 											<classpath file="${project.build.directory}/${project.artifactId}.jar"/>
 											<option value="-Xmx768M"/>
 											<option value="-Xss16M"/>
@@ -1769,7 +1930,7 @@
 									</descriptors>
 									<archive>
 										<manifest>
-											<mainClass>net.pms.PMS</mainClass>
+											<mainClass>${project.mainclass}</mainClass>
 											<addDefaultImplementationEntries>true</addDefaultImplementationEntries> <!-- see above for documentation -->
 										</manifest>
 									</archive>
@@ -1791,7 +1952,7 @@
 									</descriptors>
 									<archive>
 										<manifest>
-											<mainClass>net.pms.PMS</mainClass>
+											<mainClass>${project.mainclass}</mainClass>
 											<addDefaultImplementationEntries>true</addDefaultImplementationEntries>
 										</manifest>
 									</archive>
