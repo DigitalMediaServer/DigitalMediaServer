@@ -26,8 +26,6 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Timestamp;
 import java.util.EnumSet;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
@@ -46,14 +44,6 @@ import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
  */
 public final class TableCoverArtArchive extends Table {
 
-	/**
-	 * tableLock is used to synchronize database access on table level.
-	 * H2 calls are thread safe, but the database's multithreading support is
-	 * described as experimental. This lock therefore used in addition to SQL
-	 * transaction locks. All access to this table must be guarded with this
-	 * lock. The lock allows parallel reads.
-	 */
-	private static final ReadWriteLock tableLock = new ReentrantReadWriteLock();
 	private static final Logger LOGGER = LoggerFactory.getLogger(TableCoverArtArchive.class);
 	private static final TableId ID = TableId.COVER_ART_ARCHIVE;
 
@@ -120,7 +110,7 @@ public final class TableCoverArtArchive extends Table {
 		if (currentVersion < 1) {
 			currentVersion = 1;
 		}
-		tableLock.writeLock().lock();
+		connection.setAutoCommit(false);
 		try {
 			for (int version = currentVersion; version < TABLE_VERSION; version++) {
 				LOGGER.trace("Upgrading table {} from version {} to {}", ID, version, version + 1);
@@ -134,8 +124,11 @@ public final class TableCoverArtArchive extends Table {
 				}
 			}
 			setTableVersion(connection, ID, TABLE_VERSION);
+		} catch (SQLException e) {
+			connection.rollback();
+			throw e;
 		} finally {
-			tableLock.writeLock().unlock();
+			connection.setAutoCommit(true);
 		}
 	}
 
@@ -159,9 +152,8 @@ public final class TableCoverArtArchive extends Table {
 				LOGGER.trace("Searching for Cover Art Archive cover with \"{}\" before update", query);
 			}
 
-			tableLock.writeLock().lock();
+			connection.setAutoCommit(false);
 			try (Statement statement = connection.createStatement(ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE)) {
-				connection.setAutoCommit(false);
 				try (ResultSet result = statement.executeQuery(query)) {
 					if (result.next()) {
 						if (cover != null || result.getBlob("COVER") == null) {
@@ -191,11 +183,13 @@ public final class TableCoverArtArchive extends Table {
 						}
 						result.insertRow();
 					}
-				} finally {
 					connection.commit();
 				}
+			} catch (SQLException e) {
+				connection.rollback();
+				throw e;
 			} finally {
-				tableLock.writeLock().unlock();
+				connection.setAutoCommit(true);
 			}
 		} catch (SQLException e) {
 			LOGGER.error("Database error while writing Cover Art Archive cover for MBID \"{}\": {}", mBID, e.getMessage());
@@ -223,7 +217,6 @@ public final class TableCoverArtArchive extends Table {
 				LOGGER.trace("Searching for cover with \"{}\"", query);
 			}
 
-			tableLock.readLock().lock();
 			try (Statement statement = connection.createStatement()) {
 				try (ResultSet resultSet = statement.executeQuery(query)) {
 					if (resultSet.next()) {
@@ -232,8 +225,6 @@ public final class TableCoverArtArchive extends Table {
 						result = new CoverArtArchiveResult(false, null, null);
 					}
 				}
-			} finally {
-				tableLock.readLock().unlock();
 			}
 		} catch (SQLException e) {
 			LOGGER.error(
