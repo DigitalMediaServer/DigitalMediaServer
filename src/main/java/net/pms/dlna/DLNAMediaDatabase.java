@@ -477,6 +477,9 @@ public class DLNAMediaDatabase implements Runnable {
 					}
 				}
 			}
+		} catch (SQLException e) {
+			connection.rollback();
+			throw e;
 		}
 	}
 
@@ -555,6 +558,9 @@ public class DLNAMediaDatabase implements Runnable {
 					}
 				}
 			}
+		} catch (SQLException e) {
+			connection.rollback();
+			throw e;
 		}
 	}
 
@@ -652,6 +658,9 @@ public class DLNAMediaDatabase implements Runnable {
 						rs.updateRow();
 					}
 				}
+			} catch (SQLException e) {
+				connection.rollback();
+				throw e;
 			}
 			if (fileId < 0) {
 				// No fileId means it didn't exist
@@ -736,6 +745,9 @@ public class DLNAMediaDatabase implements Runnable {
 							fileId = rs.getInt(1);
 						}
 					}
+				} catch (SQLException e) {
+					connection.rollback();
+					throw e;
 				}
 			}
 
@@ -745,6 +757,7 @@ public class DLNAMediaDatabase implements Runnable {
 			}
 
 			connection.commit();
+			connection.setAutoCommit(true);
 		} catch (SQLException se) {
 			if (se.getErrorCode() == 23505) {
 				throw new SQLException(String.format(
