@@ -27,8 +27,6 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Timestamp;
 import java.util.EnumSet;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
@@ -49,14 +47,6 @@ import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 public final class TableMusicBrainzReleases extends Table {
 
-	/**
-	 * tableLock is used to synchronize database access on table level.
-	 * H2 calls are thread safe, but the database's multithreading support is
-	 * described as experimental. This lock therefore used in addition to SQL
-	 * transaction locks. All access to this table must be guarded with this
-	 * lock. The lock allows parallel reads.
-	 */
-	private static final ReadWriteLock tableLock = new ReentrantReadWriteLock();
 	private static final Logger LOGGER = LoggerFactory.getLogger(TableMusicBrainzReleases.class);
 	private static final TableId ID = TableId.MUSIC_BRAINZ_RELEASES;
 
@@ -125,7 +115,7 @@ public final class TableMusicBrainzReleases extends Table {
 		if (currentVersion < 1) {
 			currentVersion = 1;
 		}
-		tableLock.writeLock().lock();
+		connection.setAutoCommit(false);
 		try {
 			for (int version = currentVersion; version < TABLE_VERSION; version++) {
 				LOGGER.trace("Upgrading table {} from version {} to {}", ID, version, version + 1);
@@ -146,8 +136,12 @@ public final class TableMusicBrainzReleases extends Table {
 				}
 			}
 			setTableVersion(connection, ID, TABLE_VERSION);
+			connection.commit();
+		} catch (SQLException e) {
+			connection.rollback();
+			throw e;
 		} finally {
-			tableLock.writeLock().unlock();
+			connection.setAutoCommit(true);
 		}
 	}
 
@@ -167,8 +161,8 @@ public final class TableMusicBrainzReleases extends Table {
 				LOGGER.trace("Searching for release MBID with \"{}\" before update", query);
 			}
 
+			connection.setAutoCommit(false);
 			try (Statement statement = connection.createStatement(ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE)) {
-				connection.setAutoCommit(false);
 				try (ResultSet result = statement.executeQuery(query)) {
 					if (result.next()) {
 						if (isNotBlank(mBID) || !isNotBlank(result.getString("MBID"))) {
@@ -226,9 +220,13 @@ public final class TableMusicBrainzReleases extends Table {
 						}
 						result.insertRow();
 					}
-				} finally {
 					connection.commit();
 				}
+			} catch (SQLException e) {
+				connection.rollback();
+				throw e;
+			} finally {
+				connection.setAutoCommit(true);
 			}
 		} catch (SQLException e) {
 			LOGGER.error(
