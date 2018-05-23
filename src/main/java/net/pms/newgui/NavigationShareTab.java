@@ -298,7 +298,7 @@ public class NavigationShareTab {
 					int ab = Integer.parseInt(seekpos.getText());
 					configuration.setThumbnailSeekPos(ab);
 					if (configuration.getUseCache()) {
-						PMS.get().getDatabase().init(true);
+						PMS.get().getDatabase().deleteThumbnails();
 					}
 				} catch (NumberFormatException nfe) {
 					LOGGER.debug("Could not parse thumbnail seek position from \"" + seekpos.getText() + "\"");
@@ -706,10 +706,6 @@ public class NavigationShareTab {
 					configuration.setFullyPlayedAction(fullyPlayedActionModel.getSelectedKey());
 					fullyPlayedOutputDirectory.setEnabled(fullyPlayedActionModel.getSelectedKey() == FullyPlayedAction.MOVE_FOLDER);
 					selectFullyPlayedOutputDirectory.setEnabled(fullyPlayedActionModel.getSelectedKey() == FullyPlayedAction.MOVE_FOLDER);
-
-					if (configuration.getUseCache() && fullyPlayedActionModel.getSelectedKey() == FullyPlayedAction.NO_ACTION) {
-						PMS.get().getDatabase().init(true);
-					}
 				}
 			}
 		});
