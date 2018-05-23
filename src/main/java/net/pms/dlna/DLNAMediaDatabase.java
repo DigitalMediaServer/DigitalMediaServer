@@ -837,6 +837,21 @@ public class DLNAMediaDatabase implements Runnable {
 		}
 	}
 
+	public synchronized void deleteThumbnails() {
+		try (
+			Connection conn = getConnection();
+			PreparedStatement ps = conn.prepareStatement(
+				"UPDATE FILES SET THUMB = ?"
+			);
+		) {
+			ps.setNull(1, Types.OTHER);
+			ps.executeUpdate();
+		} catch (SQLException se) {
+			LOGGER.error("Error deleting cached thumbnails: {}", se.getMessage());
+			LOGGER.trace("", se);
+		}
+	}
+
 	public synchronized void updateThumbnail(String name, long modified, DLNAMediaInfo media) {
 		try (
 			Connection conn = getConnection();
@@ -853,7 +868,7 @@ public class DLNAMediaDatabase implements Runnable {
 			}
 			ps.executeUpdate();
 		} catch (SQLException se) {
-			LOGGER.error("Error updating cached thumbnail for \"{}\": {}", se.getMessage());
+			LOGGER.error("Error updating cached thumbnail for \"{}\": {}", media, se.getMessage());
 			LOGGER.trace("", se);
 		}
 	}
