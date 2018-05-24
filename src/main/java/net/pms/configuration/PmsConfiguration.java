@@ -88,7 +88,8 @@ import org.slf4j.LoggerFactory;
 public class PmsConfiguration extends RendererConfiguration {
 	private static final Logger LOGGER = LoggerFactory.getLogger(PmsConfiguration.class);
 	protected static final int DEFAULT_PROXY_SERVER_PORT = -1;
-	protected static final int DEFAULT_SERVER_PORT = 5001;
+	public static final int DEFAULT_SERVER_PORT = 5252;
+	public static final int DEFAULT_WEBINTERFACE_PORT = 6363;
 	// 90000 lines is approximately 10 MiB depending on locale and message length
 	public static final int LOGGING_LOGS_TAB_LINEBUFFER_MAX = 90000;
 	public static final int LOGGING_LOGS_TAB_LINEBUFFER_MIN = 100;
@@ -1095,7 +1096,7 @@ public class PmsConfiguration extends RendererConfiguration {
 	}
 
 	/**
-	 * The server port where DMS listens for TCP/IP traffic. Default value is 5001.
+	 * The server port where DMS listens for TCP/IP traffic. Default value is 5252.
 	 * @return The port number.
 	 */
 	public int getServerPort() {
@@ -4499,7 +4500,7 @@ public class PmsConfiguration extends RendererConfiguration {
 	 * Default port for the WEB interface.
 	 */
 	public int getWebPort() {
-		return getInt(KEY_WEB_PORT, 9001);
+		return getInt(KEY_WEB_PORT, DEFAULT_WEBINTERFACE_PORT);
 	}
 
 	public boolean useWebInterface() {

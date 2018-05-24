@@ -318,7 +318,10 @@ public class GeneralTab {
 				}
 			});
 
-			port = new JTextField(configuration.getServerPort() != 5001 ? "" + configuration.getServerPort() : "");
+			port = new JTextField(configuration.getServerPort() != PmsConfiguration.DEFAULT_SERVER_PORT ?
+				Integer.toString(configuration.getServerPort()) :
+				""
+			);
 			port.setToolTipText(Messages.getString("NetworkTab.64"));
 			port.addKeyListener(new KeyAdapter() {
 				@Override
@@ -326,7 +329,7 @@ public class GeneralTab {
 					try {
 						String p = port.getText();
 						if (StringUtils.isEmpty(p)) {
-							p = "5001";
+							p = Integer.toString(PmsConfiguration.DEFAULT_SERVER_PORT);
 						}
 						int ab = Integer.parseInt(p);
 						configuration.setServerPort(ab);
