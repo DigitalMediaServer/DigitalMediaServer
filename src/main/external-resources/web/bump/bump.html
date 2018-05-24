@@ -5,7 +5,7 @@
 		<link rel="stylesheet" href="/files/web-narrow.css" type="text/css">
 		<link rel="stylesheet" href="/files/web-wide.css" type="text/css">
 		<script>
-			server_addr = 'http://127.0.0.1:9001';
+			server_addr = 'http://127.0.0.1:6363';
 
 			function set_addr(new_addr) {
 				var u = document.getElementById('addr');
@@ -65,7 +65,7 @@
 							<a id="bookmarklet" title="press to test the bookmarklet"
 							   href="javascript:(function(){
 
-							   var addr='http://127.0.0.1:9001';
+							   var addr='http://127.0.0.1:6363';
 							   if(typeof bump !== 'undefined' && bump.enabled()){return;}
 							   loadjs('https://ajax.googleapis.com/ajax/libs/jquery/2.1.0/jquery.min.js',function(){
 							   loadjs(addr+'/bump/bump.js',function(){
@@ -163,7 +163,7 @@
 						switch server modes). Alternatively you can also switch to the <u><i>http</i></u> version
 						of the page if one is available (e.g. on youtube).</li>
 						<li>The button is currently configured for DMS
-							web server address at <i><b><code id="addr">http://127.0.0.1:9001</code></b></i>
+							web server address at <i><b><code id="addr">http://127.0.0.1:6363</code></b></i>
 							(<a href="javascript:get_addr()" title="Click to set the network address of DMS' host machine">change...</a>
 							then repeat setup).</li>
 						<li>You can create a new skin for the player as follows:
