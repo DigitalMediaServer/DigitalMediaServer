@@ -128,7 +128,7 @@ public class PlayerControlHandler implements HttpHandler {
 			selectedPlayers.put(httpExchange.getRemoteAddress().getAddress(), player);
 		} else if (p.length == 2) {
 			response = parent.getResources().read("bump/bump.html")
-				.replace("http://127.0.0.1:9001", protocol + PMS.get().getServer().getHost() + ":" + port);
+				.replace("http://127.0.0.1:6363", protocol + PMS.get().getServer().getHost() + ":" + port);
 		} else if (p[2].equals("bump.js")) {
 			response = getBumpJS();
 			mime = "text/javascript";
