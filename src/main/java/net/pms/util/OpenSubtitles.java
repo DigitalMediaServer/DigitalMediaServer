@@ -258,8 +258,9 @@ public class OpenSubtitles {
 	 * @return The {@link InputStream} with the response.
 	 * @throws IOException If an error occurs during the operation.
 	 */
+	@Nonnull
 	private static InputStream sendXMLStream(
-		HttpURLConnection connection,
+		@Nonnull HttpURLConnection connection,
 		int retries,
 		long retrySleepMS
 	) throws IOException {
@@ -367,7 +368,8 @@ public class OpenSubtitles {
 			params.add(new ValueString(UA));
 
 			// Send request
-			try (OutputStream out = LOGGER.isTraceEnabled() ?
+			try (
+				OutputStream out = LOGGER.isTraceEnabled() ?
 				new LoggableOutputStream(connection.getOutputStream(), StandardCharsets.UTF_8) :
 				connection.getOutputStream()
 			) {
@@ -384,10 +386,7 @@ public class OpenSubtitles {
 
 			// Parse reply
 			params = null;
-			try (InputStream reply = LOGGER.isTraceEnabled() ?
-				new LoggableInputStream(sendXMLStream(connection, 5, 500), StandardCharsets.UTF_8) :
-				sendXMLStream(connection, 5, 500)
-			) {
+			try (InputStream reply = encapsulateInputStream(connection, sendXMLStream(connection, 5, 500))) {
 				LOGGER.trace("Parsing OpenSubtitles login response");
 				XMLStreamReader reader = null;
 				try {
@@ -831,6 +830,7 @@ public class OpenSubtitles {
 			connection.setDoInput(true);
 			connection.setDoOutput(true);
 			connection.setRequestProperty("Content-Type", "text/xml;charset=UTF-8");
+			connection.setRequestProperty("Accept-Encoding", "gzip");
 			connection.setRequestMethod("POST");
 			connection.setConnectTimeout(3000);
 
@@ -884,10 +884,7 @@ public class OpenSubtitles {
 
 			// Parse reply
 			params = null;
-			try (InputStream reply = LOGGER.isTraceEnabled() ?
-				new LoggableInputStream(sendXMLStream(connection), StandardCharsets.UTF_8) :
-				sendXMLStream(connection)
-			) {
+			try (InputStream reply = encapsulateInputStream(connection, sendXMLStream(connection))) {
 				LOGGER.trace("Parsing OpenSubtitles search by {} response", logDescription);
 				XMLStreamReader reader = null;
 				try {
@@ -961,6 +958,20 @@ public class OpenSubtitles {
 			LOGGER.trace("", e);
 			return new ArrayList<>();
 		}
+	}
+
+	@Nullable
+	protected static InputStream encapsulateInputStream(@Nonnull HttpURLConnection connection, @Nullable InputStream inputStream) throws IOException {
+		if (inputStream == null) {
+			return null;
+		}
+		if ("gzip".equals(connection.getContentEncoding())) {
+			inputStream = new GZIPInputStream(inputStream);
+		}
+		if (LOGGER.isTraceEnabled()) {
+			inputStream = new LoggableInputStream(inputStream);
+		}
+		return inputStream;
 	}
 
 	/**
@@ -1105,6 +1116,7 @@ public class OpenSubtitles {
 			connection.setDoInput(true);
 			connection.setDoOutput(true);
 			connection.setRequestProperty("Content-Type", "text/xml;charset=UTF-8");
+			connection.setRequestProperty("Accept-Encoding", "gzip");
 			connection.setRequestMethod("POST");
 			connection.setConnectTimeout(3000);
 
@@ -1156,10 +1168,7 @@ public class OpenSubtitles {
 
 			// Parse reply
 			params = null;
-			try (InputStream reply = LOGGER.isTraceEnabled() ?
-				new LoggableInputStream(sendXMLStream(connection), StandardCharsets.UTF_8) :
-				sendXMLStream(connection)
-			) {
+			try (InputStream reply = encapsulateInputStream(connection, sendXMLStream(connection))) {
 				LOGGER.trace("Parsing OpenSubtitles CheckMovieHash2 response");
 				XMLStreamReader reader = null;
 				try {
@@ -1430,6 +1439,7 @@ public class OpenSubtitles {
 			connection.setDoInput(true);
 			connection.setDoOutput(true);
 			connection.setRequestProperty("Content-Type", "text/xml;charset=UTF-8");
+			connection.setRequestProperty("Accept-Encoding", "gzip");
 			connection.setRequestMethod("POST");
 			connection.setConnectTimeout(3000);
 
@@ -1477,10 +1487,7 @@ public class OpenSubtitles {
 
 			// Parse reply
 			params = null;
-			try (InputStream reply = LOGGER.isTraceEnabled() ?
-				new LoggableInputStream(sendXMLStream(connection), StandardCharsets.UTF_8) :
-				sendXMLStream(connection)
-			) {
+			try (InputStream reply = encapsulateInputStream(connection, sendXMLStream(connection))) {
 				LOGGER.trace("Parsing OpenSubtitles GuessMovieFromString response");
 				XMLStreamReader reader = null;
 				try {
