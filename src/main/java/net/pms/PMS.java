@@ -1538,12 +1538,15 @@ public class PMS {
 			LOGGER.debug("", e);
 
 			if (!isHeadless()) {
-				JOptionPane.showMessageDialog(
+				ErrorDialog errorDialog = new ErrorDialog(
 					null,
-					sb.toString(),
 					Messages.getString("PMS.42"),
-					JOptionPane.ERROR_MESSAGE
+					sb.toString(),
+					null,
+					e,
+					LOGGER.isTraceEnabled()
 				);
+				errorDialog.show();
 			}
 		}
 	}
