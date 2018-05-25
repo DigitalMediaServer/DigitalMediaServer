@@ -539,6 +539,13 @@ public class TableManager implements Service {
 			.append(databaseFilename)
 			.append(";MULTI_THREADED=1");
 		if (configuration != null) {
+			int cacheSize = configuration.getDatabaseCacheSize();
+			if (cacheSize > 0) {
+				sb.append(";CACHE_SIZE=").append(cacheSize);
+				LOGGER.debug("Database cache size is {}", StringUtil.formatBytes(cacheSize * 1024L, true));
+			} else {
+				LOGGER.debug("Database cache is disabled");
+			}
 			if (configuration.getDatabaseLogging()) {
 				sb.append(";TRACE_LEVEL_FILE=4");
 				LOGGER.info("Database logging is enabled");
