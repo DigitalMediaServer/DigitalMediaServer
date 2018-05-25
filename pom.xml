@@ -131,6 +131,7 @@
 	<!-- Attempt to be able to use 1.2.1-SNAPSHOT
 		https://jwebswing.com/artifactory/libs-release/public/sh/tak/appbundler/appbundle-maven-plugin
 	-->
+	<!--
 	<pluginRepositories>
 		<pluginRepository>
 			<id>applauncher</id>
@@ -142,6 +143,7 @@
 			</snapshots>
 		</pluginRepository>
 	</pluginRepositories>
+	-->
 
 	<repositories>
 		<repository>
@@ -185,8 +187,8 @@
 	</repositories>
 
 	<dependencies>
-		<!-- TODO this can be removed when MEncoder is removed -->
 		<dependency>
+			<!-- This can be removed when MEncoder is removed -->
 			<groupId>org.beanshell</groupId>
 			<artifactId>bsh-core</artifactId>
 			<version>2.0b4</version>
@@ -470,6 +472,41 @@
 			<version>1.1.1</version>
 		</dependency>
 		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-api</artifactId>
+			<version>1.7.25</version>
+		</dependency>
+		<dependency>
+			<groupId>commons-codec</groupId>
+			<artifactId>commons-codec</artifactId>
+			<version>1.6</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.httpcomponents</groupId>
+			<artifactId>httpclient</artifactId>
+			<version>4.2.1</version>
+		</dependency>
+		<dependency>
+			<groupId>com.google.code.findbugs</groupId>
+			<artifactId>jsr305</artifactId>
+			<version>3.0.1</version>
+		</dependency>
+		<dependency>
+			<groupId>commons-lang</groupId>
+			<artifactId>commons-lang</artifactId>
+			<version>2.6</version>
+		</dependency>
+		<dependency>
+			<groupId>javax.jmdns</groupId>
+			<artifactId>jmdns</artifactId>
+			<version>3.4.1</version>
+		</dependency>
+		<dependency>
+			<groupId>org.jdom</groupId>
+			<artifactId>jdom2</artifactId>
+			<version>2.0.6</version>
+		</dependency>
+		<dependency>
 			<groupId>com.samskivert</groupId>
 			<artifactId>jmustache</artifactId>
 			<version>1.13</version>
@@ -669,7 +706,7 @@
 							There is an incompatible JNA native library installed on this system.
 						-->
 						<shutdown>kill</shutdown>
-						<forkCount>1.5C</forkCount>
+						<!--<forkCount>1.5C</forkCount>-->
 						<reuseForks>true</reuseForks>
 						<!--
 							Only one argLine element is processed.
@@ -698,6 +735,11 @@
 						<pushFileTitle>Digital Media Server</pushFileTitle>
 						<projectName>Digital Media Server</projectName>
 					</configuration>
+				</plugin>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-antrun-plugin</artifactId>
+					<version>1.8</version>
 				</plugin>
 			</plugins>
 		</pluginManagement>
@@ -1088,7 +1130,6 @@
 					<plugin>
 						<groupId>org.apache.maven.plugins</groupId>
 						<artifactId>maven-antrun-plugin</artifactId>
-						<version>1.8</version>
 						<executions>
 							<execution>
 								<id>download-files-windows</id>
@@ -1214,7 +1255,6 @@
 					<plugin>
 						<groupId>org.apache.maven.plugins</groupId>
 						<artifactId>maven-antrun-plugin</artifactId>
-						<version>1.8</version>
 						<executions>
 							<execution>
 								<id>download-files-linux</id>
@@ -1286,7 +1326,6 @@
 					<plugin>
 						<groupId>org.apache.maven.plugins</groupId>
 						<artifactId>maven-antrun-plugin</artifactId>
-						<version>1.8</version>
 						<executions>
 							<execution>
 								<id>create-control-linux</id>
@@ -1490,8 +1529,8 @@
 
 							-->
 							<outputFileName>${project.artifactId}-${project.version}.noarch.rpm</outputFileName>
-							<leadOverrideArchitecture/>
-							<leadOverrideOperatingSystem/>
+							<leadOverrideArchitecture />
+							<leadOverrideOperatingSystem />
 							<requires>
 								<!--
 									Boolean dependencies have only been introcuded since RPM 4.13
@@ -1542,7 +1581,7 @@
 							</rulesets>
 							<entries>
 								<entry>
-									<name>/usr/local/lib/${project.artifactId}</name>
+									<name>/usr/lib/${project.artifactId}</name>
 									<directory>true</directory>
 									<ruleset>default-settings</ruleset>
 								</entry>
@@ -1557,12 +1596,12 @@
 									<ruleset>default-settings</ruleset>
 								</entry>
 								<entry>
-									<name>/usr/local/lib/${project.artifactId}/documentation</name>
+									<name>/usr/lib/${project.artifactId}/documentation</name>
 									<directory>true</directory>
 									<ruleset>default-settings</ruleset>
 								</entry>
 								<entry>
-									<name>/usr/local/lib/${project.artifactId}/documentation</name>
+									<name>/usr/lib/${project.artifactId}/documentation</name>
 									<collect>
 										<from>${project.external-resources}/documentation</from>
 										<directories>true</directories>
@@ -1571,12 +1610,12 @@
 									<documentation>true</documentation>
 								</entry>
 								<entry>
-									<name>/usr/local/lib/${project.artifactId}/plugins</name>
+									<name>/usr/lib/${project.artifactId}/plugins</name>
 									<directory>true</directory>
 									<ruleset>default-settings</ruleset>
 								</entry>
 								<entry>
-									<name>/usr/local/lib/${project.artifactId}/plugins</name>
+									<name>/usr/lib/${project.artifactId}/plugins</name>
 									<collect>
 										<from>${project.external-resources}/plugins</from>
 										<directories>true</directories>
@@ -1584,12 +1623,12 @@
 									<ruleset>default-settings</ruleset>
 								</entry>
 								<entry>
-									<name>/usr/local/lib/${project.artifactId}/renderers</name>
+									<name>/usr/lib/${project.artifactId}/renderers</name>
 									<directory>true</directory>
 									<ruleset>default-settings</ruleset>
 								</entry>
 								<entry>
-									<name>/usr/local/lib/${project.artifactId}/renderers</name>
+									<name>/usr/lib/${project.artifactId}/renderers</name>
 									<collect>
 										<from>${project.external-resources}/renderers</from>
 										<directories>false</directories>
@@ -1597,12 +1636,12 @@
 									<ruleset>default-settings</ruleset>
 								</entry>
 								<entry>
-									<name>/usr/local/lib/${project.artifactId}/web</name>
+									<name>/usr/lib/${project.artifactId}/web</name>
 									<directory>true</directory>
 									<ruleset>default-settings</ruleset>
 								</entry>
 								<entry>
-									<name>/usr/local/lib/${project.artifactId}/web</name>
+									<name>/usr/lib/${project.artifactId}/web</name>
 									<collect>
 										<from>${project.external-resources}/web</from>
 										<directories>true</directories>
@@ -1610,33 +1649,33 @@
 									<ruleset>default-settings</ruleset>
 								</entry>
 								<entry>
-									<name>/usr/local/lib/${project.artifactId}/${project.artifactId}.sh</name>
+									<name>/usr/lib/${project.artifactId}/${project.artifactId}.sh</name>
 									<file>${project.external-resources}/${project.artifactId}.sh</file>
 									<ruleset>default-settings</ruleset>
 									<mode>0755</mode>
 								</entry>
 								<entry>
-									<name>/usr/local/lib/${project.artifactId}/logback.xml</name>
+									<name>/usr/lib/${project.artifactId}/logback.xml</name>
 									<file>${project.external-resources}/logback.xml</file>
 									<ruleset>default-settings</ruleset>
 								</entry>
 								<entry>
-									<name>/usr/local/lib/${project.artifactId}/logback.headless.xml</name>
+									<name>/usr/lib/${project.artifactId}/logback.headless.xml</name>
 									<file>${project.external-resources}/logback.headless.xml</file>
 									<ruleset>default-settings</ruleset>
 								</entry>
 								<entry>
-									<name>/usr/local/lib/${project.artifactId}/DummyInput.jpg</name>
+									<name>/usr/lib/${project.artifactId}/DummyInput.jpg</name>
 									<file>${project.external-resources}/DummyInput.jpg</file>
 									<ruleset>default-settings</ruleset>
 								</entry>
 								<entry>
-									<name>/usr/local/lib/${project.artifactId}/DummyInput.ass</name>
+									<name>/usr/lib/${project.artifactId}/DummyInput.ass</name>
 									<file>${project.external-resources}/DummyInput.ass</file>
 									<ruleset>default-settings</ruleset>
 								</entry>
 								<entry>
-									<name>/usr/local/lib/${project.artifactId}/${project.artifactId}.jar</name>
+									<name>/usr/lib/${project.artifactId}/${project.artifactId}.jar</name>
 									<file>${project.build.directory}/${project.artifactId}.jar</file>
 									<ruleset>default-settings</ruleset>
 								</entry>
@@ -1661,15 +1700,112 @@
 									<ruleset>default-settings</ruleset>
 								</entry>
 								<entry>
-									<name>/usr/local/bin/${project.artifactId}</name>
-									<linkTo>/usr/local/lib/${project.artifactId}/${project.artifactId}.sh</linkTo>
+									<name>/usr/bin/${project.artifactId}</name>
+									<linkTo>/usr/lib/${project.artifactId}/${project.artifactId}.sh</linkTo>
 								</entry>
 								<entry>
-									<name>/usr/local/bin/${project.name.short}</name>
-									<linkTo>/usr/local/lib/${project.artifactId}/${project.artifactId}.sh</linkTo>
+									<name>/usr/bin/${project.name.short}</name>
+									<linkTo>/usr/lib/${project.artifactId}/${project.artifactId}.sh</linkTo>
 								</entry>
 							</entries>
 						</configuration>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+
+		<!-- macOS PKG profile -->
+		<profile>
+			<id>pkg</id>
+			<activation>
+				<activeByDefault>false</activeByDefault>
+				<jdk>[1.8,)</jdk>
+				<property>
+					<name>release</name>
+					<value>true</value>
+				</property>
+			</activation>
+
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-antrun-plugin</artifactId>
+						<executions>
+							<execution>
+								<id>create-dir-macos</id>
+								<phase>process-resources</phase>
+								<goals>
+									<goal>run</goal>
+								</goals>
+								<configuration>
+									<target>
+										<mkdir dir="${project.build.directory}/darwin/root/${project.artifactId}-macosx-x64" />
+										<chmod dir="${project.build.directory}/darwin/root/${project.artifactId}-macosx-x64" type="dir" perm="0755"/>
+									</target>
+								</configuration>
+							</execution>
+						</executions>
+					</plugin>
+					<plugin>
+						<groupId>com.github.gino0631</groupId>
+						<artifactId>pkg-maven-plugin</artifactId>
+						<version>1.1</version>
+						<executions>
+							<execution>
+								<id>create-macosx-pkg</id>
+								<phase>package</phase>
+								<goals>
+									<goal>product</goal>
+								</goals>
+								<configuration>
+									<root>${project.build.directory}/darwin/root/${project.artifactId}-macosx-x64</root>
+									<outputFile>${project.name.camel}-${project.version}.pkg</outputFile>
+									<packageIdentifier>${project.groupId}.${project.artifactId}.pkg</packageIdentifier>
+									<packageVersion>${project.version}</packageVersion>
+									<packageTitle>${project.name}</packageTitle>
+									<distribution>
+										<background>
+											<alignment>bottomLeft</alignment>
+											<scaling>proportional</scaling>
+											<resources>
+												<resource>${project.basedir}/src/main/resources/images/splash.png</resource>
+											</resources>
+										</background>
+										<license>
+											<resources>
+												<resource>${project.basedir}/src/main/external-resources/osx/license.rtf</resource>
+												<resource>
+													<file>${project.basedir}/src/main/external-resources/osx/gpl-2.0-fr.rtf</file>
+													<lang>fr</lang>
+												</resource>
+											</resources>
+										</license>
+										<readme>${project.basedir}/src/main/external-resources/readme.rtf</readme>
+										<conclusion>${project.basedir}/src/main/external-resources/conclusion.rtf</conclusion>
+									</distribution>
+									<permissionSets>
+										<permissionSet>
+											<includes>
+												<include>**/*.sh</include>
+											</includes>
+											<excludes />
+											<fileMode>0755</fileMode>
+											<directoryMode />
+											<uid />
+											<gid />
+										</permissionSet>
+									</permissionSets>
+									<signing>
+										<keystore>${project.build.directory}/dms.p12</keystore>
+										<storetype>PKCS12</storetype>
+										<storepass>${project.name.camel}</storepass>
+										<tsa>http://timestamp.apple.com/ts01</tsa>
+										<skip>true</skip>
+									</signing>
+								</configuration>
+							</execution>
+						</executions>
 					</plugin>
 				</plugins>
 			</build>
@@ -1726,7 +1862,7 @@
 								<jvmOption>-XX:+IgnoreUnrecognizedVMOptions</jvmOption>
 							</jvmOptions>
 							<additionalResources />
-							<additionalClasspath />
+							<additionalClasspath>${project.build.directory}/${project.artifactId}.jar</additionalClasspath>
 							<!-- Add resources to the app file -->
 							<additionalBundledClasspathResources>
 								<fileSet>
@@ -1826,7 +1962,6 @@
 					<plugin>
 						<groupId>org.apache.maven.plugins</groupId>
 						<artifactId>maven-antrun-plugin</artifactId>
-						<version>1.8</version>
 						<executions>
 							<execution>
 								<id>process-resources-osx-java</id>
