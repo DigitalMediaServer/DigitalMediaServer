@@ -19,6 +19,7 @@
 package net.pms.configuration;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import ch.qos.logback.classic.Level;
 import com.sun.jna.Platform;
 import java.awt.Color;
@@ -29,6 +30,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
+import java.math.RoundingMode;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
@@ -55,13 +57,16 @@ import net.pms.formats.Format;
 import net.pms.newgui.NavigationShareTab.SharedFoldersTableModel;
 import net.pms.service.PreventSleepMode;
 import net.pms.service.Services;
+import net.pms.util.ConversionUtil;
 import net.pms.util.CoverSupplier;
 import net.pms.util.FilePermissions;
 import net.pms.util.FileUtil;
+import net.pms.util.ConversionUtil.UnitPrefix;
 import net.pms.util.FileUtil.FileLocation;
 import net.pms.util.FullyPlayedAction;
 import net.pms.util.Languages;
 import net.pms.util.LogSystemInformationMode;
+import net.pms.util.Pair;
 import net.pms.util.PropertiesUtil;
 import net.pms.util.StringUtil;
 import net.pms.util.SubtitleColor;
@@ -151,6 +156,7 @@ public class PmsConfiguration extends RendererConfiguration {
 	protected static final String KEY_CODE_THUMBS = "code_show_thumbs_no_code";
 	protected static final String KEY_CODE_TMO = "code_valid_timeout";
 	protected static final String KEY_CODE_USE = "code_enable";
+	protected static final String KEY_DATABASE_CACHE_SIZE = "db_cache_size";
 	protected static final String KEY_DISABLE_FAKESIZE = "disable_fakesize";
 	public    static final String KEY_DISABLE_SUBTITLES = "disable_subtitles";
 	protected static final String KEY_DISABLE_TRANSCODE_FOR_EXTENSIONS = "disable_transcode_for_extensions";
@@ -4238,6 +4244,98 @@ public class PmsConfiguration extends RendererConfiguration {
 
 	public void setLoggingUseSyslog(boolean value) {
 		configuration.setProperty(KEY_LOGGING_USE_SYSLOG, value);
+	}
+
+	/**
+	 * Gets the database cache size in KiB.
+	 *
+	 * @return The database cache size in KiB.
+	 */
+	public int getDatabaseCacheSize() {
+		long jvmMemory = Runtime.getRuntime().maxMemory();
+		Object cacheSizeObject = configuration.getProperty(KEY_DATABASE_CACHE_SIZE);
+		String cacheSizeString = cacheSizeObject == null ? null :
+			cacheSizeObject instanceof String ?
+				(String) cacheSizeObject :
+				cacheSizeObject.toString();
+		long size;
+		String unit;
+		if (isBlank(cacheSizeString)) {
+			size = Long.MIN_VALUE;
+			unit = null;
+		} else {
+			Pair<Number, String> cacheSize = ConversionUtil.parseNumberWithUnit(
+				cacheSizeString,
+				null,
+				0,
+				RoundingMode.HALF_EVEN,
+				null,
+				UnitPrefix.MEBI,
+				"B",
+				true,
+				false,
+				false
+			);
+			if (cacheSize == null || cacheSize.getFirst() == null) {
+				LOGGER.warn("Ignoring invalid database cache size of \"{}\"", cacheSizeString);
+				size = Long.MIN_VALUE;
+				unit = null;
+			} else if (cacheSize.getFirst().longValue() == 0) {
+				// Cache disabled, use int to ignore fractional values
+				return 0;
+			} else {
+				size = cacheSize.getFirst().longValue();
+				unit = cacheSize.getSecond().toUpperCase(Locale.ROOT);
+			}
+			if (size != Long.MIN_VALUE && size < 0) {
+				LOGGER.warn("Ignoring negative database cache size \"{}\"", cacheSizeString);
+				size = Long.MIN_VALUE;
+			}
+			if (isNotBlank(unit) && !"B".equals(unit) && !"b".equals(unit) && !"%".equals(unit)) {
+				LOGGER.warn("Ignoring database cache size with invalid unit \"{}\"", unit);
+				size = Long.MIN_VALUE;
+			}
+		}
+
+		if (size == Long.MIN_VALUE || "%".equals(unit)) {
+			// Percent or default
+			if (jvmMemory == Long.MAX_VALUE) {
+				if (size == Long.MIN_VALUE) {
+					LOGGER.warn(
+						"Unable to apply default database cache size since no JVM heap limit is defined, disabling cache"
+					);
+				} else {
+					LOGGER.warn(
+						"Unable to apply database cache size in percent since no JVM heap limit is defined, disabling cache"
+					);
+				}
+				return 0;
+			}
+			if (size > 50L) {
+				LOGGER.warn(
+					"Reducing the database cache size from {}% to the maximum allowed size of 50%",
+					size
+				);
+				size = 50L;
+			}
+			if (size == Long.MIN_VALUE) {
+				// Set default size, 10% if heap is less than 1 GiB, 20% otherwise.
+				size = jvmMemory < 1073741824 ? 10 : 20;
+				LOGGER.debug("Using default database cache size of {}%", size);
+			}
+
+			return (int) ((jvmMemory * size) / 102400); // Percent to KiB
+		}
+		// Bytes
+		if (jvmMemory != Long.MAX_VALUE && size > jvmMemory / 2) {
+			LOGGER.warn(
+				"Reducing database cache size from {} to {} to stay within 50% of available JVM heap size",
+				ConversionUtil.formatBytes(size, true),
+				ConversionUtil.formatBytes(jvmMemory / 2, true)
+			);
+			size = jvmMemory / 2;
+		}
+		return (int) (size / 1024); // Bytes to KiB
 	}
 
 	/**
