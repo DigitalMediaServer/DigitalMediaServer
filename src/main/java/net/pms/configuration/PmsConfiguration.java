@@ -55,6 +55,7 @@ import net.pms.formats.Format;
 import net.pms.newgui.NavigationShareTab.SharedFoldersTableModel;
 import net.pms.service.PreventSleepMode;
 import net.pms.service.Services;
+import net.pms.util.ConversionUtil;
 import net.pms.util.CoverSupplier;
 import net.pms.util.FilePermissions;
 import net.pms.util.FileUtil;
@@ -151,6 +152,8 @@ public class PmsConfiguration extends RendererConfiguration {
 	protected static final String KEY_CODE_THUMBS = "code_show_thumbs_no_code";
 	protected static final String KEY_CODE_TMO = "code_valid_timeout";
 	protected static final String KEY_CODE_USE = "code_enable";
+	protected static final String KEY_DATABASE_CACHE_SIZE = "db_cache_size";
+	protected static final String KEY_DATABASE_CACHE_PERCENT = "db_cache_percent";
 	protected static final String KEY_DISABLE_FAKESIZE = "disable_fakesize";
 	public    static final String KEY_DISABLE_SUBTITLES = "disable_subtitles";
 	protected static final String KEY_DISABLE_TRANSCODE_FOR_EXTENSIONS = "disable_transcode_for_extensions";
@@ -4238,6 +4241,66 @@ public class PmsConfiguration extends RendererConfiguration {
 
 	public void setLoggingUseSyslog(boolean value) {
 		configuration.setProperty(KEY_LOGGING_USE_SYSLOG, value);
+	}
+
+	/**
+	 * Gets the database cache size in KiB.
+	 *
+	 * @return The database cache size in KiB.
+	 */
+	public int getDatabaseCacheSize() {
+		long jvmMemory = Runtime.getRuntime().maxMemory();
+		long cacheSize = ConversionUtil.parseLong(configuration.getProperty(KEY_DATABASE_CACHE_SIZE), Long.MIN_VALUE);
+		if (cacheSize == 0) {
+			return 0;
+		}
+		if (cacheSize != Long.MIN_VALUE && cacheSize < 0L) {
+			LOGGER.warn("Ignoring invalid database cache size of {} MB", cacheSize);
+			cacheSize = Long.MIN_VALUE;
+		} else if (cacheSize != Long.MIN_VALUE) {
+			cacheSize *= 1048576; //MiB to Bytes
+			if (jvmMemory != Long.MAX_VALUE && cacheSize > jvmMemory / 2) {
+				LOGGER.warn(
+					"Reducing database cache size from {} to {} to stay within 50% of available JVM heap size",
+					ConversionUtil.formatBytes(cacheSize, true),
+					ConversionUtil.formatBytes(jvmMemory / 2, true)
+				);
+				cacheSize = jvmMemory / 2;
+			}
+			return (int) (cacheSize / 1024); // Bytes to KiB
+		}
+
+		// No cache size set, use cache percent instead.
+		int percent = ConversionUtil.parseInt(configuration.getProperty(KEY_DATABASE_CACHE_PERCENT), Integer.MIN_VALUE);
+		if (percent == 0) {
+			return 0;
+		}
+		if (jvmMemory == Long.MAX_VALUE) {
+			LOGGER.warn(
+				"Unable to apply database cache setting \"{}\" since no JVM heap limit exists",
+				KEY_DATABASE_CACHE_PERCENT
+			);
+			return 0;
+		}
+		if (percent != Integer.MIN_VALUE && percent < 0) {
+			LOGGER.warn(
+				"Ignoring negative database cache size {}%",
+				percent
+			);
+			percent = Integer.MIN_VALUE;
+		} else if (percent > 50) {
+			LOGGER.warn(
+				"Reducing database cache size {}% to maximum the allowed size of 50%",
+				percent
+			);
+			percent = 50;
+		}
+		if (percent == Integer.MIN_VALUE) {
+			// Set default size, 10% if heap is less than 1 GiB, 20% otherwise.
+			percent = jvmMemory < 1073741824 ? 10 : 20;
+			LOGGER.debug("Using default database cache size of {}%", percent);
+		}
+		return (int) ((jvmMemory * percent) / 102400);
 	}
 
 	/**
