@@ -28,6 +28,7 @@ import java.io.Writer;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.text.DecimalFormatSymbols;
 import java.util.Collection;
 import java.util.Formatter;
 import java.util.Locale;
@@ -1263,7 +1264,120 @@ public class StringUtil {
 	}
 
 	/**
-	 * An enum representing letter cases.
+	 * Attempts to convert an object into an {@code int}. If the object is a
+	 * {@link Number}, {@link Number#intValue()} is returned. If the object
+	 * is {@code null}, {@code nullValue} is returned. Otherwise, an
+	 * {@code int} is attempted parsed from {@link Object#toString()}. If the
+	 * parsing fails, {@code nullValue} is returned.
+	 *
+	 * @param object the {@link Object} to convert to an {@code int}.
+	 * @param nullValue the value to return if {@code object} is {@code null} or
+	 *            the parsing fails.
+	 * @return The parsed {@code int} or {@code nullValue}.
+	 */
+	public static int parseInt(@Nullable Object object, int nullValue) {
+		Number number = parseNumber(object, null);
+		if (number instanceof Integer) {
+			return number.intValue();
+		}
+		if (number instanceof Long) {
+			long l = number.longValue();
+			if (l > Integer.MAX_VALUE || l < Integer.MIN_VALUE) {
+				return nullValue;
+			}
+			return (int) l;
+		}
+		return nullValue;
+	}
+
+	/**
+	 * Attempts to convert an object into a {@code long}. If the object is a
+	 * {@link Number}, {@link Number#longValue()} is returned. If the object is
+	 * {@code null}, {@code nullValue} is returned. Otherwise, a {@code long} is
+	 * attempted parsed from {@link Object#toString()}. If the parsing fails,
+	 * {@code nullValue} is returned.
+	 *
+	 * @param object the {@link Object} to convert to a {@code long}.
+	 * @param nullValue the value to return if {@code object} is {@code null} or
+	 *            the parsing fails.
+	 * @return The parsed {@code long} or {@code nullValue}.
+	 */
+	public static long parseLong(@Nullable Object object, long nullValue) {
+		Number number = parseNumber(object, null);
+		return number instanceof Integer || number instanceof Long ? number.longValue() : nullValue;
+	}
+
+	/**
+	 * Attempts to convert an object into a {@code double}. If the object is a
+	 * {@link Number}, {@link Number#doubleValue()} is returned. If the object
+	 * is {@code null}, {@code nullValue} is returned. Otherwise, a
+	 * {@code double} is attempted parsed from {@link Object#toString()}. If the
+	 * parsing fails, {@code nullValue} is returned.
+	 *
+	 * @param object the {@link Object} to convert to a {@code double}.
+	 * @param locale the {@link Locale} to use for decimal numbers. If
+	 *            {@code null}, {@code "."} is used as a decimal separator.
+	 * @param nullValue the value to return if {@code object} is {@code null} or
+	 *            the parsing fails.
+	 * @return The parsed {@code double} or {@code nullValue}.
+	 */
+	public static double parseDouble(@Nullable Object object, @Nullable Locale locale, double nullValue) {
+		Number number = parseNumber(object, locale);
+		return number != null ? number.doubleValue() : nullValue;
+	}
+
+	/**
+	 * Attempts to convert an object into a {@link Number}. If the object is a
+	 * {@link Number}, the object itself is returned. If the object is
+	 * {@code null}, {@code null} is returned. Otherwise, a {@link Number} is
+	 * attempted parsed from {@link Object#toString()}. If the parsing fails,
+	 * {@code null} is returned.
+	 *
+	 * @param object the {@link Object} to convert to a {@link Number}.
+	 * @param locale the {@link Locale} to use for decimal numbers. If
+	 *            {@code null}, {@code "."} is used as a decimal separator.
+	 * @return The {@link Number} or {@code null}.
+	 */
+	@Nullable
+	public static Number parseNumber(@Nullable Object object, @Nullable Locale locale) {
+		if (object == null) {
+			return null;
+		}
+		if (object instanceof Number) {
+			return (Number) object;
+		}
+		String s = object.toString().trim();
+		if (isBlank(s)) {
+			return null;
+		}
+		if (locale != null) {
+			char c = DecimalFormatSymbols.getInstance(locale).getDecimalSeparator();
+			if (c != '.' && s.indexOf(c) >= 0) {
+				s = s.replace(".", "");
+				s = s.replace(c, '.');
+			}
+		}
+		try {
+			if (s.indexOf('.') >= 0) {
+				// Return Double
+				return Double.valueOf(s);
+			}
+
+			Long l = Long.valueOf(s);
+			if (l < Integer.MIN_VALUE || l > Integer.MAX_VALUE) {
+				// Return Long
+				return l;
+			}
+			// Return Integer
+			return Integer.valueOf(l.intValue());
+		} catch (NumberFormatException e) {
+			LOGGER.trace("Failed to parse a number from \"{}\"", s);
+			return null;
+		}
+	}
+
+	/**
+	 * An {@code enum} representing letter cases.
 	 */
 	public static enum LetterCase {
 
