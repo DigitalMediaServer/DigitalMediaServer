@@ -27,6 +27,7 @@ import java.sql.Statement;
 import java.sql.Timestamp;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import javax.annotation.Nullable;
 import net.pms.util.CoverArtArchiveUtil.CoverArtArchiveTagInfo;
 import org.jaudiotagger.tag.Tag;
 import org.slf4j.Logger;
@@ -64,28 +65,6 @@ public final class TableMusicBrainzReleases extends Tables {
 
 	// No instantiation
 	private TableMusicBrainzReleases() {
-	}
-
-	/**
-	 * A type class for returning results from MusicBrainzReleases database
-	 * lookup.
-	 */
-	@SuppressFBWarnings("URF_UNREAD_PUBLIC_OR_PROTECTED_FIELD")
-	public static class MusicBrainzReleasesResult {
-
-		public boolean found = false;
-		public Timestamp modified = null;
-		public String mBID = null;
-
-		public MusicBrainzReleasesResult() {
-		}
-
-		@SuppressFBWarnings("EI_EXPOSE_REP2")
-		public MusicBrainzReleasesResult(final boolean found, final Timestamp modified, final String mBID) {
-			this.found = found;
-			this.modified = modified;
-			this.mBID = mBID;
-		}
 	}
 
 	private static String constructTagWhere(final CoverArtArchiveTagInfo tagInfo, final boolean includeAll) {
@@ -285,7 +264,7 @@ public final class TableMusicBrainzReleases extends Tables {
 		} catch (SQLException e) {
 			LOGGER.error("Database error while looking up Music Brainz ID for \"{}\": {}", tagInfo, e.getMessage());
 			LOGGER.trace("", e);
-			result = new MusicBrainzReleasesResult();
+			result = new MusicBrainzReleasesResult(false, null, null);
 		}
 
 		return result;
@@ -395,6 +374,47 @@ public final class TableMusicBrainzReleases extends Tables {
 				")");
 			statement.execute("CREATE INDEX ARTIST_IDX ON " + TABLE_NAME + "(ARTIST)");
 			statement.execute("CREATE INDEX ARTIST_ID_IDX ON " + TABLE_NAME + "(ARTIST_ID)");
+		}
+	}
+	/**
+	 * A class for holding the results from a Music Brainz releases database
+	 * lookup.
+	 */
+	public static class MusicBrainzReleasesResult {
+
+		private final boolean found;
+		private final Timestamp modified;
+		private final String mBID;
+
+		@SuppressFBWarnings("EI_EXPOSE_REP2")
+		public MusicBrainzReleasesResult(boolean found, @Nullable Timestamp modified, @Nullable String mBID) {
+			this.found = found;
+			this.modified = modified;
+			this.mBID = mBID;
+		}
+
+		/**
+		 * @return {@code true} if found, {@code false} otherwise.
+		 */
+		public boolean isFound() {
+			return found;
+		}
+
+		/**
+		 * @return The modified {@link Timestamp}.
+		 */
+		@Nullable
+		@SuppressFBWarnings("EI_EXPOSE_REP")
+		public Timestamp getModified() {
+			return modified;
+		}
+
+		/**
+		 * @return The {@code MBID}.
+		 */
+		@Nullable
+		public String getMBID() {
+			return mBID;
 		}
 	}
 }

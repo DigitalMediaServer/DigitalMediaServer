@@ -23,7 +23,11 @@ package net.pms.util;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.StringWriter;
+import java.io.UnsupportedEncodingException;
 import java.io.Writer;
+import java.net.URLDecoder;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.Formatter;
 import java.util.Locale;
@@ -176,6 +180,36 @@ public class StringUtil {
 		url = url.replace('<', '\u00b5');
 		url = url.replace('>', '\u00b5');
 		return url;
+	}
+
+	/**
+	 * Translates the specified string into
+	 * {@code application/x-www-form-urlencoded} format using {@code UTF-8}.
+	 *
+	 * @param s the {@link String} to encode.
+	 * @return The encoded {@link String}.
+	 */
+	public static String urlEncode(String s) {
+		try {
+			return URLEncoder.encode(s, StandardCharsets.UTF_8.name());
+		} catch (UnsupportedEncodingException e) {
+			throw new AssertionError("UTF-8 is unsupported");
+		}
+	}
+
+	/**
+	 * Decodes an {@code application/x-www-form-urlencoded} string using
+	 * {@code UTF-8}.
+	 *
+	 * @param s the {@link String} to decode.
+	 * @return The decoded {@link String}.
+	 */
+	public static String urlDecode(String s) {
+		try {
+			return URLDecoder.decode(s, StandardCharsets.UTF_8.name());
+		} catch (UnsupportedEncodingException e) {
+			throw new AssertionError("UTF-8 is unsupported");
+		}
 	}
 
 	/**
