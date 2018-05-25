@@ -25,6 +25,7 @@ import java.io.File;
 import java.util.Locale;
 import net.pms.util.FileUtil;
 import net.pms.util.Languages;
+import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationException;
 import static org.junit.Assert.*;
 import org.junit.Before;
@@ -48,7 +49,7 @@ public class PmsConfigurationTest {
 	 * Test Logging Configuration defaults
 	 */
 	@Test
-	public void testLoggingConfigurationDefaults() {
+	public void LoggingConfigurationDefaultsTest() {
 		// Test defaults and valid values where applicable
 		assertFalse("LogSearchCaseSensitiveDefault", configuration.getGUILogSearchCaseSensitive());
 		assertFalse("LogSearchMultiLineDefault", configuration.getGUILogSearchMultiLine());
@@ -103,9 +104,62 @@ public class PmsConfigurationTest {
 	}
 
 	@Test
-	public void testDefaults() {
+	public void defaultsTest() {
 		assertNull("getLanguageRawStringDefault", configuration.getLanguageRawString());
 		configuration.setLanguage((Locale) null);
 		assertEquals("setLanguage(null)SetsBlankString", configuration.getLanguageRawString(), "");
+	}
+
+	@Test
+	public void getDatabaseCacheSizeTest() {
+		long jvmMemory = Runtime.getRuntime().maxMemory();
+		int defaultSize = jvmMemory == Long.MAX_VALUE ? 0 : (int) ((jvmMemory * (jvmMemory < 1073741824 ? 10 : 20)) / 102400);
+		int maxSize = jvmMemory == Long.MAX_VALUE ? Integer.MAX_VALUE : (int) (jvmMemory / 2048);
+		assertEquals(defaultSize, configuration.getDatabaseCacheSize());
+		Configuration configurationObject = configuration.configuration;
+		configurationObject.setProperty(PmsConfiguration.KEY_DATABASE_CACHE_SIZE, "5");
+		assertEquals(maxSize == Integer.MAX_VALUE ? 5120 : Math.min(5120, maxSize), configuration.getDatabaseCacheSize());
+		configurationObject.setProperty(PmsConfiguration.KEY_DATABASE_CACHE_SIZE, "5TiB");
+		assertEquals(maxSize == Integer.MAX_VALUE ? 5242880 : Math.min(5242880, maxSize), configuration.getDatabaseCacheSize());
+		configurationObject.setProperty(PmsConfiguration.KEY_DATABASE_CACHE_SIZE, "1.3 GB");
+		assertEquals(maxSize == Integer.MAX_VALUE ? 1269531 : Math.min(1269531, maxSize), configuration.getDatabaseCacheSize());
+		configurationObject.setProperty(PmsConfiguration.KEY_DATABASE_CACHE_SIZE, "7E");
+		assertEquals(maxSize == Integer.MAX_VALUE ? 6835937500000000L : Math.min(6835937500000000L, maxSize), configuration.getDatabaseCacheSize());
+		configurationObject.setProperty(PmsConfiguration.KEY_DATABASE_CACHE_SIZE, " 1.3 E2 k");
+		assertEquals(maxSize == Integer.MAX_VALUE ? 126 : Math.min(126, maxSize), configuration.getDatabaseCacheSize());
+		configurationObject.setProperty(PmsConfiguration.KEY_DATABASE_CACHE_SIZE, "foo");
+		assertEquals(defaultSize, configuration.getDatabaseCacheSize());
+		configurationObject.setProperty(PmsConfiguration.KEY_DATABASE_CACHE_SIZE, "0");
+		assertEquals(0, configuration.getDatabaseCacheSize());
+		configurationObject.setProperty(PmsConfiguration.KEY_DATABASE_CACHE_SIZE, "0%");
+		assertEquals(0, configuration.getDatabaseCacheSize());
+		configurationObject.setProperty(PmsConfiguration.KEY_DATABASE_CACHE_SIZE, " 0 %");
+		assertEquals(0, configuration.getDatabaseCacheSize());
+		configurationObject.setProperty(PmsConfiguration.KEY_DATABASE_CACHE_SIZE, "0 mB");
+		assertEquals(0, configuration.getDatabaseCacheSize());
+		configurationObject.setProperty(PmsConfiguration.KEY_DATABASE_CACHE_SIZE, "0 Gi");
+		assertEquals(0, configuration.getDatabaseCacheSize());
+		configurationObject.setProperty(PmsConfiguration.KEY_DATABASE_CACHE_SIZE, "4.3 MiD");
+		assertEquals(defaultSize, configuration.getDatabaseCacheSize());
+		configurationObject.setProperty(PmsConfiguration.KEY_DATABASE_CACHE_SIZE, "1243 D");
+		assertEquals(defaultSize, configuration.getDatabaseCacheSize());
+		configurationObject.setProperty(PmsConfiguration.KEY_DATABASE_CACHE_SIZE, "4.3 ");
+		assertEquals(maxSize == Integer.MAX_VALUE ? 4403 : Math.min(4403, maxSize), configuration.getDatabaseCacheSize());
+		configurationObject.setProperty(PmsConfiguration.KEY_DATABASE_CACHE_SIZE, " 1243b ");
+		assertEquals(maxSize == Integer.MAX_VALUE ? 1 : Math.min(1, maxSize), configuration.getDatabaseCacheSize());
+		configurationObject.setProperty(PmsConfiguration.KEY_DATABASE_CACHE_SIZE, " 20% ");
+		assertEquals(maxSize == Integer.MAX_VALUE ? 0 : Math.min(((jvmMemory * 20) / 102400), maxSize), configuration.getDatabaseCacheSize());
+		configurationObject.setProperty(PmsConfiguration.KEY_DATABASE_CACHE_SIZE, " 30 % ");
+		assertEquals(maxSize == Integer.MAX_VALUE ? 0 : Math.min(((jvmMemory * 30) / 102400), maxSize), configuration.getDatabaseCacheSize());
+		configurationObject.setProperty(PmsConfiguration.KEY_DATABASE_CACHE_SIZE, " 45 Ki% ");
+		assertEquals(defaultSize, configuration.getDatabaseCacheSize());
+		configurationObject.setProperty(PmsConfiguration.KEY_DATABASE_CACHE_SIZE, " 76 % ");
+		assertEquals(maxSize == Integer.MAX_VALUE ? 0 : Math.min(((jvmMemory * 50) / 102400), maxSize), configuration.getDatabaseCacheSize());
+		configurationObject.setProperty(PmsConfiguration.KEY_DATABASE_CACHE_SIZE, " -76 % ");
+		assertEquals(defaultSize, configuration.getDatabaseCacheSize());
+		configurationObject.setProperty(PmsConfiguration.KEY_DATABASE_CACHE_SIZE, " -2.6 E-4");
+		assertEquals(defaultSize, configuration.getDatabaseCacheSize());
+		configurationObject.setProperty(PmsConfiguration.KEY_DATABASE_CACHE_SIZE, Double.valueOf(4.5));
+		assertEquals(maxSize == Integer.MAX_VALUE ? 4608 : Math.min(4608, maxSize), configuration.getDatabaseCacheSize());
 	}
 }
