@@ -25,6 +25,7 @@ import java.sql.Statement;
 import java.sql.Timestamp;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
@@ -60,25 +61,6 @@ public final class TableCoverArtArchive extends Tables{
 
 	// No instantiation
 	private TableCoverArtArchive() {
-	}
-
-	/**
-	 * A type class for returning results from Cover Art Archive database
-	 * lookup.
-	 */
-	@SuppressFBWarnings("URF_UNREAD_PUBLIC_OR_PROTECTED_FIELD")
-	public static class CoverArtArchiveResult {
-
-		public boolean found = false;
-		public Timestamp modified = null;
-		public byte[] cover = null;
-
-		@SuppressFBWarnings("EI_EXPOSE_REP2")
-		public CoverArtArchiveResult(final boolean found, final Timestamp modified, final byte[] cover) {
-			this.found = found;
-			this.modified = modified;
-			this.cover = cover;
-		}
 	}
 
 	private static String contructMBIDWhere(final String mBID) {
@@ -272,6 +254,48 @@ public final class TableCoverArtArchive extends Tables{
 					"COVER BLOB, " +
 				")");
 			statement.execute("CREATE INDEX MBID_IDX ON " + TABLE_NAME + "(MBID)");
+		}
+	}
+
+	/**
+	 * A class for holding the results from a Cover Art Archive database lookup.
+	 */
+	public static class CoverArtArchiveResult {
+
+		private final boolean found;
+		private final Timestamp modified;
+		private final byte[] cover;
+
+		@SuppressFBWarnings("EI_EXPOSE_REP2")
+		public CoverArtArchiveResult(boolean found, @Nullable Timestamp modified, @Nullable byte[] cover) {
+			this.found = found;
+			this.modified = modified;
+			this.cover = cover;
+		}
+
+		/**
+		 * @return {@code true} if found, {@code false} otherwise.
+		 */
+		public boolean isFound() {
+			return found;
+		}
+
+		/**
+		 * @return The modified {@link Timestamp}.
+		 */
+		@Nullable
+		@SuppressFBWarnings("EI_EXPOSE_REP")
+		public Timestamp getModified() {
+			return modified;
+		}
+
+		/**
+		 * @return The cover byte array.
+		 */
+		@Nullable
+		@SuppressFBWarnings("EI_EXPOSE_REP")
+		public byte[] getCover() {
+			return cover;
 		}
 	}
 }

@@ -18,17 +18,13 @@
  */
 package net.pms.util;
 
-import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import net.pms.PMS;
-import net.pms.dlna.DLNAMediaDatabase;
 import org.jaudiotagger.tag.Tag;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+
 
 /**
  * This class is the superclass of all cover utility implementations.
@@ -37,28 +33,24 @@ import org.w3c.dom.NodeList;
  *
  * @author Nadahar
  */
-
 public abstract class CoverUtil {
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(CoverUtil.class);
-	protected static final String encoding = StandardCharsets.UTF_8.name();
-	protected static final DLNAMediaDatabase database = PMS.get().getDatabase();
 	private static Object instanceLock = new Object();
 	private static CoverUtil instance = null;
 
 	/**
-	 * Do not instantiate this class, use {@link #get()}
+	 * Do not instantiate this class, use {@link #get()}.
 	 */
 	protected CoverUtil() {
 	}
 
 	/**
 	 * Factory method that gets an instance of correct type according to
-	 * configuration, or <code>null</code> if no cover utility is configured.
+	 * configuration, or {@code null} if no cover utility is configured.
 	 *
 	 * @return The {@link CoverUtil} instance.
 	 */
-
+	@SuppressFBWarnings("BC_VACUOUS_INSTANCEOF")
 	public static CoverUtil get() {
 		CoverSupplier supplier = PMS.getConfiguration().getAudioThumbnailMethod();
 		synchronized (instanceLock) {
@@ -97,30 +89,25 @@ public abstract class CoverUtil {
 	}
 
 	/**
-	 * Convenience method to URL encode a string with {@link #encoding} without
-	 * handling the hypothetical {@link UnsupportedEncodingException}
-	 * @param url {@link String} to encode
-	 * @return The encoded {@link String}
-	 */
-	protected String urlEncode(String url) {
-		try {
-			return URLEncoder.encode(url, encoding);
-		} catch (UnsupportedEncodingException e) {
-			LOGGER.error("UTF-8 is unsupported :O", e);
-			return "";
-		}
-	}
-
-	/**
-	 * Gets a thumbnail from the configured cover utility based on a {@link Tag}
-	 * @param tag the {@link tag} to use while searching for a cover
-	 * @return The thumbnail or <code>null</code> if none was found
+	 * Gets a thumbnail from the configured cover utility based on the specified
+	 * {@link Tag}.
+	 *
+	 * @param tag the {@link tag} to use while searching for a cover.
+	 * @return The thumbnail or {@code null} if none was found.
 	 */
 	public final byte[] getThumbnail(Tag tag) {
 		boolean externalNetwork = PMS.getConfiguration().getExternalNetwork();
 		return doGetThumbnail(tag, externalNetwork);
 	}
 
-	abstract protected byte[] doGetThumbnail(Tag tag, boolean externalNetwork);
-
+	/**
+	 * Gets a thumbnail from the configured cover utility based on the specified
+	 * {@link Tag}.
+	 *
+	 * @param tag the {@link tag} to use while searching for a cover.
+	 * @param externalNetwork {@code true} if the use of external networks
+	 *            (Internet) is allowed, {@code false} otherwise.
+	 * @return The thumbnail or {@code null} if none was found.
+	 */
+	protected abstract byte[] doGetThumbnail(Tag tag, boolean externalNetwork);
 }
