@@ -48,6 +48,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import javax.annotation.concurrent.GuardedBy;
 import javax.imageio.spi.IIORegistry;
 import javax.imageio.spi.ImageReaderSpi;
 import javax.imageio.spi.ImageWriterSpi;
@@ -103,7 +104,6 @@ public class PMS {
 	private static final String TRACE = "trace";
 	private static final String DBLOG = "dblog";
 	private static final String DBTRACE = "dbtrace";
-	public static final String NAME = "Digital Media Server";
 	public static final String CROWDIN_LINK = "http://crowdin.com/project/DigitalMediaServer";
 
 	private boolean ready = false;
@@ -271,7 +271,7 @@ public class PMS {
 
 	private void displayBanner() throws IOException {
 		LOGGER.debug("");
-		LOGGER.info("Starting {} {}", PropertiesUtil.getProjectProperties().get("project.name"), getVersion());
+		LOGGER.info("Starting {} {}", getName(), getVersion());
 		LOGGER.info("Based on PS3 Media Server by shagrath and Universal Media Server");
 		LOGGER.info("http://www.digitalmediaserver.org");
 		LOGGER.info("");
@@ -789,7 +789,7 @@ public class PMS {
 				// Destroy services
 				Services.destroy();
 
-				LOGGER.info("Stopping {} {}", PropertiesUtil.getProjectProperties().get("project.name"), getVersion());
+				LOGGER.info("Stopping {} {}", PMS.getName(), getVersion());
 				/**
 				 * Stopping logging gracefully (flushing logs)
 				 * No logging is available after this point
@@ -833,7 +833,7 @@ public class PMS {
 	 * Restarts the server. The trigger is either a button on the main DMS window or via
 	 * an action item.
 	 */
-	// XXX: don't try to optimize this by reusing the same server instance.
+	// Note: Don't try to optimize this by reusing the same server instance.
 	// see the comment above HTTPServer.stop()
 	public void reset() {
 		TaskRunner.getInstance().submitNamed("restart", true, new Runnable() {
@@ -987,12 +987,12 @@ public class PMS {
 
 		try {
 			if (instance.init()) {
-				LOGGER.info("{} is now available for renderers to find", PMS.NAME);
+				LOGGER.info("{} is now available for renderers to find", getName());
 			} else {
-				LOGGER.info("{} initialization was aborted", PMS.NAME);
+				LOGGER.info("{} initialization was aborted", getName());
 			}
 		} catch (Exception e) {
-			LOGGER.error("A serious error occurred during {} initialization: {}", PMS.NAME, e.getMessage());
+			LOGGER.error("A serious error occurred during {} initialization: {}", getName(), e.getMessage());
 			LOGGER.trace("", e);
 		}
 	}
@@ -1075,7 +1075,7 @@ public class PMS {
 		if (isHeadless() && denyHeadless) {
 			System.err.println(
 				"Either a graphics environment isn't available or headless " +
-				"mode is forced, but \"noconsole\" is specified. " + PMS.NAME +
+				"mode is forced, but \"noconsole\" is specified. " + getName() +
 				" can't start, exiting."
 			);
 			System.exit(1);
@@ -1260,13 +1260,42 @@ public class PMS {
 		configuration = conf;
 	}
 
+	private static final Object PROPERTIES_LOCK = new Object();
+
+	@GuardedBy("PROPERTIES_LOCK")
+	private static volatile String name;
+
 	/**
-	 * Returns the project version for DMS.
-	 *
-	 * @return The project version.
+	 * @return The application name.
 	 */
+	@Nonnull
+	public static String getName() {
+		if (name == null) {
+			synchronized (PROPERTIES_LOCK) {
+				if (name == null) {
+					name = PropertiesUtil.getProjectProperties().get("project.name");
+				}
+			}
+		}
+		return name;
+	}
+
+	@GuardedBy("PROPERTIES_LOCK")
+	private static volatile String version;
+
+	/**
+	 * @return The application version.
+	 */
+	@Nonnull
 	public static String getVersion() {
-		return PropertiesUtil.getProjectProperties().get("project.version");
+		if (version == null) {
+			synchronized (PROPERTIES_LOCK) {
+				if (version == null) {
+					version = PropertiesUtil.getProjectProperties().get("project.version");
+				}
+			}
+		}
+		return version;
 	}
 
 	/**
@@ -1516,8 +1545,10 @@ public class PMS {
 		tfm.add(f, cleanTime);
 	}
 
-	private static ReadWriteLock headlessLock = new ReentrantReadWriteLock();
-	private static Boolean headless = null;
+	private static final Object HEADLESS_LOCK = new Object();
+
+	@GuardedBy("HEADLESS_LOCK")
+	private static Boolean headless;
 
 	/**
 	 * Checks if DMS is running in headless (console) mode, since some Linux
@@ -1525,39 +1556,30 @@ public class PMS {
 	 * properly.
 	 */
 	public static boolean isHeadless() {
-		headlessLock.readLock().lock();
-		try {
+		synchronized (HEADLESS_LOCK) {
 			if (headless != null) {
-				return headless;
+				return headless.booleanValue();
 			}
-		} finally {
-			headlessLock.readLock().unlock();
-		}
 
-		headlessLock.writeLock().lock();
-		try {
-			JDialog d = new JDialog();
-			d.dispose();
-			headless = false;
-			return headless;
-		} catch (NoClassDefFoundError | HeadlessException | InternalError e) {
-			headless = true;
-			return headless;
-		} finally {
-			headlessLock.writeLock().unlock();
+			try {
+				JDialog d = new JDialog();
+				d.dispose();
+				headless = Boolean.FALSE;
+			} catch (NoClassDefFoundError | HeadlessException | InternalError e) {
+				headless = Boolean.TRUE;
+			}
+			return headless.booleanValue();
+
 		}
 	}
 
 	/**
-	 * Forces DMS to run in headless (console) mode whether a graphics
+	 * Forces DMS to run in headless (console) mode whether a graphical
 	 * environment is available or not.
 	 */
 	public static void forceHeadless() {
-		headlessLock.writeLock().lock();
-		try {
-			headless = true;
-		} finally {
-			headlessLock.writeLock().unlock();
+		synchronized (HEADLESS_LOCK) {
+			headless = Boolean.TRUE;
 		}
 	}
 
@@ -1683,18 +1705,11 @@ public class PMS {
 		return helpPage;
 	}
 
-	/**
-	 * @deprecated Use {@link com.sun.jna.Platform#isWindows()} instead
-	 */
-	@Deprecated
-	public boolean isWindows() {
-		return Platform.isWindows();
-	}
-
 	public static boolean isReady() {
 		return get().ready;
 	}
 
+	@Nullable
 	public static GlobalIdRepo getGlobalRepo() {
 		return get().globalRepo;
 	}

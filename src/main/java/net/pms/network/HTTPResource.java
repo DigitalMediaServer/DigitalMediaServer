@@ -206,7 +206,7 @@ public class HTTPResource {
 		URLConnection conn = url.openConnection();
 
 		// GameTrailers blocks user-agents that identify themselves as "Java"
-		conn.setRequestProperty("User-agent", PropertiesUtil.getProjectProperties().get("project.name") + " " + PMS.getVersion());
+		conn.setRequestProperty("User-agent", PMS.getName() + " " + PMS.getVersion());
 		FileOutputStream fOUT;
 		try (InputStream in = conn.getInputStream()) {
 			fOUT = null;
