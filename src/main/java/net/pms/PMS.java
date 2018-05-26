@@ -74,7 +74,6 @@ import net.pms.logging.FrameAppender;
 import net.pms.logging.LoggingConfig;
 import net.pms.network.ChromecastMgr;
 import net.pms.network.HTTPServer;
-import net.pms.network.ProxyServer;
 import net.pms.network.UPNPHelper;
 import net.pms.newgui.*;
 import net.pms.newgui.StatusTab.ConnectionState;
@@ -229,13 +228,6 @@ public class PMS {
 	 * User friendly name for the server.
 	 */
 	private String serverName;
-
-	// FIXME unused
-	private ProxyServer proxyServer;
-
-	public ProxyServer getProxy() {
-		return proxyServer;
-	}
 
 	public ArrayList<Process> currentProcesses = new ArrayList<>();
 
