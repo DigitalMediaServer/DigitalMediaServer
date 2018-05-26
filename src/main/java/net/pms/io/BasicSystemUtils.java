@@ -166,7 +166,7 @@ public class BasicSystemUtils implements SystemUtils {
 			popup.add(traceItem);
 			popup.add(defaultItem);
 
-			final TrayIcon trayIcon = new TrayIcon(trayIconImage, PropertiesUtil.getProjectProperties().get("project.name"), popup);
+			final TrayIcon trayIcon = new TrayIcon(trayIconImage, PMS.getName(), popup);
 
 			trayIcon.setImageAutoSize(true);
 			trayIcon.addActionListener(new ActionListener() {

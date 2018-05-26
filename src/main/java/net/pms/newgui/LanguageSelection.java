@@ -114,7 +114,7 @@ public class LanguageSelection {
 				selectButton
 			);
 			pane.setComponentOrientation(ComponentOrientation.getOrientation(locale));
-			dialog = pane.createDialog(parentComponent, PMS.NAME);
+			dialog = pane.createDialog(parentComponent, PMS.getName());
 			dialog.setModalityType(ModalityType.APPLICATION_MODAL);
 			dialog.setIconImage(LooksFrame.readImageIcon("icon-32.png").getImage());
 			setStrings();
@@ -129,7 +129,7 @@ public class LanguageSelection {
 				if (rebootOnChange) {
 					int response = JOptionPane.showConfirmDialog(
 						parentComponent,
-						String.format(buildString("Dialog.Restart", true), PMS.NAME, PMS.NAME),
+						String.format(buildString("Dialog.Restart", true), PMS.getName(), PMS.getName()),
 						buildString("Dialog.Confirm"),
 						JOptionPane.YES_NO_CANCEL_OPTION
 					);
@@ -236,12 +236,12 @@ public class LanguageSelection {
 			if (parentComponent != null) {
 				descriptionText.setText(String.format(
 					Messages.getString(descriptionMessage, locale),
-					PMS.NAME
+					PMS.getName()
 				));
 			} else {
 				descriptionText.setText(String.format(
 					Messages.getString(descriptionMessage, locale),
-					PMS.NAME,
+					PMS.getName(),
 					Messages.getString("LooksFrame.20", locale)
 				));
 			}
@@ -249,15 +249,15 @@ public class LanguageSelection {
 			if (parentComponent != null) {
 				descriptionText.setText(String.format(
 					buildString(descriptionMessage, true),
-					PMS.NAME,
-					PMS.NAME
+					PMS.getName(),
+					PMS.getName()
 				));
 			} else {
 				descriptionText.setText(String.format(
 					buildString(descriptionMessage, true),
-					PMS.NAME,
+					PMS.getName(),
 					Messages.getString("LooksFrame.20", locale),
-					PMS.NAME,
+					PMS.getName(),
 					Messages.getRootString("LooksFrame.20")
 				));
 			}
