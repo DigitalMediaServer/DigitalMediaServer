@@ -106,7 +106,6 @@ public class FileUtil {
 		String defaultDirectory,
 		String defaultBasename
 	) {
-		File customFile = null;
 		File directory = null;
 		File file = null;
 
@@ -119,11 +118,8 @@ public class FileUtil {
 			defaultDirectory = ""; // current directory
 		}
 
-		if (customPath != null) {
-			customFile = new File(customPath).getAbsoluteFile();
-		}
-
-		if (customFile != null) {
+		if (isNotBlank(customPath)) {
+			File customFile = new File(customPath).getAbsoluteFile();
 			if (customFile.exists()) {
 				if (customFile.isDirectory()) {
 					directory = customFile;
@@ -133,11 +129,18 @@ public class FileUtil {
 					file = customFile;
 				}
 			} else {
-				File parentDirectoryFile = customFile.getParentFile();
-				if (parentDirectoryFile != null && parentDirectoryFile.exists()) {
-					// parent directory exists: the file can be created
-					directory = parentDirectoryFile;
-					file = customFile;
+				if (customFile.getName().indexOf(".") > 0) {
+					// Probably a file
+					File parentDirectoryFile = customFile.getParentFile();
+					if (parentDirectoryFile != null && parentDirectoryFile.exists()) {
+						// parent directory exists: the file can be created
+						directory = parentDirectoryFile;
+						file = customFile;
+					}
+				} else {
+					// Probably a folder
+					directory = customFile;
+					file = new File(customFile, defaultBasename);
 				}
 			}
 		}
@@ -1577,27 +1580,54 @@ public class FileUtil {
 	}
 
 	/**
-	 * Checks for valid file name syntax. Path is not allowed.
+	 * Checks for valid file name syntax. Only the {@link Path#getFileName()}
+	 * part is evaluated.
 	 *
-	 * @param fileName the file name to be verified
-	 * @return whether or not the file name is valid
+	 * @param file the {@link Path} to be verified.
+	 * @return whether or not the file name is valid.
 	 */
-	public static boolean isValidFileName(String fileName) {
-		if (Platform.isWindows()) {
-			if (fileName.matches("^[^\"*:<>?/\\\\]+$")) {
-				return true;
-			}
-		} else if (Platform.isMac()) {
-			if (fileName.matches("^[^:/]+$")) {
-				return true;
-			}
-		} else {
-			// Assuming POSIX
-			if (fileName.matches("^[A-Za-z0-9._][A-Za-z0-9._-]*$")) {
-				return true;
-			}
+	public static boolean isValidFileName(@Nullable Path file) {
+		if (file == null) {
+			return false;
 		}
-		return false;
+		Path fileName = file.getFileName();
+		if (fileName == null) {
+			return false;
+		}
+		return isValidFileName(fileName.toString());
+	}
+
+	/**
+	 * Checks for valid file name syntax. Only the {@link File#getName()} part
+	 * is evaluated.
+	 *
+	 * @param file the {@link File} to be verified.
+	 * @return whether or not the file name is valid.
+	 */
+	public static boolean isValidFileName(@Nullable File file) {
+		if (file == null) {
+			return false;
+		}
+		return isValidFileName(file.getName());
+	}
+
+	/**
+	 * Checks for valid file name syntax. Paths are not allowed.
+	 *
+	 * @param fileName the file name to be verified.
+	 * @return whether or not the file name is valid.
+	 */
+	public static boolean isValidFileName(@Nullable String fileName) {
+		if (isBlank(fileName)) {
+			return false;
+		}
+		if (Platform.isWindows()) {
+			return fileName.matches("^[^\"*:<>?/\\\\]+$");
+		} else if (Platform.isMac()) {
+			return fileName.matches("^[^:/]+$");
+		}
+		// Assuming POSIX
+		return fileName.matches("^[A-Za-z0-9._][A-Za-z0-9._-]*$");
 	}
 
 	/**

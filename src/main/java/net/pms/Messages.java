@@ -26,6 +26,7 @@ import java.util.ResourceBundle;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 /**
  * Class Messages provides a mechanism to localize the text messages found in
@@ -50,11 +51,10 @@ public class Messages {
 		 */
 		resourceBundle = ResourceBundle.getBundle(BUNDLE_NAME, Locale.getDefault());
 		ROOT_RESOURCE_BUNDLE = ResourceBundle.getBundle(BUNDLE_NAME, Locale.ROOT, new ResourceBundle.Control() {
-	        @Override
-	        public List<Locale> getCandidateLocales(String name,
-	                                                Locale locale) {
-	            return Collections.singletonList(Locale.ROOT);
-	        }
+			@Override
+			public List<Locale> getCandidateLocales(String name, Locale locale) {
+				return Collections.singletonList(Locale.ROOT);
+			}
 		});
 
 	}
@@ -63,18 +63,18 @@ public class Messages {
 	}
 
 	/**
-	 * Creates a resource bundle based on the given <code>Local</code> and
-	 * keeps this for use by any calls to {@link #getString(String)}. If
-	 * no matching <code>ResourceBundle</code> can be found, one is chosen
-	 * from a number of candidates according to
-	 * <a href="https://docs.oracle.com/javase/7/docs/api/java/util/ResourceBundle.html#default_behavior">
-	 * ResourceBundle default behavior</a>.
+	 * Creates a resource bundle based on the given {@link Locale} and keeps
+	 * this for use by any calls to {@link #getString(String)}. If no matching
+	 * {@link ResourceBundle} can be found, one is chosen from a number of
+	 * candidates according to <a href=
+	 * "https://docs.oracle.com/javase/7/docs/api/java/util/ResourceBundle.html#default_behavior"
+	 * > ResourceBundle default behavior</a>.
 	 *
-	 * @param locale the <code>Locale</code> from which the
-	 * <code>ResourceBundle</code> is selected.
+	 * @param locale the {@link Locale} from which the {@link ResourceBundle} is
+	 *            selected.
 	 */
 
-	public static void setLocaleBundle(Locale locale) {
+	public static void setLocaleBundle(@Nonnull Locale locale) {
 		if (locale == null) {
 			throw new IllegalArgumentException("locale cannot be null");
 		}
@@ -93,15 +93,15 @@ public class Messages {
 	/**
 	 * Returns the locale-specific string associated with the key.
 	 *
-	 * @param key
-	 *            Keys in DMS follow the format "group.x". group states where
-	 *            this key is likely to be used. For example, StatusTab refers
-	 *            to the status tab in the DMS GUI. "x" can be anything.
-	 * @return Descriptive string if key is found or a copy of the key string if
-	 *         it is not.
+	 * @param key the key to look up. Keys in DMS follow the format "group.x".
+	 *            group states where this key is likely to be used. For example,
+	 *            {@code StatusTab} refers to the status tab in the DMS GUI. "x"
+	 *            can be anything.
+	 * @return The localized {@link String} if key is found or a copy of the key
+	 *         if it is not.
 	 */
 	@Nonnull
-	public static String getString(String key) {
+	public static String getString(@Nullable String key) {
 		resourceBundleLock.readLock().lock();
 		try {
 			return getString(key, resourceBundle);
@@ -110,8 +110,26 @@ public class Messages {
 		}
 	}
 
+	/**
+	 * Returns the string from the language file corresponding to the specified
+	 * {@link Locale}. Java will otherwise choose a {@link Locale} for a
+	 * "similar" language or the default {@link Locale} if the requested locale
+	 * can't be found. The root {@link Locale} is only chosen as a last resort.
+	 * See <a href=
+	 * "https://docs.oracle.com/javase/7/docs/api/java/util/ResourceBundle.html#default_behavior"
+	 * > ResourceBundle default behavior</a> for more information about the
+	 * selection process.
+	 *
+	 * @param key the key to look up. Keys in DMS follow the format "group.x".
+	 *            group states where this key is likely to be used. For example,
+	 *            {@code StatusTab} refers to the status tab in the DMS GUI. "x"
+	 *            can be anything.
+	 * @param locale the {@link Locale} to look up.
+	 * @return The localized {@link String} if key is found or a copy of the key
+	 *         if it is not.
+	 */
 	@Nonnull
-	public static String getString(String key, Locale locale) {
+	public static String getString(@Nonnull String key, @Nullable Locale locale) {
 		if (locale == null) {
 			return getString(key);
 		}
@@ -126,41 +144,42 @@ public class Messages {
 		return getString(key, rb);
 	}
 
-
 	/**
-	 * Returns the string from the root language file (messages.properties)
-	 * regardless of default <code>Locale</code>. Java will otherwise choose
-	 * a <code>Locale</code> for a "similar" language or the default
-	 * <code>Locale</code> if the requested locale can't be found. The root
-	 * <code>Locale</code> is only chosen as a last resort. See
-	 * <a href="https://docs.oracle.com/javase/7/docs/api/java/util/ResourceBundle.html#default_behavior">
-	 * ResourceBundle default behavior</a> for more information about the
-	 * selection process.<br><br>
+	 * Returns the string from the root language file (
+	 * {@code messages.properties}) regardless of default {@link Locale}.
 	 *
-	 * For parameter and return value see {@link #getString(String)}
+	 * @param key the key to look up. Keys in DMS follow the format "group.x".
+	 *            group states where this key is likely to be used. For example,
+	 *            {@code StatusTab} refers to the status tab in the DMS GUI. "x"
+	 *            can be anything.
+	 * @return The localized {@link String} if key is found or a copy of the key
+	 *         if it is not.
 	 */
 	@Nonnull
-	public static String getRootString(String key) {
+	public static String getRootString(@Nullable String key) {
 		return getString(key, ROOT_RESOURCE_BUNDLE);
 	}
 
 	@Nonnull
-	private static String getString(String key, ResourceBundle rb) {
+	private static String getString(@Nullable String key, @Nonnull ResourceBundle rb) {
 		try {
 			return rb.getString(key);
 		} catch (MissingResourceException e) {
 			return '!' + key + '!';
+		} catch (NullPointerException e) {
+			return "null";
 		}
 	}
 
 	/**
-	 * Checks if the given <code>Locale</code> should use the root language
-	 * file (messages.properties) which is en-US. Currently that is all variants
-	 * of English but British English.
-	 * @param locale the <code>Locale</code> to check
-	 * @return The result
+	 * Checks if the given {@link Locale} should use the root language file (
+	 * {@code messages.properties}) which is {@code en-US}. Currently that is
+	 * all variants of English but British English.
+	 *
+	 * @param locale the {@link Locale} to check.
+	 * @return The result.
 	 */
-	private static boolean isRootEnglish(Locale locale) {
+	private static boolean isRootEnglish(@Nonnull Locale locale) {
 		return locale.getLanguage().toLowerCase(Locale.ENGLISH).equals("en") && !locale.getCountry().equals("GB");
 	}
 }
