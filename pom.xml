@@ -699,14 +699,11 @@
 						<!--
 							1) Force language because JUnit tests depend on English language strings
 
-							2) Use our JNA dependency rather than the system's - fixes
-							the following error on Linux (Ubuntu 12.04 with system
-							jna-3.2.7.jar via libjna-java):
-
-							There is an incompatible JNA native library installed on this system.
+							2) Use our JNA dependency rather than the system's to avoid
+							incompatible JNA native library that could be installed on this system (like JNA 3.2.7)
 						-->
 						<shutdown>kill</shutdown>
-						<!--<forkCount>1.5C</forkCount>-->
+						<forkCount>1.5C</forkCount>
 						<reuseForks>true</reuseForks>
 						<!--
 							Only one argLine element is processed.
@@ -1309,7 +1306,11 @@
 			</build>
 		</profile>
 
-		<!-- Linux DEB profile -->
+		<!-- Linux DEB profile
+			Can also be used by Arch Linux users if converted with DEBTAP:
+			https://github.com/helixarch/debtap
+			https://www.ostechnix.com/convert-deb-packages-arch-linux-packages/
+		-->
 		<profile>
 			<id>deb</id>
 			<activation>
@@ -1495,6 +1496,11 @@
 		</profile>
 
 		<!-- Linux RPM profile -->
+		<!--
+			Alternatives requiring Java >= 1.6:
+			https://github.com/mojohaus/rpm-maven-plugin
+			https://github.com/craigwblake/redline
+		-->
 		<profile>
 			<id>rpm</id>
 			<activation>
@@ -1529,8 +1535,8 @@
 
 							-->
 							<outputFileName>${project.artifactId}-${project.version}.noarch.rpm</outputFileName>
-							<leadOverrideArchitecture />
-							<leadOverrideOperatingSystem />
+							<leadOverrideArchitecture/>
+							<leadOverrideOperatingSystem/>
 							<requires>
 								<!--
 									Boolean dependencies have only been introcuded since RPM 4.13
@@ -1714,6 +1720,120 @@
 			</build>
 		</profile>
 
+		<!-- Arch Linux PKG.TAR.XZ profile -->
+		<profile>
+			<id>pac</id>
+			<activation>
+				<activeByDefault>false</activeByDefault>
+				<jdk>[1.8,)</jdk>
+				<property>
+					<name>release</name>
+					<value>true</value>
+				</property>
+			</activation>
+
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-antrun-plugin</artifactId>
+						<executions>
+							<execution>
+								<id>prepare-package-archlinux</id>
+								<phase>process-resources</phase>
+								<goals>
+									<goal>run</goal>
+								</goals>
+								<configuration>
+									<target>
+										<delete dir="${project.build.directory}/archlinux" includeemptydirs="true"/>
+										<delete file="${project.build.directory}/install"/>
+										<!-- Ready for a daemon install
+											https://www.archlinux.org/pacman/PKGBUILD.5.html#_install_upgrade_remove_scripting
+										-->
+										<echo file="${project.build.directory}/install" force="true">pre_install() {${line.separator}</echo>
+										<echo file="${project.build.directory}/install" append="true">echo "pre_install($1)"${line.separator}</echo>
+										<echo file="${project.build.directory}/install" append="true">}${line.separator}</echo>
+										<echo file="${project.build.directory}/install" append="true">${line.separator}</echo>
+										<echo file="${project.build.directory}/install" append="true">post_install() {${line.separator}</echo>
+										<echo file="${project.build.directory}/install" append="true">echo "post_install($1)"${line.separator}</echo>
+										<echo file="${project.build.directory}/install" append="true">}${line.separator}</echo>
+
+										<copy todir="${project.build.directory}/archlinux/${project.skelprofile.dir}${project.name.camel}"> overwrite="true"
+											<fileset dir="${project.external-resources}" includes="*.conf"/>
+										</copy>
+										<copy todir="${project.build.directory}/archlinux/opt/${project.name.camel}"> overwrite="true"
+											<fileset dir="${project.external-resources}"  includes="plugins/**, documentation/**, web/**, renderers/**, *.ass, *.jpg, *.webfilters, *.sh, *.xml"/>
+										</copy>
+										<copy file="${project.build.directory}/${project.artifactId}.jar" todir="${project.build.directory}/archlinux/opt/${project.name.camel}"/>
+									</target>
+								</configuration>
+							</execution>
+						</executions>
+					</plugin>
+					<plugin>
+						<groupId>com.github.gino0631</groupId>
+						<artifactId>pac-maven-plugin</artifactId>
+						<version>1.0</version>
+						<executions>
+							<execution>
+								<id>create-arch-package</id>
+								<phase>package</phase>
+								<goals>
+									<goal>package</goal>
+								</goals>
+								<configuration>
+									<root>${project.build.directory}/archlinux</root>
+									<buildDirectory/>
+									<packageName>${project.artifactId}</packageName>
+									<packageVersion/> <!-- https://github.com/gino0631/pac/issues/2 -->
+									<releaseNumber>1</releaseNumber>
+									<architecture>any</architecture>
+									<description>DLNA Media server</description>
+									<url>https://www.digitalmediaserver.com</url>
+									<packager>Not Me &lt;notme@unknown.com&gt;</packager>
+									<licenses>
+										<license>GPLv2+</license>
+									</licenses>
+									<!-- https://aur.archlinux.org/packages/tsmuxer/
+										https://aur.archlinux.org/packages/tsmuxer-ng-cli-bin/
+									-->
+									<depends> <!-- In "Extra" repository except for MediaInfo that is in "Community" one -->
+										<depend>java-runtime</depend>
+										<depend>ffmpeg</depend>
+										<depend>mediainfo</depend>
+										<depend>dcraw</depend>
+										<depend>mencoder</depend>
+										<!-- <depend>vlc</depend> -->
+									</depends>
+									<permissionSets>
+										<permissionSet>
+											<includes>
+												<include>**/*.sh</include>
+											</includes>
+											<fileMode>0755</fileMode>
+										</permissionSet>
+									</permissionSets>
+									<entries>
+										<symlink>
+											<name>/usr/bin/${project.artifactId}</name>
+											<linkTo>/opt/${project.name.camel}/${project.artifactId}.sh</linkTo>
+										</symlink>
+										<symlink>
+											<name>/usr/bin/${project.name.short}</name>
+											<linkTo>/opt/${project.name.camel}/${project.artifactId}.sh</linkTo>
+										</symlink>
+									</entries>
+									<installScript>${project.build.directory}/install</installScript>
+									<outputFile>${project.artifactId}-${project.version}.any.pkg.tar.xz</outputFile>
+								</configuration>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+
 		<!-- macOS PKG profile -->
 		<profile>
 			<id>pkg</id>
@@ -1740,8 +1860,8 @@
 								</goals>
 								<configuration>
 									<target>
-										<mkdir dir="${project.build.directory}/darwin/root/${project.artifactId}-macosx-x64" />
-										<chmod dir="${project.build.directory}/darwin/root/${project.artifactId}-macosx-x64" type="dir" perm="0755"/>
+										<mkdir dir="${project.build.directory}/macosx" />
+										<chmod dir="${project.build.directory}/macosx" type="dir" perm="0755"/>
 									</target>
 								</configuration>
 							</execution>
@@ -1759,7 +1879,7 @@
 									<goal>product</goal>
 								</goals>
 								<configuration>
-									<root>${project.build.directory}/darwin/root/${project.artifactId}-macosx-x64</root>
+									<root>${project.build.directory}/macosx</root>
 									<outputFile>${project.name.camel}-${project.version}.pkg</outputFile>
 									<packageIdentifier>${project.groupId}.${project.artifactId}.pkg</packageIdentifier>
 									<packageVersion>${project.version}</packageVersion>
@@ -1789,11 +1909,11 @@
 											<includes>
 												<include>**/*.sh</include>
 											</includes>
-											<excludes />
+											<excludes/>
 											<fileMode>0755</fileMode>
-											<directoryMode />
-											<uid />
-											<gid />
+											<directoryMode/>
+											<uid/>
+											<gid/>
 										</permissionSet>
 									</permissionSets>
 									<signing>
