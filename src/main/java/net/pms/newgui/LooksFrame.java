@@ -358,8 +358,8 @@ public class LooksFrame extends JFrame implements IFrame {
 				break;
 		}
 
-		String projectName = PropertiesUtil.getProjectProperties().get("project.name");
-		String projectVersion = PropertiesUtil.getProjectProperties().get("project.version");
+		String projectName = PMS.getName();
+		String projectVersion = PMS.getVersion();
 		String title = projectName + " " + projectVersion;
 
 		// If the version contains a "-" (e.g. "1.50.1-SNAPSHOT" or "1.50.1-beta1"), add a warning message

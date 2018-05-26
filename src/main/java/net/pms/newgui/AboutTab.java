@@ -59,7 +59,7 @@ public class AboutTab {
 		builder.opaque(true);
 		CellConstraints cc = new CellConstraints();
 
-		String projectName = PropertiesUtil.getProjectProperties().get("project.name");
+		String projectName = PMS.getName();
 
 		final LinkMouseListener dmsLink = new LinkMouseListener(projectName + " " + PMS.getVersion(),
 			"http://www.digitalmediaserver.org/");
@@ -84,7 +84,7 @@ public class AboutTab {
 
 		builder.addLabel(Messages.getString("LinksTab.5"), cc.xy(2, 7, "center, fill"));
 
-		final LinkMouseListener crowdinLink = new LinkMouseListener(String.format(Messages.getString("LinksTab.7"), PMS.NAME), PMS.CROWDIN_LINK);
+		final LinkMouseListener crowdinLink = new LinkMouseListener(String.format(Messages.getString("LinksTab.7"), PMS.getName()), PMS.CROWDIN_LINK);
 		JLabel lCrowdinLink = builder.addLabel(crowdinLink.getLabel(), cc.xy(2, 9, "center, fill"));
 		lCrowdinLink.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 		lCrowdinLink.addMouseListener(crowdinLink);

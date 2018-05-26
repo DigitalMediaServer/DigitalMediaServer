@@ -523,7 +523,7 @@ public class PmsConfiguration extends RendererConfiguration {
 		String customProfilePath = System.getProperty(PROPERTY_PROFILE_PATH);
 
 		// failing that, try the environment variable
-		if (StringUtils.isBlank(customProfilePath)) {
+		if (isBlank(customProfilePath)) {
 			customProfilePath = System.getenv(ENV_PROFILE_PATH);
 		}
 
@@ -1129,9 +1129,9 @@ public class PmsConfiguration extends RendererConfiguration {
 
 	public String getServerDisplayName() {
 		if (isAppendProfileName()) {
-			return String.format("%s [%s]", getString(KEY_SERVER_NAME, PMS.NAME), getProfileName());
+			return String.format("%s [%s]", getString(KEY_SERVER_NAME, PMS.getName()), getProfileName());
 		}
-		return getString(KEY_SERVER_NAME, PMS.NAME);
+		return getString(KEY_SERVER_NAME, PMS.getName());
 	}
 	/**
 	 * The name of the server.
@@ -1139,7 +1139,7 @@ public class PmsConfiguration extends RendererConfiguration {
 	 * @return The name of the server.
 	 */
 	public String getServerName() {
-		return getString(KEY_SERVER_NAME, PMS.NAME);
+		return getString(KEY_SERVER_NAME, PMS.getName());
 	}
 
 	/**
