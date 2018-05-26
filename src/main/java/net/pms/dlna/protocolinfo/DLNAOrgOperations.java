@@ -23,7 +23,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.fourthline.cling.support.model.Protocol;
 import net.pms.dlna.protocolinfo.ProtocolInfoAttributeName.KnownProtocolInfoAttributeName;
-import net.pms.util.ParseException;
+import net.pms.exception.ParseException;
 
 /**
  * This class represents {@code DLNA.ORG_OP} attributes. This can be used for

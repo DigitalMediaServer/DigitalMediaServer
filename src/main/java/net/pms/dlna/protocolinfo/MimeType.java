@@ -30,7 +30,7 @@ import java.util.Map.Entry;
 import java.util.TreeMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import net.pms.util.ParseException;
+import net.pms.exception.ParseException;
 
 /**
  * This immutable class represents a mime-type.

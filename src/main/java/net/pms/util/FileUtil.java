@@ -34,6 +34,7 @@ import net.pms.configuration.PmsConfiguration;
 import net.pms.configuration.WindowsProgramPaths;
 import net.pms.dlna.DLNAMediaInfo;
 import net.pms.dlna.DLNAMediaSubtitle;
+import net.pms.exception.InvalidFileSystemException;
 import net.pms.formats.FormatFactory;
 import net.pms.formats.v2.SubtitleType;
 import net.pms.io.BasicSystemUtils;
@@ -151,25 +152,6 @@ public class FileUtil {
 		}
 
 		return new FileLocation(directory, file);
-	}
-
-	public final static class InvalidFileSystemException extends Exception {
-
-		private static final long serialVersionUID = -4545843729375389876L;
-
-		public InvalidFileSystemException() {
-			super();
-		}
-
-		public InvalidFileSystemException(String message) {
-			super(message);
-		}
-		public InvalidFileSystemException(Throwable cause) {
-			super(cause);
-		}
-		public InvalidFileSystemException(String message, Throwable cause) {
-			super(message, cause);
-		}
 	}
 
 	/**

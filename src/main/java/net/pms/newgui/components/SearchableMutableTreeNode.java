@@ -67,10 +67,12 @@ public class SearchableMutableTreeNode extends DefaultMutableTreeNode {
 	}
 
 	/**
-	 * Search the node's immediate children
-	 * @param searchObject the object to search for
-	 * @return the found node or null
-	 * @throws IllegalChildException if a child that's not a SearchableMutableTreeNode or descendant is encountered
+	 * Search the node's immediate children.
+	 *
+	 * @param searchObject the object to search for.
+	 * @return the found node or {@code null}.
+	 * @throws IllegalChildException If a child that doesn't implement
+	 *             {@link SearchableMutableTreeNode} is encountered.
 	 */
 	public SearchableMutableTreeNode findChild(String searchName) throws IllegalChildException {
 
@@ -78,10 +80,12 @@ public class SearchableMutableTreeNode extends DefaultMutableTreeNode {
 	}
 
 	/**
-	 * Search the node's children recursively
-	 * @param searchObject the object to search for
-	 * @return the found node or null
-	 * @throws IllegalChildException if a child that's not a SearchableMutableTreeNode or descendant is encountered
+	 * Search the node's children recursively.
+	 *
+	 * @param searchObject the object to search for.
+	 * @return The found node or {@code null}.
+	 * @throws IllegalChildException If a child that doesn't implement
+	 *             {@link SearchableMutableTreeNode} is encountered.
 	 */
 	public SearchableMutableTreeNode findInBranch(String searchName, boolean specialGroupRules) throws IllegalChildException {
 		return findChild(searchName, true, specialGroupRules);
@@ -91,9 +95,58 @@ public class SearchableMutableTreeNode extends DefaultMutableTreeNode {
 		return (String) super.getUserObject();
 	}
 
-    @Override
+	@Override
 	public SearchableMutableTreeNode getParent() {
-        return (SearchableMutableTreeNode) parent;
-    }
+		return (SearchableMutableTreeNode) parent;
+	}
 
+	/**
+	 * A checked {@link Exception} that indicates that a child that doesn't
+	 * fulfill the requirements has been encountered.
+	 */
+	public static class IllegalChildException extends Exception {
+
+		private static final long serialVersionUID = 1152260088011461750L;
+
+		/**
+		 * Creates a new exception with {@code null} as its detail message.
+		 */
+		public IllegalChildException() {
+		}
+
+		/**
+		 * Creates a new exception with the specified detail message.
+		 *
+		 * @param message the detail message.
+		 */
+		public IllegalChildException(String message) {
+			super(message);
+		}
+
+		/**
+		 * Creates a new exception with the specified code cause and a detail
+		 * message of {@code (cause==null ? null : cause.toString())}.
+		 *
+		 * @param cause the {@link Throwable} which caused this
+		 *            {@link IllegalChildException}.
+		 */
+		public IllegalChildException(Throwable cause) {
+			super(cause);
+		}
+
+		/**
+		 * Creates a new exception with the specified detail message and cause.
+		 * <p>
+		 * <b>Note</b>: The detail message associated with {@code cause} is
+		 * <b><i>not</i></b> automatically incorporated in this exception's detail
+		 * message.
+		 *
+		 * @param message the detail message.
+		 * @param cause the {@link Throwable} which caused this
+		 *            {@link IllegalChildException}.
+		 */
+		public IllegalChildException(String message, Throwable cause) {
+			super(message, cause);
+		}
+	}
 }

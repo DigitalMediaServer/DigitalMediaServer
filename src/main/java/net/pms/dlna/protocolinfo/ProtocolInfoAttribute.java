@@ -24,7 +24,7 @@ import org.fourthline.cling.support.model.Protocol;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import net.pms.dlna.protocolinfo.ProfileName.DefaultGenericProfileName;
-import net.pms.util.ParseException;
+import net.pms.exception.ParseException;
 
 /**
  * This interface represents attributes found in the {@code additionalInfo} part
