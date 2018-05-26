@@ -25,6 +25,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import net.pms.exception.InvalidArgumentException;
 
 /**
  * This class is an extension of {@link Color} with improved {@link String}

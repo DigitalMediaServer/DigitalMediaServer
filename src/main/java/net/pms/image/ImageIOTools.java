@@ -34,8 +34,8 @@ import javax.imageio.ImageTypeSpecifier;
 import javax.imageio.spi.IIORegistry;
 import javax.imageio.spi.ImageInputStreamSpi;
 import javax.imageio.stream.ImageInputStream;
-import net.pms.image.ImageIORuntimeException;
-import net.pms.util.UnknownFormatException;
+import net.pms.exception.ImageIORuntimeException;
+import net.pms.exception.UnknownFormatException;
 import com.drew.metadata.Metadata;
 
 /**

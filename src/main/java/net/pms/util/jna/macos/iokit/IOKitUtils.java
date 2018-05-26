@@ -25,6 +25,7 @@ import com.sun.jna.Platform;
 import com.sun.jna.ptr.IntByReference;
 import com.sun.jna.ptr.LongByReference;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import net.pms.exception.IOKitException;
 import net.pms.util.jna.macos.corefoundation.CoreFoundation;
 import net.pms.util.jna.macos.corefoundation.CoreFoundation.CFMutableDictionaryRef;
 import net.pms.util.jna.macos.corefoundation.CoreFoundation.CFMutableDictionaryRefByReference;

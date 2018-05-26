@@ -2,7 +2,7 @@ package net.pms.image;
 
 import java.awt.color.ColorSpace;
 import java.awt.image.ColorModel;
-import net.pms.util.ParseException;
+import net.pms.exception.ParseException;
 import com.drew.metadata.Directory;
 import com.drew.metadata.Metadata;
 import com.drew.metadata.webp.WebpDirectory;

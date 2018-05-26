@@ -2,7 +2,7 @@ package net.pms.image;
 
 import java.awt.color.ColorSpace;
 import java.awt.image.ColorModel;
-import net.pms.util.ParseException;
+import net.pms.exception.ParseException;
 import com.drew.imaging.png.PngChunkType;
 import com.drew.imaging.png.PngColorType;
 import com.drew.metadata.Directory;

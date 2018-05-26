@@ -12,6 +12,7 @@ import java.util.Set;
 import net.pms.Messages;
 import net.pms.dlna.virtual.VirtualFolder;
 import net.pms.dlna.virtual.VirtualVideoAction;
+import net.pms.exception.InvalidFileSystemException;
 import net.pms.util.FileUtil;
 import net.pms.util.FreedesktopTrash;
 import net.pms.util.FullyPlayedAction;
@@ -239,7 +240,7 @@ public class MediaMonitor extends VirtualFolder {
 							} else {
 								FileUtils.getInstance().moveToTrash(Arrays.array(playedFile));
 							}
-						} catch (IOException | FileUtil.InvalidFileSystemException e) {
+						} catch (IOException | InvalidFileSystemException e) {
 							LOGGER.warn("Failed to move file \"{}\" to recycler/trash after it has been fully played: {}", playedFile.getAbsoluteFile(), e.getMessage());
 							LOGGER.trace("", e);
 						}

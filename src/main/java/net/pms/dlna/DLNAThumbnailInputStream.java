@@ -25,6 +25,7 @@ import java.io.InputStream;
 import javax.imageio.ImageIO;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import net.pms.dlna.DLNAThumbnail;
+import net.pms.exception.DLNAProfileException;
 import net.pms.image.ColorSpaceType;
 import net.pms.image.ImageFormat;
 import net.pms.image.ImageInfo;
@@ -223,9 +224,8 @@ public class DLNAThumbnailInputStream extends ByteArrayInputStream {
 			byte[] result = new byte[buf.length];
 			System.arraycopy(buf, 0, result, 0, buf.length);
 			return result;
-		} else {
-			return buf;
 		}
+		return buf;
 	}
 
 
