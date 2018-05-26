@@ -20,7 +20,7 @@ package net.pms.dlna.protocolinfo;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import net.pms.dlna.protocolinfo.ProtocolInfoAttributeName.KnownProtocolInfoAttributeName;
-import net.pms.util.ParseException;
+import net.pms.exception.ParseException;
 
 /**
  * This class is immutable and represents the {@code DLNA.ORG_FLAGS} parameter.

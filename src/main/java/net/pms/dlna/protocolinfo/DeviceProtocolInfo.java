@@ -34,7 +34,7 @@ import org.apache.commons.text.translate.LookupTranslator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import net.pms.dlna.DLNAImageProfile;
-import net.pms.util.ParseException;
+import net.pms.exception.ParseException;
 
 /**
  * This class represents a device's {@code ProtocolInfo} elements, typically

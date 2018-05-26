@@ -34,7 +34,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import net.pms.util.FileUtil.InvalidFileSystemException;
+import net.pms.exception.InvalidFileSystemException;
 import net.pms.util.FileUtil.UnixMountPoint;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -161,9 +161,8 @@ public class FreedesktopTrash {
 				}
 				if (verifyTrashFolder(trashFolder, true)) {
 					return trashFolder;
-				} else {
-					return null;
 				}
+				return null;
 			}
 		}
 
@@ -179,9 +178,8 @@ public class FreedesktopTrash {
 								trashFolder = Paths.get(trashFolder.toString(), String.valueOf(FileUtil.getUnixUID()));
 								if (verifyTrashFolder(trashFolder, true)) {
 									return trashFolder;
-								} else {
-									LOGGER.trace("Could not read or create trash folder \"{}\", trying next option", trashFolder);
 								}
+								LOGGER.trace("Could not read or create trash folder \"{}\", trying next option", trashFolder);
 							} catch (IOException e) {
 								LOGGER.trace("Could not determine user id while resolving trash folder, trying next option", e);
 							}
@@ -209,10 +207,9 @@ public class FreedesktopTrash {
 		}
 		if (verifyTrashFolder(trashFolder, true)) {
 			return trashFolder;
-		} else {
-			LOGGER.debug("Unable to read or create trash folder \"{}\"", trashFolder);
-			return null;
 		}
+		LOGGER.debug("Unable to read or create trash folder \"{}\"", trashFolder);
+		return null;
 	}
 
 	private static boolean verifyTrashStructure(Path trashPath) {

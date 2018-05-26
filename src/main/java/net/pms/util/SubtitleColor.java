@@ -20,6 +20,7 @@ package net.pms.util;
 
 import java.awt.Color;
 import java.awt.color.ColorSpace;
+import net.pms.exception.InvalidArgumentException;
 
 /**
  * This class is an extension of {@link FormattableColor} with predefined

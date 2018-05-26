@@ -33,8 +33,8 @@ import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import net.pms.dlna.DLNAImage;
 import net.pms.dlna.DLNAImageProfile;
 import net.pms.dlna.DLNAThumbnail;
+import net.pms.exception.ParseException;
 import net.pms.image.ImagesUtil.ScaleType;
-import net.pms.util.ParseException;
 
 /**
  * This class is simply a byte array for holding an {@link ImageIO} supported

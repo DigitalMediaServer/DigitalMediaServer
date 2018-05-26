@@ -31,7 +31,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import net.pms.configuration.RendererConfiguration;
 import net.pms.dlna.protocolinfo.PanasonicComProfileName.KnownPanasonicComProfileName;
-import net.pms.util.ParseException;
+import net.pms.exception.ParseException;
 
 /**
  * This class handles a Panasonic DMP's {@link ProfileName}s from the custom
