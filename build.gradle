@@ -1,0 +1,91 @@
+apply plugin: 'java'
+apply plugin: 'maven'
+
+group = 'org.digitalmediaserver'
+version = '0.0.2-SNAPSHOT'
+
+description = """Digital Media Server"""
+
+sourceCompatibility = 1.7
+targetCompatibility = 1.7
+tasks.withType(JavaCompile) {
+	options.encoding = 'UTF-8'
+}
+
+
+
+repositories {
+        
+     maven { url "https://repo1.maven.org/maven2" }
+     maven { url "http://4thline.org/m2" }
+     maven { url "https://dl.bintray.com/pathrik/PathriK" }
+}
+dependencies {
+    compile group: 'org.beanshell', name: 'bsh-core', version:'2.0b4'
+    compile group: 'commons-collections', name: 'commons-collections', version:'3.2.2'
+    compile(group: 'commons-configuration', name: 'commons-configuration', version:'1.10') {
+exclude(module: 'commons-logging')
+    }
+    compile group: 'commons-io', name: 'commons-io', version:'2.6'
+    compile group: 'org.apache.commons', name: 'commons-lang3', version:'3.7'
+    compile group: 'org.apache.commons', name: 'commons-text', version:'1.2'
+    compile group: 'com.h2database', name: 'h2', version:'1.4.196'
+    compile group: 'ch.qos.logback', name: 'logback-classic', version:'1.2.3'
+    compile group: 'ch.qos.logback', name: 'logback-core', version:'1.2.3'
+    compile group: 'com.google.code.gson', name: 'gson', version:'2.8.2'
+    compile group: 'io.netty', name: 'netty', version:'3.10.6.Final'
+    compile(group: 'com.rometools', name: 'rome', version:'1.9.0') {
+exclude(module: 'slf4j-api')
+    }
+    compile group: 'net.coobird', name: 'thumbnailator', version:'[0.4, 0.5)'
+    compile group: 'com.twelvemonkeys.imageio', name: 'imageio-bmp', version:'3.3.2'
+    compile group: 'com.twelvemonkeys.imageio', name: 'imageio-core', version:'3.3.2'
+    compile group: 'com.twelvemonkeys.imageio', name: 'imageio-icns', version:'3.3.2'
+    compile group: 'com.twelvemonkeys.imageio', name: 'imageio-iff', version:'3.3.2'
+    compile group: 'com.twelvemonkeys.imageio', name: 'imageio-jpeg', version:'3.3.2'
+    compile group: 'com.twelvemonkeys.imageio', name: 'imageio-hdr', version:'3.3.2'
+    compile group: 'com.twelvemonkeys.imageio', name: 'imageio-metadata', version:'3.3.2'
+    compile group: 'com.twelvemonkeys.imageio', name: 'imageio-pcx', version:'3.3.2'
+    compile group: 'com.twelvemonkeys.imageio', name: 'imageio-pict', version:'3.3.2'
+    compile group: 'com.twelvemonkeys.imageio', name: 'imageio-pnm', version:'3.3.2'
+    compile group: 'com.twelvemonkeys.imageio', name: 'imageio-psd', version:'3.3.2'
+    compile group: 'com.twelvemonkeys.imageio', name: 'imageio-sgi', version:'3.3.2'
+    compile group: 'com.twelvemonkeys.imageio', name: 'imageio-tga', version:'3.3.2'
+    compile group: 'com.twelvemonkeys.imageio', name: 'imageio-tiff', version:'3.3.2'
+    compile group: 'com.drewnoakes', name: 'metadata-extractor', version:'2.10.1'
+    compile group: 'net.jthink', name: 'jaudiotagger', version:'2.2.6-PATHRIK'
+    compile group: 'com.jgoodies', name: 'jgoodies-forms', version:'1.9.0'
+    compile group: 'com.jgoodies', name: 'jgoodies-looks', version:'2.7.0'
+    compile group: 'com.github.junrar', name: 'junrar', version:'1.0.0'
+    compile group: 'jwbroek.cuelib', name: 'cuelib', version:'1.2.1-2008-06-13'
+    compile group: 'xmlwise', name: 'xmlwise', version:'1.2.11'
+    compile group: 'sevenzip', name: 'jbinding', version:'4.65-1.04-RC'
+    compile group: 'sevenzip-allplatforms', name: 'jbinding-allplatforms', version:'4.65-1.04-RC'
+    compile group: 'org.easytesting', name: 'fest-util', version:'1.2.5'
+    compile group: 'net.java.dev.jna', name: 'jna', version:'4.4.0'
+    compile group: 'net.java.dev.jna', name: 'jna-platform', version:'4.4.0'
+    compile group: 'org.fourthline.cling', name: 'cling-core', version:'2.1.1'
+    compile group: 'org.fourthline.cling', name: 'cling-support', version:'2.1.1'
+    compile group: 'org.seamless', name: 'seamless-http', version:'1.1.1'
+    compile group: 'org.seamless', name: 'seamless-util', version:'1.1.1'
+    compile group: 'org.seamless', name: 'seamless-xml', version:'1.1.1'
+    compile group: 'org.slf4j', name: 'slf4j-api', version:'1.7.25'
+    compile group: 'commons-codec', name: 'commons-codec', version:'1.6'
+    compile group: 'org.apache.httpcomponents', name: 'httpclient', version:'4.2.1'
+    compile group: 'com.google.code.findbugs', name: 'jsr305', version:'3.0.1'
+    compile group: 'commons-lang', name: 'commons-lang', version:'2.6'
+    compile group: 'javax.jmdns', name: 'jmdns', version:'3.4.1'
+    compile group: 'org.jdom', name: 'jdom2', version:'2.0.6'
+    compile group: 'com.samskivert', name: 'jmustache', version:'1.13'
+    compile group: 'su.litvak.chromecast', name: 'api-v2', version:'0.10.1'
+    compile group: 'com.ibm.icu', name: 'icu4j', version:'59.1'
+    compile group: 'com.google.code.findbugs', name: 'annotations', version:'3.0.1u2'
+    compile(group: 'fm.last', name: 'coverartarchive-api', version:'2.1.0') {
+exclude(module: 'jsr305')
+exclude(module: 'commons-io')
+exclude(module: 'commons-logging')
+    }
+    compile group: 'com.github.oshi', name: 'oshi-core', version:'3.4.3'
+    testCompile group: 'junit', name: 'junit', version:'4.12'
+    testCompile group: 'org.assertj', name: 'assertj-core', version:'2.8.0'
+}
