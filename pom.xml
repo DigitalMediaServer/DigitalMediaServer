@@ -17,7 +17,7 @@
 
 		To build DMS, do:
 
-			mvn clean
+			mvn
 
 		After building, the "target" directory will contain the binary.
 		To generate a full source code report, run:
@@ -99,7 +99,6 @@
 		<maven-resources-plugin-version>3.0.2</maven-resources-plugin-version>
 		<maven-enforcer-plugin-version>3.0.0-M1</maven-enforcer-plugin-version>
 		<appbundle-maven-plugin-version>1.2.0</appbundle-maven-plugin-version>
-		<maven-clean-plugin-version>3.1.0</maven-clean-plugin-version>
 		<maven-shade-plugin-version>3.1.1</maven-shade-plugin-version>
 
 		<!--
@@ -1171,11 +1170,8 @@
 												<available file="${project.basedir}/bin/win32" type="dir"/>
 											</not>
 											<then>
-												<mkdir dir="${project.binaries}"/>
-												<mkdir dir="${project.binaries}/win32"/>
 												<mkdir dir="${project.binaries}/win32/avisynth"/>
 												<mkdir dir="${project.binaries}/win32/codecs"/>
-												<mkdir dir="${project.binaries}/win32/fonts"/>
 												<mkdir dir="${project.binaries}/win32/fonts/conf.avail"/>
 												<mkdir dir="${project.binaries}/win32/fonts/conf.d"/>
 												<mkdir dir="${project.binaries}/win32/interframe" />
@@ -1271,7 +1267,7 @@
 			</build>
 		</profile>
 
-		<!-- General Linux TAR.GZ profile -->
+		<!-- Generic Linux Unix TAR.GZ profile -->
 		<profile>
 			<id>tgz</id>
 			<activation>
@@ -1302,7 +1298,6 @@
 												<available file="${project.basedir}/bin/linux" type="dir"/>
 											</not>
 											<then>
-												<mkdir dir="${project.binaries}"/>
 												<mkdir dir="${project.binaries}/linux"/>
 												<get src="${project.binaries-base}/linux/ffmpeg?p=${binary-revision}" dest="${project.binaries}/linux/ffmpeg"/>
 												<get src="${project.binaries-base}/linux/ffmpeg64?p=${binary-revision}" dest="${project.binaries}/linux/ffmpeg64"/>
@@ -1310,6 +1305,18 @@
 												<get src="${project.binaries-base}/linux/tsMuxeR_licence.txt?p=${binary-revision}" dest="${project.binaries}/linux/tsMuxeR_license.txt"/>
 											</then>
 										</if>
+									</target>
+								</configuration>
+							</execution>
+							<execution>
+								<id>auto-clean-tgz</id>
+								<phase>pre-integration-test</phase>
+								<goals>
+									<goal>run</goal>
+								</goals>
+								<configuration>
+									<target name="clean-tgz">
+										<delete dir="${project.build.directory}/${project.name}-${project.version}" includeemptydirs="true" failonerror="false" quiet="true"/>
 									</target>
 								</configuration>
 							</execution>
@@ -1331,39 +1338,6 @@
 									<descriptors>
 										<descriptor>${project.basedir}/src/main/assembly/assembly-linux.xml</descriptor>
 									</descriptors>
-									<archive>
-										<manifest>
-											<addClasspath>true</addClasspath>
-											<mainClass>${project.mainclass}</mainClass>
-											<addDefaultImplementationEntries>true</addDefaultImplementationEntries>
-										</manifest>
-									</archive>
-								</configuration>
-							</execution>
-						</executions>
-					</plugin>
-					<plugin>
-						<groupId>org.apache.maven.plugins</groupId>
-						<artifactId>maven-clean-plugin</artifactId>
-						<version>${maven-clean-plugin-version}</version>
-						<executions>
-							<execution>
-								<id>auto-clean</id>
-								<phase>pre-integration-test</phase>
-								<goals>
-									<goal>clean</goal>
-								</goals>
-								<configuration>
-									<failOnError>false</failOnError>
-									<excludeDefaultDirectories>true</excludeDefaultDirectories>
-									<filesets>
-										<fileset>
-											<directory>${project.build.directory}</directory>
-											<includes>
-												<include>${project.name}-${project.version}/**</include>
-											</includes>
-										</fileset>
-									</filesets>
 								</configuration>
 							</execution>
 						</executions>
@@ -1410,7 +1384,8 @@
 										Latest VLC:
 										deb http://ftp.de.debian.org/debian buster main
 									-->
-									<target>
+									<target name="control">
+										<delete dir="${project.build.directory}/control"includeemptydirs="true" failonerror="false" quiet="true"/>
 										<mkdir dir="${project.build.directory}/control" />
 										<chmod dir="${project.build.directory}/control" type="dir" perm="0755"/>
 										<echo file="${project.build.directory}/control/control" force="true">Package: ${project.artifactId}${line.separator}</echo>
@@ -1426,6 +1401,18 @@
 										<echo file="${project.build.directory}/control/control" append="true">Distribution: stable${line.separator}</echo>
 										<echo file="${project.build.directory}/control/control" append="true">Homepage: http://www.digitalmediaserver.com/${line.separator}</echo>
 										<chmod file="${project.build.directory}/control/control" perm="0644"/>
+									</target>
+								</configuration>
+							</execution>
+							<execution>
+								<id>auto-clean-deb</id>
+								<phase>pre-integration-test</phase>
+								<goals>
+									<goal>run</goal>
+								</goals>
+								<configuration>
+									<target name="clean-deb">
+										<delete dir="${project.build.directory}/control" includeemptydirs="true" failonerror="false" quiet="true"/>
 									</target>
 								</configuration>
 							</execution>
@@ -1816,6 +1803,19 @@
 									</target>
 								</configuration>
 							</execution>
+							<execution>
+								<id>auto-clean-arch</id>
+								<phase>pre-integration-test</phase>
+								<goals>
+									<goal>run</goal>
+								</goals>
+								<configuration>
+									<target name="clean-arch">
+										<delete dir="${project.build.directory}/archlinux" includeemptydirs="true" failonerror="false" quiet="true"/>
+										<delete file="${project.build.directory}/install" includeemptydirs="true" failonerror="false" quiet="true"/>
+									</target>
+								</configuration>
+							</execution>
 						</executions>
 					</plugin>
 					<plugin>
@@ -1876,38 +1876,11 @@
 							</execution>
 						</executions>
 					</plugin>
-					<plugin>
-						<groupId>org.apache.maven.plugins</groupId>
-						<artifactId>maven-clean-plugin</artifactId>
-						<version>${maven-clean-plugin-version}</version>
-						<executions>
-							<execution>
-								<id>auto-clean</id>
-								<phase>pre-integration-test</phase>
-								<goals>
-									<goal>clean</goal>
-								</goals>
-								<configuration>
-									<failOnError>false</failOnError>
-									<excludeDefaultDirectories>true</excludeDefaultDirectories>
-									<filesets>
-										<fileset>
-											<directory>${project.build.directory}</directory>
-											<includes>
-												<include>archlinux/**</include>
-												<include>install</include>
-											</includes>
-										</fileset>
-									</filesets>
-								</configuration>
-							</execution>
-						</executions>
-					</plugin>
 				</plugins>
 			</build>
 		</profile>
 
-		<!-- macOS PKG profile -->
+		<!-- macOS flat PKG profile -->
 		<profile>
 			<id>pkg</id>
 			<activation>
@@ -1926,20 +1899,19 @@
 						<artifactId>maven-antrun-plugin</artifactId>
 						<executions>
 							<execution>
-								<id>prepare-binaries-pkg</id>
+								<id>download-files-pkg</id>
 								<phase>prepare-package</phase>
 								<goals>
 									<goal>run</goal>
 								</goals>
 								<configuration>
-									<target name="download-osx-binaries">
+									<target name="download-macOS-binaries">
 										<taskdef resource="net/sf/antcontrib/antlib.xml" classpathref="maven.plugin.classpath"/>
 										<if>
 											<not>
 												<available file="${project.basedir}/bin/osx" type="dir"/>
 											</not>
 											<then>
-												<mkdir dir="${project.binaries}"/>
 												<mkdir dir="${project.binaries}/osx"/>
 												<get src="${project.binaries-base}/osx/dcraw" dest="${project.binaries}/osx/dcraw"/>
 												<get src="${project.binaries-base}/osx/ffmpeg" dest="${project.binaries}/osx/ffmpeg"/>
@@ -1955,30 +1927,35 @@
 								</configuration>
 							</execution>
 							<execution>
-								<id>package-app</id>
+								<id>prepare-files-pkg</id>
 								<phase>prepare-package</phase>
 								<goals>
 									<goal>run</goal>
 								</goals>
 								<configuration>
-									<target>
-										<!-- TODO: target/macOS-pkg folder should be cleaned first -->
+									<target name="package-app">
+										<delete dir="${project.build.directory}/macOS-pkg"includeemptydirs="true" failonerror="false" quiet="true"/>
 										<mkdir dir="${project.build.directory}/macOS-pkg/Applications/${project.name}.app"/>
 										<chmod dir="${project.build.directory}/macOS-pkg/Applications/${project.name}.app" type="dir" perm="0755"/>
-										<!--                                                       -->
 										<taskdef name="bundleapp" classname="com.oracle.appbundler.AppBundlerTask"
 											classpath="${project.external-resources}/lib/appbundler-1.4.jar"/>
-										<bundleapp outputdirectory="${project.build.directory}/macOS-pkg/Applications"
+										<bundleapp outputDirectory="${project.build.directory}/macOS-pkg/Applications"
+													jvmRequired="1.7+"
+													minimumSystemVersion="10.6.0"
 													name="${project.name}"
-													displayname="${project.name}"
+													displayName="${project.name}"
 													executableName="${project.name.short}"
 													identifier="${project.mainclass}"
 													version="${project.version}"
 													icon="${project.basedir}/src/main/resources/images/logo.icns"
 													applicationCategory="public.app-category.entertainment"
-													workingdirectory="$APP_ROOT/Contents/Resources"
-													mainclassname="${project.mainclass}">
+													workingDirectory="$APP_ROOT/Contents/Resources"
+													mainClassName="${project.mainclass}"
+													copyright="Copyleft (ↄ) 2018 Digital Media Server."
+													signature="DMS ">
+											<!--runtime dir="${env.JAVA_HOME}"/ Required if Java is not intalled or incompatible-->
 											<classpath file="${project.build.directory}/${project.artifactId}.jar"/>
+											<arch name="x86_64"/>
 											<option value="-Xmx768M"/>
 											<option value="-Xss16M"/>
 											<option value="-Dfile.encoding=UTF-8"/>
@@ -1987,6 +1964,19 @@
 											<option value="-Xdock:name=${project.name}"/>
 											<option value="-Djna.nosys=true"/>
 										</bundleapp>
+									</target>
+								</configuration>
+							</execution>
+							<execution>
+								<id>auto-clean-pkg</id>
+								<phase>pre-integration-test</phase>
+								<goals>
+									<goal>run</goal>
+								</goals>
+								<configuration>
+									<target name="clean-pkg">
+										<delete dir="${project.build.directory}/macOS-pkg" includeemptydirs="true" failonerror="false" quiet="true"/>
+										<delete dir="${project.build.directory}/pkg-flat" includeemptydirs="true" failonerror="false" quiet="true"/>
 									</target>
 								</configuration>
 							</execution>
@@ -2009,12 +1999,6 @@
 									<descriptors>
 										<descriptor>${project.basedir}/src/main/assembly/assembly-macos.xml</descriptor>
 									</descriptors>
-									<archive>
-										<manifest>
-											<mainClass>${project.mainclass}</mainClass>
-											<addDefaultImplementationEntries>true</addDefaultImplementationEntries>
-										</manifest>
-									</archive>
 								</configuration>
 							</execution>
 						</executions>
@@ -2025,7 +2009,7 @@
 						<version>1.2-SNAPSHOT</version>
 						<executions>
 							<execution>
-								<id>create-macosx-pkg</id>
+								<id>create-macos-pkg</id>
 								<phase>package</phase>
 								<goals>
 									<goal>product</goal>
@@ -2038,66 +2022,39 @@
 									<packageTitle>${project.name}</packageTitle>
 									<distribution>
 										<background>
-											<alignment>bottomLeft</alignment>
+											<alignment>bottomleft</alignment>
 											<scaling>proportional</scaling>
 											<resources>
-												<resource>${project.basedir}/src/main/resources/images/splash.png</resource>
+												<resource>${project.basedir}/src/main/resources/images/macos-packager.png</resource>
 											</resources>
 										</background>
 										<license>
 											<resources>
-												<resource>${project.basedir}/src/main/external-resources/osx/license.rtf</resource>
 												<resource>
-													<file>${project.basedir}/src/main/external-resources/osx/gpl-2.0-fr.rtf</file>
-													<lang>fr</lang>
+													<file>${project.basedir}/EULA.txt</file>
+													<lang>en</lang>
 												</resource>
 											</resources>
 										</license>
-										<!--readme>${project.basedir}/src/main/external-resources/readme.rtf</readme>
-										<conclusion>${project.basedir}/src/main/external-resources/conclusion.rtf</conclusion-->
 									</distribution>
 									<permissionSets>
 										<permissionSet>
 											<includes>
 												<include>**/*.sh</include>
+												<include>**/${project.name.short}</include>
+												<include>**/osx/*</include>
 											</includes>
 											<excludes/>
 											<fileMode>0755</fileMode>
 										</permissionSet>
 									</permissionSets>
-									<!--signing>
+									<signing>
 										<keystore>${project.build.directory}/dms.p12</keystore>
 										<storetype>PKCS12</storetype>
 										<storepass>${project.name.camel}</storepass>
 										<tsa>http://timestamp.apple.com/ts01</tsa>
 										<skip>true</skip>
-									</signing-->
-								</configuration>
-							</execution>
-						</executions>
-					</plugin>
-					<plugin>
-						<groupId>org.apache.maven.plugins</groupId>
-						<artifactId>maven-clean-plugin</artifactId>
-						<version>${maven-clean-plugin-version}</version>
-						<executions>
-							<execution>
-								<id>auto-clean</id>
-								<phase>pre-integration-test</phase>
-								<goals>
-									<goal>clean</goal>
-								</goals>
-								<configuration>
-									<failOnError>false</failOnError>
-									<excludeDefaultDirectories>true</excludeDefaultDirectories>
-									<filesets>
-										<fileset>
-											<directory>${project.build.directory}</directory>
-											<includes>
-												<include>macOS-pkg/**</include>
-											</includes>
-										</fileset>
-									</filesets>
+									</signing>
 								</configuration>
 							</execution>
 						</executions>
@@ -2133,20 +2090,19 @@
 						<artifactId>maven-antrun-plugin</artifactId>
 						<executions>
 							<execution>
-								<id>prepare-binaries-osx</id>
+								<id>download-binaries-dmg</id>
 								<phase>prepare-package</phase>
 								<goals>
 									<goal>run</goal>
 								</goals>
 								<configuration>
-									<target name="download-osx-binaries">
+									<target name="download-macosx-binaries">
 										<taskdef resource="net/sf/antcontrib/antlib.xml" classpathref="maven.plugin.classpath"/>
 										<if>
 											<not>
 												<available file="${project.basedir}/bin/osx" type="dir"/>
 											</not>
 											<then>
-												<mkdir dir="${project.binaries}"/>
 												<mkdir dir="${project.binaries}/osx"/>
 												<get src="${project.binaries-base}/osx/dcraw" dest="${project.binaries}/osx/dcraw"/>
 												<get src="${project.binaries-base}/osx/ffmpeg" dest="${project.binaries}/osx/ffmpeg"/>
@@ -2159,9 +2115,45 @@
 											</then>
 										</if>
 									</target>
+								</configuration>
+							</execution>
+							<execution>
+								<phase>prepare-package</phase>
+								<goals>
+									<goal>run</goal>
+								</goals>
+								<configuration>
 									<target>
+										<condition property="isMacOS" value="true" else="false">
+											<os family="mac"/>
+										</condition>
+									</target>
+									<exportAntProperties>true</exportAntProperties>
+								</configuration>
+							</execution>
+							<execution>
+								<id>create-symlink-dmg</id>
+								<phase>prepare-package</phase>
+								<goals>
+									<goal>run</goal>
+								</goals>
+								<configuration>
+									<target name="create-applications-symlink">
 										<mkdir dir="${project.build.directory}/${project.name.camel}-app"/>
 										<symlink link="${project.build.directory}/${project.name.camel}-app/Applications" resource="/Applications" overwrite="true" failonerror="false"/>
+									</target>
+									<skip>${isMacOS}</skip>
+								</configuration>
+							</execution>
+							<execution>
+								<id>auto-clean-dmg</id>
+								<phase>pre-integration-test</phase>
+								<goals>
+									<goal>run</goal>
+								</goals>
+								<configuration>
+									<target name="clean-dmg">
+										<delete dir="${project.build.directory}/${project.name.camel}-app" includeemptydirs="true" defaultexcludes="false" failonerror="false" quiet="true"/>
 									</target>
 								</configuration>
 							</execution>
@@ -2183,12 +2175,6 @@
 									<descriptors>
 										<descriptor>${project.basedir}/src/main/assembly/assembly-osx.xml</descriptor>
 									</descriptors>
-									<archive>
-										<manifest>
-											<mainClass>${project.mainclass}</mainClass>
-											<addDefaultImplementationEntries>true</addDefaultImplementationEntries>
-										</manifest>
-									</archive>
 								</configuration>
 							</execution>
 						</executions>
@@ -2222,16 +2208,27 @@
 								<jvmOption>-Xdock:icon=Contents/Resources/logo.icns</jvmOption>
 								<jvmOption>-Xdock:name=&quot;${project.name}&quot;</jvmOption>
 								<jvmOption>-Djna.nosys=true</jvmOption>
+								<jvmOption>-Dapple.laf.useScreenMenuBar=true</jvmOption>
+								<jvmOption>-Dapple.awt.brushMetalLook=true</jvmOption>
 								<jvmOption>-XX:+UseParallelGC</jvmOption>
 								<jvmOption>-XX:+IgnoreUnrecognizedVMOptions</jvmOption>
 							</jvmOptions>
 							<additionalClasspath/>
-							<additionalBundledClasspathResources/>
 							<additionalResources>
 								<fileSet>
 									<directory>target/${project.name.camel}-app</directory>
+									<excludes>
+										<exclude>${project.name}.app/Contents/Resources/osx/**</exclude>
+										<exclude>${project.name}.app/Contents/Java/${project.artifactId}.jar</exclude>
+									</excludes>
+								</fileSet>
+								<fileSet>
+									<directory>target/${project.name.camel}-app</directory>
+									<useDefaultExcludes>false</useDefaultExcludes>
+									<executable>true</executable>
 									<includes>
-										<include>**/**</include>
+										<include>${project.name}.app/Contents/Resources/osx/**</include>
+										<include>${project.name}.app/Contents/Java/${project.artifactId}.jar</include>
 									</includes>
 								</fileSet>
 								<fileSet>
@@ -2259,37 +2256,11 @@
 									https://java.com/en/download/help/mac_install.xml
 									http://www.oracle.com/technetwork/java/javase/downloads/jre8-downloads-2133155.html
 								<configuration>
-									<jrePath>/Library/Java/JavaVirtualMachines/jre1.8.0_151.jre</jrePath>
-									<jreFullPath/>
+									<jreFullPath>/Library/Java/JavaVirtualMachines/jre1.8.0_151.jre</jreFullPath>
+									<jrePath>$APP_ROOT</jrePath> "Contents/Home/jre"
 									<diskImageFile>${project.build.directory}/${project.artifactId}-${project.version}_with_JRE.dmg</diskImageFile>
 								</configuration>
 								-->
-						</executions>
-					</plugin>
-					<plugin>
-						<groupId>org.apache.maven.plugins</groupId>
-						<artifactId>maven-clean-plugin</artifactId>
-						<version>${maven-clean-plugin-version}</version>
-						<executions>
-							<execution>
-								<id>auto-clean</id>
-								<phase>pre-integration-test</phase>
-								<goals>
-									<goal>clean</goal>
-								</goals>
-								<configuration>
-									<failOnError>false</failOnError>
-									<excludeDefaultDirectories>true</excludeDefaultDirectories>
-									<filesets>
-										<fileset>
-											<directory>${project.build.directory}</directory>
-											<includes>
-												<include>${project.name.camel}-app/**</include>
-											</includes>
-										</fileset>
-									</filesets>
-								</configuration>
-							</execution>
 						</executions>
 					</plugin>
 				</plugins>
@@ -2312,7 +2283,7 @@
 						<artifactId>maven-antrun-plugin</artifactId>
 						<executions>
 							<execution>
-								<id>prepare-binaries-osx</id>
+								<id>download-binaries-osx</id>
 								<phase>prepare-package</phase>
 								<goals>
 									<goal>run</goal>
@@ -2325,7 +2296,6 @@
 												<available file="${project.basedir}/bin/osx" type="dir"/>
 											</not>
 											<then>
-												<mkdir dir="${project.binaries}"/>
 												<mkdir dir="${project.binaries}/osx"/>
 												<get src="${project.binaries-base}/osx/dcraw" dest="${project.binaries}/osx/dcraw"/>
 												<get src="${project.binaries-base}/osx/ffmpeg" dest="${project.binaries}/osx/ffmpeg"/>
@@ -2338,6 +2308,15 @@
 											</then>
 										</if>
 									</target>
+								</configuration>
+							</execution>
+							<execution>
+								<id>create-symlink-osx</id>
+								<phase>prepare-package</phase>
+								<goals>
+									<goal>run</goal>
+								</goals>
+								<configuration>
 									<target>
 										<!-- Make sure the target folder exists -->
 										<mkdir dir="${project.build.directory}/${project.name}-app"/>
@@ -2367,16 +2346,16 @@
 									<target>
 										<taskdef name="bundleapp" classname="com.oracle.appbundler.AppBundlerTask"
 											classpath="${project.external-resources}/lib/appbundler-1.4.jar"/>
-										<bundleapp outputdirectory="${project.build.directory}/${project.name.camel}-app"
+										<bundleapp outputDirectory="${project.build.directory}/${project.name.camel}-app"
 													name="${project.name}"
-													displayname="${project.name}"
+													displayName="${project.name}"
 													executableName="${project.name.short}"
 													identifier="${project.mainclass}"
 													version="${project.version}"
 													icon="${project.basedir}/src/main/resources/images/logo.icns"
 													applicationCategory="public.app-category.entertainment"
-													workingdirectory="$APP_ROOT/Contents/Resources"
-													mainclassname="${project.mainclass}">
+													workingDirectory="$APP_ROOT/Contents/Resources"
+													mainClassName="${project.mainclass}">
 											<classpath file="${project.build.directory}/${project.artifactId}.jar"/>
 											<option value="-Xmx768M"/>
 											<option value="-Xss16M"/>
@@ -2407,12 +2386,6 @@
 									<descriptors>
 										<descriptor>${project.basedir}/src/main/assembly/assembly-osx.xml</descriptor>
 									</descriptors>
-									<archive>
-										<manifest>
-											<mainClass>${project.mainclass}</mainClass>
-											<addDefaultImplementationEntries>true</addDefaultImplementationEntries>
-										</manifest>
-									</archive>
 								</configuration>
 							</execution>
 						</executions>

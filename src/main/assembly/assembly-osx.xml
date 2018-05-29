@@ -20,7 +20,7 @@
 		<fileSet>
 			<directory>${project.binaries}/osx</directory>
 			<outputDirectory>${project.name}.app/Contents/Resources/osx</outputDirectory>
-			<useDefaultExcludes>true</useDefaultExcludes>
+			<useDefaultExcludes>false</useDefaultExcludes>
 			<fileMode>0755</fileMode>
 			<excludes>
 				<exclude>*.html</exclude>
