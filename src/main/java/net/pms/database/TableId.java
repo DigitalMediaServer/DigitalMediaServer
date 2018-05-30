@@ -75,10 +75,12 @@ public enum TableId {
 	/**
 	 * Gets the display name for the {@link Table} represented by this
 	 * {@link TableId}. This is either a "prettified" version of
-	 * {@link #getName()} or a "root"/English name depending on if the
-	 * {@link TableId} in question has a translation identifier defined.
+	 * {@link #getName()} or a "root" ({@code messages.properties}) name
+	 * depending on if the {@link TableId} in question has a translation //TODO: (Nad) Format
+	 * identifier defined.
 	 *
-	 * @return The prettified or "root"/English database name.
+	 * @return The prettified or "root" ({@code messages.properties}) 
+	 *         database name.
 	 */
 	@Nonnull
 	public String getRootDisplayName() {
