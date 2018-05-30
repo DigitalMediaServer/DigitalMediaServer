@@ -1267,6 +1267,7 @@ public class PMS {
 					result.put(Option.NOCONSOLE, null);
 					break;
 				case "-v":
+				case "--verbose":
 				case "-t":
 				case "--trace":
 				case "trace":
