@@ -100,8 +100,8 @@ public final class TableCoverArtArchive extends Table {
 	 * The changes for each version in the form of {@code ALTER TABLE} must be
 	 * implemented here.
 	 * <p>
-	 * For implementation example see
-	 * {@link TableMusicBrainzReleases#upgradeTable(Connection, int)}
+	 * For an implementation example see
+	 * {@link TableMusicBrainzReleases#upgradeTable(Connection, int)}.
 	 */
 	@SuppressWarnings("unused")
 	@Override
@@ -133,10 +133,10 @@ public final class TableCoverArtArchive extends Table {
 	}
 
 	/**
-	 * Stores the cover {@link Blob} with the given mBID in the database.
+	 * Stores the cover {@link Blob} with the given {@code MBID} in the database.
 	 *
-	 * @param mBID the MBID to store
-	 * @param cover the cover as a {@link Blob}
+	 * @param mBID the {@code MBID} to store.
+	 * @param cover the cover as a {@link Blob}.
 	 * @throws IllegalArgumentException If {@code mBID} is blank.
 	 */
 	public void writeMBID(@Nonnull String mBID, @Nullable byte[] cover) {
@@ -197,10 +197,10 @@ public final class TableCoverArtArchive extends Table {
 	}
 
 	/**
-	 * Looks up cover in the table based on the given MBID and returns the
-	 * result as a {@link CoverArtArchiveResult}.
+	 * Looks up cover in the table based on the given {@code MBID} and 
+	 * returns the result as a {@link CoverArtArchiveResult}. //TODO: (Nad) Format
 	 *
-	 * @param mBID the MBID {@link String} to search with
+	 * @param mBID the {@code MBID} to search for.
 	 *
 	 * @return The resulting {@link CoverArtArchiveResult}.
 	 */
