@@ -98,7 +98,7 @@ public class TitleCase {
 	 * Converts the specified {@link String} to title-case.
 	 *
 	 * @param s the {@link String} to convert.
-	 * @param stripNewLines if {@code true} newlines are replaces with spaces.
+	 * @param stripNewLines if {@code true} newlines are replaced with spaces.
 	 * @param locale the {@link Locale} to use. If {@code null},
 	 *            {@link Locale#getDefault()} is used, which is prone to give
 	 *            unintended results.
