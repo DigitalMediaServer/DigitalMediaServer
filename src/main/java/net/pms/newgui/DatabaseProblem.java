@@ -45,7 +45,9 @@ import javax.swing.JFileChooser;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JRootPane;
 import javax.swing.JTextArea;
+import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.border.EtchedBorder;
 import net.pms.Messages;
@@ -228,6 +230,9 @@ public class DatabaseProblem {
 			backupDowngradeButton.setEnabled(false);
 			downgradeButton.setEnabled(false);
 			continueButton.setEnabled(true);
+			JRootPane rootPane = SwingUtilities.getRootPane(continueButton);
+			rootPane.setDefaultButton(continueButton);
+			continueButton.requestFocusInWindow();
 			warningText.setVisible(false);
 		}
 
@@ -334,6 +339,7 @@ public class DatabaseProblem {
 			}
 		});
 		fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+		newDatabasePathBrowse.setDefaultCapable(false);
 		builder.add(newDatabasePathBrowse).at(FormLayoutUtil.flip(cc.xy(5, 3), colSpec, orientation));
 
 		newDatabasePathLabel.setVisible(false);
@@ -369,12 +375,15 @@ public class DatabaseProblem {
 
 		renameButton.setText(Messages.getString("DatabaseProblem.Rename"));
 		renameButton.addActionListener(new OperationsActionListener());
+		renameButton.setDefaultCapable(false);
 
 		backupDowngradeButton.setText(Messages.getString("DatabaseProblem.BackupDowngrade"));
 		backupDowngradeButton.addActionListener(new OperationsActionListener());
+		backupDowngradeButton.setDefaultCapable(false);
 
 		downgradeButton.setText(Messages.getString("DatabaseProblem.Downgrade"));
 		downgradeButton.addActionListener(new OperationsActionListener());
+		downgradeButton.setDefaultCapable(false);
 
 		cancelCloseButton.addActionListener(new ActionListener() {
 			@Override
