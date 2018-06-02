@@ -540,7 +540,7 @@ public class DatabaseProblem {
 					message.toString(),
 					Messages.getString("Dialog.Confirm"),
 					JOptionPane.YES_NO_OPTION,
-					JOptionPane.QUESTION_MESSAGE
+					JOptionPane.WARNING_MESSAGE
 				);
 				if (confirm == JOptionPane.YES_OPTION) {
 					try {
