@@ -46,6 +46,7 @@ import net.pms.Messages;
 import net.pms.PMS;
 import net.pms.configuration.PmsConfiguration;
 import net.pms.service.Service;
+import net.pms.util.ConversionUtil;
 import net.pms.util.StringUtil;
 
 
@@ -542,7 +543,7 @@ public class TableManager implements Service {
 			int cacheSize = configuration.getDatabaseCacheSize();
 			if (cacheSize > 0) {
 				sb.append(";CACHE_SIZE=").append(cacheSize);
-				LOGGER.debug("Database cache size is {}", StringUtil.formatBytes(cacheSize * 1024L, true));
+				LOGGER.debug("Database cache size is {}", ConversionUtil.formatBytes(cacheSize * 1024L, true));
 			} else {
 				LOGGER.debug("Database cache is disabled");
 			}

@@ -28,7 +28,6 @@ import java.io.Writer;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.text.DecimalFormatSymbols;
 import java.util.Collection;
 import java.util.Formatter;
 import java.util.Locale;
@@ -81,19 +80,6 @@ public class StringUtil {
 
 	/** A {@link Pattern} that matches whitespace */
 	public static final Pattern WHITESPACE = Pattern.compile("\\s+", Pattern.UNICODE_CHARACTER_CLASS);
-
-	public static final long KIBI = 1L << 10;
-	public static final long MEBI = 1L << 20;
-	public static final long GIBI = 1L << 30;
-	public static final long TEBI = 1L << 40;
-	public static final long PEBI = 1L << 50;
-	public static final long EXBI = 1L << 60;
-	public static final long KILO = 1000L;
-	public static final long MEGA = 1000000L;
-	public static final long GIGA = 1000000000L;
-	public static final long TERA = 1000000000000L;
-	public static final long PETA = 1000000000000000L;
-	public static final long EXA  = 1000000000000000000L;
 
 	/**
 	 * Appends "&lt;<u>tag</u> " to the StringBuilder. This is a typical HTML/DIDL/XML tag opening.
@@ -1206,174 +1192,6 @@ public class StringUtil {
 			}
 		}
 		return sb.toString();
-	}
-
-	/**
-	 * Formats bytes into a rounded {@link String} representation in either
-	 * binary/power of 2 or SI notation using {@link Locale#ROOT}.
-	 *
-	 * @param bytes the value to format.
-	 * @param binary whether the representation should be binary/power of 2 or
-	 *            SI/metric.
-	 * @return The formatted byte value and unit.
-	 */
-	public static String formatBytes(long bytes, boolean binary) {
-		return formatBytes(bytes, binary, Locale.ROOT);
-	}
-
-	/**
-	 * Formats bytes into a rounded {@link String} representation in either
-	 * binary/power of 2 or SI notation.
-	 *
-	 * @param bytes the value to format.
-	 * @param binary whether the representation should be binary/power of 2 or
-	 *            SI/metric.
-	 * @param locale the {@link Locale} to use when formatting.
-	 * @return The formatted byte value and unit.
-	 */
-	public static String formatBytes(long bytes, boolean binary, Locale locale) {
-		if ((binary && bytes < 1L << 10) || bytes < KILO) {
-			return String.format("%d %s", bytes, bytes == 1L ? "byte" : "bytes");
-		}
-
-		long divisor;
-		String unit;
-		if ((binary && bytes < MEBI) || bytes < MEGA) { // kibi/kilo
-			divisor = binary ? KIBI : KILO;
-			unit = binary ? "KiB" : "kB";
-		} else if ((binary && bytes < GIBI) || bytes < GIGA) { // mebi/mega
-			divisor = binary ? MEBI : MEGA;
-			unit = binary ? "MiB" : "MB";
-		} else if ((binary && bytes < TEBI) || bytes < TERA) { // gibi/giga
-			divisor = binary ? GIBI : GIGA;
-			unit = binary ? "GiB" : "GB";
-		} else if ((binary && bytes < PEBI) || bytes < PETA) { // tebi/tera
-			divisor = binary ? TEBI : TERA;
-			unit = binary ? "TiB" : "TB";
-		} else if ((binary && bytes < EXBI) || bytes < EXA) { // pebi/peta
-			divisor = binary ? PEBI : PETA;
-			unit = binary ? "PiB" : "PB";
-		} else { // exbi/exa
-			divisor = binary ? EXBI : EXA;
-			unit = binary ? "EiB" : "EB";
-		}
-		if (bytes % divisor == 0) {
-			return String.format(locale, "%d %s", bytes / divisor, unit);
-		}
-		return String.format(locale, "%.1f %s", (double) bytes / divisor, unit);
-	}
-
-	/**
-	 * Attempts to convert an object into an {@code int}. If the object is a
-	 * {@link Number}, {@link Number#intValue()} is returned. If the object
-	 * is {@code null}, {@code nullValue} is returned. Otherwise, an
-	 * {@code int} is attempted parsed from {@link Object#toString()}. If the
-	 * parsing fails, {@code nullValue} is returned.
-	 *
-	 * @param object the {@link Object} to convert to an {@code int}.
-	 * @param nullValue the value to return if {@code object} is {@code null} or
-	 *            the parsing fails.
-	 * @return The parsed {@code int} or {@code nullValue}.
-	 */
-	public static int parseInt(@Nullable Object object, int nullValue) {
-		Number number = parseNumber(object, null);
-		if (number instanceof Integer) {
-			return number.intValue();
-		}
-		if (number instanceof Long) {
-			long l = number.longValue();
-			if (l > Integer.MAX_VALUE || l < Integer.MIN_VALUE) {
-				return nullValue;
-			}
-			return (int) l;
-		}
-		return nullValue;
-	}
-
-	/**
-	 * Attempts to convert an object into a {@code long}. If the object is a
-	 * {@link Number}, {@link Number#longValue()} is returned. If the object is
-	 * {@code null}, {@code nullValue} is returned. Otherwise, a {@code long} is
-	 * attempted parsed from {@link Object#toString()}. If the parsing fails,
-	 * {@code nullValue} is returned.
-	 *
-	 * @param object the {@link Object} to convert to a {@code long}.
-	 * @param nullValue the value to return if {@code object} is {@code null} or
-	 *            the parsing fails.
-	 * @return The parsed {@code long} or {@code nullValue}.
-	 */
-	public static long parseLong(@Nullable Object object, long nullValue) {
-		Number number = parseNumber(object, null);
-		return number instanceof Integer || number instanceof Long ? number.longValue() : nullValue;
-	}
-
-	/**
-	 * Attempts to convert an object into a {@code double}. If the object is a
-	 * {@link Number}, {@link Number#doubleValue()} is returned. If the object
-	 * is {@code null}, {@code nullValue} is returned. Otherwise, a
-	 * {@code double} is attempted parsed from {@link Object#toString()}. If the
-	 * parsing fails, {@code nullValue} is returned.
-	 *
-	 * @param object the {@link Object} to convert to a {@code double}.
-	 * @param locale the {@link Locale} to use for decimal numbers. If
-	 *            {@code null}, {@code "."} is used as a decimal separator.
-	 * @param nullValue the value to return if {@code object} is {@code null} or
-	 *            the parsing fails.
-	 * @return The parsed {@code double} or {@code nullValue}.
-	 */
-	public static double parseDouble(@Nullable Object object, @Nullable Locale locale, double nullValue) {
-		Number number = parseNumber(object, locale);
-		return number != null ? number.doubleValue() : nullValue;
-	}
-
-	/**
-	 * Attempts to convert an object into a {@link Number}. If the object is a
-	 * {@link Number}, the object itself is returned. If the object is
-	 * {@code null}, {@code null} is returned. Otherwise, a {@link Number} is
-	 * attempted parsed from {@link Object#toString()}. If the parsing fails,
-	 * {@code null} is returned.
-	 *
-	 * @param object the {@link Object} to convert to a {@link Number}.
-	 * @param locale the {@link Locale} to use for decimal numbers. If
-	 *            {@code null}, {@code "."} is used as a decimal separator.
-	 * @return The {@link Number} or {@code null}.
-	 */
-	@Nullable
-	public static Number parseNumber(@Nullable Object object, @Nullable Locale locale) {
-		if (object == null) {
-			return null;
-		}
-		if (object instanceof Number) {
-			return (Number) object;
-		}
-		String s = object.toString().trim();
-		if (isBlank(s)) {
-			return null;
-		}
-		if (locale != null) {
-			char c = DecimalFormatSymbols.getInstance(locale).getDecimalSeparator();
-			if (c != '.' && s.indexOf(c) >= 0) {
-				s = s.replace(".", "");
-				s = s.replace(c, '.');
-			}
-		}
-		try {
-			if (s.indexOf('.') >= 0) {
-				// Return Double
-				return Double.valueOf(s);
-			}
-
-			Long l = Long.valueOf(s);
-			if (l < Integer.MIN_VALUE || l > Integer.MAX_VALUE) {
-				// Return Long
-				return l;
-			}
-			// Return Integer
-			return Integer.valueOf(l.intValue());
-		} catch (NumberFormatException e) {
-			LOGGER.trace("Failed to parse a number from \"{}\"", s);
-			return null;
-		}
 	}
 
 	/**
