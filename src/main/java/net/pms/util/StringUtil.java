@@ -25,6 +25,10 @@ import java.io.IOException;
 import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
 import java.io.Writer;
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.math.MathContext;
+import java.math.RoundingMode;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -52,6 +56,7 @@ import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 import static org.apache.commons.lang3.StringUtils.isBlank;
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import org.apache.commons.text.translate.UnicodeUnescaper;
 import org.slf4j.Logger;
@@ -82,18 +87,32 @@ public class StringUtil {
 	/** A {@link Pattern} that matches whitespace */
 	public static final Pattern WHITESPACE = Pattern.compile("\\s+", Pattern.UNICODE_CHARACTER_CLASS);
 
-	public static final long KIBI = 1L << 10;
-	public static final long MEBI = 1L << 20;
-	public static final long GIBI = 1L << 30;
-	public static final long TEBI = 1L << 40;
-	public static final long PEBI = 1L << 50;
-	public static final long EXBI = 1L << 60;
-	public static final long KILO = 1000L;
-	public static final long MEGA = 1000000L;
-	public static final long GIGA = 1000000000L;
-	public static final long TERA = 1000000000000L;
-	public static final long PETA = 1000000000000000L;
-	public static final long EXA  = 1000000000000000000L;
+	/**
+	 * A {@link Pattern} that matches decimal and hexadecimal numbers with
+	 * trailing unit/text. Group 1 is the number part, group 2 is the unit/text
+	 * part or {@code null}.
+	 */
+	public static final Pattern NUMBER_UNIT = Pattern.compile(
+		"^\\s*([-+]?(?:(?:\\p{Digit}+|\\p{Digit}*\\.\\p{Digit}+)(?:\\s?[Ee][-+]?\\p{Digit}+)?|0[Xx](?:\\p{XDigit}+|" +
+		"\\p{XDigit}*\\.\\p{XDigit}+)(?:\\s?[Ee][-+]?\\p{XDigit}+|\\s?[Pp][-+]?\\p{Digit}+)?))\\s?(\\p{L}\\w*|%)?\\s*$",
+		Pattern.UNICODE_CHARACTER_CLASS
+	);
+
+	/**
+	 * A {@link Pattern} that matches decimal and hexadecimal numbers. If the
+	 * number is decimal, group 3 and 4 are always {@code null}.
+	 * <p>
+	 * If the number is hexadecimal, group 1 and 2 are always {@code null}.
+	 * Group 1 (dec) or 3 (hexa) contains the significand. Group 2 (dec)
+	 * contains the exponent without the prefix {@code "e"} or {@code "E"},
+	 * while group 4 (hexa) contains the exponent including the prefix which is
+	 * one of {@code "e"}, {@code "E"}, {@code "p"} or {@code "P"}.
+	 */
+	public static final Pattern NUMBER = Pattern.compile(
+		"^\\s*(?:([-+]?(?:\\p{Digit}+|\\p{Digit}*\\.\\p{Digit}+))(?:\\s?[Ee]([-+]?\\p{Digit}+))?|" +
+		"([-+]?0[Xx](?:\\p{XDigit}+|\\p{XDigit}*\\.\\p{XDigit}+))(?:\\s?([Ee][-+]?\\p{XDigit}+|[Pp][-+]?\\p{Digit}+))?)\\s*$",
+		Pattern.UNICODE_CHARACTER_CLASS
+	);
 
 	/**
 	 * Appends "&lt;<u>tag</u> " to the StringBuilder. This is a typical HTML/DIDL/XML tag opening.
@@ -1232,51 +1251,176 @@ public class StringUtil {
 	 * @return The formatted byte value and unit.
 	 */
 	public static String formatBytes(long bytes, boolean binary, Locale locale) {
-		if ((binary && bytes < 1L << 10) || bytes < KILO) {
+		if ((binary && bytes < 1L << 10) || bytes < UnitPrefix.KILO.getFactor()) {
 			return String.format("%d %s", bytes, bytes == 1L ? "byte" : "bytes");
 		}
 
-		long divisor;
-		String unit;
-		if ((binary && bytes < MEBI) || bytes < MEGA) { // kibi/kilo
-			divisor = binary ? KIBI : KILO;
-			unit = binary ? "KiB" : "kB";
-		} else if ((binary && bytes < GIBI) || bytes < GIGA) { // mebi/mega
-			divisor = binary ? MEBI : MEGA;
-			unit = binary ? "MiB" : "MB";
-		} else if ((binary && bytes < TEBI) || bytes < TERA) { // gibi/giga
-			divisor = binary ? GIBI : GIGA;
-			unit = binary ? "GiB" : "GB";
-		} else if ((binary && bytes < PEBI) || bytes < PETA) { // tebi/tera
-			divisor = binary ? TEBI : TERA;
-			unit = binary ? "TiB" : "TB";
-		} else if ((binary && bytes < EXBI) || bytes < EXA) { // pebi/peta
-			divisor = binary ? PEBI : PETA;
-			unit = binary ? "PiB" : "PB";
+		UnitPrefix unitPrefix;
+		if ((binary && bytes < UnitPrefix.MEBI.getFactor()) || bytes < UnitPrefix.MEGA.getFactor()) { // kibi/kilo
+			unitPrefix = binary ? UnitPrefix.KIBI : UnitPrefix.KILO;
+		} else if ((binary && bytes < UnitPrefix.GIBI.getFactor()) || bytes < UnitPrefix.GIGA.getFactor()) { // mebi/mega
+			unitPrefix = binary ? UnitPrefix.MEBI : UnitPrefix.MEGA;
+		} else if ((binary && bytes < UnitPrefix.TEBI.getFactor()) || bytes < UnitPrefix.TERA.getFactor()) { // gibi/giga
+			unitPrefix = binary ? UnitPrefix.GIBI : UnitPrefix.GIGA;
+		} else if ((binary && bytes < UnitPrefix.PEBI.getFactor()) || bytes < UnitPrefix.PETA.getFactor()) { // tebi/tera
+			unitPrefix = binary ? UnitPrefix.TEBI : UnitPrefix.TERA;
+		} else if ((binary && bytes < UnitPrefix.EXBI.getFactor()) || bytes < UnitPrefix.EXA.getFactor()) { // pebi/peta
+			unitPrefix = binary ? UnitPrefix.PEBI : UnitPrefix.PETA;
 		} else { // exbi/exa
-			divisor = binary ? EXBI : EXA;
-			unit = binary ? "EiB" : "EB";
+			unitPrefix = binary ? UnitPrefix.EXBI : UnitPrefix.EXA;
 		}
-		if (bytes % divisor == 0) {
-			return String.format(locale, "%d %s", bytes / divisor, unit);
+		if (bytes % unitPrefix.getFactor() == 0) {
+			return String.format(locale, "%d %s%s", bytes / unitPrefix.getFactor(), unitPrefix.getSymbol(), "B");
 		}
-		return String.format(locale, "%.1f %s", (double) bytes / divisor, unit);
+		return String.format(locale, "%.1f %s%s", (double) bytes / unitPrefix.getFactor(), unitPrefix.getSymbol(), "B");
+	}
+
+	@Nullable
+	public static Pair<Number, String> parseNumberWithUnit( //TODO: (Nad) Here
+		@Nullable String value,
+		@Nullable Locale locale,
+		@Nullable MathContext mathContext, // TODO: (Nad) RoundingMode
+		@Nullable String requiredUnit,
+		@Nullable UnitPrefix defaultUnitPrefix,
+		@Nullable String defaultUnit,
+		boolean allowPercent
+	) {
+		if (isBlank(value)) {
+			return null;
+		}
+		if (locale != null) {
+			char c = DecimalFormatSymbols.getInstance(locale).getDecimalSeparator();
+			if (c != '.' && value.indexOf(c) >= 0) {
+				value = value.replace(".", "").replace(c, '.');
+			}
+		}
+
+		Matcher matcher = NUMBER_UNIT.matcher(value);
+		if (!matcher.find()) {
+			LOGGER.warn("Unable to parse a numeric value from \"{}\"", value);
+			return null;
+		}
+
+		Number number = parseNumber(matcher.group(1), locale, null);
+		if (number == null) {
+			return null;
+		}
+
+		if (defaultUnit != null) {
+			requiredUnit = defaultUnit;
+		}
+
+		String unit;
+		UnitPrefix unitPrefix = null;
+		if (matcher.groupCount() < 2 || matcher.group(2) == null) {
+			// No prefix or unit specified
+			unit = defaultUnit;
+			unitPrefix = defaultUnitPrefix;
+		} else {
+			// Prefix and/or unit specified
+			unit = matcher.group(2);
+			if ("%".equals(unit)) {
+				if (allowPercent) {
+					return new Pair<>(number, "%");
+				}
+				LOGGER.warn("Illegal unit \"%\" in \"{}\"", value);
+				return null;
+			}
+
+			if (unit.equals(requiredUnit)) {
+				return new Pair<>(number, requiredUnit);
+			}
+
+			Locale caseLocale = locale != null ? locale : Locale.ROOT;
+			String lowerRequiredUnit = requiredUnit == null ? null : requiredUnit.toLowerCase(caseLocale); //TODO: What if unit is null?
+			String lowerUnit = unit.toLowerCase(caseLocale);
+			if (lowerUnit.equals(lowerRequiredUnit)) {
+				return new Pair<>(number, requiredUnit);
+			}
+
+			for (UnitPrefix prefix : UnitPrefix.values()) {
+				String lowerPrefix = prefix.getSymbol().toLowerCase(caseLocale);
+				if (lowerUnit.startsWith(lowerPrefix)) {
+					unitPrefix = prefix;
+					unit = unit.substring(lowerPrefix.length());
+					lowerUnit = lowerUnit.substring(lowerPrefix.length());
+					break;
+				}
+			}
+			if (isBlank(unit)) {
+				unit = defaultUnit;
+			} else if (lowerRequiredUnit != null && !lowerRequiredUnit.equals(lowerUnit)) {
+				LOGGER.error("Invalid unit \"{}\" instead of \"{}\" in \"{}\"", unit, requiredUnit, value);
+				return null;
+			}
+		}
+
+		if (unitPrefix == null) {
+			return new Pair<>(number, unit);
+		}
+		if (number instanceof Double) {
+			number = Double.valueOf(number.doubleValue() * unitPrefix.getFactor());
+		} else {
+			long l = number.longValue() * unitPrefix.getFactor();
+			if (l < Integer.MIN_VALUE || l > Integer.MAX_VALUE) {
+				// Return Long
+				number = Long.valueOf(l);
+			} else {
+				// Return Integer
+				number = Integer.valueOf((int) l);
+			}
+
+		}
+		// Rounding, type
+		//TODO: (Nad) RoundingMode
+
+		return new Pair<>(number, unit);
 	}
 
 	/**
-	 * Attempts to convert an object into an {@code int}. If the object is a
-	 * {@link Number}, {@link Number#intValue()} is returned. If the object
-	 * is {@code null}, {@code nullValue} is returned. Otherwise, an
-	 * {@code int} is attempted parsed from {@link Object#toString()}. If the
-	 * parsing fails, {@code nullValue} is returned.
+	 * Attempts to convert an object into an {@code int}. If the object is an
+	 * integer {@link Number}, {@link Number#intValue()} is returned. If the
+	 * object is {@code null} or a fractional number, {@code nullValue} is
+	 * returned. Otherwise, an {@code int} is attempted parsed from
+	 * {@link Object#toString()}. If the parsing fails, {@code nullValue} is
+	 * returned.
 	 *
 	 * @param object the {@link Object} to convert to an {@code int}.
 	 * @param nullValue the value to return if {@code object} is {@code null} or
 	 *            the parsing fails.
 	 * @return The parsed {@code int} or {@code nullValue}.
 	 */
-	public static int parseInt(@Nullable Object object, int nullValue) {
-		Number number = parseNumber(object, null);
+	public static int parseInt(
+		@Nullable Object object,
+		int nullValue
+	) {
+		return parseInt(object, null, null, nullValue);
+	}
+
+	/**
+	 * Attempts to convert an object into an {@code int} after rounding. If the
+	 * object is an integer {@link Number}, {@link Number#intValue()} is
+	 * returned. If the object is {@code null} or a fractional number,
+	 * {@code nullValue} is returned. Otherwise, an {@code int} is attempted
+	 * parsed from {@link Object#toString()}. If the parsing fails,
+	 * {@code nullValue} is returned.
+	 *
+	 * @param object the {@link Object} to convert to an {@code int}.
+	 * @param locale the {@link Locale} to use for decimal numbers. If
+	 *            {@code null}, {@code "."} is used as a decimal separator.
+	 * @param mathContext the {@link MathContext} to use for rounding or
+	 *            {@code null} for no rounding.
+	 * @param nullValue the value to return if {@code object} is {@code null} or
+	 *            the parsing fails.
+	 * @return The parsed {@code int} or {@code nullValue}.
+	 */
+	public static int parseInt(
+		@Nullable Object object,
+		@Nullable Locale locale,
+		@Nullable MathContext mathContext, // TODO: (Nad) RoundingMode
+		int nullValue
+	) {
+		Number number = parseNumber(object, locale, mathContext);
 		if (number instanceof Integer) {
 			return number.intValue();
 		}
@@ -1291,19 +1435,58 @@ public class StringUtil {
 	}
 
 	/**
-	 * Attempts to convert an object into a {@code long}. If the object is a
-	 * {@link Number}, {@link Number#longValue()} is returned. If the object is
-	 * {@code null}, {@code nullValue} is returned. Otherwise, a {@code long} is
-	 * attempted parsed from {@link Object#toString()}. If the parsing fails,
-	 * {@code nullValue} is returned.
+	 * Attempts to convert an object into a {@code long}. If the object is an
+	 * integer {@link Number}, {@link Number#longValue()} is returned. If the
+	 * object is {@code null} or a fractional number, {@code nullValue} is
+	 * returned. Otherwise, a {@code long} is attempted parsed from
+	 * {@link Object#toString()}. If the parsing fails, {@code nullValue} is
+	 * returned.
 	 *
 	 * @param object the {@link Object} to convert to a {@code long}.
 	 * @param nullValue the value to return if {@code object} is {@code null} or
 	 *            the parsing fails.
 	 * @return The parsed {@code long} or {@code nullValue}.
 	 */
-	public static long parseLong(@Nullable Object object, long nullValue) {
-		Number number = parseNumber(object, null);
+	public static long parseLong(
+		@Nullable Object object,
+		long nullValue
+	) {
+		return parseLong(object, null, null, nullValue);
+	}
+
+	/**
+	 * Attempts to convert an object into a {@code long} after rounding. If the
+	 * object is an integer {@link Number}, {@link Number#longValue()} is
+	 * returned. If the object is {@code null} or a fractional number,
+	 * {@code nullValue} is returned. Otherwise, a {@code long} is attempted
+	 * parsed from {@link Object#toString()}. If the parsing fails,
+	 * {@code nullValue} is returned.
+	 *
+	 * @param object the {@link Object} to convert to a {@code long}.
+	 * @param locale the {@link Locale} to use for decimal numbers. If
+	 *            {@code null}, {@code "."} is used as a decimal separator.
+	 * @param mathContext the {@link MathContext} to use for rounding or
+	 *            {@code null} for no rounding.
+	 * @param nullValue the value to return if {@code object} is {@code null} or
+	 *            the parsing fails.
+	 * @return The parsed {@code long} or {@code nullValue}.
+	 */
+	public static long parseLong(
+		@Nullable Object object,
+		@Nullable Locale locale,
+		@Nullable MathContext mathContext, // TODO: (Nad) RoundingMode
+		long nullValue
+	) {
+		Number number = parseNumber(object, locale, mathContext);
+		if (number instanceof BigInteger) {
+			if (
+				((BigInteger) number).compareTo(BigInteger.valueOf(Long.MAX_VALUE)) > 0 ||
+				((BigInteger) number).compareTo(BigInteger.valueOf(Long.MIN_VALUE)) < 0
+			) {
+				return nullValue;
+			}
+			return number.longValue();
+		}
 		return number instanceof Integer || number instanceof Long ? number.longValue() : nullValue;
 	}
 
@@ -1317,12 +1500,19 @@ public class StringUtil {
 	 * @param object the {@link Object} to convert to a {@code double}.
 	 * @param locale the {@link Locale} to use for decimal numbers. If
 	 *            {@code null}, {@code "."} is used as a decimal separator.
+	 * @param mathContext the {@link MathContext} to use for rounding or
+	 *            {@code null} for no rounding.
 	 * @param nullValue the value to return if {@code object} is {@code null} or
 	 *            the parsing fails.
 	 * @return The parsed {@code double} or {@code nullValue}.
 	 */
-	public static double parseDouble(@Nullable Object object, @Nullable Locale locale, double nullValue) {
-		Number number = parseNumber(object, locale);
+	public static double parseDouble(
+		@Nullable Object object,
+		@Nullable Locale locale,
+		@Nullable MathContext mathContext, // TODO: (Nad) RoundingMode
+		double nullValue
+	) {
+		Number number = parseNumber(object, locale, mathContext);
 		return number != null ? number.doubleValue() : nullValue;
 	}
 
@@ -1332,14 +1522,21 @@ public class StringUtil {
 	 * {@code null}, {@code null} is returned. Otherwise, a {@link Number} is
 	 * attempted parsed from {@link Object#toString()}. If the parsing fails,
 	 * {@code null} is returned.
+	 * <p>
+	 * The {@link Number} implementations that might be returned are {@link BigInteger}, {@link Integer}, {@link Long}, {@link BigDecimal} and {@link Double}. //TODO: (Nad) Correct, add
 	 *
 	 * @param object the {@link Object} to convert to a {@link Number}.
 	 * @param locale the {@link Locale} to use for decimal numbers. If
 	 *            {@code null}, {@code "."} is used as a decimal separator.
+	 * @param mathContext the {@link MathContext} to use for rounding or {@code null} for no rounding.
 	 * @return The {@link Number} or {@code null}.
 	 */
 	@Nullable
-	public static Number parseNumber(@Nullable Object object, @Nullable Locale locale) {
+	public static Number parseNumber(
+		@Nullable Object object,
+		@Nullable Locale locale,
+		@Nullable MathContext mathContext // TODO: (Nad) RoundingMode
+	) {
 		if (object == null) {
 			return null;
 		}
@@ -1353,27 +1550,107 @@ public class StringUtil {
 		if (locale != null) {
 			char c = DecimalFormatSymbols.getInstance(locale).getDecimalSeparator();
 			if (c != '.' && s.indexOf(c) >= 0) {
-				s = s.replace(".", "");
-				s = s.replace(c, '.');
+				s = s.replace(".", "").replace(c, '.');
 			}
 		}
 		try {
-			if (s.indexOf('.') >= 0) {
-				// Return Double
-				return Double.valueOf(s);
+			Matcher matcher = NUMBER.matcher(s);
+			if (!matcher.find()) {
+				LOGGER.trace("Failed to parse a number from \"{}\"", s);
+				return null;
+			}
+			int radix;
+			String significand;
+			String exponent;
+			if (matcher.group(1) != null) {
+				// Decimal
+				radix = 10;
+				significand = matcher.group(1);
+				exponent = matcher.group(2);
+			} else {
+				// Hexadecimal
+				radix = 16;
+				significand = matcher.group(3).replaceFirst("0[Xx]", "");
+				exponent = matcher.group(4);
 			}
 
-			Long l = Long.valueOf(s);
+			BigInteger bigInteger;
+			int dot = significand.indexOf('.');
+			if (dot >= 0 || exponent != null) {
+				// Fractional or exponential form
+				int scale;
+				if (dot >= 0) {
+					scale = significand.substring(dot + 1).length();
+					significand = significand.replace(".", "");
+				} else {
+					scale = 0;
+				}
+				BigDecimal bigDecimal;
+				if (radix == 10) {
+					if (exponent != null) {
+						scale = scale - Integer.parseInt(exponent);
+					}
+					bigDecimal = new BigDecimal(new BigInteger(significand, radix), scale); //TODO: (Nad) Bug with hexa
+				} else {
+					boolean powerMode = false;
+					//TODO: (Nad) First deal with scale..?
+					if (exponent != null) {
+						powerMode = exponent.toLowerCase(Locale.ROOT).startsWith("p");
+						exponent = exponent.substring(1);
+						if (powerMode) {
+							// Exponent is the power of 2
+						}
+					}
+					bigDecimal = null; //new BigDe BigDecimal.valueOf(16).pow(-scale);
+				}
+				if (mathContext != null) {
+					bigDecimal = bigDecimal.round(mathContext);
+				}
+				if (bigDecimal.scale() > 0) {
+					// Still fractional value
+					if (isDoubleValueExact(bigDecimal)) {
+						// Return Double
+						return Double.valueOf(bigDecimal.doubleValue());
+					}
+					// Return BigDecimal
+					return bigDecimal;
+				}
+				// Integer value
+				bigInteger = bigDecimal.toBigInteger();
+			} else {
+				// Integer form;
+				bigInteger = new BigInteger(significand, radix); //TODO: E, P
+			}
+
+			if (
+				bigInteger.compareTo(BigInteger.valueOf(Long.MIN_VALUE)) < 0 ||
+				bigInteger.compareTo(BigInteger.valueOf(Long.MAX_VALUE)) > 0
+			) {
+				// Return BigInteger
+				return bigInteger;
+			}
+			long l = bigInteger.longValue();
 			if (l < Integer.MIN_VALUE || l > Integer.MAX_VALUE) {
 				// Return Long
-				return l;
+				return Long.valueOf(l);
 			}
 			// Return Integer
-			return Integer.valueOf(l.intValue());
-		} catch (NumberFormatException e) {
-			LOGGER.trace("Failed to parse a number from \"{}\"", s);
+			return Integer.valueOf((int) l);
+		} catch (NumberFormatException | ArithmeticException e) {
+			if (isNotBlank(e.getMessage())) {
+				LOGGER.trace("Failed to parse a number from \"{}\": {}", s, e.getMessage());
+			} else {
+				LOGGER.trace("Failed to parse a number from \"{}\"", s);
+			}
 			return null;
 		}
+	}
+
+	public static boolean isDoubleValueExact(@Nullable BigDecimal value) {
+		if (value == null) {
+			return false;
+		}
+		return value.compareTo(new BigDecimal(value.doubleValue())) == 0;
 	}
 
 	/**
@@ -1386,5 +1663,51 @@ public class StringUtil {
 
 		/** Lower-case, lowercase or minuscule */
 		LOWER
+	}
+
+	/**
+	 * This {@code enum} represents the positive unit prefixes that is usable
+	 * with a 64-bit integer (long).
+	 */
+	public static enum UnitPrefix {
+		KIBI(1L << 10, "Ki"),
+		MEBI(1L << 20, "Mi"),
+		GIBI(1L << 30, "Gi"),
+		TEBI(1L << 40, "Ti"),
+		PEBI(1L << 50, "Pi"),
+		EXBI(1L << 60, "Ei"),
+		DECA(10L, "da"),
+		HECTO(100L, "h"),
+		KILO(1000L, "k"),
+		MEGA(1000000L, "M"),
+		GIGA(1000000000L, "G"),
+		TERA(1000000000000L, "T"),
+		PETA(1000000000000000L, "P"),
+		EXA(1000000000000000000L, "E");
+
+		private final long factor;
+
+		@Nonnull
+		private final String symbol;
+
+		private UnitPrefix(long factor, @Nonnull String symbol) {
+			this.factor = factor;
+			this.symbol = symbol;
+		}
+
+		/**
+		 * @return The factor.
+		 */
+		public long getFactor() {
+			return factor;
+		}
+
+		/**
+		 * @return The symbol.
+		 */
+		@Nonnull
+		public String getSymbol() {
+			return symbol;
+		}
 	}
 }
