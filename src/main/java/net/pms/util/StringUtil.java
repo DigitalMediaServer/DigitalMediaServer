@@ -1509,7 +1509,7 @@ public class StringUtil {
 	public static double parseDouble(
 		@Nullable Object object,
 		@Nullable Locale locale,
-		@Nullable MathContext mathContext, // TODO: (Nad) RoundingMode
+		@Nullable MathContext mathContext, // TODO: (Nad) RoundingMode etc
 		double nullValue
 	) {
 		Number number = parseNumber(object, locale, mathContext);
@@ -1521,21 +1521,118 @@ public class StringUtil {
 	 * {@link Number}, the object itself is returned. If the object is
 	 * {@code null}, {@code null} is returned. Otherwise, a {@link Number} is
 	 * attempted parsed from {@link Object#toString()}. If the parsing fails,
-	 * {@code null} is returned.
+	 * {@code null} is returned. No rounding will be applied.
 	 * <p>
-	 * The {@link Number} implementations that might be returned are {@link BigInteger}, {@link Integer}, {@link Long}, {@link BigDecimal} and {@link Double}. //TODO: (Nad) Correct, add
+	 * The {@link Number} implementations that might be returned are
+	 * {@link Rational}, {@link BigInteger}, {@link Integer}, {@link Long} or
+	 * {@link Double}.
 	 *
 	 * @param object the {@link Object} to convert to a {@link Number}.
 	 * @param locale the {@link Locale} to use for decimal numbers. If
 	 *            {@code null}, {@code "."} is used as a decimal separator.
-	 * @param mathContext the {@link MathContext} to use for rounding or {@code null} for no rounding.
+	 * @return The {@link Number} or {@code null}.
+	 */
+	@Nullable
+	public static Number parseNumber(
+		@Nullable Object object,
+		@Nullable Locale locale
+	) {
+		return parseNumber(object, locale, null, 0, null);
+	}
+
+	/**
+	 * Attempts to convert an object into a {@link Number}. If the object is a
+	 * {@link Number}, the object itself is returned. If the object is
+	 * {@code null}, {@code null} is returned. Otherwise, a {@link Number} is
+	 * attempted parsed from {@link Object#toString()}. If the parsing fails,
+	 * {@code null} is returned.
+	 * <p>
+	 * The {@link Number} implementations that might be returned are
+	 * {@link Rational}, {@link BigInteger}, {@link Integer}, {@link Long} or
+	 * {@link Double}.
+	 *
+	 * @param object the {@link Object} to convert to a {@link Number}.
+	 * @param locale the {@link Locale} to use for decimal numbers. If
+	 *            {@code null}, {@code "."} is used as a decimal separator.
+	 * @param mathContext the {@link MathContext} to use for rounding or
+	 *            {@code null} for no rounding.
 	 * @return The {@link Number} or {@code null}.
 	 */
 	@Nullable
 	public static Number parseNumber(
 		@Nullable Object object,
 		@Nullable Locale locale,
-		@Nullable MathContext mathContext // TODO: (Nad) RoundingMode
+		@Nullable MathContext mathContext
+	) {
+		return parseNumber(object, locale, mathContext, 0, null);
+	}
+
+	/**
+	 * /** Attempts to convert an object into a {@link Number}. If the object is
+	 * a {@link Number}, the object itself is returned. If the object is
+	 * {@code null}, {@code null} is returned. Otherwise, a {@link Number} is
+	 * attempted parsed from {@link Object#toString()}. If the parsing fails,
+	 * {@code null} is returned.
+	 * <p>
+	 * The {@link Number} implementations that might be returned are
+	 * {@link Rational}, {@link BigInteger}, {@link Integer}, {@link Long} or
+	 * {@link Double}.
+	 *
+	 * @param object the {@link Object} to convert to a {@link Number}.
+	 * @param locale the {@link Locale} to use for decimal numbers. If
+	 *            {@code null}, {@code "."} is used as a decimal separator.
+	 * @param roundingScale the number of digits to keep after the
+	 *            decimal-separator if positive or the number of digits to
+	 *            discard before the decimal-separator. Ignored if
+	 *            {@code roundingMode} is {@code null}.
+	 * @param roundingMode The {@link RoundingMode} to use. Use with scale
+	 *            {@code 0} to round to an integer.
+	 * @return The {@link Number} or {@code null}.
+	 */
+	@Nullable
+	public static Number parseNumber(
+		@Nullable Object object,
+		@Nullable Locale locale,
+		int roundingScale,
+		@Nullable RoundingMode roundingMode
+	) {
+		return parseNumber(object, locale, null, roundingScale, roundingMode);
+	}
+
+	/**
+	 * Attempts to convert an object into a {@link Number}. If the object is a
+	 * {@link Number}, the object itself is returned. If the object is
+	 * {@code null}, {@code null} is returned. Otherwise, a {@link Number} is
+	 * attempted parsed from {@link Object#toString()}. If the parsing fails,
+	 * {@code null} is returned.
+	 * <p>
+	 * The {@link Number} implementations that might be returned are
+	 * {@link Rational}, {@link BigInteger}, {@link Integer}, {@link Long} or
+	 * {@link Double}. //TODO: (Nad) Add
+	 *
+	 * @param object the {@link Object} to convert to a {@link Number}.
+	 * @param locale the {@link Locale} to use for decimal numbers. If
+	 *            {@code null}, {@code "."} is used as a decimal separator.
+	 * @param mathContext the {@link MathContext} to use for rounding or
+	 *            {@code null} for no rounding. This overrides {@code scale} and
+	 *            {@code roundingMode} if non-{@code null}.
+	 * @param roundingScale the number of digits to keep after the
+	 *            decimal-separator if positive or the number of digits to
+	 *            discard before the decimal-separator. Ignored if
+	 *            {@code mathContext} is non-{@code null} or
+	 *            {@code roundingMode} is {@code null}.
+	 * @param roundingMode The {@link RoundingMode} to use. Use with scale
+	 *            {@code 0} to round to an integer. Ignored if
+	 *            {@code mathContext} is non-{@code null}.
+	 * @return The {@link Number} or {@code null}.
+	 */
+	@Nullable
+	private static Number parseNumber(
+		@Nullable Object object,
+		@Nullable Locale locale,
+		@Nullable MathContext mathContext, // TODO: (Nad) RoundingMode
+		int roundingScale,
+		@Nullable RoundingMode roundingMode
 	) {
 		if (object == null) {
 			return null;
@@ -1585,41 +1682,49 @@ public class StringUtil {
 				} else {
 					scale = 0;
 				}
-				BigDecimal bigDecimal;
-				if (radix == 10) {
-					if (exponent != null) {
-						scale = scale - Integer.parseInt(exponent);
+				int power = 0;
+				if (radix == 10 && exponent != null) {
+					// Decimal
+					scale = scale - Integer.parseInt(exponent);
+				} else if (radix == 16 && exponent != null) {
+					// Hexadecimal
+					if (exponent.toLowerCase(Locale.ROOT).startsWith("p")) {
+						power = Integer.parseInt(exponent.substring(1));
+					} else {
+						scale = scale - Integer.parseInt(exponent.substring(1));
 					}
-					bigDecimal = new BigDecimal(new BigInteger(significand, radix), scale); //TODO: (Nad) Bug with hexa
-				} else {
-					boolean powerMode = false;
-					//TODO: (Nad) First deal with scale..?
-					if (exponent != null) {
-						powerMode = exponent.toLowerCase(Locale.ROOT).startsWith("p");
-						exponent = exponent.substring(1);
-						if (powerMode) {
-							// Exponent is the power of 2
-						}
+				}
+				Rational rational = Rational.valueOf(new BigInteger(significand, radix));
+				if (scale != 0) {
+					rational = rational.multiply(Rational.valueOf(radix).pow(-scale));
+				}
+				if (power != 0) {
+					rational = rational.multiply(Rational.valueOf(2).pow(power));
+				}
+
+				// Return type
+				if (mathContext != null || roundingMode != null) {
+					// Rounding
+					if (mathContext != null) {
+						rational = Rational.valueOf(rational.bigDecimalValue(mathContext).stripTrailingZeros());
+					} else if (!rational.isInteger()) {
+						rational = Rational.valueOf(rational.bigDecimalValue(roundingScale, roundingMode).stripTrailingZeros());
 					}
-					bigDecimal = null; //new BigDe BigDecimal.valueOf(16).pow(-scale);
 				}
-				if (mathContext != null) {
-					bigDecimal = bigDecimal.round(mathContext);
-				}
-				if (bigDecimal.scale() > 0) {
-					// Still fractional value
-					if (isDoubleValueExact(bigDecimal)) {
+				if (!rational.isInteger()) {
+					// Fractional value
+					if (isDoubleValueExact(rational)) {
 						// Return Double
-						return Double.valueOf(bigDecimal.doubleValue());
+						return Double.valueOf(rational.doubleValue());
 					}
-					// Return BigDecimal
-					return bigDecimal;
+					// Return Rational
+					return rational;
 				}
 				// Integer value
-				bigInteger = bigDecimal.toBigInteger();
+				bigInteger = rational.bigIntegerValue();
 			} else {
 				// Integer form;
-				bigInteger = new BigInteger(significand, radix); //TODO: E, P
+				bigInteger = new BigInteger(significand, radix);
 			}
 
 			if (
@@ -1636,7 +1741,7 @@ public class StringUtil {
 			}
 			// Return Integer
 			return Integer.valueOf((int) l);
-		} catch (NumberFormatException | ArithmeticException e) {
+		} catch (NumberFormatException | ArithmeticException e) { //TODO: (Nad) Check possible throws
 			if (isNotBlank(e.getMessage())) {
 				LOGGER.trace("Failed to parse a number from \"{}\": {}", s, e.getMessage());
 			} else {
@@ -1649,6 +1754,16 @@ public class StringUtil {
 	public static boolean isDoubleValueExact(@Nullable BigDecimal value) {
 		if (value == null) {
 			return false;
+		}
+		return value.compareTo(new BigDecimal(value.doubleValue())) == 0;
+	}
+
+	public static boolean isDoubleValueExact(@Nullable Rational value) {
+		if (value == null) {
+			return false;
+		}
+		if (value.isInfinite() || value.isNaN()) {
+			return true;
 		}
 		return value.compareTo(new BigDecimal(value.doubleValue())) == 0;
 	}
