@@ -19,16 +19,28 @@
 package net.pms.dlna;
 
 import static org.assertj.core.api.Assertions.*;
-
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
+import org.slf4j.LoggerFactory;
+import ch.qos.logback.classic.LoggerContext;
 import net.pms.PMS;
 
 public class LibMediaInfoParserTest {
+
 	@BeforeClass
 	public static void SetUPClass() {
 		PMS.configureJNA();
+	}
+
+	/**
+	 * Set up testing conditions before running the tests.
+	 */
+	@Before
+	public void setUp() {
+		// Silence all log messages from the DMS code that is being tested
+		LoggerContext context = (LoggerContext) LoggerFactory.getILoggerFactory();
+		context.reset();
 	}
 
 	@Test
