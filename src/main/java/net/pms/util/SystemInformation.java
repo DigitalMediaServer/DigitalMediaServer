@@ -109,10 +109,10 @@ public class SystemInformation extends Thread {
 			sb.setLength(0);
 		}
 		if (memory != null) {
-			sb.append("Physical Memory: ").append(StringUtil.formatBytes(memory.getTotal(), true));
+			sb.append("Physical Memory: ").append(ConversionUtil.formatBytes(memory.getTotal(), true));
 			result.add(sb.toString());
 			sb.setLength(0);
-			sb.append("Free Memory: ").append(StringUtil.formatBytes(memory.getAvailable(), true));
+			sb.append("Free Memory: ").append(ConversionUtil.formatBytes(memory.getAvailable(), true));
 			result.add(sb.toString());
 			sb.setLength(0);
 
@@ -121,7 +121,7 @@ public class SystemInformation extends Thread {
 		if (jvmMemory == Long.MAX_VALUE) {
 			sb.append("Unlimited");
 		} else {
-			sb.append(StringUtil.formatBytes(jvmMemory, true));
+			sb.append(ConversionUtil.formatBytes(jvmMemory, true));
 		}
 		result.add(sb.toString());
 		return result;

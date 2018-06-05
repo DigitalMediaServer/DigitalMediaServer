@@ -18,8 +18,6 @@
  */
 package net.pms.util;
 
-import java.math.RoundingMode;
-import java.util.Locale;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.LoggerContext;
@@ -171,30 +169,5 @@ public class StringUtilTest {
 		assertTrue(isEqual("FooBar", "foobar", false, true, null, 2, 5));
 		assertFalse(isEqual("FooBar", "foobar", true, false, null, 2, 5));
 		assertTrue(isEqual("FooBar", "foobar", false, true, null, -1, 5));
-	}
-
-	@Test
-	public void parseNumberWithUnitTest() {
-		Number number;
-		number = Rational.valueOf(-66.5).bigIntegerValue(RoundingMode.CEILING);
-		number = Rational.valueOf(-66.5).bigIntegerValue(RoundingMode.DOWN);
-		number = Rational.valueOf(-66.5).bigIntegerValue(RoundingMode.FLOOR);
-		number = Rational.valueOf(-66.5).bigIntegerValue(RoundingMode.HALF_DOWN);
-		number = Rational.valueOf(-66.5).bigIntegerValue(RoundingMode.HALF_UP);
-		number = Rational.valueOf(-66.5).bigIntegerValue(RoundingMode.UP);
-//		number = parseNumber("1,01 e6", Locale.GERMAN, null); //TODO: (Nad) Moar
-//		number = parseNumber("0x4bc", Locale.GERMAN, null); //TODO: (Nad) Moar
-//		number = parseNumber("0x4bc,3b", Locale.GERMAN, null); //TODO: (Nad) Moar
-//		number = parseNumber("0x4bc.12e5", Locale.GERMAN, null); //TODO: (Nad) Moar
-//		number = parseNumber("0x4bc.12 e5", Locale.GERMAN, null); //TODO: (Nad) Moar
-		number = parseNumber("0x4bc.a0p16", Locale.GERMAN, null); //TODO: (Nad) Moar
-		number = parseNumber("0x4bc.12e5p128", Locale.GERMAN, null); //TODO: (Nad) Moar
-//		assertEquals(new Pair<Number, String>(Integer.valueOf(4), null), parseNumberWithUnit("4", null, null, null, null, false));
-//		assertEquals(new Pair<Number, String>(Integer.valueOf(400), null), parseNumberWithUnit("4h", null, null, null, null, false));
-//		assertEquals(new Pair<Number, String>(Integer.valueOf(4096), "h"), parseNumberWithUnit("4Kih", null, null, null, null, false));
-//		assertEquals(new Pair<Number, String>(Long.valueOf(4000000000000L), "b"), parseNumberWithUnit("4 tb  ", null, null, null, null, false));
-//		assertEquals(new Pair<Number, String>(Long.valueOf(4398046511104L), "B"), parseNumberWithUnit("  4tiB ", null, null, null, null, false));
-//		assertEquals(new Pair<Number, String>(Integer.valueOf(-3960), "B"), parseNumberWithUnit(" -3.96kB ", null, null, null, null, false));
-
 	}
 }

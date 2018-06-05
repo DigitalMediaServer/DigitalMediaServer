@@ -111,6 +111,15 @@ public class Rational extends Number implements Comparable<Rational> {
 		BigInteger.ONE
 	);
 
+	/** The static instance representing the value 10 */
+	public static final Rational TEN = new Rational(
+		BigInteger.TEN,
+		BigInteger.ONE,
+		BigInteger.ONE,
+		BigInteger.TEN,
+		BigInteger.ONE
+	);
+
 	/** The static instance representing positive infinity */
 	public static final Rational POSITIVE_INFINITY = new Rational(
 		BigInteger.ONE,
@@ -395,6 +404,56 @@ public class Rational extends Number implements Comparable<Rational> {
 			return null;
 		}
 		return new Rational(value, BigInteger.ONE, BigInteger.ONE, value, BigInteger.ONE);
+	}
+
+	/**
+	 * Returns an instance that represents the value of {@code value}. May be
+	 * inaccurate for wide (wider than {@code long} or {@code double})
+	 * {@link Number} implementations. {@link #valueOf(BigDecimal)} or
+	 * {@link #add(BigInteger)} should be used to maintain accuracy in such
+	 * cases.
+	 *
+	 * @param value the value.
+	 * @return An instance that represents the value of {@code value}.
+	 */
+	@Nullable
+	public static Rational valueOf(@Nullable Number value) {
+		if (value == null) {
+			return null;
+		}
+		if (value instanceof Rational) {
+			return (Rational) value;
+		}
+		if (value instanceof BigDecimal) {
+			return valueOf((BigDecimal) value);
+		}
+		if (value instanceof BigInteger) {
+			return valueOf((BigInteger) value);
+		}
+		if (value instanceof Double) {
+			return valueOf(value.doubleValue());
+		}
+		if (value instanceof Float) {
+			return valueOf(value.floatValue());
+		}
+
+		double d = value.doubleValue();
+		if (d == Double.POSITIVE_INFINITY) {
+			return POSITIVE_INFINITY;
+		}
+		if (d == Double.NEGATIVE_INFINITY) {
+			return NEGATIVE_INFINITY;
+		}
+		if (Double.isNaN(d)) {
+			return NaN;
+		}
+
+		if (Math.floor(d) == d) {
+			// Integer value, will be inaccurate if the value can't be accurately represented by long
+			return valueOf(value.longValue());
+		}
+		// Fractional value, will be inaccurate if the value can't be accurately represented by double
+		return valueOf(BigDecimal.valueOf(d));
 	}
 
 	/**
@@ -1915,9 +1974,6 @@ public class Rational extends Number implements Comparable<Rational> {
 			throw new ArithmeticException("Impossible to express infinity as BigDecimal");
 		}
 
-		if (BigInteger.ONE.equals(reducedDenominator)) {
-			return new BigDecimal(reducedNumerator);
-		}
 		return new BigDecimal(reducedNumerator).divide(new BigDecimal(reducedDenominator), scale, roundingMode);
 	}
 
@@ -1946,9 +2002,6 @@ public class Rational extends Number implements Comparable<Rational> {
 			throw new NumberFormatException("Impossible to express infinity as BigDecimal");
 		}
 
-		if (BigInteger.ONE.equals(reducedDenominator)) {
-			return new BigDecimal(reducedNumerator);
-		}
 		return new BigDecimal(reducedNumerator).divide(new BigDecimal(reducedDenominator), mathContext);
 	}
 

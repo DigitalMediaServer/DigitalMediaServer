@@ -55,6 +55,7 @@ import net.pms.formats.Format;
 import net.pms.newgui.NavigationShareTab.SharedFoldersTableModel;
 import net.pms.service.PreventSleepMode;
 import net.pms.service.Services;
+import net.pms.util.ConversionUtil;
 import net.pms.util.CoverSupplier;
 import net.pms.util.FilePermissions;
 import net.pms.util.FileUtil;
@@ -4247,7 +4248,7 @@ public class PmsConfiguration extends RendererConfiguration {
 	 */
 	public int getDatabaseCacheSize() {
 		long jvmMemory = Runtime.getRuntime().maxMemory();
-		long cacheSize = StringUtil.parseLong(configuration.getProperty(KEY_DATABASE_CACHE_SIZE), Long.MIN_VALUE);
+		long cacheSize = ConversionUtil.parseLong(configuration.getProperty(KEY_DATABASE_CACHE_SIZE), Long.MIN_VALUE);
 		if (cacheSize == 0) {
 			return 0;
 		}
@@ -4259,8 +4260,8 @@ public class PmsConfiguration extends RendererConfiguration {
 			if (jvmMemory != Long.MAX_VALUE && cacheSize > jvmMemory / 2) {
 				LOGGER.warn(
 					"Reducing database cache size from {} to {} to stay within 50% of available JVM heap size",
-					StringUtil.formatBytes(cacheSize, true),
-					StringUtil.formatBytes(jvmMemory / 2, true)
+					ConversionUtil.formatBytes(cacheSize, true),
+					ConversionUtil.formatBytes(jvmMemory / 2, true)
 				);
 				cacheSize = jvmMemory / 2;
 			}
@@ -4268,7 +4269,7 @@ public class PmsConfiguration extends RendererConfiguration {
 		}
 
 		// No cache size set, use cache percent instead.
-		int percent = StringUtil.parseInt(configuration.getProperty(KEY_DATABASE_CACHE_PERCENT), Integer.MIN_VALUE);
+		int percent = ConversionUtil.parseInt(configuration.getProperty(KEY_DATABASE_CACHE_PERCENT), Integer.MIN_VALUE);
 		if (percent == 0) {
 			return 0;
 		}
