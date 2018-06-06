@@ -472,10 +472,10 @@ Function .onInit
 
 	InitPluginsDir
 
-	StrCpy $CopyLeft "${U+00A9} ${BUILD_YEAR} ${PRODUCT_NAME} ${PRODUCT_VERSION}                                                 Nullsoft Install System ${NSIS_VERSION}"
+	StrCpy $CopyLeft "(${U+2184}) ${BUILD_YEAR} ${PRODUCT_NAME} ${PRODUCT_VERSION}                                               Nullsoft Install System ${NSIS_VERSION}"
 	${If} ${AtLeastWinVista}
 	${AndIf} ${AtMostWin7}
-		StrCpy $CopyLeft "${U+00A9} ${BUILD_YEAR} ${PRODUCT_NAME} ${PRODUCT_VERSION}"
+		StrCpy $CopyLeft "(${U+2184}) ${BUILD_YEAR} ${PRODUCT_NAME} ${PRODUCT_VERSION}"
 	${EndIf}
 
 	BringToFront ; http://nsis.sourceforge.net/Allow_only_one_installer_instance
