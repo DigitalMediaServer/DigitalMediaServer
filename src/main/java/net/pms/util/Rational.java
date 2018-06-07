@@ -111,6 +111,15 @@ public class Rational extends Number implements Comparable<Rational> {
 		BigInteger.ONE
 	);
 
+	/** The static instance representing the value 10 */
+	public static final Rational TEN = new Rational(
+		BigInteger.TEN,
+		BigInteger.ONE,
+		BigInteger.ONE,
+		BigInteger.TEN,
+		BigInteger.ONE
+	);
+
 	/** The static instance representing positive infinity */
 	public static final Rational POSITIVE_INFINITY = new Rational(
 		BigInteger.ONE,
@@ -395,6 +404,56 @@ public class Rational extends Number implements Comparable<Rational> {
 			return null;
 		}
 		return new Rational(value, BigInteger.ONE, BigInteger.ONE, value, BigInteger.ONE);
+	}
+
+	/**
+	 * Returns an instance that represents the value of {@code value}. May be
+	 * inaccurate for wide (wider than {@code long} or {@code double})
+	 * {@link Number} implementations. {@link #valueOf(BigDecimal)} or
+	 * {@link #add(BigInteger)} should be used to maintain accuracy in such
+	 * cases.
+	 *
+	 * @param value the value.
+	 * @return An instance that represents the value of {@code value}.
+	 */
+	@Nullable
+	public static Rational valueOf(@Nullable Number value) {
+		if (value == null) {
+			return null;
+		}
+		if (value instanceof Rational) {
+			return (Rational) value;
+		}
+		if (value instanceof BigDecimal) {
+			return valueOf((BigDecimal) value);
+		}
+		if (value instanceof BigInteger) {
+			return valueOf((BigInteger) value);
+		}
+		if (value instanceof Double) {
+			return valueOf(value.doubleValue());
+		}
+		if (value instanceof Float) {
+			return valueOf(value.floatValue());
+		}
+
+		double d = value.doubleValue();
+		if (d == Double.POSITIVE_INFINITY) {
+			return POSITIVE_INFINITY;
+		}
+		if (d == Double.NEGATIVE_INFINITY) {
+			return NEGATIVE_INFINITY;
+		}
+		if (Double.isNaN(d)) {
+			return NaN;
+		}
+
+		if (Math.floor(d) == d) {
+			// Integer value, will be inaccurate if the value can't be accurately represented by long
+			return valueOf(value.longValue());
+		}
+		// Fractional value, will be inaccurate if the value can't be accurately represented by double
+		return valueOf(BigDecimal.valueOf(d));
 	}
 
 	/**
@@ -1737,13 +1796,34 @@ public class Rational extends Number implements Comparable<Rational> {
 	 */
 	@Nonnull
 	public BigInteger bigIntegerValue() {
+		return bigIntegerValue(RoundingMode.DOWN);
+	}
+
+	/**
+	 * Converts this {@link Rational} to a {@link BigInteger}. This conversion
+	 * is analogous to the <i>narrowing primitive conversion</i> from
+	 * {@code double} to {@code long} as defined in section 5.1.3 of <cite>The
+	 * Java&trade; Language Specification</cite>: any fractional part of this
+	 * {@link Rational} will be discarded.
+	 *
+	 * @param roundingMode the {@link RoundingMode} to use.
+	 * @return This {@link Rational} converted to a {@link BigInteger}.
+	 * @throws ArithmeticException If this is {@code NaN} or infinite or if
+	 *             {@code roundingMode} is {@link RoundingMode#UNNECESSARY} and
+	 *             the value isn't already an integer.
+	 */
+	@Nonnull
+	public BigInteger bigIntegerValue(RoundingMode roundingMode) {
 		if (isNaN()) {
 			throw new ArithmeticException("Impossible to express NaN as BigInteger");
 		}
 		if (isInfinite()) {
 			throw new ArithmeticException("Impossible to express infinity as BigInteger");
 		}
-		return new BigDecimal(reducedNumerator).divide(new BigDecimal(reducedDenominator), RoundingMode.DOWN).toBigInteger();
+		if (isInteger()) {
+			return reducedNumerator;
+		}
+		return new BigDecimal(reducedNumerator).divide(new BigDecimal(reducedDenominator), 0, roundingMode).toBigInteger();
 	}
 
 	/**
@@ -1894,9 +1974,6 @@ public class Rational extends Number implements Comparable<Rational> {
 			throw new ArithmeticException("Impossible to express infinity as BigDecimal");
 		}
 
-		if (BigInteger.ONE.equals(reducedDenominator)) {
-			return new BigDecimal(reducedNumerator);
-		}
 		return new BigDecimal(reducedNumerator).divide(new BigDecimal(reducedDenominator), scale, roundingMode);
 	}
 
@@ -1925,9 +2002,6 @@ public class Rational extends Number implements Comparable<Rational> {
 			throw new NumberFormatException("Impossible to express infinity as BigDecimal");
 		}
 
-		if (BigInteger.ONE.equals(reducedDenominator)) {
-			return new BigDecimal(reducedNumerator);
-		}
 		return new BigDecimal(reducedNumerator).divide(new BigDecimal(reducedDenominator), mathContext);
 	}
 
@@ -2086,14 +2160,13 @@ public class Rational extends Number implements Comparable<Rational> {
 	 */
 	public int compareTo(@Nonnull Number number) {
 		// Establish special cases
+		if (number instanceof Rational) {
+			return compareTo((Rational) number);
+		}
 		boolean numberIsNaN;
 		boolean numberIsInfinite;
 		int numberSignum;
-		if (number instanceof Rational) {
-			numberIsNaN = Rational.isNaN((Rational) number);
-			numberIsInfinite = Rational.isInfinite((Rational) number);
-			numberSignum = ((Rational) number).numerator.signum();
-		} else if (number instanceof Float) {
+		if (number instanceof Float) {
 			numberIsNaN = Float.isNaN(number.floatValue());
 			numberIsInfinite = Float.isInfinite(number.floatValue());
 			numberSignum = (int) Math.signum(number.floatValue());
@@ -2131,7 +2204,7 @@ public class Rational extends Number implements Comparable<Rational> {
 			if (isInteger()) {
 				return bigIntegerValue().compareTo((BigInteger) number);
 			}
-			return bigDecimalValue(2, RoundingMode.HALF_EVEN).compareTo(new BigDecimal((BigInteger) number));
+			return compareTo(valueOf((BigInteger) number));
 		}
 		if (
 			number instanceof AtomicInteger ||
@@ -2144,13 +2217,12 @@ public class Rational extends Number implements Comparable<Rational> {
 			if (isInteger()) {
 				return bigIntegerValue().compareTo(BigInteger.valueOf(number.longValue()));
 			}
-			return bigDecimalValue(2, RoundingMode.HALF_EVEN).compareTo(new BigDecimal(number.longValue()));
+			return compareTo(valueOf(number.longValue()));
 		}
 		if (number instanceof BigDecimal) {
-			Rational other = valueOf((BigDecimal) number);
-			return compareTo(other);
+			return compareTo(valueOf((BigDecimal) number));
 		}
-		return bigDecimalValue().compareTo(new BigDecimal(number.doubleValue()));
+		return compareTo(valueOf(new BigDecimal(number.doubleValue())));
 	}
 
 	@Override
