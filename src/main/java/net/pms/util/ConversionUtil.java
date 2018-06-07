@@ -48,8 +48,8 @@ public class ConversionUtil {
 	 * part or {@code null}.
 	 */
 	public static final Pattern NUMBER_UNIT = Pattern.compile(
-		"^\\s*([-+]?(?:(?:\\p{Digit}+|\\p{Digit}*\\.\\p{Digit}+)(?:\\s?[Ee][-+]?\\p{Digit}+)?|0[Xx](?:\\p{XDigit}+|" +
-		"\\p{XDigit}*\\.\\p{XDigit}+)(?:\\s?[Ee][-+]?\\p{XDigit}+|\\s?[Pp][-+]?\\p{Digit}+)?))\\s?(\\p{L}\\w*|%)?\\s*$",
+		"^\\s*([-+]?(?:0[Xx](?:\\p{XDigit}+|\\p{XDigit}*\\.\\p{XDigit}+)(?:\\s?[Ee][-+]?\\p{XDigit}+|\\s?[Pp][-+]?\\p{Digit}+)?|" +
+		"(?:\\p{Digit}+|\\p{Digit}*\\.\\p{Digit}+)(?:\\s?[Ee][-+]?\\p{Digit}+)?))\\s?(\\p{L}\\w*|%)?\\s*$",
 		Pattern.UNICODE_CHARACTER_CLASS
 	);
 
@@ -85,7 +85,7 @@ public class ConversionUtil {
 	 * @return The formatted byte value and unit.
 	 */
 	public static String formatBytes(long bytes, boolean binary) {
-		return formatBytes(bytes, binary, Locale.ROOT);
+		return formatBytes(bytes, binary, null);
 	}
 
 	/**
@@ -95,12 +95,25 @@ public class ConversionUtil {
 	 * @param bytes the value to format.
 	 * @param binary whether the representation should be binary/power of 2 or
 	 *            SI/metric.
-	 * @param locale the {@link Locale} to use when formatting.
+	 * @param locale the {@link Locale} to use when formatting. If {@code null},
+	 *            {@link Locale#ROOT} will be used.
 	 * @return The formatted byte value and unit.
 	 */
-	public static String formatBytes(long bytes, boolean binary, Locale locale) {
+	public static String formatBytes(long bytes, boolean binary, @Nullable Locale locale) {
+		boolean negative = bytes < 0;
+		if (negative) {
+			if (bytes == Long.MIN_VALUE) {
+				// Special case
+				if (binary) {
+					return "-8 EiB";
+				}
+				char c = locale == null ? '.' : DecimalFormatSymbols.getInstance(locale).getDecimalSeparator();
+				return "-9" + c + "2 EB";
+			}
+			bytes = -bytes;
+		}
 		if ((binary && bytes < 1L << 10) || bytes < UnitPrefix.KILO.getFactorLong()) {
-			return String.format("%d %s", bytes, bytes == 1L ? "byte" : "bytes");
+			return String.format("%s%d %s", negative ? "-" : "", bytes, bytes == 1L ? "byte" : "bytes");
 		}
 
 		UnitPrefix unitPrefix;
@@ -117,143 +130,28 @@ public class ConversionUtil {
 		} else { // exbi/exa
 			unitPrefix = binary ? UnitPrefix.EXBI : UnitPrefix.EXA;
 		}
+
+		if (locale == null) {
+			locale = Locale.ROOT;
+		}
 		if (bytes % unitPrefix.getFactorLong() == 0) {
-			return String.format(locale, "%d %s%s", bytes / unitPrefix.getFactorLong(), unitPrefix.getSymbol(), "B");
+			return String.format(
+				locale,
+				"%s%d %s%s",
+				negative ? "-" : "",
+				bytes / unitPrefix.getFactorLong(),
+				unitPrefix.getSymbol(),
+				"B"
+			);
 		}
-		return String.format(locale, "%.1f %s%s", (double) bytes / unitPrefix.getFactorLong(), unitPrefix.getSymbol(), "B");
-	}
-
-	@Nullable
-	public static Pair<Number, String> parseNumberWithUnit( //TODO: (Nad) Here
-		@Nullable String value,
-		@Nullable Locale locale,
-		@Nullable MathContext mathContext,
-		int roundingScale,
-		@Nullable RoundingMode roundingMode,
-		@Nullable String requiredUnit,
-		@Nullable UnitPrefix defaultUnitPrefix,
-		@Nullable String defaultUnit,
-		boolean allowPercent,
-		boolean caseSensitivePrefixes,
-		boolean allowFractionalPrefixes
-	) {
-		if (isBlank(value)) {
-			return null;
-		}
-		if (locale != null) {
-			char c = DecimalFormatSymbols.getInstance(locale).getDecimalSeparator();
-			if (c != '.' && value.indexOf(c) >= 0) {
-				value = value.replace(".", "").replace(c, '.');
-			}
-		}
-
-		Matcher matcher = NUMBER_UNIT.matcher(value);
-		if (!matcher.find()) {
-			LOGGER.warn("Unable to parse a numeric value from \"{}\"", value);
-			return null;
-		}
-
-		Locale caseLocale = locale != null ? locale : Locale.ROOT;
-		String lowerRequiredUnit = requiredUnit == null ? null : requiredUnit.toLowerCase(caseLocale);
-		String unit;
-		String lowerUnit;
-		UnitPrefix unitPrefix = null;
-		if (matcher.groupCount() < 2 || matcher.group(2) == null) {
-			// No prefix or unit specified
-			unit = defaultUnit;
-			lowerUnit = defaultUnit == null ? null : defaultUnit.toLowerCase(caseLocale);
-			unitPrefix = defaultUnitPrefix;
-		} else {
-			// Prefix and/or unit specified
-			unit = matcher.group(2);
-			if ("%".equals(unit)) {
-				if (allowPercent) {
-					Number number = parseNumber(matcher.group(1), locale, mathContext, roundingScale, roundingMode, true);
-					if (number == null) {
-						return null;
-					}
-					return new Pair<>(number, "%");
-				}
-				LOGGER.warn("Illegal unit \"%\" in \"{}\"", value);
-				return null;
-			}
-
-			if (unit.equals(requiredUnit)) {
-				Number number = parseNumber(matcher.group(1), locale, mathContext, roundingScale, roundingMode, true);
-				if (number == null) {
-					return null;
-				}
-				return new Pair<>(number, unit);
-			}
-
-			lowerUnit = unit.toLowerCase(caseLocale);
-			if (lowerUnit.equals(lowerRequiredUnit)) {
-				Number number = parseNumber(matcher.group(1), locale, mathContext, roundingScale, roundingMode, true);
-				if (number == null) {
-					return null;
-				}
-				return new Pair<>(number, unit);
-			}
-
-			String matchPrefix = caseSensitivePrefixes ? unit : lowerUnit;
-			for (UnitPrefix prefix : UnitPrefix.values()) {
-				if (!allowFractionalPrefixes && prefix.isFractional()) {
-					continue;
-				}
-				String prefixSymbol = caseSensitivePrefixes ? prefix.getSymbol() : prefix.getSymbol().toLowerCase(caseLocale);
-				boolean forceCaseSensitive =
-					!caseSensitivePrefixes &&
-					allowFractionalPrefixes && (
-						"m".equals(prefixSymbol) ||
-						"p".equals(prefixSymbol)
-					);
-				if (
-					forceCaseSensitive && unit.startsWith(prefix.getSymbol()) ||
-					!forceCaseSensitive && matchPrefix.startsWith(prefixSymbol)
-				) {
-					unitPrefix = prefix;
-					unit = unit.substring(prefixSymbol.length());
-					lowerUnit = lowerUnit.substring(prefixSymbol.length());
-					break;
-				}
-			}
-			if (isBlank(unit)) {
-				unit = defaultUnit;
-				lowerUnit = defaultUnit == null ? null : defaultUnit.toLowerCase(caseLocale);
-			}
-		}
-
-		// Required unit
-		if (lowerRequiredUnit != null && !lowerRequiredUnit.equals(lowerUnit)) {
-			LOGGER.error("Invalid unit \"{}\" instead of \"{}\" in \"{}\"", unit, requiredUnit, value);
-			return null;
-		}
-
-		if (unitPrefix == null) {
-			// Without prefix
-			Number number = parseNumber(matcher.group(1), locale, mathContext, roundingScale, roundingMode, true);
-			if (number == null) {
-				return null;
-			}
-			return new Pair<>(number, unit);
-		}
-
-		// With prefix
-		Number number = parseNumber(matcher.group(1), locale, null, 0, null, false);
-		if (number == null) {
-			return null;
-		}
-		if (number instanceof Rational) {
-			number = ((Rational) number).multiply(unitPrefix.getFactorRational());
-		} else if (number instanceof BigInteger) {
-			if (unitPrefix.isAsBigIntegerValid()) {
-				number = ((BigInteger) number).multiply(unitPrefix.getFactorBigInteger());
-			} else {
-				number = Rational.valueOf((BigInteger) number).multiply(unitPrefix.getFactorRational());
-			}
-		}
-		number = parseNumber(number, null, mathContext, roundingScale, roundingMode, true);
-		return new Pair<>(number, unit);
+		return String.format(
+			locale,
+			"%s%.1f %s%s",
+			negative ? "-" : "",
+			(double) bytes / unitPrefix.getFactorLong(),
+			unitPrefix.getSymbol(),
+			"B"
+		);
 	}
 
 	/**
@@ -269,7 +167,7 @@ public class ConversionUtil {
 	 *            the parsing fails.
 	 * @return The parsed {@code int} or {@code nullValue}.
 	 */
-	public static int parseInt( //TODO: (Nad) Test
+	public static int parseInt(
 		@Nullable Object object,
 		int nullValue
 	) {
@@ -293,7 +191,7 @@ public class ConversionUtil {
 	 *            the parsing fails.
 	 * @return The parsed {@code int} or {@code nullValue}.
 	 */
-	public static int parseInt( //TODO: (Nad) Test
+	public static int parseInt(
 		@Nullable Object object,
 		@Nullable Locale locale,
 		@Nullable MathContext mathContext,
@@ -316,7 +214,7 @@ public class ConversionUtil {
 	 *            {@code null}, {@code "."} is used as a decimal separator.
 	 * @param roundingScale the number of digits to keep after the
 	 *            decimal-separator if positive or the number of digits to
-	 *            discard before the decimal-separator. Ignored if
+	 *            discard before the decimal-separator if negative. Ignored if
 	 *            {@code roundingMode} is {@code null}.
 	 * @param roundingMode The {@link RoundingMode} to use. Use with scale
 	 *            {@code 0} to round to an integer.
@@ -324,7 +222,7 @@ public class ConversionUtil {
 	 *            the parsing fails.
 	 * @return The parsed {@code int} or {@code nullValue}.
 	 */
-	public static int parseInt( //TODO: (Nad) Test
+	public static int parseInt(
 		@Nullable Object object,
 		@Nullable Locale locale,
 		int roundingScale,
@@ -348,7 +246,7 @@ public class ConversionUtil {
 	 *            the parsing fails.
 	 * @return The parsed {@code long} or {@code nullValue}.
 	 */
-	public static long parseLong( //TODO: (Nad) Test
+	public static long parseLong(
 		@Nullable Object object,
 		long nullValue
 	) {
@@ -372,7 +270,7 @@ public class ConversionUtil {
 	 *            the parsing fails.
 	 * @return The parsed {@code long} or {@code nullValue}.
 	 */
-	public static long parseLong( //TODO: (Nad) Test
+	public static long parseLong(
 		@Nullable Object object,
 		@Nullable Locale locale,
 		@Nullable MathContext mathContext,
@@ -395,7 +293,7 @@ public class ConversionUtil {
 	 *            {@code null}, {@code "."} is used as a decimal separator.
 	 * @param roundingScale the number of digits to keep after the
 	 *            decimal-separator if positive or the number of digits to
-	 *            discard before the decimal-separator. Ignored if
+	 *            discard before the decimal-separator if negative. Ignored if
 	 *            {@code roundingMode} is {@code null}.
 	 * @param roundingMode The {@link RoundingMode} to use. Use with scale
 	 *            {@code 0} to round to an integer.
@@ -403,7 +301,7 @@ public class ConversionUtil {
 	 *            the parsing fails.
 	 * @return The parsed {@code long} or {@code nullValue}.
 	 */
-	public static long parseLong( //TODO: (Nad) Test
+	public static long parseLong(
 		@Nullable Object object,
 		@Nullable Locale locale,
 		int roundingScale,
@@ -424,13 +322,36 @@ public class ConversionUtil {
 	 * @param object the {@link Object} to convert to a {@code double}.
 	 * @param locale the {@link Locale} to use for decimal numbers. If
 	 *            {@code null}, {@code "."} is used as a decimal separator.
+	 * @param nullValue the value to return if {@code object} is {@code null} or
+	 *            the parsing fails.
+	 * @return The parsed {@code double} or {@code nullValue}.
+	 */
+	public static double parseDouble(
+		@Nullable Object object,
+		@Nullable Locale locale,
+		double nullValue
+	) {
+		Number number = parseNumber(object, locale, null, 0, null, false);
+		return number != null ? number.doubleValue() : nullValue;
+	}
+
+	/**
+	 * Attempts to convert an object into a {@code double}. If the object is a
+	 * {@link Number}, {@link Number#doubleValue()} is returned. If the object
+	 * is {@code null}, {@code nullValue} is returned. Otherwise, a
+	 * {@code double} is attempted parsed from {@link Object#toString()}. If the
+	 * parsing fails, {@code nullValue} is returned.
+	 *
+	 * @param object the {@link Object} to convert to a {@code double}.
+	 * @param locale the {@link Locale} to use for decimal numbers. If
+	 *            {@code null}, {@code "."} is used as a decimal separator.
 	 * @param mathContext the {@link MathContext} to use for rounding or
 	 *            {@code null} for no rounding.
 	 * @param nullValue the value to return if {@code object} is {@code null} or
 	 *            the parsing fails.
 	 * @return The parsed {@code double} or {@code nullValue}.
 	 */
-	public static double parseDouble( //TODO: (Nad) Test
+	public static double parseDouble(
 		@Nullable Object object,
 		@Nullable Locale locale,
 		@Nullable MathContext mathContext,
@@ -452,7 +373,7 @@ public class ConversionUtil {
 	 *            {@code null}, {@code "."} is used as a decimal separator.
 	 * @param roundingScale the number of digits to keep after the
 	 *            decimal-separator if positive or the number of digits to
-	 *            discard before the decimal-separator. Ignored if
+	 *            discard before the decimal-separator if negative. Ignored if
 	 *            {@code roundingMode} is {@code null}.
 	 * @param roundingMode The {@link RoundingMode} to use. Use with scale
 	 *            {@code 0} to round to an integer.
@@ -460,7 +381,7 @@ public class ConversionUtil {
 	 *            the parsing fails.
 	 * @return The parsed {@code double} or {@code nullValue}.
 	 */
-	public static double parseDouble( //TODO: (Nad) Test
+	public static double parseDouble(
 		@Nullable Object object,
 		@Nullable Locale locale,
 		int roundingScale,
@@ -552,7 +473,7 @@ public class ConversionUtil {
 	 *            {@code null}, {@code "."} is used as a decimal separator.
 	 * @param roundingScale the number of digits to keep after the
 	 *            decimal-separator if positive or the number of digits to
-	 *            discard before the decimal-separator. Ignored if
+	 *            discard before the decimal-separator if negative. Ignored if
 	 *            {@code roundingMode} is {@code null}.
 	 * @param roundingMode The {@link RoundingMode} to use. Use with scale
 	 *            {@code 0} to round to an integer.
@@ -594,7 +515,7 @@ public class ConversionUtil {
 	 *            {@code roundingMode} if non-{@code null}.
 	 * @param roundingScale the number of digits to keep after the
 	 *            decimal-separator if positive or the number of digits to
-	 *            discard before the decimal-separator. Ignored if
+	 *            discard before the decimal-separator if negative. Ignored if
 	 *            {@code mathContext} is non-{@code null} or
 	 *            {@code roundingMode} is {@code null}.
 	 * @param roundingMode The {@link RoundingMode} to use. Use with scale
@@ -795,6 +716,435 @@ public class ConversionUtil {
 	}
 
 	/**
+	 * Attempts to parse a number and unit from a string.
+	 * <p>
+	 * The number can be in decimal or hexadecimal and normal or scientific
+	 * notation. Hexadecimal numbers can also use the "binary notation" where
+	 * the exponent is annotated with the letter {@code P}.
+	 * <p>
+	 * The unit can have a {@link UnitPrefix} that will be applied to the number
+	 * value. The unit itself can be anything as long as it starts with a
+	 * letter. The unit is optional and can be omitted. A default and a required
+	 * unit can be specified though.
+	 * <p>
+	 * If the string is {@code null} or the parsing fails, {@code null} is
+	 * returned. Otherwise, a {@link Number} and optionally a unit is parsed and
+	 * returned as a {@link Pair}.
+	 * <p>
+	 * The {@link Number} implementations that might be returned are
+	 * {@link Rational}, {@link BigInteger}, {@link Integer}, {@link Long} or
+	 * {@link Double}.
+	 *
+	 * @param value the {@link String} to convert to a {@link Number} and a
+	 *            unit.
+	 * @param locale the {@link Locale} to use for decimal numbers and case
+	 *            conversion. If {@code null}, {@code "."} is used as a decimal
+	 *            separator and {@link Locale#ROOT} is used for case conversion.
+	 * @param requiredUnit the required unit for the parsing to succeed. It the
+	 *            required unit isn't satisfied the parsing will fail and
+	 *            {@code null} will be returned. Unit comparison is
+	 *            case-insensitive.
+	 * @param defaultUnitPrefix the default {@link UnitPrefix} to use if none is
+	 *            specified.
+	 * @param defaultUnit the default unit to use if no unit is specified.
+	 * @param allowPercent {@code true} to allow {@code "%"} as a unit,
+	 *            {@code false} otherwise.
+	 * @param caseSensitivePrefixes {@code true} if unit prefix matching should
+	 *            be case sensitive. {@code "M"}, {@code "P"}, {@code "Z"} and
+	 *            {@code "Y"} are always case-sensitive if
+	 *            {@code allowFractionalPrefixes} is {@code true}.
+	 * @param allowFractionalPrefixes {@code true} if unit prefixes that reduce
+	 *            the significand is allowed, {@code false} otherwise. The unit
+	 *            prefixes this applies to is {@link UnitPrefix#DECI} to
+	 *            {@link UnitPrefix#ATTO}.
+	 * @return The {@link Pair} of a {@link Number} and a unit as a
+	 *         {@link String} or {@code null}.
+	 */
+	@Nullable
+	protected static Pair<Number, String> parseNumberWithUnit(
+		@Nullable String value,
+		@Nullable Locale locale,
+		@Nullable String requiredUnit,
+		@Nullable UnitPrefix defaultUnitPrefix,
+		@Nullable String defaultUnit,
+		boolean allowPercent,
+		boolean caseSensitivePrefixes,
+		boolean allowFractionalPrefixes
+	) {
+		return parseNumberWithUnit(
+			value,
+			locale,
+			null,
+			0,
+			null,
+			requiredUnit,
+			defaultUnitPrefix,
+			defaultUnit,
+			allowPercent,
+			caseSensitivePrefixes,
+			allowFractionalPrefixes
+		);
+	}
+
+	/**
+	 * Attempts to parse a number and unit from a string.
+	 * <p>
+	 * The number can be in decimal or hexadecimal and normal or scientific
+	 * notation. Hexadecimal numbers can also use the "binary notation" where
+	 * the exponent is annotated with the letter {@code P}.
+	 * <p>
+	 * The unit can have a {@link UnitPrefix} that will be applied to the number
+	 * value. The unit itself can be anything as long as it starts with a
+	 * letter. The unit is optional and can be omitted. A default and a required
+	 * unit can be specified though.
+	 * <p>
+	 * If the string is {@code null} or the parsing fails, {@code null} is
+	 * returned. Otherwise, a {@link Number} and optionally a unit is parsed and
+	 * returned as a {@link Pair}.
+	 * <p>
+	 * The {@link Number} implementations that might be returned are
+	 * {@link Rational}, {@link BigInteger}, {@link Integer}, {@link Long} or
+	 * {@link Double}.
+	 *
+	 * @param value the {@link String} to convert to a {@link Number} and a
+	 *            unit.
+	 * @param locale the {@link Locale} to use for decimal numbers and case
+	 *            conversion. If {@code null}, {@code "."} is used as a decimal
+	 *            separator and {@link Locale#ROOT} is used for case conversion.
+	 * @param mathContext the {@link MathContext} to use for rounding or
+	 *            {@code null} for no rounding. This overrides {@code scale} and
+	 *            {@code roundingMode} if non-{@code null}.
+	 * @param requiredUnit the required unit for the parsing to succeed. It the
+	 *            required unit isn't satisfied the parsing will fail and
+	 *            {@code null} will be returned. Unit comparison is
+	 *            case-insensitive.
+	 * @param defaultUnitPrefix the default {@link UnitPrefix} to use if none is
+	 *            specified.
+	 * @param defaultUnit the default unit to use if no unit is specified.
+	 * @param allowPercent {@code true} to allow {@code "%"} as a unit,
+	 *            {@code false} otherwise.
+	 * @param caseSensitivePrefixes {@code true} if unit prefix matching should
+	 *            be case sensitive. {@code "M"}, {@code "P"}, {@code "Z"} and
+	 *            {@code "Y"} are always case-sensitive if
+	 *            {@code allowFractionalPrefixes} is {@code true}.
+	 * @param allowFractionalPrefixes {@code true} if unit prefixes that reduce
+	 *            the significand is allowed, {@code false} otherwise. The unit
+	 *            prefixes this applies to is {@link UnitPrefix#DECI} to
+	 *            {@link UnitPrefix#ATTO}.
+	 * @return The {@link Pair} of a {@link Number} and a unit as a
+	 *         {@link String} or {@code null}.
+	 */
+	@Nullable
+	protected static Pair<Number, String> parseNumberWithUnit(
+		@Nullable String value,
+		@Nullable Locale locale,
+		@Nullable MathContext mathContext,
+		@Nullable String requiredUnit,
+		@Nullable UnitPrefix defaultUnitPrefix,
+		@Nullable String defaultUnit,
+		boolean allowPercent,
+		boolean caseSensitivePrefixes,
+		boolean allowFractionalPrefixes
+	) {
+		return parseNumberWithUnit(
+			value,
+			locale,
+			mathContext,
+			0,
+			null,
+			requiredUnit,
+			defaultUnitPrefix,
+			defaultUnit,
+			allowPercent,
+			caseSensitivePrefixes,
+			allowFractionalPrefixes
+		);
+	}
+
+	/**
+	 * Attempts to parse a number and unit from a string.
+	 * <p>
+	 * The number can be in decimal or hexadecimal and normal or scientific
+	 * notation. Hexadecimal numbers can also use the "binary notation" where
+	 * the exponent is annotated with the letter {@code P}.
+	 * <p>
+	 * The unit can have a {@link UnitPrefix} that will be applied to the number
+	 * value. The unit itself can be anything as long as it starts with a
+	 * letter. The unit is optional and can be omitted. A default and a required
+	 * unit can be specified though.
+	 * <p>
+	 * If the string is {@code null} or the parsing fails, {@code null} is
+	 * returned. Otherwise, a {@link Number} and optionally a unit is parsed and
+	 * returned as a {@link Pair}.
+	 * <p>
+	 * The {@link Number} implementations that might be returned are
+	 * {@link Rational}, {@link BigInteger}, {@link Integer}, {@link Long} or
+	 * {@link Double}.
+	 *
+	 * @param value the {@link String} to convert to a {@link Number} and a
+	 *            unit.
+	 * @param locale the {@link Locale} to use for decimal numbers and case
+	 *            conversion. If {@code null}, {@code "."} is used as a decimal
+	 *            separator and {@link Locale#ROOT} is used for case conversion.
+	 * @param roundingScale the number of digits to keep after the
+	 *            decimal-separator if positive or the number of digits to
+	 *            discard before the decimal-separator if negative. Ignored if
+	 *            {@code mathContext} is non-{@code null} or
+	 *            {@code roundingMode} is {@code null}.
+	 * @param roundingMode The {@link RoundingMode} to use. Use with scale
+	 *            {@code 0} to round to an integer. Ignored if
+	 *            {@code mathContext} is non-{@code null}.
+	 * @param requiredUnit the required unit for the parsing to succeed. It the
+	 *            required unit isn't satisfied the parsing will fail and
+	 *            {@code null} will be returned. Unit comparison is
+	 *            case-insensitive.
+	 * @param defaultUnitPrefix the default {@link UnitPrefix} to use if none is
+	 *            specified.
+	 * @param defaultUnit the default unit to use if no unit is specified.
+	 * @param allowPercent {@code true} to allow {@code "%"} as a unit,
+	 *            {@code false} otherwise.
+	 * @param caseSensitivePrefixes {@code true} if unit prefix matching should
+	 *            be case sensitive. {@code "M"}, {@code "P"}, {@code "Z"} and
+	 *            {@code "Y"} are always case-sensitive if
+	 *            {@code allowFractionalPrefixes} is {@code true}.
+	 * @param allowFractionalPrefixes {@code true} if unit prefixes that reduce
+	 *            the significand is allowed, {@code false} otherwise. The unit
+	 *            prefixes this applies to is {@link UnitPrefix#DECI} to
+	 *            {@link UnitPrefix#ATTO}.
+	 * @return The {@link Pair} of a {@link Number} and a unit as a
+	 *         {@link String} or {@code null}.
+	 */
+	@Nullable
+	protected static Pair<Number, String> parseNumberWithUnit(
+		@Nullable String value,
+		@Nullable Locale locale,
+		int roundingScale,
+		@Nullable RoundingMode roundingMode,
+		@Nullable String requiredUnit,
+		@Nullable UnitPrefix defaultUnitPrefix,
+		@Nullable String defaultUnit,
+		boolean allowPercent,
+		boolean caseSensitivePrefixes,
+		boolean allowFractionalPrefixes
+	) {
+		return parseNumberWithUnit(
+			value,
+			locale,
+			null,
+			roundingScale,
+			roundingMode,
+			requiredUnit,
+			defaultUnitPrefix,
+			defaultUnit,
+			allowPercent,
+			caseSensitivePrefixes,
+			allowFractionalPrefixes
+		);
+	}
+
+	/**
+	 * Attempts to parse a number and unit from a string.
+	 * <p>
+	 * The number can be in decimal or hexadecimal and normal or scientific
+	 * notation. Hexadecimal numbers can also use the "binary notation" where
+	 * the exponent is annotated with the letter {@code P}.
+	 * <p>
+	 * The unit can have a {@link UnitPrefix} that will be applied to the number
+	 * value. The unit itself can be anything as long as it starts with a
+	 * letter. The unit is optional and can be omitted. A default and a required
+	 * unit can be specified though.
+	 * <p>
+	 * If the string is {@code null} or the parsing fails, {@code null} is
+	 * returned. Otherwise, a {@link Number} and optionally a unit is parsed and
+	 * returned as a {@link Pair}.
+	 * <p>
+	 * The {@link Number} implementations that might be returned are
+	 * {@link Rational}, {@link BigInteger}, {@link Integer}, {@link Long} or
+	 * {@link Double}.
+	 *
+	 * @param value the {@link String} to convert to a {@link Number} and a
+	 *            unit.
+	 * @param locale the {@link Locale} to use for decimal numbers and case
+	 *            conversion. If {@code null}, {@code "."} is used as a decimal
+	 *            separator and {@link Locale#ROOT} is used for case conversion.
+	 * @param mathContext the {@link MathContext} to use for rounding or
+	 *            {@code null} for no rounding. This overrides {@code scale} and
+	 *            {@code roundingMode} if non-{@code null}.
+	 * @param roundingScale the number of digits to keep after the
+	 *            decimal-separator if positive or the number of digits to
+	 *            discard before the decimal-separator if negative. Ignored if
+	 *            {@code mathContext} is non-{@code null} or
+	 *            {@code roundingMode} is {@code null}.
+	 * @param roundingMode The {@link RoundingMode} to use. Use with scale
+	 *            {@code 0} to round to an integer. Ignored if
+	 *            {@code mathContext} is non-{@code null}.
+	 * @param requiredUnit the required unit for the parsing to succeed. It the
+	 *            required unit isn't satisfied the parsing will fail and
+	 *            {@code null} will be returned. Unit comparison is
+	 *            case-insensitive.
+	 * @param defaultUnitPrefix the default {@link UnitPrefix} to use if none is
+	 *            specified.
+	 * @param defaultUnit the default unit to use if no unit is specified.
+	 * @param allowPercent {@code true} to allow {@code "%"} as a unit,
+	 *            {@code false} otherwise.
+	 * @param caseSensitivePrefixes {@code true} if unit prefix matching should
+	 *            be case sensitive. {@code "M"}, {@code "P"}, {@code "Z"} and
+	 *            {@code "Y"} are always case-sensitive if
+	 *            {@code allowFractionalPrefixes} is {@code true}.
+	 * @param allowFractionalPrefixes {@code true} if unit prefixes that reduce
+	 *            the significand is allowed, {@code false} otherwise. The unit
+	 *            prefixes this applies to is {@link UnitPrefix#DECI} to
+	 *            {@link UnitPrefix#ATTO}.
+	 * @return The {@link Pair} of a {@link Number} and a unit as a
+	 *         {@link String} or {@code null}.
+	 */
+	@Nullable
+	protected static Pair<Number, String> parseNumberWithUnit(
+		@Nullable String value,
+		@Nullable Locale locale,
+		@Nullable MathContext mathContext,
+		int roundingScale,
+		@Nullable RoundingMode roundingMode,
+		@Nullable String requiredUnit,
+		@Nullable UnitPrefix defaultUnitPrefix,
+		@Nullable String defaultUnit,
+		boolean allowPercent,
+		boolean caseSensitivePrefixes,
+		boolean allowFractionalPrefixes
+	) {
+		if (isBlank(value)) {
+			return null;
+		}
+		if (locale != null) {
+			char c = DecimalFormatSymbols.getInstance(locale).getDecimalSeparator();
+			if (c != '.' && value.indexOf(c) >= 0) {
+				value = value.replace(".", "").replace(c, '.');
+			}
+		}
+
+		Matcher matcher = NUMBER_UNIT.matcher(value);
+		if (!matcher.find()) {
+			LOGGER.warn("Unable to parse a numeric value from \"{}\"", value);
+			return null;
+		}
+
+		Locale caseLocale = locale != null ? locale : Locale.ROOT;
+		String lowerRequiredUnit = requiredUnit == null ? null : requiredUnit.toLowerCase(caseLocale);
+		String unit;
+		String lowerUnit;
+		UnitPrefix unitPrefix = null;
+		if (matcher.groupCount() < 2 || matcher.group(2) == null) {
+			// No prefix or unit specified
+			unit = defaultUnit;
+			lowerUnit = defaultUnit == null ? null : defaultUnit.toLowerCase(caseLocale);
+			unitPrefix = defaultUnitPrefix;
+		} else {
+			// Prefix and/or unit specified
+			unit = matcher.group(2);
+			if ("%".equals(unit)) {
+				if (allowPercent) {
+					Number number = parseNumber(matcher.group(1), locale, mathContext, roundingScale, roundingMode, true);
+					if (number == null) {
+						return null;
+					}
+					return new Pair<>(number, "%");
+				}
+				LOGGER.warn("Illegal unit \"%\" in \"{}\"", value);
+				return null;
+			}
+
+			if (unit.equals(requiredUnit)) {
+				Number number = parseNumber(matcher.group(1), locale, mathContext, roundingScale, roundingMode, true);
+				if (number == null) {
+					return null;
+				}
+				return new Pair<>(number, unit);
+			}
+
+			lowerUnit = unit.toLowerCase(caseLocale);
+			if (lowerUnit.equals(lowerRequiredUnit)) {
+				Number number = parseNumber(matcher.group(1), locale, mathContext, roundingScale, roundingMode, true);
+				if (number == null) {
+					return null;
+				}
+				return new Pair<>(number, unit);
+			}
+
+			String matchPrefix = caseSensitivePrefixes ? unit : lowerUnit;
+			for (UnitPrefix prefix : UnitPrefix.values()) {
+				if (!allowFractionalPrefixes && prefix.isFractional()) {
+					continue;
+				}
+				String prefixSymbol = caseSensitivePrefixes ? prefix.getSymbol() : prefix.getSymbol().toLowerCase(caseLocale);
+				boolean forceCaseSensitive =
+					!caseSensitivePrefixes &&
+					allowFractionalPrefixes && (
+						prefix == UnitPrefix.MEGA ||
+						prefix == UnitPrefix.MILLI ||
+						prefix == UnitPrefix.PICO ||
+						prefix == UnitPrefix.PETA ||
+						prefix == UnitPrefix.ZEPTO ||
+						prefix == UnitPrefix.ZETTA ||
+						prefix == UnitPrefix.YOCTO ||
+						prefix == UnitPrefix.YOTTA
+					);
+				if (
+					forceCaseSensitive && unit.startsWith(prefix.getSymbol()) ||
+					!forceCaseSensitive && matchPrefix.startsWith(prefixSymbol)
+				) {
+					unitPrefix = prefix;
+					unit = unit.substring(prefixSymbol.length());
+					lowerUnit = lowerUnit.substring(prefixSymbol.length());
+					break;
+				}
+			}
+			if (isBlank(unit)) {
+				unit = defaultUnit;
+				lowerUnit = defaultUnit == null ? null : defaultUnit.toLowerCase(caseLocale);
+			}
+		}
+
+		// Required unit
+		if (lowerRequiredUnit != null && !lowerRequiredUnit.equals(lowerUnit)) {
+			LOGGER.error("Invalid unit \"{}\" instead of \"{}\" in \"{}\"", unit, requiredUnit, value);
+			return null;
+		}
+
+		if (unitPrefix == null) {
+			// Without prefix
+			Number number = parseNumber(matcher.group(1), locale, mathContext, roundingScale, roundingMode, true);
+			if (number == null) {
+				return null;
+			}
+			return new Pair<>(number, unit);
+		}
+
+		// With prefix
+		if (!allowFractionalPrefixes && unitPrefix.isFractional()) {
+			LOGGER.error("Illegal unit prefix \"{}\". Fractional unit prefixes aren't allowed", unitPrefix);
+			return null;
+		}
+
+		Number number = parseNumber(matcher.group(1), locale, null, 0, null, false);
+		if (number == null) {
+			return null;
+		}
+		if (number instanceof Rational) {
+			number = ((Rational) number).multiply(unitPrefix.getFactorRational());
+		} else if (number instanceof BigInteger) {
+			if (unitPrefix.isAsBigIntegerValid()) {
+				number = ((BigInteger) number).multiply(unitPrefix.getFactorBigInteger());
+			} else {
+				number = Rational.valueOf((BigInteger) number).multiply(unitPrefix.getFactorRational());
+			}
+		} else {
+			throw new AssertionError("Unexpected number type " + number.getClass().getSimpleName());
+		}
+		number = parseNumber(number, null, mathContext, roundingScale, roundingMode, true);
+		return new Pair<>(number, unit);
+	}
+
+	/**
 	 * Checks if {@link BigDecimal#doubleValue()} is an exact representation of
 	 * the specified {@link BigDecimal}.
 	 *
@@ -834,30 +1184,90 @@ public class ConversionUtil {
 	 * with a 64-bit integer (long).
 	 */
 	public static enum UnitPrefix {
+
+		/**  */
 		KIBI(1L << 10, "Ki"),
+
+		/**  */
 		MEBI(1L << 20, "Mi"),
+
+		/**  */
 		GIBI(1L << 30, "Gi"),
+
+		/**  */
 		TEBI(1L << 40, "Ti"),
+
+		/**  */
 		PEBI(1L << 50, "Pi"),
+
+		/**  */
 		EXBI(1L << 60, "Ei"),
+
+		/**  */
 		ZEBI(BigInteger.valueOf(1024).pow(7), "Zi"),
+
+		/**  */
 		YOBI(BigInteger.valueOf(1024).pow(8), "Yi"),
+
+		/** The SI unit prefix yocto */
+		YOCTO(Rational.TEN.pow(-24), "y"),
+
+		/** The SI unit prefix zepto */
+		ZEPTO(Rational.TEN.pow(-21), "z"),
+
+		/** The SI unit prefix atto */
 		ATTO(Rational.TEN.pow(-18), "a"),
+
+		/** The SI unit prefix femto */
 		FEMTO(Rational.TEN.pow(-15), "f"),
+
+		/** The SI unit prefix pico */
 		PICO(Rational.TEN.pow(-12), "p"),
+
+		/** The SI unit prefix nano */
 		NANO(Rational.TEN.pow(-9), "n"),
+
+		/** The SI unit prefix micro */
 		MICRO(Rational.TEN.pow(-6), "μ"),
+
+		/** The SI unit prefix milli */
 		MILLI(Rational.TEN.pow(-3), "m"),
+
+		/** The SI unit prefix centi */
 		CENTI(Rational.TEN.pow(-2), "c"),
+
+		/** The SI unit prefix deci */
 		DECI(Rational.TEN.pow(-1), "d"),
+
+		/** The SI unit prefix deca */
 		DECA(10L, "da"),
+
+		/** The SI unit prefix hecto */
 		HECTO(100L, "h"),
+
+		/** The SI unit prefix kilo */
 		KILO(1000L, "k"),
+
+		/** The SI unit prefix mega */
 		MEGA(1000000L, "M"),
+
+		/** The SI unit prefix giga */
 		GIGA(1000000000L, "G"),
+
+		/** The SI unit prefix tera */
 		TERA(1000000000000L, "T"),
+
+		/** The SI unit prefix peta */
 		PETA(1000000000000000L, "P"),
-		EXA(1000000000000000000L, "E");
+
+		/** The SI unit prefix exa */
+		EXA(1000000000000000000L, "E"),
+
+		/** The SI unit prefix zetta */
+		ZETTA(BigInteger.TEN.pow(21), "Z"),
+
+		/** The SI unit prefix yotta */
+		YOTTA(BigInteger.TEN.pow(24), "Y");
 
 		private final long factorL;
 		private final BigInteger factorBI;
