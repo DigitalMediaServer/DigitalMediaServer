@@ -1690,6 +1690,23 @@
 			<build>
 				<plugins>
 					<plugin>
+						<groupId>com.github.gino0631</groupId>
+						<artifactId>pkg-maven-plugin</artifactId>
+						<version>1.2-SNAPSHOT</version>
+						<executions>
+							<execution>
+								<id>create-macosx-pkg</id>
+								<phase>package</phase>
+								<goals>
+									<goal>product</goal>
+								</goals>
+								<configuration>
+									<root>${project.build.directory}/dms-0.0.2-SNAPSHOT</root>
+								</configuration>
+							</execution>
+						</executions>
+					</plugin>
+					<!--plugin>
 						<groupId>sh.tak.appbundler</groupId>
 						<artifactId>appbundle-maven-plugin</artifactId>
 						<version>${appbundle-maven-plugin-version}</version>
@@ -1702,11 +1719,11 @@
 							<dictionaryFile>resources/Info.plist</dictionaryFile>
 							<javaLauncherName />
 							<iconFile>src/main/resources/images/logo.icns</iconFile>
-							<includeApplicationsSymlink>true</includeApplicationsSymlink>
+							<includeApplicationsSymlink>true</includeApplicationsSymlink-->
 							<!-- Option need for use the Shaded JAR. Need 1.2.1-SNAPSHOT
 							<excludeDependencies>true</excludeDependencies>-->
-							<bundleName>${project.name.short}</bundleName>
-							<jvmVersion>1.7+</jvmVersion>
+							<!--bundleName>${project.name.short}</bundleName>
+							<jvmVersion>1.7+</jvmVersion-->
 								<!--
 								<jvmOption>-XaddExports:java.desktop/com.apple.eawt=ALL-UNNAMED</jvmOption>
 								<jvmOption>-Dprol.stack.depth=512m</jvmOption>
@@ -1714,7 +1731,7 @@
 								<key>StartOnMainThread</key><true/>
 								
 								-->
-							<jvmOptions>
+							<!--jvmOptions>
 								<jvmOption>-Xmx768M</jvmOption>
 								<jvmOption>-Xss16M</jvmOption>
 								<jvmOption>-Dapple.laf.useScreenMenuBar=true</jvmOption>
@@ -1726,9 +1743,9 @@
 								<jvmOption>-XX:+IgnoreUnrecognizedVMOptions</jvmOption>
 							</jvmOptions>
 							<additionalResources />
-							<additionalClasspath />
+							<additionalClasspath /-->
 							<!-- Add resources to the app file -->
-							<additionalBundledClasspathResources>
+							<!--additionalBundledClasspathResources>
 								<fileSet>
 									<directory>target</directory>
 									<includes>
@@ -1780,7 +1797,7 @@
 								</goals>
 							</execution>
 							<execution>
-								<id>MakeDMGwithJRE</id>
+								<id>MakeDMGwithJRE</id-->
 								<!-- Provide JRE when target environment doesn't have it
 									https://ymasory.github.io/OrangeExtensions/
 									https://java.com/en/download/help/mac_install.xml
@@ -1795,9 +1812,9 @@
 									<goal>bundle</goal>
 								</goals>
 								-->
-							</execution>
+							<!--/execution>
 						</executions>
-					</plugin>
+					</plugin-->
 				</plugins>
 			</build>
 		</profile>
@@ -1866,7 +1883,7 @@
 										<!-- Make sure the target folder exists -->
 										<mkdir dir="${project.build.directory}/${project.artifactId}-${project.version}" />
 										<!-- Create the shortcut to the Applications folder -->
-										<exec executable="/usr/bin/osascript">
+										<!--exec executable="/usr/bin/osascript">
 											<arg value="-e" />
 											<arg value="tell application &quot;Finder&quot;" />
 											<arg value="-e" />
@@ -1877,7 +1894,7 @@
 											<arg value="make new alias file to folder src at folder dest" />
 											<arg value="-e" />
 											<arg value="end tell" />
-										</exec>
+										</exec-->
 									</target>
 								</configuration>
 							</execution>
