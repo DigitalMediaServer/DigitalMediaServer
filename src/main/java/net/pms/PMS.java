@@ -1327,7 +1327,7 @@ public class PMS {
 		);
 		LOGGER.info(
 			"Maximum JVM Memory: {}",
-			jvmMemory == Long.MAX_VALUE ? "Unlimited" : StringUtil.formatBytes(jvmMemory, true)
+			jvmMemory == Long.MAX_VALUE ? "Unlimited" : ConversionUtil.formatBytes(jvmMemory, true)
 		);
 		LOGGER.info("Language: {}", WordUtils.capitalize(PMS.getLocale().getDisplayName(Locale.ENGLISH)));
 		LOGGER.info("Encoding: {}", System.getProperty("file.encoding"));
