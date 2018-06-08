@@ -1926,16 +1926,95 @@
 						<artifactId>maven-antrun-plugin</artifactId>
 						<executions>
 							<execution>
-								<id>create-dir-macos</id>
+								<id>prepare-binaries-pkg</id>
+								<phase>prepare-package</phase>
+								<goals>
+									<goal>run</goal>
+								</goals>
+								<configuration>
+									<target name="download-osx-binaries">
+										<taskdef resource="net/sf/antcontrib/antlib.xml" classpathref="maven.plugin.classpath"/>
+										<if>
+											<not>
+												<available file="${project.basedir}/bin/osx" type="dir"/>
+											</not>
+											<then>
+												<mkdir dir="${project.binaries}"/>
+												<mkdir dir="${project.binaries}/osx"/>
+												<get src="${project.binaries-base}/osx/dcraw" dest="${project.binaries}/osx/dcraw"/>
+												<get src="${project.binaries-base}/osx/ffmpeg" dest="${project.binaries}/osx/ffmpeg"/>
+												<get src="${project.binaries-base}/osx/flac" dest="${project.binaries}/osx/flac"/>
+												<get src="${project.binaries-base}/osx/libmediainfo.dylib" dest="${project.binaries}/osx/libmediainfo.dylib"/>
+												<get src="${project.binaries-base}/MediaInfo-License.html" dest="${project.binaries}/osx/MediaInfo-License.html"/>
+												<get src="${project.binaries-base}/osx/mencoder" dest="${project.binaries}/osx/mencoder"/>
+												<get src="${project.binaries-base}/osx/mplayer" dest="${project.binaries}/osx/mplayer"/>
+												<get src="${project.binaries-base}/osx/tsMuxeR-new" dest="${project.binaries}/osx/tsMuxeR"/>
+											</then>
+										</if>
+									</target>
+								</configuration>
+							</execution>
+							<execution>
+								<id>package-app</id>
 								<phase>prepare-package</phase>
 								<goals>
 									<goal>run</goal>
 								</goals>
 								<configuration>
 									<target>
-										<mkdir dir="${project.build.directory}/macosx-pkg"/>
-										<chmod dir="${project.build.directory}/macosx-pkg" type="dir" perm="0755"/>
+										<!-- TODO: target/macOS-pkg folder should be cleaned first -->
+										<mkdir dir="${project.build.directory}/macOS-pkg/Applications/${project.name}.app"/>
+										<chmod dir="${project.build.directory}/macOS-pkg/Applications/${project.name}.app" type="dir" perm="0755"/>
+										<!--                                                       -->
+										<taskdef name="bundleapp" classname="com.oracle.appbundler.AppBundlerTask"
+											classpath="${project.external-resources}/lib/appbundler-1.4.jar"/>
+										<bundleapp outputdirectory="${project.build.directory}/macOS-pkg/Applications"
+													name="${project.name}"
+													displayname="${project.name}"
+													executableName="${project.name.short}"
+													identifier="${project.mainclass}"
+													version="${project.version}"
+													icon="${project.basedir}/src/main/resources/images/logo.icns"
+													applicationCategory="public.app-category.entertainment"
+													workingdirectory="$APP_ROOT/Contents/Resources"
+													mainclassname="${project.mainclass}">
+											<classpath file="${project.build.directory}/${project.artifactId}.jar"/>
+											<option value="-Xmx768M"/>
+											<option value="-Xss16M"/>
+											<option value="-Dfile.encoding=UTF-8"/>
+											<option value="-Djava.net.preferIPv4Stack=true"/>
+											<option value="-Xdock:icon=Contents/Resources/logo.icns"/>
+											<option value="-Xdock:name=${project.name}"/>
+											<option value="-Djna.nosys=true"/>
+										</bundleapp>
 									</target>
+								</configuration>
+							</execution>
+						</executions>
+					</plugin>
+					<plugin>
+						<artifactId>maven-assembly-plugin</artifactId>
+						<version>${maven-assembly-plugin-version}</version>
+						<executions>
+							<execution>
+								<id>make-assembly-macos</id>
+								<phase>package</phase>
+								<goals>
+									<goal>single</goal>
+								</goals>
+								<configuration>
+									<appendAssemblyId>false</appendAssemblyId>
+									<finalName>macOS-pkg</finalName>
+									<attach>false</attach>
+									<descriptors>
+										<descriptor>${project.basedir}/src/main/assembly/assembly-macos.xml</descriptor>
+									</descriptors>
+									<archive>
+										<manifest>
+											<mainClass>${project.mainclass}</mainClass>
+											<addDefaultImplementationEntries>true</addDefaultImplementationEntries>
+										</manifest>
+									</archive>
 								</configuration>
 							</execution>
 						</executions>
@@ -1943,7 +2022,7 @@
 					<plugin>
 						<groupId>com.github.gino0631</groupId>
 						<artifactId>pkg-maven-plugin</artifactId>
-						<version>1.1</version>
+						<version>1.2-SNAPSHOT</version>
 						<executions>
 							<execution>
 								<id>create-macosx-pkg</id>
@@ -1952,7 +2031,7 @@
 									<goal>product</goal>
 								</goals>
 								<configuration>
-									<root>${project.build.directory}/macosx-pkg</root>
+									<root>${project.build.directory}/macOS-pkg</root>
 									<outputFile>${project.name.short}-${project.version}.pkg</outputFile>
 									<packageIdentifier>${project.groupId}.${project.artifactId}.pkg</packageIdentifier>
 									<packageVersion>${project.version}</packageVersion>
@@ -1974,8 +2053,8 @@
 												</resource>
 											</resources>
 										</license>
-										<readme>${project.basedir}/src/main/external-resources/readme.rtf</readme>
-										<conclusion>${project.basedir}/src/main/external-resources/conclusion.rtf</conclusion>
+										<!--readme>${project.basedir}/src/main/external-resources/readme.rtf</readme>
+										<conclusion>${project.basedir}/src/main/external-resources/conclusion.rtf</conclusion-->
 									</distribution>
 									<permissionSets>
 										<permissionSet>
@@ -1986,13 +2065,13 @@
 											<fileMode>0755</fileMode>
 										</permissionSet>
 									</permissionSets>
-									<signing>
+									<!--signing>
 										<keystore>${project.build.directory}/dms.p12</keystore>
 										<storetype>PKCS12</storetype>
 										<storepass>${project.name.camel}</storepass>
 										<tsa>http://timestamp.apple.com/ts01</tsa>
 										<skip>true</skip>
-									</signing>
+									</signing-->
 								</configuration>
 							</execution>
 						</executions>
@@ -2015,7 +2094,7 @@
 										<fileset>
 											<directory>${project.build.directory}</directory>
 											<includes>
-												<include>macosx-pkg/**</include>
+												<include>macOS-pkg/**</include>
 											</includes>
 										</fileset>
 									</filesets>
@@ -2287,7 +2366,7 @@
 								<configuration>
 									<target>
 										<taskdef name="bundleapp" classname="com.oracle.appbundler.AppBundlerTask"
-											classpath="${project.external-resources}/lib/appbundler-1.3.${project.name.short}.jar"/>
+											classpath="${project.external-resources}/lib/appbundler-1.4.jar"/>
 										<bundleapp outputdirectory="${project.build.directory}/${project.name.camel}-app"
 													name="${project.name}"
 													displayname="${project.name}"
