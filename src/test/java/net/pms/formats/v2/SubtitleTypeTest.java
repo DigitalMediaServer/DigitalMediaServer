@@ -38,6 +38,7 @@ public class SubtitleTypeTest {
 		assertThat(valueOfFileExtension("vtt")).isEqualTo(WEBVTT);
 		assertThat(valueOfFileExtension("sup")).isEqualTo(PGS);
 		assertThat(valueOfFileExtension("pgs")).isEqualTo(PGS);
+		assertThat(valueOfFileExtension("ttml")).isEqualTo(TTML);
 	}
 
 	@Test
@@ -80,6 +81,7 @@ public class SubtitleTypeTest {
 		assertThat(valueOfLibMediaInfoCodec("Kate")).isEqualTo(KATE);
 		assertThat(valueOfLibMediaInfoCodec("Teletext")).isEqualTo(TELETEXT);
 		assertThat(valueOfLibMediaInfoCodec("Teletext Subtitle")).isEqualTo(TELETEXT);
+		assertThat(valueOfLibMediaInfoCodec("TTML")).isEqualTo(TTML);
 	}
 
 	@Test
@@ -104,6 +106,7 @@ public class SubtitleTypeTest {
 		assertThat(EIA708.getDescription()).isEqualTo("EIA-708");
 		assertThat(KATE.getDescription()).isEqualTo("Kate");
 		assertThat(TELETEXT.getDescription()).isEqualTo("Teletext");
+		assertThat(TTML.getDescription()).isEqualTo("TTML");
 	}
 
 	@Test
@@ -118,6 +121,7 @@ public class SubtitleTypeTest {
 		assertThat(UNSUPPORTED.getExtension()).isEqualTo("");
 		assertThat(WEBVTT.getExtension()).isEqualTo("vtt");
 		assertThat(PGS.getExtension()).isEqualTo("sup");
+		assertThat(TTML.getExtension()).isEqualTo("dfxp");
 	}
 
 	@Test
@@ -169,7 +173,7 @@ public class SubtitleTypeTest {
 
 	@Test
 	public void getSupportedFileExtensions() {
-		Set<String> expectedExtensionsSet = new HashSet<>(Arrays.asList("srt", "txt", "sub", "smi", "ssa", "ass", "idx", "vtt", "sup", "pgs"));
+		Set<String> expectedExtensionsSet = new HashSet<>(Arrays.asList("srt", "txt", "sub", "smi", "ssa", "ass", "idx", "vtt", "sup", "pgs", "ttml", "dfxp"));
 		assertThat(SubtitleType.getSupportedFileExtensions()).isEqualTo(expectedExtensionsSet);
 	}
 
@@ -195,6 +199,7 @@ public class SubtitleTypeTest {
 		assertThat(EIA708.getStableIndex()).isEqualTo(17);
 		assertThat(KATE.getStableIndex()).isEqualTo(18);
 		assertThat(TELETEXT.getStableIndex()).isEqualTo(19);
+		assertThat(TTML.getStableIndex()).isEqualTo(20);
 	}
 
 	@Test
@@ -228,6 +233,7 @@ public class SubtitleTypeTest {
 		assertThat(valueOfStableIndex(17)).isEqualTo(EIA708);
 		assertThat(valueOfStableIndex(18)).isEqualTo(KATE);
 		assertThat(valueOfStableIndex(19)).isEqualTo(TELETEXT);
+		assertThat(valueOfStableIndex(20)).isEqualTo(TTML);
 	}
 
 	@Test
