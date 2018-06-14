@@ -43,7 +43,7 @@ public enum SubtitleType {
 	MICRODVD    (3,  "MicroDVD",              list("sub"),          list(),                                                           SubtitleCategory.TEXT),
 	SAMI        (4,  "SAMI",                  list("smi"),          list(),                                                           SubtitleCategory.TEXT),
 	ASS         (5,  "ASS/SSA",               list("ass", "ssa"),   list("S_TEXT/SSA", "S_TEXT/ASS", "S_SSA", "S_ASS", "SSA", "ASS"), SubtitleCategory.TEXT),
-	VOBSUB      (6,  "VobSub",                list("idx"),          list("S_VOBSUB", "subp", "mp4s", "E0", "RLE"),                    SubtitleCategory.PICTURE), // TODO: (Nad) "RLE" may also apply to other formats
+	VOBSUB      (6,  "VobSub",                list("idx"),          list("S_VOBSUB", "subp", "mp4s", "E0", "RLE"),                    SubtitleCategory.PICTURE),
 	UNSUPPORTED (7,  "Unsupported",           list(),               list(),                                                           SubtitleCategory.UNDEFINED),
 	USF         (8,  "USF",                   list(),               list("S_TEXT/USF", "S_USF", "USF"),                               SubtitleCategory.TEXT),
 	BMP         (9,  "Bitmap",                list(),               list("S_IMAGE/BMP"),                                              SubtitleCategory.PICTURE),
