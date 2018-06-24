@@ -1,4 +1,4 @@
-﻿; Java Launcher with automatic JRE installation
+﻿; Java Launcher
 ; Use javaw.exe to avoid DOS box or java.exe to keep stdout/stderr
 ;------------------------------------------------------------------
 

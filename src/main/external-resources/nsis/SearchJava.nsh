@@ -114,22 +114,34 @@ Function findJava
 		${EndIf}
 		IntOp $5 $5 + 1
 		${IfNot} ${RunningX64}
-			IntCmpU $5 2 pass2 0 pass2
+			IntCmpU $5 4 pass2 0 pass2
 		${EndIf}
 		${If} $5 == 1
 			StrCpy $2 "SOFTWARE\JavaSoft\JRE"
 			Goto keyLoop
 		${EndIf}
+		${If} $5 == 2
+			StrCpy $2 "SOFTWARE\JavaSoft\Java Development Kit"
+			Goto keyLoop
+		${EndIf}
+		${If} $5 == 3
+			StrCpy $2 "SOFTWARE\JavaSoft\JDK"
+			Goto keyLoop
+		${EndIf}
 		${If} ${RunningX64}
 		${AndIf} $R8 == ""
 			StrCmp $R7 "" 0 end
-			StrCmp $5 2 0 +2
+			StrCmp $5 4 0 +2
 			StrCpy $2 "SOFTWARE\Wow6432Node\JavaSoft\Java Runtime Environment"
-			StrCmp $5 3 0 +2
+			StrCmp $5 5 0 +2
 			StrCpy $2 "SOFTWARE\Wow6432Node\JavaSoft\JRE"
-			IntCmpU $5 2 0 +2 0
+			StrCmp $5 6 0 +2
+			StrCpy $2 "SOFTWARE\Wow6432Node\JavaSoft\Java Development Kit"
+			StrCmp $5 7 0 +2
+			StrCpy $2 "SOFTWARE\Wow6432Node\JavaSoft\JDK"
+			IntCmpU $5 4 0 +2 0
 			StrCpy $Java64bit "32"; 32-bit JVM on a 64-bit OS
-			IntCmpU $5 5 0 keyLoop 0
+			IntCmpU $5 8 0 keyLoop 0
 		${EndIf}
 
 	pass2: ; Check the environment variables
@@ -192,21 +204,29 @@ Function findJava
 	end:
 		; Final Java selection that will fit best
 		StrCmp $JavaLocation "" 0 done
-		StrCpy $5 "1"
+		IntCmpU $5 7 0 jre 0
 		${If} $R8 != ""
-			StrCpy $JavaLocation "$R8\bin\javaw.exe"
-			IfFileExists $JavaLocation done
-			StrCpy $5 "0"
+			StrCpy $R8 "$R8\jre"
+		${ElseIf} $R7 != ""
+			StrCpy $R7 "$R7\jre"
 		${EndIf}
-		${If} $5 == "0"
-		${OrIf} $R8 == ""
-			StrCmp $R7 "" +3
-			StrCpy $JavaLocation "$R7\bin\javaw.exe"
+
+		jre:
+			StrCpy $5 "1"
+			${If} $R8 != ""
+				StrCpy $JavaLocation "$R8\bin\javaw.exe"
+				IfFileExists $JavaLocation done
+				StrCpy $5 "0"
+			${EndIf}
+			${If} $5 == "0"
+			${OrIf} $R8 == ""
+				StrCmp $R7 "" +3
+				StrCpy $JavaLocation "$R7\bin\javaw.exe"
+				IfFileExists $JavaLocation done
+			${EndIf}
+			IntCmpU $4 16 nothingFound 0 nothingFound
+			StrCpy $JavaLocation "$R9\bin\javaw.exe"
 			IfFileExists $JavaLocation done
-		${EndIf}
-		IntCmpU $4 16 nothingFound 0 nothingFound
-		StrCpy $JavaLocation "$R9\bin\javaw.exe"
-		IfFileExists $JavaLocation done
 
 	nothingFound:
 		StrCpy $DownloadJava "1"
