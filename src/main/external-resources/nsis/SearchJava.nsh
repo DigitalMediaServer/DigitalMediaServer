@@ -242,25 +242,28 @@ Function JavaInPath
 	ClearErrors
 	${GetFileVersion} $R9 $FileVersion
 
-	${WordFind} "$FileVersion" "8.0." "E+1}" $R0
+	${WordFind} "$FileVersion" "8." "E+1{" $R0
 	IfErrors 0 +3
 	StrCpy $R0 ""
 	Goto seven
+	StrCmp $R0 "" 0 seven
 	StrCpy $R4 $R9 ; For Java 8
 	Goto end
 
 	seven:
-		${WordFind} "$FileVersion" "7.0." "E+1}" $R0
+		${WordFind} "$FileVersion" "7." "E+1{" $R0
 		IfErrors 0 +3
 		StrCpy $R0 ""
 		Goto nine
+		StrCmp $R0 "" 0 nine
 		StrCpy $R3 $R9 ; For Java 7
 		Goto end
 
 	nine:
 		${For} $R1 9 15
-			${WordFind} "$FileVersion" "$R1${U+002E}0." "E+1}" $R0
-			IfErrors +3
+			${WordFind} "$FileVersion" "$R1${U+002E}" "E+1{" $R0
+			IfErrors +4
+			StrCmp $R0 "" 0 +3
 			StrCpy $R5 $R9 ; For Java 9 and above
 			${Break}
 			StrCpy $R0 ""
@@ -295,25 +298,28 @@ Function JavaHomeParsing
 		StrCpy $Java64bit "32" ; 32-bit JVM on a 64-bit OS
 	${EndIf}
 
-	${WordFind} "$FileVersion" "8.0." "E+1}" $R0
+	${WordFind} "$FileVersion" "8." "E+1{" $R0
 	IfErrors 0 +3
 	StrCpy $R0 ""
 	Goto seven
+	StrCmp $R0 "" 0 seven
 	StrCpy $JavaLocation $R9 ; For Java 8
 	Goto end
 
 	seven:
-		${WordFind} "$FileVersion" "7.0." "E+1}" $R0
+		${WordFind} "$FileVersion" "7." "E+1{" $R0
 		IfErrors 0 +3
 		StrCpy $R0 ""
 		Goto nine
+		StrCmp $R0 "" 0 nine
 		StrCpy $JavaLocation $R9 ; For Java 7
 		Goto end
 
 	nine:
 		${For} $R1 9 15
-			${WordFind} "$FileVersion" "$R1${U+002E}0." "E+1}" $R0
-			IfErrors +3
+			${WordFind} "$FileVersion" "$R1${U+002E}" "E+1{" $R0
+			IfErrors +4
+			StrCmp $R0 "" 0 +3
 			StrCpy $JavaLocation $R9 ; For Java 9 and above
 			${Break}
 			StrCpy $R0 ""
