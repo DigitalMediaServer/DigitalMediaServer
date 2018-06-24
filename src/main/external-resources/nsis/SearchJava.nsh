@@ -119,12 +119,10 @@ Function findJava
 		${If} $5 == 1
 			StrCpy $2 "SOFTWARE\JavaSoft\JRE"
 			Goto keyLoop
-		${EndIf}
-		${If} $5 == 2
+		${ElseIf} $5 == 2
 			StrCpy $2 "SOFTWARE\JavaSoft\Java Development Kit"
 			Goto keyLoop
-		${EndIf}
-		${If} $5 == 3
+		${ElseIf} $5 == 3
 			StrCpy $2 "SOFTWARE\JavaSoft\JDK"
 			Goto keyLoop
 		${EndIf}
@@ -204,6 +202,7 @@ Function findJava
 	end:
 		; Final Java selection that will fit best
 		StrCmp $JavaLocation "" 0 done
+		; For JDK 7/8 case
 		IntCmpU $5 7 0 jre 0
 		${If} $R8 != ""
 			StrCpy $R8 "$R8\jre"
