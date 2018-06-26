@@ -1126,17 +1126,50 @@
 
 		<!-- System's MakeNSIS profile -->
 		<profile>
-			<!-- https://packages.debian.org/sid/nsis -->
-			<id>system-makensis</id>
+			<id>makensis-macOS</id>
+			<activation>
+				<os>
+					<family>mac</family>
+				</os>
+			</activation>
+			<properties>
+				<makensis-bin>makensis</makensis-bin>
+			</properties>
+		</profile>
+
+		<profile>
+			<id>makensis-Linux</id>
 			<activation>
 				<os>
 					<family>unix</family>
 				</os>
 			</activation>
-
 			<properties>
-				<makensis-bin>makensis</makensis-bin>
+				<makensis-bin>${project.external-resources}/third-party/nsis/makensis</makensis-bin>
 			</properties>
+
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-antrun-plugin</artifactId>
+						<executions>
+							<execution>
+								<id>executable-permission-nsis</id>
+								<phase>prepare-package</phase>
+								<goals>
+									<goal>run</goal>
+								</goals>
+								<configuration>
+									<target name="executable-permission-nsis">
+										<chmod dir="${project.external-resources}/third-party/nsis" perm="a+rx" includes="**/*.exe, **/*.dll, Stubs/*, **/*.bin, makensis"/>
+									</target>
+								</configuration>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
 		</profile>
 
 		<!-- Windows EXE profile -->
@@ -1157,13 +1190,13 @@
 						<artifactId>maven-antrun-plugin</artifactId>
 						<executions>
 							<execution>
-								<id>download-binaries-windows</id>
+								<id>download-binaries-Windows</id>
 								<phase>prepare-package</phase>
 								<goals>
 									<goal>run</goal>
 								</goals>
 								<configuration>
-									<target name="download-windows-binaries">
+									<target name="download-Windows-binaries">
 										<taskdef resource="net/sf/antcontrib/antlib.xml" classpathref="maven.plugin.classpath" />
 										<if>
 											<not>
@@ -1229,6 +1262,18 @@
 									</target>
 								</configuration>
 							</execution>
+							<execution>
+								<id>auto-clean-Windows</id>
+								<phase>pre-integration-test</phase>
+								<goals>
+									<goal>run</goal>
+								</goals>
+								<configuration>
+									<target name="clean-Windows">
+										<delete file="${project.build.directory}/${project.name.short}.exe"  failonerror="false" quiet="true"/>
+									</target>
+								</configuration>
+							</execution>
 						</executions>
 					</plugin>
 					<plugin>
@@ -1237,7 +1282,7 @@
 						<version>1.0-alpha-1</version>
 						<executions>
 							<execution>
-								<id>build-dms-windows</id>
+								<id>build-DMS-Windows</id>
 								<configuration>
 									<makensisBin>${makensis-bin}</makensisBin>
 									<outputFile>${project.name.short}.exe</outputFile>
@@ -1250,7 +1295,7 @@
 								</goals>
 							</execution>
 							<execution>
-								<id>build-setup-windows</id>
+								<id>build-setup-Windows</id>
 								<configuration>
 									<makensisBin>${makensis-bin}</makensisBin>
 									<outputFile>${project.name.short}-setup.exe</outputFile>
@@ -1309,13 +1354,13 @@
 								</configuration>
 							</execution>
 							<execution>
-								<id>auto-clean-tgz</id>
+								<id>auto-clean-TGZ</id>
 								<phase>pre-integration-test</phase>
 								<goals>
 									<goal>run</goal>
 								</goals>
 								<configuration>
-									<target name="clean-tgz">
+									<target name="clean-TGZ">
 										<delete dir="${project.build.directory}/${project.name}-${project.version}" includeemptydirs="true" failonerror="false" quiet="true"/>
 									</target>
 								</configuration>
@@ -1405,13 +1450,13 @@
 								</configuration>
 							</execution>
 							<execution>
-								<id>auto-clean-deb</id>
+								<id>auto-clean-DEB</id>
 								<phase>pre-integration-test</phase>
 								<goals>
 									<goal>run</goal>
 								</goals>
 								<configuration>
-									<target name="clean-deb">
+									<target name="clean-DEB">
 										<delete dir="${project.build.directory}/control" includeemptydirs="true" failonerror="false" quiet="true"/>
 									</target>
 								</configuration>
@@ -1804,13 +1849,13 @@
 								</configuration>
 							</execution>
 							<execution>
-								<id>auto-clean-arch</id>
+								<id>auto-clean-Arch</id>
 								<phase>pre-integration-test</phase>
 								<goals>
 									<goal>run</goal>
 								</goals>
 								<configuration>
-									<target name="clean-arch">
+									<target name="clean-Arch">
 										<delete dir="${project.build.directory}/archlinux" includeemptydirs="true" failonerror="false" quiet="true"/>
 										<delete file="${project.build.directory}/install" includeemptydirs="true" failonerror="false" quiet="true"/>
 									</target>
@@ -1899,7 +1944,7 @@
 						<artifactId>maven-antrun-plugin</artifactId>
 						<executions>
 							<execution>
-								<id>download-files-pkg</id>
+								<id>download-files-PKG</id>
 								<phase>prepare-package</phase>
 								<goals>
 									<goal>run</goal>
@@ -1927,7 +1972,7 @@
 								</configuration>
 							</execution>
 							<execution>
-								<id>prepare-files-pkg</id>
+								<id>prepare-files-PKG</id>
 								<phase>prepare-package</phase>
 								<goals>
 									<goal>run</goal>
@@ -1968,13 +2013,13 @@
 								</configuration>
 							</execution>
 							<execution>
-								<id>auto-clean-pkg</id>
+								<id>auto-clean-PKG</id>
 								<phase>pre-integration-test</phase>
 								<goals>
 									<goal>run</goal>
 								</goals>
 								<configuration>
-									<target name="clean-pkg">
+									<target name="clean-PKG">
 										<delete dir="${project.build.directory}/macOS-pkg" includeemptydirs="true" failonerror="false" quiet="true"/>
 										<delete dir="${project.build.directory}/pkg-flat" includeemptydirs="true" failonerror="false" quiet="true"/>
 									</target>
@@ -2009,7 +2054,7 @@
 						<version>1.2-SNAPSHOT</version>
 						<executions>
 							<execution>
-								<id>create-macos-pkg</id>
+								<id>create-macOS-PKG</id>
 								<phase>package</phase>
 								<goals>
 									<goal>product</goal>
@@ -2090,7 +2135,7 @@
 						<artifactId>maven-antrun-plugin</artifactId>
 						<executions>
 							<execution>
-								<id>download-binaries-dmg</id>
+								<id>download-binaries-DMG</id>
 								<phase>prepare-package</phase>
 								<goals>
 									<goal>run</goal>
@@ -2132,7 +2177,7 @@
 								</configuration>
 							</execution>
 							<execution>
-								<id>create-symlink-dmg</id>
+								<id>create-symlink-DMG</id>
 								<phase>prepare-package</phase>
 								<goals>
 									<goal>run</goal>
@@ -2146,13 +2191,13 @@
 								</configuration>
 							</execution>
 							<execution>
-								<id>auto-clean-dmg</id>
+								<id>auto-clean-DMG</id>
 								<phase>pre-integration-test</phase>
 								<goals>
 									<goal>run</goal>
 								</goals>
 								<configuration>
-									<target name="clean-dmg">
+									<target name="clean-DMG">
 										<delete dir="${project.build.directory}/${project.name.camel}-app" includeemptydirs="true" defaultexcludes="false" failonerror="false" quiet="true"/>
 									</target>
 								</configuration>
@@ -2164,7 +2209,7 @@
 						<version>${maven-assembly-plugin-version}</version>
 						<executions>
 							<execution>
-								<id>make-assembly-dmg</id>
+								<id>make-assembly-DMG</id>
 								<phase>package</phase>
 								<goals>
 									<goal>single</goal>
