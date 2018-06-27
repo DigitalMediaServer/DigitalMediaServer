@@ -111,12 +111,11 @@
 		-->
 		<jna-version>4.4.0</jna-version>
 
-		<!--
-			 use the Windows makensis.exe for Windows builds unless
-			 the system makensis is explicitly selected via the
-			 system-makensis profile
-		 -->
-		<makensis-bin>${project.external-resources}/third-party/nsis/makensis.exe</makensis-bin>
+		<!-- Workaround for Maven bug http://issues.apache.org/jira/browse/MNG-4979 -->
+		<nsis.compress>auto</nsis.compress>
+		<nsis.compression>lzma</nsis.compression>
+		<nsis.compression.lzma.dictsize>32</nsis.compression.lzma.dictsize>
+		<nsis.compression.final>true</nsis.compression.final>
 	</properties>
 	<pluginRepositories>
 		<pluginRepository>
@@ -570,18 +569,6 @@
 				<!-- Filter to replace Maven properties -->
 				<filtering>true</filtering>
 			</resource>
-
-			<!-- 3) package filtered NSIS header files -->
-			<resource>
-				<directory>src/main/external-resources/nsis</directory>
-				<includes>
-					<include>extra.nsh</include>
-				</includes>
-
-				<!-- Filter to replace Maven properties -->
-				<filtering>true</filtering>
-				<targetPath>..</targetPath>
-			</resource>
 		</resources>
 		<testResources>
 			<testResource>
@@ -985,17 +972,6 @@
 	</reporting>
 
 	<profiles>
-		<profile>
-			<id>system-makensis</id>
-			<activation>
-				<activeByDefault>false</activeByDefault>
-			</activation>
-
-			<properties>
-				<!-- if selected, use the system makensis on Linux, Mac OS X &c. -->
-				<makensis-bin>makensis</makensis-bin>
-			</properties>
-		</profile>
 
 		<!--
 			Windows profile: takes care of building the final package for Microsoft Windows
@@ -1155,40 +1131,55 @@
 
 					<!--
 						Plugin to build a Windows installer using the nullsoft scriptable install system (NSIS)
-						The "generate-project" goal generates a file "target/project.nsh", which contains the
+						The "generate-headerfile" goal generates a file "target/project.nsh", which contains the
 						definitions for project variables like "${PROJECT_BASEDIR}" that can be used in the
 						"dms.nsi" and "setup.nsi" files.
 					-->
 					<plugin>
-						<groupId>org.codehaus.mojo</groupId>
+						<groupId>org.digitalmediaserver</groupId>
 						<artifactId>nsis-maven-plugin</artifactId>
-						<version>1.0-SNAPSHOT</version>
+						<version>1.0.5</version>
+						<configuration>
+							<makensisExecutable>${project.external-resources}/third-party/nsis/Bin/makensis.exe</makensisExecutable>
+							<makensisExecutableLinux>${project.external-resources}/third-party/nsis/Bin/makensisLinux</makensisExecutableLinux>
+							<makensisExecutableMacOS>${project.external-resources}/third-party/nsis/Bin/makensisMacOS</makensisExecutableMacOS>
+							<defines>
+								<PROJECT_BINARIES>${project.binaries}</PROJECT_BINARIES>
+								<PROJECT_NAME_SHORT>${project.name.short}</PROJECT_NAME_SHORT>
+								<PROJECT_NAME_CAMEL>${project.name.camel}</PROJECT_NAME_CAMEL>
+								<PROJECT_VERSION_SHORT>${project.version.short}</PROJECT_VERSION_SHORT>
+							</defines>
+						</configuration>
 						<executions>
 							<execution>
-								<id>build-dms-windows</id>
+								<id>build-windows-launcher</id>
 								<configuration>
-									<makensisBin>${makensis-bin}</makensisBin>
-									<outputFile>${project.build.directory}/${project.name.short}.exe</outputFile>
-									<setupScript>${project.external-resources}/nsis/dms.nsi</setupScript>
+									<scriptFile>${project.external-resources}/nsis/${project.artifactId}.nsi</scriptFile>
+									<outputFile>${project.name.short}.exe</outputFile>
+									<compress>auto</compress>
+									<compression>lzma</compression>
+									<compressionIsFinal>true</compressionIsFinal>
+									<compressionDictSize>32</compressionDictSize>
+									<attachArtifact>false</attachArtifact>
 								</configuration>
-								<phase>package</phase>
 								<goals>
-									<goal>generate-project</goal>
-									<goal>compile</goal>
+									<goal>generate-headerfile</goal>
+									<goal>make</goal>
 								</goals>
 							</execution>
 
 							<execution>
-								<id>build-setup-windows</id>
+								<id>build-windows-installer</id>
 								<configuration>
-									<makensisBin>${makensis-bin}</makensisBin>
-									<outputFile>${project.build.directory}/${project.name.short}-setup.exe</outputFile>
-									<setupScript>${project.external-resources}/nsis/setup.nsi</setupScript>
+									<scriptFile>${project.external-resources}/nsis/setup.nsi</scriptFile>
+									<outputFile>${project.name.short}-${project.version}-setup.exe</outputFile>
+									<compress>${nsis.compress}</compress>
+									<compression>${nsis.compression}</compression>
+									<compressionIsFinal>${nsis.compression.final}</compressionIsFinal>
+									<compressionDictSize>${nsis.compression.lzma.dictsize}</compressionDictSize>
 								</configuration>
-								<phase>package</phase>
 								<goals>
-									<goal>generate-project</goal>
-									<goal>compile</goal>
+									<goal>make</goal>
 								</goals>
 							</execution>
 						</executions>
