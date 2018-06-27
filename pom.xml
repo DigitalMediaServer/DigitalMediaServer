@@ -1135,7 +1135,8 @@
 			</activation>
 
 			<properties>
-				<makensis-bin>makensis</makensis-bin>
+				<!--makensis-bin>makensis</makensis-bin-->
+                                <makensis-bin>${project.external-resources}/third-party/nsis/Bin/makensis</makensis-bin>
 			</properties>
 		</profile>
 
