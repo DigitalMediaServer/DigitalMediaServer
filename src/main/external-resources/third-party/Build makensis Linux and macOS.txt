@@ -1,0 +1,3 @@
+Install Python and SCons. Navigate to the NSIS source folder and run:
+
+scons SKIPSTUBS=all SKIPPLUGINS=all SKIPUTILS=all SKIPMISC=all NSIS_CONFIG_CONST_DATA_PATH=no NSIS_CONFIG_LOG=yes UNICODE=yes PREFIX=# install-compiler
