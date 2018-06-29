@@ -190,9 +190,7 @@ Section "!$(SectionServer)" sec1
 	; Store install folder
 	WriteRegStr HKCU "${REG_KEY_SOFTWARE}" "" "$INSTDIR"
 
-	;Workaround until Crowdin support $\r$\n special characters
-	${WordReplace} "$(CannotOpen)" "%%" "$\r$\n" "+" $0
-	WriteRegStr HKCU "${REG_KEY_UNINSTALL}" "CannotOpen" "$0"
+	WriteRegStr HKCU "${REG_KEY_UNINSTALL}" "CannotOpen" "$(CannotOpen)"
 
 	; Create uninstaller
 	WriteRegStr HKLM "${REG_KEY_UNINSTALL}" "DisplayName" "${PROJECT_NAME}"
@@ -246,7 +244,7 @@ Section /o "-XP" sec13
 	File /r "${PROJECT_BASEDIR}\src\main\external-resources\lib\winxp"
 SectionEnd
 
-Section /o $(SectionRemovePrevious) sec5
+Section /o $(SectionCleanInstall) sec5
 SectionEnd
 
 Section /o $(SectionWindowsFirewall) sec2
@@ -372,7 +370,7 @@ SectionEnd
 !insertmacro MUI_FUNCTION_DESCRIPTION_BEGIN
 	!insertmacro MUI_DESCRIPTION_TEXT ${sec1} $(SectionDescriptionServer)
 	!insertmacro MUI_DESCRIPTION_TEXT ${sec7} $(SectionDescriptionShortcuts)
-	!insertmacro MUI_DESCRIPTION_TEXT ${sec5} $(SectionDescriptionRemovePrevious)
+	!insertmacro MUI_DESCRIPTION_TEXT ${sec5} $(SectionDescriptionCleanInstall)
 	!insertmacro MUI_DESCRIPTION_TEXT ${sec2} $(SectionDescriptionWindowsFirewall)
 	!insertmacro MUI_DESCRIPTION_TEXT ${sec3} $(SectionDescriptionInstallJava)
 	!insertmacro MUI_DESCRIPTION_TEXT ${sec4} $(SectionDescriptionHeapSize)
@@ -708,7 +706,7 @@ FunctionEnd
 Section /o "-un.RemoveDataAndSettings" sec100
 SectionEnd
 
-Section "un.$(SectionUninstallStandard)" sec101
+Section "un.${PROJECT_NAME}" sec101
 	SectionIn RO
 	SetShellVarContext all
 	ReadEnvStr $R0 "ALLUSERSPROFILE"
