@@ -1,5 +1,5 @@
 # Digital Media Server
-[![Build Status](https://travis-ci.org/DigitalMediaServer/DigitalMediaServer.svg?branch=master)](https://travis-ci.org/DigitalMediaServer/DigitalMediaServer) [![Dependency Status](https://www.versioneye.com/user/projects/56c7b9b218b2710494d799f7/badge.svg?style=flat-square)](https://www.versioneye.com/user/projects/56c7b9b218b2710494d799f7)
+[![Build Status](https://travis-ci.org/DigitalMediaServer/DigitalMediaServer.svg?branch=master)](https://travis-ci.org/DigitalMediaServer/DigitalMediaServer) ![GitHub contributors](https://img.shields.io/github/contributors/digitalmediaserver/digitalmediaserver.svg?colorB=3a04ff) ![GitHub top language](https://img.shields.io/github/languages/top/digitalmediaserver/digitalmediaserver.svg?colorB=7855ff)
 
 <img align="right" src="https://github.com/DigitalMediaServer/DigitalMediaServer/blob/master/src/main/resources/images/logo.png?raw=true" alt="Digital Media Server" width="256" height="auto"/> Digital Media Server is a DLNA compatible UPnP AV Media Server. It is capable of sharing digital video, audio and image resources to UPnP AV and DLNA capable devices. It is based on PS3 Media Server by shagrath and Universal Media Server.
 
