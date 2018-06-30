@@ -631,16 +631,59 @@
 				<plugin>
 					<groupId>org.digitalmediaserver</groupId>
 					<artifactId>crowdin-maven-plugin</artifactId>
-					<version>0.4.1</version>
+					<version>1.1.0</version>
 					<configuration>
-						<project>${project}</project>
-						<languageFilesFolder>${project.basedir}/src/main/resources/i18n</languageFilesFolder>
 						<downloadFolder>${project.basedir}/extras/crowdin</downloadFolder>
-						<statusFile>${project.basedir}/src/main/resources/languages.properties</statusFile>
 						<crowdinServerId>crowdin-dms</crowdinServerId>
-						<pushFileName>messages.properties</pushFileName>
-						<pushFileTitle>Digital Media Server</pushFileTitle>
 						<projectName>Digital Media Server</projectName>
+						<updateOption>update_as_unapproved</updateOption>
+						<lineSeparator>\n</lineSeparator>
+						<translationFileSets>
+							<translationFileSet>
+								<title>Digital Media Server</title>
+								<baseFileName>messages.properties</baseFileName>
+								<languageFilesFolder>${project.basedir}/src/main/resources/i18n</languageFilesFolder>
+								<fileNameWhenExported>messages_%locale_with_underscore%.properties</fileNameWhenExported>
+								<targetFileName>messages_%crowdin_code_with_underscore%.properties</targetFileName>
+								<updateOption>update_as_unapproved</updateOption>
+								<conversions>
+									<conversion><from>es-ES</from><to>es</to></conversion>
+									<conversion><from>he</from><to>iw</to></conversion>
+									<conversion><from>pt-PT</from><to>pt</to></conversion>
+									<conversion><from>sv-SE</from><to>sv</to></conversion>
+									<conversion><from>zh-CN</from><to>zh-Hans</to></conversion>
+									<conversion><from>zh-TW</from><to>zh-Hant</to></conversion>
+								</conversions>
+							</translationFileSet>
+							<translationFileSet>
+								<title>Windows installer</title>
+								<baseFileName>setup_en.nsh</baseFileName>
+								<languageFilesFolder>${project.basedir}/src/main/external-resources/nsis/I18N</languageFilesFolder>
+								<fileNameWhenExported>setup_%osx_locale%.nsh</fileNameWhenExported>
+								<updateOption>update_as_unapproved</updateOption>
+								<excludes>
+									<exclude>setup_bn.nsh</exclude>
+									<exclude>setup_ceb.nsh</exclude>
+									<exclude>setup_en_GB.nsh</exclude>
+									<exclude>setup_fil.nsh</exclude>
+									<exclude>setup_pcm.nsh</exclude>
+									<exclude>setup_tl.nsh</exclude>
+								</excludes>
+							</translationFileSet>
+						</translationFileSets>
+						<statusFiles>
+							<statusFile>
+								<conversions>
+									<conversion><from>es-ES</from><to>es</to></conversion>
+									<conversion><from>he</from><to>iw</to></conversion>
+									<conversion><from>pt-PT</from><to>pt</to></conversion>
+									<conversion><from>sv-SE</from><to>sv</to></conversion>
+									<conversion><from>zh-CN</from><to>zh-Hans</to></conversion>
+									<conversion><from>zh-TW</from><to>zh-Hant</to></conversion>
+								</conversions>
+								<targetFile>${project.basedir}/src/main/resources/languages.properties</targetFile>
+							</statusFile>
+						</statusFiles>
 					</configuration>
 				</plugin>
 
@@ -700,14 +743,15 @@
 											crowdin-maven-plugin
 										</artifactId>
 										<versionRange>
-											[0.1,)
+											[1.1.0,)
 										</versionRange>
 										<goals>
 											<goal>fetch</goal>
 											<goal>push</goal>
 											<goal>build</goal>
-											<goal>apply</goal>
+											<goal>deploy</goal>
 											<goal>pull</goal>
+											<goal>clean</goal>
 										</goals>
 									</pluginExecutionFilter>
 									<action>
