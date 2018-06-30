@@ -1,3 +1,6 @@
+# This file has been generated automatically, modifications will be overwritten. If you'd like to change the content, please do so at Crowdin.
+
+${LangFileString} CannotOpen ""
 ${LangFileString} DownloadingFile "فایل در حال دانلود:"
 ${LangFileString} Downloaded "دانلود شده:"
 ${LangFileString} TimeRemaining "زمان باقی‌مانده:"
@@ -14,14 +17,17 @@ ${LangFileString} ServiceStopError "توقف سرویس Digital Media Server ن�
 ${LangFileString} ServiceUninstallError "پاک کرد Digital Media Server ناموفق بود"
 ${LangFileString} SectionServer "سرور رسانه"
 ${LangFileString} SectionShortcuts "میانبر منوی شروع"
-${LangFileString} SectionRemovePrevious "حذف تنظیمات قبلی"
+${LangFileString} SectionCleanInstall ""
 ${LangFileString} SectionWindowsFirewall "قوانین فایروال ویندوز"
 ${LangFileString} SectionDownloadJava ""
 ${LangFileString} SectionHeapSize "انتخاب حداکثر اندازه برای پشته جاوا"
-${LangFileString} SectionDescriptionServer "فایل های اصلی Digital Media Server را نصب می‌کند."
-${LangFileString} SectionDescriptionShortcuts "میانبر منوی اصلی را برای Digital Media Server می سازد."
-${LangFileString} SectionDescriptionRemovePrevious "تمام فایل هایی که در پوشه نصب و پیکربندی وجود دارد را پاک می کند."
-${LangFileString} SectionDescriptionWindowsFirewall "قوانین فایروال را بر روی فایروال ویندوز نصب می کند تا Digital Media Server بتواند با دیگر دستگاه ها همگام شود."
-${LangFileString} SectionDescriptionInstallJava "آخرین نسخه از اوراکل جاوا 8 را دانلود و نصب می کند. به این کار برای استفاده از Digital Media Server نیاز دارید مگر اینکه نسخه ای سازگار از جاوا را نصب داشته باشید."
-${LangFileString} SectionDescriptionHeapSize "بیشترین میزان مموری را برای استفاده‌ی Digital Media Server تنظیم میکند. انتخاب پیشفرض برای نصب استاندارد پیشنهاد می شود."
-${LangFileString} SectionDescriptionAviSynth "AviSynth 2.6.0 MT را برای استفاده از تبدیل کننده کدها نصب می کند. Avisynth می تواند در کنار بقیه InterFrame را فعال کرده تا با افزایش فریم ریت، ویدئو را روان تر اجرا کند."
+${LangFileString} SectionDescriptionServer ""
+${LangFileString} SectionDescriptionShortcuts ""
+${LangFileString} SectionDescriptionCleanInstall ""
+${LangFileString} SectionDescriptionWindowsFirewall ""
+${LangFileString} SectionDescriptionInstallJava ""
+${LangFileString} SectionDescriptionHeapSize ""
+${LangFileString} SectionDescriptionAviSynth ""
+${LangFileString} SectionUninstallComplete ""
+${LangFileString} SectionDescriptionCompleteUninstall ""
+${LangFileString} SectionDescriptionStandardUninstall ""
