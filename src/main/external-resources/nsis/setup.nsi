@@ -93,9 +93,9 @@ InstallDirRegKey HKCU "${REG_KEY_SOFTWARE}" ""
 !insertmacro MUI_PAGE_FINISH
 
 !define MUI_UNABORTWARNING
+!define MUI_WELCOMEPAGE_TITLE_3LINES
 !define MUI_UNWELCOMEFINISHPAGE_BITMAP_STRETCH AspectFitHeight
 !define MUI_PAGE_CUSTOMFUNCTION_SHOW "un.showHiDPI"
-!define MUI_UNWELCOMEPAGE_TITLE_3LINES
 !insertmacro MUI_UNPAGE_WELCOME
 !define MUI_CUSTOMFUNCTION_UNONMOUSEOVERSECTION un.hideRequiredSize
 !define MUI_UNCOMPONENTSPAGE
@@ -104,7 +104,7 @@ InstallDirRegKey HKCU "${REG_KEY_SOFTWARE}" ""
 !insertmacro MUI_UNPAGE_COMPONENTS
 !insertmacro MUI_UNPAGE_INSTFILES
 !define MUI_PAGE_CUSTOMFUNCTION_SHOW "un.showHiDPI"
-!define MUI_UNFINISHPAGE_TITLE_3LINES
+!define MUI_FINISHPAGE_TITLE_3LINES
 !define MUI_UNFINISHPAGE_NOAUTOCLOSE
 !insertmacro MUI_UNPAGE_FINISH
 
@@ -399,6 +399,8 @@ Function .onSelChange
 	SectionGetFlags ${sec5} $1
 	${If} $1 != 0
 		SectionSetFlags ${sec0} ${SF_SELECTED}
+	${Else}
+		SectionSetFlags ${sec0} ${SECTION_OFF}
 	${EndIf}
 
 	; Heap memory size section group radio buttons
@@ -868,6 +870,8 @@ Function un.onSelChange
 	SectionGetFlags ${sec102} $1
 	${If} $1 != 0
 		SectionSetFlags ${sec100} ${SF_SELECTED}
+	${Else}
+		SectionSetFlags ${sec100} ${SECTION_OFF}
 	${EndIf}
 FunctionEnd
 
