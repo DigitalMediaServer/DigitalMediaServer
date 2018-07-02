@@ -65,6 +65,8 @@ ManifestSupportedOS all ; Left here to remember to add GUI ID in case Windows 11
 !define MUI_WELCOMEPAGE_TITLE_3LINES
 !define MUI_PAGE_CUSTOMFUNCTION_SHOW showHiDPI
 !insertmacro MUI_PAGE_WELCOME
+!define MUI_LICENSEPAGE_TEXT_TOP " "
+!insertmacro MUI_PAGE_LICENSE "${PROJECT_BASEDIR}\EULA.rtf"
 !define MUI_COMPONENTSPAGE
 !define MUI_COMPONENTSPAGE_SMALLDESC
 !define MUI_COMPONENTSPAGE_TEXT_TOP " "
@@ -159,6 +161,7 @@ Section "!$(SectionServer)" sectionServer
 	File /r "${PROJECT_BASEDIR}\src\main\external-resources\web"
 	File "${PROJECT_BUILD_DIR}\${PROJECT_ARTIFACT_ID}.jar"
 	File /nonfatal "${PROJECT_BASEDIR}\CHANGELOG.txt"
+	File "${PROJECT_BASEDIR}\EULA.rtf"
 	File "${PROJECT_BASEDIR}\README.*"
 	File "${PROJECT_BASEDIR}\LICENSE.txt"
 	File "${PROJECT_BASEDIR}\src\main\external-resources\logba*.xml"
