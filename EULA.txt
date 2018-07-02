@@ -1,0 +1,37 @@
+﻿Digital Media Server End User Licence Agreement
+Copyleft (ↄ) 2016 - 2018 Digital Media Server.
+
+1. This End User Licence Agreement ("EULA") is a legal agreement
+    between you (either an individual or an entity) (hereinafter "You")
+    and copyleft holders and contributors relating to Your installation
+    and use of the Digital Media Server software (the "Software").
+
+    By installing, copying, or otherwise using the Software, You agree
+    to be bound by the terms of this EULA. If You do not agree to the 
+    terms of this EULA, do not install, copy or use the Software.
+
+2. Permission is granted to You to use this Software, to copy it and
+    redistribute it freely, subject to the following restrictions:
+
+    a. The origin of the Software must not be misrepresented;
+        You must not claim that You wrote the Software.
+    b. This notice may not be removed or altered from redistributions.
+
+3. The licence terms in this EULA do not apply to bundled software.
+
+THIS SOFTWARE IS PROVIDED BY COPYRIGHT HOLDERS AND
+CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED 
+WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS 
+FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO 
+EVENT SHALL THE COPYRIGHT HOLDERS OR CONTRIBUTORS 
+BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, 
+SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES 
+(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF 
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED 
+AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
+STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR 
+OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH 
+DAMAGE.

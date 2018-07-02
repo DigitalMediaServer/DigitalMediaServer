@@ -69,6 +69,8 @@ InstallDirRegKey HKCU "${REG_KEY_SOFTWARE}" ""
 !define MUI_WELCOMEPAGE_TITLE_3LINES
 !define MUI_PAGE_CUSTOMFUNCTION_SHOW showHiDPI
 !insertmacro MUI_PAGE_WELCOME
+!define MUI_LICENSEPAGE_TEXT_TOP " "
+!insertmacro MUI_PAGE_LICENSE "${PROJECT_BASEDIR}\EULA.rtf"
 !define MUI_COMPONENTSPAGE
 !define MUI_COMPONENTSPAGE_SMALLDESC
 !define MUI_COMPONENTSPAGE_TEXT_TOP " "
@@ -399,8 +401,6 @@ Function .onSelChange
 	SectionGetFlags ${sec5} $1
 	${If} $1 != 0
 		SectionSetFlags ${sec0} ${SF_SELECTED}
-	${Else}
-		SectionSetFlags ${sec0} ${SECTION_OFF}
 	${EndIf}
 
 	; Heap memory size section group radio buttons
