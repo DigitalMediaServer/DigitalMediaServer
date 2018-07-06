@@ -715,7 +715,7 @@
 							incompatible JNA native library that could be installed on this system (like JNA 3.2.7)
 						-->
 						<shutdown>kill</shutdown>
-						<!--<forkCount>1.5C</forkCount>-->
+						<forkCount>1.5C</forkCount>
 						<reuseForks>true</reuseForks>
 						<!--
 							Only one argLine element is processed.
@@ -1568,7 +1568,7 @@
 					<plugin>
 						<groupId>de.dentrassi.maven</groupId>
 						<artifactId>rpm</artifactId>
-						<version>0.10.2</version>
+						<version>1.0.0</version>
 						<executions>
 							<execution>
 								<goals>
@@ -1580,10 +1580,15 @@
 							<attach>false</attach>
 							<group>Application/Internet</group>
 							<license>GPLv2+</license>
-							<skipSigning>true</skipSigning>
+							<signature>
+								<keyId/>
++								<keyringFile/>
++								<passphrase/>
+								<hashAlgorithm>SHA256</hashAlgorithm>
+								<skip>true</skip>
+							</signature>
 							<!--
 								Currently it is created by default with "-arch.rpm" suffix, but the  convention is to use ".arch.rpm" so it will fail to install on some distributions.
-
 							-->
 							<outputFileName>${project.artifactId}-${project.version}.noarch.rpm</outputFileName>
 							<leadOverrideArchitecture/>
@@ -1595,6 +1600,16 @@
 								-->
 								<require>java &gt;= 1.7</require>
 							</requires>
+							<suggests>
+								<suggest>mencoder</suggest>
+								<suggest>tsmuxer</suggest>
+								<suggest>vlc &gt;= 3.0.0</suggest>
+							</suggests>
+							<recommends>
+								<recommend>dcraw</recommend>
+								<recommend>ffmpeg</recommend>
+								<recommend>mediainfo</recommend>
+							</recommends>
 							<rulesets>
 								<ruleset>
 									<id>default-settings</id>
@@ -1704,52 +1719,33 @@
 								<entry>
 									<name>/usr/lib/${project.artifactId}/${project.artifactId}.sh</name>
 									<file>${project.external-resources}/${project.artifactId}.sh</file>
-									<ruleset>default-settings</ruleset>
 									<mode>0755</mode>
 								</entry>
 								<entry>
-									<name>/usr/lib/${project.artifactId}/logback.xml</name>
-									<file>${project.external-resources}/logback.xml</file>
-									<ruleset>default-settings</ruleset>
-								</entry>
-								<entry>
-									<name>/usr/lib/${project.artifactId}/logback.headless.xml</name>
-									<file>${project.external-resources}/logback.headless.xml</file>
-									<ruleset>default-settings</ruleset>
-								</entry>
-								<entry>
-									<name>/usr/lib/${project.artifactId}/DummyInput.jpg</name>
-									<file>${project.external-resources}/DummyInput.jpg</file>
-									<ruleset>default-settings</ruleset>
-								</entry>
-								<entry>
-									<name>/usr/lib/${project.artifactId}/DummyInput.ass</name>
-									<file>${project.external-resources}/DummyInput.ass</file>
+									<name>/usr/lib/${project.artifactId}</name>
+									<collect>
+										<from>${project.external-resources}</from>
+										<includes>
+											<include>*.xml</include>
+											<include>DummyInput.*</include>
+										</includes>
+									</collect>
 									<ruleset>default-settings</ruleset>
 								</entry>
 								<entry>
 									<name>/usr/lib/${project.artifactId}/${project.artifactId}.jar</name>
 									<file>${project.build.directory}/${project.artifactId}.jar</file>
-									<ruleset>default-settings</ruleset>
+									<mode>0755</mode>
 								</entry>
 								<entry>
-									<name>${project.skelprofile.dir}${project.name.camel}/WEB.conf</name>
-									<file>${project.external-resources}/WEB.conf</file>
-									<ruleset>default-settings</ruleset>
-								</entry>
-								<entry>
-									<name>${project.skelprofile.dir}${project.name.camel}/${project.name.short}.conf</name>
-									<file>${project.external-resources}/${project.name.short}.conf</file>
-									<ruleset>default-settings</ruleset>
-								</entry>
-								<entry>
-									<name>${project.skelprofile.dir}${project.name.camel}/VirtualFolders.conf</name>
-									<file>${project.external-resources}/VirtualFolders.conf</file>
-									<ruleset>default-settings</ruleset>
-								</entry>
-								<entry>
-									<name>${project.skelprofile.dir}${project.name.camel}/ffmpeg.webfilters</name>
-									<file>${project.external-resources}/ffmpeg.webfilters</file>
+									<name>${project.skelprofile.dir}${project.name.camel}</name>
+									<collect>
+										<from>${project.external-resources}</from>
+										<includes>
+											<include>*.conf</include>
+											<include>*.webfilters</include>
+										</includes>
+									</collect>
 									<ruleset>default-settings</ruleset>
 								</entry>
 								<entry>
