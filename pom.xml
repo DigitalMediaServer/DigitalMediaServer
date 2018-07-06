@@ -1258,7 +1258,7 @@
 									<makensisBin>${makensis-bin}</makensisBin>
 									<makeFolder>${project.external-resources}/third-party/nsis</makeFolder>
 									<outputFile>${project.name.short}-setup.exe</outputFile>
-									<scriptFile>>${project.external-resources}/nsis/setup.nsi</scriptFile>
+									<scriptFile>${project.external-resources}/nsis/setup.nsi</scriptFile>
 									<!--scriptFile>src/main/external-resources/nsis/setup.nsi</scriptFile-->
 								</configuration>
 								<phase>package</phase>
