@@ -715,7 +715,7 @@
 							incompatible JNA native library that could be installed on this system (like JNA 3.2.7)
 						-->
 						<shutdown>kill</shutdown>
-						<forkCount>1.5C</forkCount>
+						<!--<forkCount>1.5C</forkCount>-->
 						<reuseForks>true</reuseForks>
 						<!--
 							Only one argLine element is processed.
@@ -1200,63 +1200,29 @@
 										<taskdef resource="net/sf/antcontrib/antlib.xml" classpathref="maven.plugin.classpath" />
 										<if>
 											<not>
-												<available file="${project.basedir}/bin/win32" type="dir"/>
+												<available file="${project.binaries}/win32" type="dir"/>
 											</not>
 											<then>
-												<mkdir dir="${project.binaries}/win32/avisynth"/>
-												<mkdir dir="${project.binaries}/win32/codecs"/>
-												<mkdir dir="${project.binaries}/win32/fonts/conf.avail"/>
-												<mkdir dir="${project.binaries}/win32/fonts/conf.d"/>
-												<mkdir dir="${project.binaries}/win32/interframe" />
-												<mkdir dir="${project.binaries}/win32/mplayer"/>
-												<mkdir dir="${project.binaries}/win32/service"/>
+												<mkdir dir="${project.binaries}/win32"/>
+												<get src="https://dl.bintray.com/sami32/Testing/win32.zip" dest="${project.binaries}/win32" verbose="false" quiet="true"/>
+												<unzip src="${project.binaries}/win32/win32.zip" dest="${project.binaries}/win32">
+													<patternset>
+														<include name="**/**"/>
+													</patternset>
+												</unzip>
+												<delete file="${project.binaries}/win32/win32.zip"/>
 												<get src="${project.binaries-base}/MediaInfo.dll?p=${binary-revision}" dest="${project.binaries}/win32/MediaInfo.dll"  verbose="false"/>
 												<get src="${project.binaries-base}/MediaInfo64.dll?p=${binary-revision}" dest="${project.binaries}/win32/MediaInfo64.dll" verbose="false"/>
-												<get src="${project.binaries-base}/MediaInfo-License.html?p=${binary-revision}" dest="${project.binaries}/win32/MediaInfo-License.html" verbose="false"/>
-												<get src="${project.binaries-base}/win32/LICENSE-dsnative.txt?p=${binary-revision}" dest="${project.binaries}/win32/LICENSE-dsnative.txt" verbose="false"/>
-												<get src="${project.binaries-base}/win32/LICENSE-mplayer.txt?p=${binary-revision}" dest="${project.binaries}/win32/LICENSE-mplayer.txt" verbose="false"/>
-												<get src="${project.binaries-base}/win32/builds.txt?p=${binary-revision}" dest="${project.binaries}/win32/builds.txt" verbose="false"/>
+												<get src="https://raw.githubusercontent.com/MediaArea/MediaInfoLib/master/License.html" dest="${project.binaries}/win32/MediaInfo-License.html" ignoreerrors="true" verbose="false"/>
 												<get src="${project.binaries-base}/win32/dcrawMS.exe?p=${binary-revision}" dest="${project.binaries}/win32/dcrawMS.exe" verbose="false"/>
-												<get src="${project.binaries-base}/win32/ffmpeg.exe?p=${binary-revision}" dest="${project.binaries}/win32/ffmpeg.exe" verbose="false"/>
+												<get src="http://abechin.sakura.ne.jp/sblo_files/k-tai-douga/ffmpeg/ffmpeg_bin_legacy-91330.zip" dest="${project.binaries}/win32" verbose="false" quiet="true"/>
+												<unzip src="${project.binaries}/win32/ffmpeg_bin_legacy-91330.zip" dest="${project.binaries}/win32">
+													<patternset>
+														<include name="ffmpeg.exe"/>
+													</patternset>
+												</unzip>
+												<delete file="${project.binaries}/win32/ffmpeg_bin_legacy-91330.zip"/>
 												<get src="${project.binaries-base}/win32/ffmpeg64.exe?p=${binary-revision}" dest="${project.binaries}/win32/ffmpeg64.exe" verbose="false"/>
-												<get src="${project.binaries-base}/win32/flac.exe?p=${binary-revision}" dest="${project.binaries}/win32/flac.exe" verbose="false"/>
-												<get src="${project.binaries-base}/win32/mencoder.exe?p=${binary-revision}" dest="${project.binaries}/win32/mencoder.exe" verbose="false"/>
-												<get src="${project.binaries-base}/win32/mplayer.exe?p=${binary-revision}" dest="${project.binaries}/win32/mplayer.exe"  verbose="false"/>
-												<get src="${project.binaries-base}/win32/tsMuxeR-new.exe?p=${binary-revision}" dest="${project.binaries}/win32/tsMuxeR.exe" verbose="false"/>
-												<get src="${project.binaries-base}/win32/vcomp100.dll?p=${binary-revision}" dest="${project.binaries}/win32/vcomp100.dll" verbose="false"/>
-												<get src="${project.binaries-base}/win32/avisynth/avisynth.exe?p=${binary-revision}" dest="${project.binaries}/win32/avisynth/avisynth.exe" verbose="false"/>
-												<get src="${project.binaries-base}/win32/codecs/drv33260.dll?p=${binary-revision}" dest="${project.binaries}/win32/codecs/drv33260.dll" verbose="false"/>
-												<get src="${project.binaries-base}/win32/codecs/drv43260.dll?p=${binary-revision}" dest="${project.binaries}/win32/codecs/drv43260.dll" verbose="false"/>
-												<get src="${project.binaries-base}/win32/codecs/drvc.dll?p=${binary-revision}" dest="${project.binaries}/win32/codecs/drvc.dll" verbose="false"/>
-												<get src="${project.binaries-base}/win32/codecs/pncrt.dll?p=${binary-revision}" dest="${project.binaries}/win32/codecs/pncrt.dll" verbose="false"/>
-												<get src="${project.binaries-base}/win32/codecs/sipr3260.dll?p=${binary-revision}" dest="${project.binaries}/win32/codecs/sipr3260.dll" verbose="false"/>
-												<get src="${project.binaries-base}/win32/codecs/tokr3260.dll?p=${binary-revision}" dest="${project.binaries}/win32/codecs/tokr3260.dll"  />
-												<get src="${project.binaries-base}/win32/codecs/wma9dmod.dll?p=${binary-revision}" dest="${project.binaries}/win32/codecs/wma9dmod.dll" verbose="false"/>
-												<get src="${project.binaries-base}/win32/codecs/wmv9dmod.dll?p=${binary-revision}" dest="${project.binaries}/win32/codecs/wmv9dmod.dll"  />
-												<get src="${project.binaries-base}/win32/codecs/wmvdmod.dll?p=${binary-revision}" dest="${project.binaries}/win32/codecs/wmvdmod.dll" verbose="false"/>
-												<get src="${project.binaries-base}/win32/fonts/fonts.conf?p=${binary-revision}" dest="${project.binaries}/win32/fonts/fonts.conf" verbose="false"/>
-												<get src="${project.binaries-base}/win32/fonts/conf.d/10-scale-bitmap-fonts.conf?p=${binary-revision}" dest="${project.binaries}/win32/fonts/conf.d/10-scale-bitmap-fonts.conf" verbose="false"/>
-												<get src="${project.binaries-base}/win32/fonts/conf.d/20-unhint-small-vera.conf?p=${binary-revision}" dest="${project.binaries}/win32/fonts/conf.d/20-unhint-small-vera.conf" verbose="false"/>
-												<get src="${project.binaries-base}/win32/fonts/conf.d/30-metric-aliases.conf?p=${binary-revision}" dest="${project.binaries}/win32/fonts/conf.d/30-metric-aliases.conf"  />
-												<get src="${project.binaries-base}/win32/fonts/conf.d/30-urw-aliases.conf?p=${binary-revision}" dest="${project.binaries}/win32/fonts/conf.d/30-urw-aliases.conf" verbose="false"/>
-												<get src="${project.binaries-base}/win32/fonts/conf.d/40-nonlatin.conf?p=${binary-revision}" dest="${project.binaries}/win32/fonts/conf.d/40-nonlatin.conf" verbose="false"/>
-												<get src="${project.binaries-base}/win32/fonts/conf.d/45-latin.conf?p=${binary-revision}" dest="${project.binaries}/win32/fonts/conf.d/45-latin.conf" verbose="false"/>
-												<get src="${project.binaries-base}/win32/fonts/conf.d/49-sansserif.conf?p=${binary-revision}" dest="${project.binaries}/win32/fonts/conf.d/49-sansserif.conf" verbose="false"/>
-												<get src="${project.binaries-base}/win32/fonts/conf.d/50-user.conf?p=${binary-revision}" dest="${project.binaries}/win32/fonts/conf.d/50-user.conf" verbose="false"/>
-												<get src="${project.binaries-base}/win32/fonts/conf.d/51-local.conf?p=${binary-revision}" dest="${project.binaries}/win32/fonts/conf.d/51-local.conf" verbose="false"/>
-												<get src="${project.binaries-base}/win32/fonts/conf.d/60-latin.conf?p=${binary-revision}" dest="${project.binaries}/win32/fonts/conf.d/60-latin.conf" verbose="false"/>
-												<get src="${project.binaries-base}/win32/fonts/conf.d/65-fonts-persian.conf?p=${binary-revision}" dest="${project.binaries}/win32/fonts/conf.d/65-fonts-persian.conf" verbose="false"/>
-												<get src="${project.binaries-base}/win32/fonts/conf.d/65-nonlatin.conf?p=${binary-revision}" dest="${project.binaries}/win32/fonts/conf.d/65-nonlatin.conf" verbose="false"/>
-												<get src="${project.binaries-base}/win32/fonts/conf.d/69-unifont.conf?p=${binary-revision}" dest="${project.binaries}/win32/fonts/conf.d/69-unifont.conf" verbose="false"/>
-												<get src="${project.binaries-base}/win32/fonts/conf.d/80-delicious.conf?p=${binary-revision}" dest="${project.binaries}/win32/fonts/conf.d/80-delicious.conf" verbose="false"/>
-												<get src="${project.binaries-base}/win32/fonts/conf.d/90-synthetic.conf?p=${binary-revision}" dest="${project.binaries}/win32/fonts/conf.d/90-synthetic.conf" verbose="false"/>
-												<get src="${project.binaries-base}/win32/fonts/conf.d/README?p=${binary-revision}" dest="${project.binaries}/win32/fonts/conf.d/README" verbose="false"/>
-												<get src="${project.binaries-base}/win32/interframe/InterFrame2.avsi?p=${binary-revision}" dest="${project.binaries}/win32/interframe/InterFrame2.avsi" verbose="false"/>
-												<get src="${project.binaries-base}/win32/interframe/svpflow1.dll?p=${binary-revision}" dest="${project.binaries}/win32/interframe/svpflow1.dll" verbose="false"/>
-												<get src="${project.binaries-base}/win32/interframe/svpflow2.dll?p=${binary-revision}" dest="${project.binaries}/win32/interframe/svpflow2.dll" verbose="false"/>
-												<get src="${project.binaries-base}/win32/mplayer/config?p=${binary-revision}" dest="${project.binaries}/win32/mplayer/config" verbose="false"/>
-												<get src="${project.binaries-base}/win32/mplayer/input.conf?p=${binary-revision}" dest="${project.binaries}/win32/mplayer/input.conf" verbose="false"/>
-												<get src="${project.binaries-base}/win32/mplayer/subfont.ttf?p=${binary-revision}" dest="${project.binaries}/win32/mplayer/subfont.ttf" verbose="false"/>
 											</then>
 										</if>
 									</target>
