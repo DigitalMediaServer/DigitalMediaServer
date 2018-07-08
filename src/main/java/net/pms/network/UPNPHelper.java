@@ -36,7 +36,7 @@ import net.pms.util.BasicPlayer;
 import net.pms.util.StringUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.text.StringEscapeUtils;
-import org.fourthline.cling.model.meta.Device;
+import org.jupnp.model.meta.Device;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -18,26 +18,26 @@ import net.pms.dlna.protocolinfo.PanasonicDmpProfiles;
 import net.pms.util.BasicPlayer;
 import net.pms.util.StringUtil;
 import org.apache.commons.lang3.StringUtils;
-import org.fourthline.cling.DefaultUpnpServiceConfiguration;
-import org.fourthline.cling.UpnpService;
-import org.fourthline.cling.UpnpServiceImpl;
-import org.fourthline.cling.controlpoint.ActionCallback;
-import org.fourthline.cling.controlpoint.SubscriptionCallback;
-import org.fourthline.cling.model.ServerClientTokens;
-import org.fourthline.cling.model.action.*;
-import org.fourthline.cling.model.gena.*;
-import org.fourthline.cling.model.message.UpnpHeaders;
-import org.fourthline.cling.model.message.UpnpResponse;
-import org.fourthline.cling.model.message.header.DeviceTypeHeader;
-import org.fourthline.cling.model.message.header.UpnpHeader;
-import org.fourthline.cling.model.meta.*;
-import org.fourthline.cling.model.types.DeviceType;
-import org.fourthline.cling.model.types.ServiceId;
-import org.fourthline.cling.model.types.UDADeviceType;
-import org.fourthline.cling.model.types.UDN;
-import org.fourthline.cling.registry.DefaultRegistryListener;
-import org.fourthline.cling.registry.Registry;
-import org.fourthline.cling.registry.RegistryListener;
+import org.jupnp.DefaultUpnpServiceConfiguration;
+import org.jupnp.UpnpService;
+import org.jupnp.UpnpServiceImpl;
+import org.jupnp.controlpoint.ActionCallback;
+import org.jupnp.controlpoint.SubscriptionCallback;
+import org.jupnp.model.ServerClientTokens;
+import org.jupnp.model.action.*;
+import org.jupnp.model.gena.*;
+import org.jupnp.model.message.UpnpHeaders;
+import org.jupnp.model.message.UpnpResponse;
+import org.jupnp.model.message.header.DeviceTypeHeader;
+import org.jupnp.model.message.header.UpnpHeader;
+import org.jupnp.model.meta.*;
+import org.jupnp.model.types.DeviceType;
+import org.jupnp.model.types.ServiceId;
+import org.jupnp.model.types.UDADeviceType;
+import org.jupnp.model.types.UDN;
+import org.jupnp.registry.DefaultRegistryListener;
+import org.jupnp.registry.Registry;
+import org.jupnp.registry.RegistryListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
@@ -329,7 +329,7 @@ public class UPNPControl {
 				}
 			};
 
-			upnpService = new UpnpServiceImpl(sc, rl);
+			upnpService = new UpnpServiceImpl(sc);
 			for (DeviceType t : mediaRendererTypes) {
 				upnpService.getControlPoint().search(new DeviceTypeHeader(t));
 			}

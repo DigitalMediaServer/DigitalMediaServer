@@ -135,7 +135,7 @@ public class RequestHandler implements Runnable {
 					request.setMediaRenderer(renderer);
 				}
 				if (headerLine.toUpperCase().startsWith("USER-AGENT")) {
-					// Is the request from our own Cling service, i.e. self-originating?
+					// Is the request from our own jUPnP service, i.e. self-originating?
 					if (isSelf && headerLine.contains("DMS/")) {
 						//LOGGER.trace("Ignoring self-originating request from {}:{}", ia, remoteAddress.getPort());
 						return;

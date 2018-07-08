@@ -18,7 +18,7 @@
  */
 package net.pms.dlna.protocolinfo;
 
-import org.fourthline.cling.support.model.dlna.DLNAProfiles;
+import org.jupnp.support.model.dlna.DLNAProfiles;
 import net.pms.dlna.protocolinfo.ProtocolInfoAttributeName.KnownProtocolInfoAttributeName;
 
 /**
@@ -53,7 +53,7 @@ public interface DLNAOrgProfileName extends ProfileName {
 		 * the singleton instance.
 		 */
 		protected DLNAOrgProfileNameFactory() {
-			// Add the profiles already defined by Cling
+			// Add the profiles already defined by jUPnP
 			for (DLNAProfiles profile : DLNAProfiles.values()) {
 				if (profile != DLNAProfiles.NONE) {
 					instanceCache.add(new DefaultDLNAOrgProfileName(profile.getCode()));
