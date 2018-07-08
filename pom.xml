@@ -1240,6 +1240,9 @@
 							<execution>
 								<id>build-dms-windows</id>
 								<configuration>
+									<environmentVariables>
+										<NSISDIR>${project.external-resources}/third-party/nsis</NSISDIR>
+									</environmentVariables>
 									<makensisBin>${makensis-bin}</makensisBin>
 									<makeFolder>${project.external-resources}/third-party/nsis</makeFolder>
 									<outputFile>${project.name.short}.exe</outputFile>
@@ -1255,6 +1258,9 @@
 							<execution>
 								<id>build-setup-windows</id>
 								<configuration>
+									<environmentVariables>
+										<NSISDIR>${project.external-resources}/third-party/nsis</NSISDIR>
+									</environmentVariables>
 									<makensisBin>${makensis-bin}</makensisBin>
 									<makeFolder>${project.external-resources}/third-party/nsis</makeFolder>
 									<outputFile>${project.name.short}-setup.exe</outputFile>
