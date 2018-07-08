@@ -132,11 +132,8 @@
 	</pluginRepositories>
 	<repositories>
 		<repository>
-			<id>4thline-repo</id>
-			<url>http://4thline.org/m2</url>
-			<snapshots>
-				<enabled>false</enabled>
-			</snapshots>
+			<id>jUPnP-repo</id>
+			<url>https://dl.bintray.com/jupnp/mvn/</url>
 		</repository>
 		<repository>
 			<id>jaudiotagger-repository</id>
@@ -404,29 +401,14 @@
 			<version>${jna-version}</version>
 		</dependency>
 		<dependency>
-			<groupId>org.fourthline.cling</groupId>
-			<artifactId>cling-core</artifactId>
-			<version>2.1.1</version>
+			<groupId>org.jupnp</groupId>
+			<artifactId>org.jupnp</artifactId>
+			<version>2.3.0</version>
 		</dependency>
 		<dependency>
-			<groupId>org.fourthline.cling</groupId>
-			<artifactId>cling-support</artifactId>
-			<version>2.1.1</version>
-		</dependency>
-		<dependency>
-			<groupId>org.seamless</groupId>
-			<artifactId>seamless-http</artifactId>
-			<version>1.1.1</version>
-		</dependency>
-		<dependency>
-			<groupId>org.seamless</groupId>
-			<artifactId>seamless-util</artifactId>
-			<version>1.1.1</version>
-		</dependency>
-		<dependency>
-			<groupId>org.seamless</groupId>
-			<artifactId>seamless-xml</artifactId>
-			<version>1.1.1</version>
+			<groupId>org.jupnp</groupId>
+			<artifactId>org.jupnp.support</artifactId>
+			<version>2.4.0</version>
 		</dependency>
 		<dependency>
 			<groupId>com.samskivert</groupId>
