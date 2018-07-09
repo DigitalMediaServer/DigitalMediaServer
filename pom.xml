@@ -74,6 +74,7 @@
 		<project.name.camel>DigitalMediaServer</project.name.camel>
 		<project.skelprofile.dir>/etc/skel/.config/</project.skelprofile.dir>
 		<cuelib-version>1.2.1-2008-06-13</cuelib-version>
+		<mediainfo-version>18.05</mediainfo-version>
 
 		<!-- In versions after 1.6.0, they removed code that the MovieInfo plugin relies on -->
 		<jgoodies-forms-version>1.9.0</jgoodies-forms-version>
@@ -1211,10 +1212,31 @@
 													</patternset>
 												</unzip>
 												<delete file="${project.binaries}/win32/win32.zip"/>
-												<get src="${project.binaries-base}/MediaInfo.dll?p=${binary-revision}" dest="${project.binaries}/win32/MediaInfo.dll"  verbose="false"/>
-												<get src="${project.binaries-base}/MediaInfo64.dll?p=${binary-revision}" dest="${project.binaries}/win32/MediaInfo64.dll" verbose="false"/>
-												<get src="https://raw.githubusercontent.com/MediaArea/MediaInfoLib/master/License.html" dest="${project.binaries}/win32/MediaInfo-License.html" ignoreerrors="true" verbose="false"/>
-												<get src="${project.binaries-base}/win32/dcrawMS.exe?p=${binary-revision}" dest="${project.binaries}/win32/dcrawMS.exe" verbose="false"/>
+												<get src="https://mediaarea.net/download/binary/libmediainfo0/${mediainfo-version}/MediaInfo_DLL_${mediainfo-version}_Windows_i386_WithoutInstaller.zip" dest="${project.binaries}/win32" verbose="false"/>
+												<unzip src="${project.binaries}/win32/MediaInfo_DLL_${mediainfo-version}_Windows_i386_WithoutInstaller.zip" dest="${project.binaries}/win32">
+													<patternset>
+														<include name="MediaInfo.dll"/>
+														<include name="Developers/License.html"/>
+													</patternset>
+													<mapper type="flatten"/>
+												</unzip>
+												<delete file="${project.binaries}/win32/MediaInfo_DLL_${mediainfo-version}_Windows_i386_WithoutInstaller.zip"/>
+												<get src="https://mediaarea.net/download/binary/libmediainfo0/${mediainfo-version}/MediaInfo_DLL_${mediainfo-version}_Windows_x64_WithoutInstaller.zip" dest="${project.binaries}/win32" verbose="false"/>
+												<unzip src="${project.binaries}/win32/MediaInfo_DLL_${mediainfo-version}_Windows_x64_WithoutInstaller.zip" dest="${project.binaries}/win32">
+													<patternset>
+														<include name="MediaInfo.dll"/>
+													</patternset>
+													<globmapper from="MediaInfo.dll" to="MediaInfo64.dll" casesensitive="false"/>
+												</unzip>
+												<delete file="${project.binaries}/win32/MediaInfo_DLL_${mediainfo-version}_Windows_x64_WithoutInstaller.zip"/>
+												<get src="https://cdn.fastpictureviewer.com/bin/dcraw.zip?v=201605100" dest="${project.binaries}/win32" verbose="false"/>
+												<unzip src="${project.binaries}/win32/dcraw.zip" dest="${project.binaries}/win32">
+													<patternset>
+														<include name="dcraw.exe"/>
+														<include name="dcraw64.exe"/>
+													</patternset>
+												</unzip>
+												<delete file="${project.binaries}/win32/dcraw.zip"/>
 												<get src="http://abechin.sakura.ne.jp/sblo_files/k-tai-douga/ffmpeg/ffmpeg_bin_legacy-91330.zip" dest="${project.binaries}/win32" verbose="false" quiet="true"/>
 												<unzip src="${project.binaries}/win32/ffmpeg_bin_legacy-91330.zip" dest="${project.binaries}/win32">
 													<patternset>
@@ -1222,6 +1244,13 @@
 													</patternset>
 												</unzip>
 												<delete file="${project.binaries}/win32/ffmpeg_bin_legacy-91330.zip"/>
+												<get src="https://www.videohelp.com/download/tsMuxeR_2.6.12.zip?r=lNnFtXBTHkdD" dest="${project.binaries}/win32" verbose="false"/>
+												<unzip src="${project.binaries}/win32/tsMuxeR_2.6.12.zip" dest="${project.binaries}/win32">
+													<patternset>
+														<include name="tsMuxeR.exe"/>
+													</patternset>
+												</unzip>
+												<delete file="${project.binaries}/win32/tsMuxeR_2.6.12.zip"/>
 												<get src="${project.binaries-base}/win32/ffmpeg64.exe?p=${binary-revision}" dest="${project.binaries}/win32/ffmpeg64.exe" verbose="false"/>
 											</then>
 										</if>
