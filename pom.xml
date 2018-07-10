@@ -121,8 +121,6 @@
 		-->
 		<jna-version>4.4.0</jna-version>
 
-		<!-- Use our MakeNSIS version for Windows builds -->
-		<makensis-bin>${project.external-resources}/third-party/nsis/makensis.exe</makensis-bin>
 		<release>false</release> <!-- mvn -Drelease -->
 	</properties>
 
@@ -636,18 +634,6 @@
 				<!-- Filter to replace Maven properties -->
 				<filtering>true</filtering>
 			</resource>
-
-			<!-- 3) package filtered NSIS header files -->
-			<resource>
-				<directory>src/main/external-resources/nsis</directory>
-				<includes>
-					<include>extra.nsh</include>
-				</includes>
-
-				<!-- Filter to replace Maven properties -->
-				<filtering>true</filtering>
-				<targetPath>..</targetPath>
-			</resource>
 		</resources>
 		<testResources>
 			<testResource>
@@ -1124,22 +1110,6 @@
 
 	<profiles>
 
-		<!-- System's MakeNSIS profile -->
-		<profile>
-			<!-- https://packages.debian.org/sid/nsis -->
-			<id>system-makensis</id>
-			<activation>
-				<os>
-					<family>unix</family>
-				</os>
-			</activation>
-
-			<properties>
-				<!--makensis-bin>makensis</makensis-bin-->
-                                <makensis-bin>${project.external-resources}/third-party/nsis/Bin/makensis</makensis-bin>
-			</properties>
-		</profile>
-
 		<!-- Windows EXE profile -->
 		<profile>
 			<id>exe</id>
@@ -1236,20 +1206,37 @@
 						<groupId>org.digitalmediaserver</groupId>
 						<artifactId>nsis-maven-plugin</artifactId>
 						<version>0.5.0-SNAPSHOT</version>
+						<configuration>
+							<makensisExecutable>${project.external-resources}/third-party/nsis/Bin/makensis.exe</makensisExecutable>
+							<makensisExecutableLinux>${project.external-resources}/third-party/nsis/Bin/makensisLinux</makensisExecutableLinux>
+							<makensisExecutableMacOS>${project.external-resources}/third-party/nsis/Bin/makensisMacOS</makensisExecutableMacOS>
+							<!--compression>
+								<type>lzma</type>
+								<isFinal>true</isFinal>
+								<dictionarySize>64</dictionarySize>
+							</compression-->
+							<defines>
+								<define>
+									<key>PROJECT_BINARIES</key>
+									<value>${project.binaries}</value>
+								</define>
+								<define>
+									<key>PROJECT_NAME_SHORT</key>
+									<value>${project.name.short}</value>
+								</define>
+								<define>
+									<key>PROJECT_NAME_CAMEL</key>
+									<value>${project.name.camel}</value>
+								</define>
+							</defines>
+						</configuration>
 						<executions>
 							<execution>
 								<id>build-dms-windows</id>
 								<configuration>
-									<environmentVariables>
-										<NSISDIR>${project.external-resources}/third-party/nsis</NSISDIR>
-									</environmentVariables>
-									<makensisBin>${makensis-bin}</makensisBin>
-									<makeFolder>${project.external-resources}/third-party/nsis</makeFolder>
+									<scriptFile>src/main/external-resources/nsis/${project.artifactId}.nsi</scriptFile>
 									<outputFile>${project.name.short}.exe</outputFile>
-									<scriptFile>${project.external-resources}/nsis/${project.artifactId}.nsi</scriptFile>
-									<!--scriptFile>src/main/external-resources/nsis/${project.artifactId}.nsi</scriptFile-->
 								</configuration>
-								<phase>package</phase>
 								<goals>
 									<goal>generate-headerfile</goal>
 									<goal>make</goal>
@@ -1258,16 +1245,9 @@
 							<execution>
 								<id>build-setup-windows</id>
 								<configuration>
-									<environmentVariables>
-										<NSISDIR>${project.external-resources}/third-party/nsis</NSISDIR>
-									</environmentVariables>
-									<makensisBin>${makensis-bin}</makensisBin>
-									<makeFolder>${project.external-resources}/third-party/nsis</makeFolder>
+									<scriptFile>src/main/external-resources/nsis/setup.nsi</scriptFile>
 									<outputFile>${project.name.short}-setup.exe</outputFile>
-									<scriptFile>${project.external-resources}/nsis/setup.nsi</scriptFile>
-									<!--scriptFile>src/main/external-resources/nsis/setup.nsi</scriptFile-->
 								</configuration>
-								<phase>package</phase>
 								<goals>
 									<goal>make</goal>
 								</goals>
