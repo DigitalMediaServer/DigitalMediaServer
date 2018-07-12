@@ -128,6 +128,14 @@
 		https://jwebswing.com/artifactory/libs-release/public/sh/tak/appbundler/appbundle-maven-plugin
 	-->
 
+	<pluginRepositories>
+		<pluginRepository>
+			<id>ossrh</id>
+			<name>Sonatype OSS Repository</name>
+			<url>https://oss.sonatype.org/content/repositories/snapshots</url>
+			<layout>default</layout>
+		</pluginRepository>
+	</pluginRepositories>
 	<repositories>
 		<repository>
 			<id>central</id>
@@ -1205,16 +1213,14 @@
 					<plugin>
 						<groupId>org.digitalmediaserver</groupId>
 						<artifactId>nsis-maven-plugin</artifactId>
-						<version>0.5.0-SNAPSHOT</version>
+						<version>1.0.0-SNAPSHOT</version>
 						<configuration>
 							<makensisExecutable>${project.external-resources}/third-party/nsis/Bin/makensis.exe</makensisExecutable>
 							<makensisExecutableLinux>${project.external-resources}/third-party/nsis/Bin/makensisLinux</makensisExecutableLinux>
 							<makensisExecutableMacOS>${project.external-resources}/third-party/nsis/Bin/makensisMacOS</makensisExecutableMacOS>
-							<!--compression>
-								<type>lzma</type>
-								<isFinal>true</isFinal>
-								<dictionarySize>64</dictionarySize>
-							</compression-->
+							<compression>lzma</compression>
+							<compressionIsFinal>true</compressionIsFinal>
+							<compressionDictSize>64</compressionDictSize>
 							<defines>
 								<PROJECT_BINARIES>${project.binaries}</PROJECT_BINARIES>
 								<PROJECT_NAME_SHORT>${project.name.short}</PROJECT_NAME_SHORT>
@@ -1223,9 +1229,9 @@
 						</configuration>
 						<executions>
 							<execution>
-								<id>build-dms-windows</id>
+								<id>build-windows-launcher</id>
 								<configuration>
-									<scriptFile>src/main/external-resources/nsis/${project.artifactId}.nsi</scriptFile>
+									<scriptFile>${project.external-resources}/nsis/${project.artifactId}.nsi</scriptFile>
 									<outputFile>${project.name.short}.exe</outputFile>
 									<attachArtifact>false</attachArtifact>
 								</configuration>
@@ -1235,9 +1241,9 @@
 								</goals>
 							</execution>
 							<execution>
-								<id>build-setup-windows</id>
+								<id>build-windows-installer</id>
 								<configuration>
-									<scriptFile>src/main/external-resources/nsis/setup.nsi</scriptFile>
+									<scriptFile>${project.external-resources}/nsis/setup.nsi</scriptFile>
 									<outputFile>${project.name.short}-setup.exe</outputFile>
 								</configuration>
 								<goals>
