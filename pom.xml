@@ -1216,18 +1216,9 @@
 								<dictionarySize>64</dictionarySize>
 							</compression-->
 							<defines>
-								<define>
-									<key>PROJECT_BINARIES</key>
-									<value>${project.binaries}</value>
-								</define>
-								<define>
-									<key>PROJECT_NAME_SHORT</key>
-									<value>${project.name.short}</value>
-								</define>
-								<define>
-									<key>PROJECT_NAME_CAMEL</key>
-									<value>${project.name.camel}</value>
-								</define>
+								<PROJECT_BINARIES>${project.binaries}</PROJECT_BINARIES>
+								<PROJECT_NAME_SHORT>${project.name.short}</PROJECT_NAME_SHORT>
+								<PROJECT_NAME_CAMEL>${project.name.camel}</PROJECT_NAME_CAMEL>
 							</defines>
 						</configuration>
 						<executions>
