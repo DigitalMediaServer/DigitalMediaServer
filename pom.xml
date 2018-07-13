@@ -122,6 +122,11 @@
 		<jna-version>4.4.0</jna-version>
 
 		<release>false</release> <!-- mvn -Drelease -->
+
+		<!-- Workaround for Maven bug http://issues.apache.org/jira/browse/MNG-4979 -->
+		<nsis.compression>lzma</nsis.compression>
+		<nsis.compression.lzma.dictsize>64</nsis.compression.lzma.dictsize>
+		<nsis.compression.final>true</nsis.compression.final>
 	</properties>
 
 	<!-- 1.2.1-SNAPSHOT
@@ -1218,9 +1223,9 @@
 							<makensisExecutable>${project.external-resources}/third-party/nsis/Bin/makensis.exe</makensisExecutable>
 							<makensisExecutableLinux>${project.external-resources}/third-party/nsis/Bin/makensisLinux</makensisExecutableLinux>
 							<makensisExecutableMacOS>${project.external-resources}/third-party/nsis/Bin/makensisMacOS</makensisExecutableMacOS>
-							<compression>lzma</compression>
-							<compressionIsFinal>true</compressionIsFinal>
-							<compressionDictSize>64</compressionDictSize>
+							<compression>${nsis.compression}</compression>
+							<compressionIsFinal>${nsis.compression.final}</compressionIsFinal>
+							<compressionDictSize>${nsis.compression.lzma.dictsize}</compressionDictSize>
 							<defines>
 								<PROJECT_BINARIES>${project.binaries}</PROJECT_BINARIES>
 								<PROJECT_NAME_SHORT>${project.name.short}</PROJECT_NAME_SHORT>
