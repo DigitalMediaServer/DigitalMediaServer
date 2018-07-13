@@ -388,9 +388,7 @@ public class StatusTab {
 		memBarUI.addSegment("", bufColor);
 		memBarUI.setTickMarks(getTickMarks(), "{}");
 		memoryProgressBar = new GuiUtil.CustomUIProgressBar(0, 100, memBarUI);
-		memoryProgressBar.setStringPainted(true);
 		memoryProgressBar.setForeground(new Color(75, 140, 181));
-		memoryProgressBar.setString(Messages.getString("StatusTab.5"));
 
 		JLabel mem = builder.addLabel("<html><b>" + Messages.getString("StatusTab.6") + "</b> (" + Messages.getString("StatusTab.12") + ")</html>", FormLayoutUtil.flip(cc.xy(3, 7), colSpec, orientation));
 		mem.setForeground(fgColor);
