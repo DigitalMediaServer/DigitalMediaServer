@@ -32,7 +32,7 @@ import com.drew.metadata.Metadata;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import net.pms.dlna.DLNAImage;
 import net.pms.dlna.DLNAImageProfile;
-import net.pms.dlna.DLNAThumbnail;
+import net.pms.dlna.DLNABinaryThumbnail;
 import net.pms.exception.ParseException;
 import net.pms.image.ImagesUtil.ScaleType;
 
@@ -346,7 +346,7 @@ public class Image implements Serializable {
 	 *            safely cast to {@link DLNAImage}.
 	 * @param dlnaThumbnail whether or not the output image should be restricted
 	 *            to DLNA thumbnail compliance. This also means that the output
-	 *            can be safely cast to {@link DLNAThumbnail}.
+	 *            can be safely cast to {@link DLNABinaryThumbnail}.
 	 * @param padToSize whether padding should be used if source aspect doesn't
 	 *            match target aspect.
 	 * @return The scaled {@link Image} or {@code null} if the source is
@@ -386,7 +386,7 @@ public class Image implements Serializable {
 	 *            safely cast to {@link DLNAImage}.
 	 * @param dlnaThumbnail whether or not the output image should be restricted
 	 *            to DLNA thumbnail compliance. This also means that the output
-	 *            can be safely cast to {@link DLNAThumbnail}.
+	 *            can be safely cast to {@link DLNABinaryThumbnail}.
 	 * @return The converted {@link Image} or {@code null} if the source is
 	 *         {@code null}.
 	 * @throws IOException if the operation fails.
@@ -423,7 +423,7 @@ public class Image implements Serializable {
 	 *            safely cast to {@link DLNAImage}.
 	 * @param dlnaThumbnail whether or not the output image should be restricted
 	 *            to DLNA thumbnail compliance. This also means that the output
-	 *            can be safely cast to {@link DLNAThumbnail}.
+	 *            can be safely cast to {@link DLNABinaryThumbnail}.
 	 * @param padToSize whether padding should be used if source aspect doesn't
 	 *            match target aspect.
 	 * @return The scaled and/or converted {@link Image} or {@code null} if the
@@ -464,7 +464,7 @@ public class Image implements Serializable {
 	 *            safely cast to {@link DLNAImage}.
 	 * @param dlnaThumbnail whether or not the output image should be restricted
 	 *            to DLNA thumbnail compliance. This also means that the output
-	 *            can be safely cast to {@link DLNAThumbnail}.
+	 *            can be safely cast to {@link DLNABinaryThumbnail}.
 	 * @param padToSize whether padding should be used if source aspect doesn't
 	 *            match target aspect.
 	 * @return The scaled and/or converted {@link Image} or {@code null} if the

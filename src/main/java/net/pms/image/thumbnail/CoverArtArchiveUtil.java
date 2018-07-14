@@ -16,7 +16,7 @@
  * You should have received a copy of the GNU General Public License along with
  * this program. If not, see http://www.gnu.org/licenses/.
  */
-package net.pms.util;
+package net.pms.image.thumbnail;
 
 import static net.pms.util.StringUtil.urlEncode;
 import static org.apache.commons.lang3.StringUtils.isBlank;
@@ -46,6 +46,8 @@ import net.pms.database.TableManager;
 import net.pms.database.TableMusicBrainzReleases;
 import net.pms.database.TableMusicBrainzReleases.MusicBrainzReleasesResult;
 import net.pms.service.Services;
+import net.pms.util.AudioUtils;
+import net.pms.util.StringUtil;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.client.HttpResponseException;
 import org.jaudiotagger.tag.FieldKey;
