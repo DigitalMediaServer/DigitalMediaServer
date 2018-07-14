@@ -730,12 +730,21 @@ public class FormatConfigurationRegressionTest0 {
 		// Regression assertion (captures the current behavior of the code)
 		assertTrue("'" + str0 + "' != '" + "wma10"+ "'", str0.equals("wma10"));
 	}
+
 	@Test
 	public void testDFF() throws Throwable {
 		String str0 = FormatConfiguration.DFF;
 
 		// Regression assertion (captures the current behavior of the code)
 		assertTrue("'" + str0 + "' != '" + "dff"+ "'", str0.equals("dff"));
+	}
+
+	@Test
+	public void testDSD() throws Throwable {
+		String str0 = FormatConfiguration.DSD;
+
+		// Regression assertion (captures the current behavior of the code)
+		assertTrue("'" + str0 + "' != '" + "dsd"+ "'", str0.equals("dsd"));
 	}
 
 	@Test

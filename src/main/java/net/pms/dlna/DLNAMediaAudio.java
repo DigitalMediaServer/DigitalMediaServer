@@ -190,13 +190,6 @@ public class DLNAMediaAudio extends DLNAMediaLang implements Cloneable {
 	}
 
 	/**
-	 * @return True if the audio codec is DFF.
-	 */
-	public boolean isDFF() {
-		return FormatConfiguration.DFF.equalsIgnoreCase(getCodecA());
-	}
-
-	/**
 	 * @return True if the audio codec is Dolby E.
 	 */
 	public boolean isDOLBYE() {
@@ -204,10 +197,10 @@ public class DLNAMediaAudio extends DLNAMediaLang implements Cloneable {
 	}
 
 	/**
-	 * @return True if the audio codec is DSF.
+	 * @return True if the audio codec is DSD.
 	 */
-	public boolean isDSF() {
-		return FormatConfiguration.DSF.equalsIgnoreCase(getCodecA());
+	public boolean isDSD() {
+		return FormatConfiguration.DSD.equalsIgnoreCase(getCodecA());
 	}
 
 	/**
@@ -438,7 +431,7 @@ public class DLNAMediaAudio extends DLNAMediaLang implements Cloneable {
 	public boolean isLossless() {
 		return getCodecA() != null &&
 			(
-				isALAC() || isALS() || isFLAC() || isMLP() ||
+				isALAC() || isALS() || isDSD() || isFLAC() || isMLP() ||
 				isMonkeysAudio() || isPCM() || isRALF() || isShorten() ||
 				isSLS() || isTrueHD() || isTTA() || isWavPack() ||
 				isWMALossless()
@@ -469,12 +462,10 @@ public class DLNAMediaAudio extends DLNAMediaLang implements Cloneable {
 			return "ATRAC";
 		} else if (isCook()) {
 			return "Cook";
-		} else if (isDFF()) {
-			return "DFF";
 		} else if (isDOLBYE()) {
 			return "Dolby E";
-		} else if (isDSF()) {
-			return "DSF";
+		} else if (isDSD()) {
+			return "DSD";
 		} else if (isDTS()) {
 			return "DTS";
 		} else if (isDTSHD()) {
