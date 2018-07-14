@@ -30,7 +30,7 @@ import java.util.EnumSet;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
-import net.pms.util.CoverArtArchiveUtil.CoverArtArchiveTagInfo;
+import net.pms.image.thumbnail.CoverArtArchiveUtil.CoverArtArchiveTagInfo;
 import org.jaudiotagger.tag.Tag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

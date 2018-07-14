@@ -44,11 +44,11 @@ import net.pms.image.ImageFormat;
 import net.pms.image.ImageInfo;
 import net.pms.image.ImagesUtil;
 import net.pms.image.ImagesUtil.ScaleType;
+import net.pms.image.thumbnail.CoverSupplier;
+import net.pms.image.thumbnail.CoverUtil;
 import net.pms.io.OutputParams;
 import net.pms.io.ProcessWrapperImpl;
 import net.pms.network.HTTPResource;
-import net.pms.util.CoverSupplier;
-import net.pms.util.CoverUtil;
 import net.pms.util.FileUtil;
 import net.pms.util.MpegUtil;
 import net.pms.util.ProcessUtil;
@@ -180,7 +180,7 @@ public class DLNAMediaInfo implements Cloneable {
 	private Rational aspectRatioVideoTrack;
 	private int videoBitDepth = 8;
 
-	private volatile DLNAThumbnail thumb = null;
+	private volatile DLNABinaryThumbnail thumb = null;
 
 	private volatile ImageInfo imageInfo = null;
 
@@ -835,7 +835,7 @@ public class DLNAMediaInfo implements Cloneable {
 
 						if (t != null) {
 							if (t.getArtworkList().size() > 0) {
-								thumb = DLNAThumbnail.toThumbnail(
+								thumb = DLNABinaryThumbnail.toThumbnail(
 									t.getArtworkList().get(0).getBinaryData(),
 									640,
 									480,
@@ -844,7 +844,7 @@ public class DLNAMediaInfo implements Cloneable {
 									false
 								);
 							} else if (!configuration.getAudioThumbnailMethod().equals(CoverSupplier.NONE)) {
-								thumb = DLNAThumbnail.toThumbnail(
+								thumb = DLNABinaryThumbnail.toThumbnail(
 									CoverUtil.get().getThumbnail(t),
 									640,
 									480,
@@ -971,7 +971,7 @@ public class DLNAMediaInfo implements Cloneable {
 							}*/
 						} else {
 							// This will fail with UnknownFormatException for any image formats not supported by ImageIO
-							thumb = DLNAThumbnail.toThumbnail(
+							thumb = DLNABinaryThumbnail.toThumbnail(
 								Files.newInputStream(file.toPath()),
 								320,
 								320,
@@ -1046,7 +1046,7 @@ public class DLNAMediaInfo implements Cloneable {
 								if (sz > 0) {
 									byte[] bytes = new byte[sz];
 									is.read(bytes);
-									thumb = DLNAThumbnail.toThumbnail(
+									thumb = DLNABinaryThumbnail.toThumbnail(
 										bytes,
 										640,
 										480,
@@ -1076,7 +1076,7 @@ public class DLNAMediaInfo implements Cloneable {
 					byte[] bytes = pw.getOutputByteArray().toByteArray();
 					if (bytes != null && bytes.length > 0) {
 						try {
-							thumb = DLNAThumbnail.toThumbnail(bytes);
+							thumb = DLNABinaryThumbnail.toThumbnail(bytes);
 						} catch (IOException e) {
 							LOGGER.debug("Error while decoding thumbnail: " + e.getMessage());
 							LOGGER.trace("", e);
@@ -2553,19 +2553,19 @@ public class DLNAMediaInfo implements Cloneable {
 	 * @return The thumb.
 	 * @since 1.50.0
 	 */
-	public DLNAThumbnail getThumb() {
+	public DLNABinaryThumbnail getThumb() {
 		return thumb;
 	}
 
 	/**
 	 * @param thumb the thumb to set.
 	 * @since 1.50.0
-	 * @deprecated Use {@link #setThumb(DLNAThumbnail)} instead.
+	 * @deprecated Use {@link #setThumb(DLNABinaryThumbnail)} instead.
 	 */
 	@Deprecated
 	public void setThumb(byte[] thumb) {
 		try {
-			this.thumb = DLNAThumbnail.toThumbnail(
+			this.thumb = DLNABinaryThumbnail.toThumbnail(
 				thumb,
 				640,
 				480,
@@ -2583,11 +2583,11 @@ public class DLNAMediaInfo implements Cloneable {
 	}
 
 	/**
-	 * Sets the {@link DLNAThumbnail} instance to use for this {@link DLNAMediaInfo} instance.
+	 * Sets the {@link DLNABinaryThumbnail} instance to use for this {@link DLNAMediaInfo} instance.
 	 *
-	 * @param thumbnail the {@link DLNAThumbnail} to set.
+	 * @param thumbnail the {@link DLNABinaryThumbnail} to set.
 	 */
-	public void setThumb(DLNAThumbnail thumbnail) {
+	public void setThumb(DLNABinaryThumbnail thumbnail) {
 		this.thumb = thumbnail;
 		if (thumbnail != null) {
 			thumbready = true;
