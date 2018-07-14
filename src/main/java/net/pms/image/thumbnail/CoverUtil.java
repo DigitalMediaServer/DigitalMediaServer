@@ -16,7 +16,7 @@
  * You should have received a copy of the GNU General Public License along with
  * this program. If not, see http://www.gnu.org/licenses/.
  */
-package net.pms.util;
+package net.pms.image.thumbnail;
 
 import net.pms.PMS;
 import org.jaudiotagger.tag.Tag;

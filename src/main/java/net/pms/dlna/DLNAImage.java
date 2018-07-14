@@ -69,7 +69,7 @@ public class DLNAImage extends Image {
 		boolean copy
 	) throws DLNAProfileException {
 		super(image, copy);
-		this.profile = profile != null ? profile : findMatchingProfile(this instanceof DLNAThumbnail);
+		this.profile = profile != null ? profile : findMatchingProfile(this instanceof DLNABinaryThumbnail);
 		if (this.profile == null) {
 			throw new NullPointerException("DLNAImage: profile cannot be null");
 		}
@@ -95,7 +95,7 @@ public class DLNAImage extends Image {
 		boolean copy
 	) throws DLNAProfileException {
 		super(bytes, imageInfo, copy);
-		this.profile = profile != null ? profile : findMatchingProfile(this instanceof DLNAThumbnail);
+		this.profile = profile != null ? profile : findMatchingProfile(this instanceof DLNABinaryThumbnail);
 		if (this.profile == null) {
 			throw new NullPointerException("DLNAImage: profile cannot be null");
 		}
@@ -130,7 +130,7 @@ public class DLNAImage extends Image {
 		boolean copy
 	) throws DLNAProfileException, ParseException {
 		super(bytes, width, height, format, colorModel, metadata, true, copy);
-		this.profile = profile != null ? profile : findMatchingProfile(this instanceof DLNAThumbnail);
+		this.profile = profile != null ? profile : findMatchingProfile(this instanceof DLNABinaryThumbnail);
 		if (this.profile == null) {
 			throw new NullPointerException("DLNAImage: profile cannot be null");
 		}
@@ -162,7 +162,7 @@ public class DLNAImage extends Image {
 		boolean copy
 	) throws DLNAProfileException, ParseException {
 		super(bytes, format, bufferedImage, metadata, copy);
-		this.profile = profile != null ? profile : findMatchingProfile(this instanceof DLNAThumbnail);
+		this.profile = profile != null ? profile : findMatchingProfile(this instanceof DLNABinaryThumbnail);
 		if (this.profile == null) {
 			throw new NullPointerException("DLNAImage: profile cannot be null");
 		}
@@ -172,7 +172,7 @@ public class DLNAImage extends Image {
 	/**
 	 * Converts an {@link Image} to a {@link DLNAImage}. Output format will be
 	 * the same as the source if the source is either GIF, JPEG or PNG. Further
-	 * restrictions on color space and compression is imposed and conversion
+	 * restrictions on color space and compression is imposed and conversion is
 	 * done if necessary. All other formats will be converted to a DLNA
 	 * compliant JPEG.
 	 *
@@ -189,7 +189,7 @@ public class DLNAImage extends Image {
 	 * Converts an image to a {@link DLNAImage}. Format support is limited to
 	 * that of {@link ImageIO}. Output format will be the same as the source if
 	 * the source is either GIF, JPEG or PNG. Further restrictions on color
-	 * space and compression is imposed and conversion done if necessary. All
+	 * space and compression is imposed and conversion is done if necessary. All
 	 * other formats will be converted to a DLNA compliant JPEG. Preserves
 	 * aspect ratio and rotates/flips the image according to Exif orientation.
 	 *
@@ -209,7 +209,7 @@ public class DLNAImage extends Image {
 	 * Converts an image to a {@link DLNAImage}. Format support is limited to
 	 * that of {@link ImageIO}. Output format will be the same as the source if
 	 * the source is either GIF, JPEG or PNG. Further restrictions on color
-	 * space and compression is imposed and conversion done if necessary. All
+	 * space and compression is imposed and conversion is done if necessary. All
 	 * other formats will be converted to a DLNA compliant JPEG. Preserves
 	 * aspect ratio and rotates/flips the image according to Exif orientation.
 	 *
@@ -223,10 +223,10 @@ public class DLNAImage extends Image {
 	}
 
 	/**
-	 * Converts an {@link Image} to a {@link DLNAThumbnail} adhering to
+	 * Converts an {@link Image} to a {@link DLNAImage} adhering to
 	 * {@code outputProfile}. Output format will be the same as the source if
 	 * the source is either GIF, JPEG or PNG. Further restrictions on color
-	 * space and compression is imposed and conversion done if necessary. All
+	 * space and compression is imposed and conversion is done if necessary. All
 	 * other formats will be converted to a DLNA compliant JPEG.
 	 *
 	 * @param inputImage the source image in a supported format.
@@ -256,11 +256,11 @@ public class DLNAImage extends Image {
 	}
 
 	/**
-	 * Converts an image to a {@link DLNAThumbnail} adhering to
+	 * Converts an image to a {@link DLNAImage} adhering to
 	 * {@code outputProfile}. Format support is limited to that of
 	 * {@link ImageIO}. Output format will be the same as the source if the
 	 * source is either GIF, JPEG or PNG. Further restrictions on color space
-	 * and compression is imposed and conversion done if necessary. All other
+	 * and compression is imposed and conversion is done if necessary. All other
 	 * formats will be converted to a DLNA compliant JPEG. Preserves aspect
 	 * ratio and rotates/flips the image according to Exif orientation.
 	 *
@@ -294,11 +294,11 @@ public class DLNAImage extends Image {
 	}
 
 	/**
-	 * Converts an image to a {@link DLNAThumbnail} adhering to
+	 * Converts an image to a {@link DLNAImage} adhering to
 	 * {@code outputProfile}. Format support is limited to that of
 	 * {@link ImageIO}. Output format will be the same as the source if the
 	 * source is either GIF, JPEG or PNG. Further restrictions on color space
-	 * and compression is imposed and conversion done if necessary. All other
+	 * and compression is imposed and conversion is done if necessary. All other
 	 * formats will be converted to a DLNA compliant JPEG. Preserves aspect
 	 * ratio and rotates/flips the image according to Exif orientation.
 	 *
@@ -331,7 +331,7 @@ public class DLNAImage extends Image {
 	/**
 	 * Converts an {@link Image} to a {@link DLNAImage}. Output format will be
 	 * the same as the source if the source is either GIF, JPEG or PNG. Further
-	 * restrictions on color space and compression is imposed and conversion
+	 * restrictions on color space and compression is imposed and conversion is
 	 * done if necessary. All other formats will be converted to a DLNA
 	 * compliant JPEG.
 	 *
@@ -375,10 +375,9 @@ public class DLNAImage extends Image {
 	 * Converts an image to a {@link DLNAImage}. Format support is limited to
 	 * that of {@link ImageIO}. Output format will be the same as the source if
 	 * the source is either GIF, JPEG or PNG. Further restrictions on color
-	 * space and compression is imposed and conversion done if necessary. All
+	 * space and compression is imposed and conversion is done if necessary. All
 	 * other formats will be converted to a DLNA compliant JPEG. Preserves
 	 * aspect ratio and rotates/flips the image according to Exif orientation.
-	 *
 	 * <p>
 	 * <b> This method consumes and closes {@code inputStream}. </b>
 	 *
@@ -422,7 +421,7 @@ public class DLNAImage extends Image {
 	 * Converts an image to a {@link DLNAImage}. Format support is limited to
 	 * that of {@link ImageIO}. Output format will be the same as the source if
 	 * the source is either GIF, JPEG or PNG. Further restrictions on color
-	 * space and compression is imposed and conversion done if necessary. All
+	 * space and compression is imposed and conversion is done if necessary. All
 	 * other formats will be converted to a DLNA compliant JPEG. Preserves
 	 * aspect ratio and rotates/flips the image according to Exif orientation.
 	 *
@@ -463,15 +462,14 @@ public class DLNAImage extends Image {
 	 * limited to that of {@link ImageIO}.
 	 *
 	 * @param outputProfile the {@link DLNAImageProfile} to adhere to for the
-	 *                      output.
-	 * @param dlnaThumbnail whether or not the output image should be
-	 *                      restricted to DLNA thumbnail compliance. This also
-	 *                      means that the output can be safely cast to
-	 *                      {@link DLNAThumbnail}.
+	 *            output.
+	 * @param dlnaThumbnail whether or not the output image should be restricted
+	 *            to DLNA thumbnail compliance. This also means that the output
+	 *            can be safely cast to {@link DLNABinaryThumbnail}.
 	 * @param padToSize Whether padding should be used if source aspect doesn't
-	 *                  match target aspect.
-	 * @return The scaled and/or converted thumbnail, {@code null} if the
-	 *         source is {@code null}.
+	 *            match target aspect.
+	 * @return The scaled and/or converted thumbnail, {@code null} if the source
+	 *         is {@code null}.
 	 * @exception IOException if the operation fails.
 	 */
 	public DLNAImage transcode(
