@@ -29,7 +29,7 @@ import com.drew.metadata.Metadata;
 import net.pms.dlna.DLNAImage;
 import net.pms.dlna.DLNAImageInputStream;
 import net.pms.dlna.DLNAResource;
-import net.pms.dlna.DLNAThumbnail;
+import net.pms.dlna.DLNABinaryThumbnail;
 import net.pms.dlna.DLNAThumbnailInputStream;
 import net.pms.exception.InvalidStateException;
 import net.pms.exception.ParseException;
@@ -37,7 +37,7 @@ import net.pms.image.ExifInfo.ExifParseInfo;
 
 /**
  * This holds information about a given image, and is used as a standard image
- * information container in {@link DLNAResource}, {@link DLNAThumbnail},
+ * information container in {@link DLNAResource}, {@link DLNABinaryThumbnail},
  * {@link DLNAThumbnailInputStream}, {@link DLNAImageInputStream},
  * {@link DLNAImage} and {@link Image}.
  *

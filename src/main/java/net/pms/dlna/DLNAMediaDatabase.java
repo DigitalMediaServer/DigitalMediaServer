@@ -359,7 +359,7 @@ public class DLNAMediaDatabase implements Runnable {
 					media.setReferenceFrameCount(rs.getInt("REFRAMES"));
 					media.setAvcLevel(rs.getString("AVCLEVEL"));
 					media.setImageInfo((ImageInfo) rs.getObject("IMAGEINFO"));
-					media.setThumb((DLNAThumbnail) rs.getObject("THUMB"));
+					media.setThumb((DLNABinaryThumbnail) rs.getObject("THUMB"));
 					media.setContainer(rs.getString("CONTAINER"));
 					media.setMuxingMode(rs.getString("MUXINGMODE"));
 					media.setFrameRateMode(rs.getString("FRAMERATEMODE"));
