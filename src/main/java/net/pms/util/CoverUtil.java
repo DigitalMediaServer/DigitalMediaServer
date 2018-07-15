@@ -18,7 +18,9 @@
  */
 package net.pms.util;
 
+import javax.annotation.Nullable;
 import net.pms.PMS;
+import net.pms.dlna.DLNAThumbnail;
 import org.jaudiotagger.tag.Tag;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -95,13 +97,14 @@ public abstract class CoverUtil {
 	 * @param tag the {@link tag} to use while searching for a cover.
 	 * @return The thumbnail or {@code null} if none was found.
 	 */
-	public final byte[] getThumbnail(Tag tag) {
+	@Nullable
+	public final DLNAThumbnail getThumbnail(Tag tag) {
 		boolean externalNetwork = PMS.getConfiguration().getExternalNetwork();
 		return doGetThumbnail(tag, externalNetwork);
 	}
 
 	/**
-	 * Gets a thumbnail from the configured cover utility based on the specified
+	 * Gets a {@link DLNAThumbnail} from the configured cover utility based on the specified
 	 * {@link Tag}.
 	 *
 	 * @param tag the {@link tag} to use while searching for a cover.
@@ -109,5 +112,6 @@ public abstract class CoverUtil {
 	 *            (Internet) is allowed, {@code false} otherwise.
 	 * @return The thumbnail or {@code null} if none was found.
 	 */
-	protected abstract byte[] doGetThumbnail(Tag tag, boolean externalNetwork);
+	@Nullable
+	protected abstract DLNAThumbnail doGetThumbnail(Tag tag, boolean externalNetwork);
 }

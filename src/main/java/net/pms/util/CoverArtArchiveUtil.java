@@ -27,24 +27,34 @@ import fm.last.musicbrainz.coverart.CoverArtImage;
 import fm.last.musicbrainz.coverart.impl.DefaultCoverArtArchiveClient;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.ref.WeakReference;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import net.pms.database.TableCoverArtArchive;
-import net.pms.database.TableCoverArtArchive.CoverArtArchiveResult;
+import net.pms.database.TableCoverArtArchive.CoverArtArchiveEntry;
 import net.pms.database.TableManager;
 import net.pms.database.TableMusicBrainzReleases;
 import net.pms.database.TableMusicBrainzReleases.MusicBrainzReleasesResult;
+import net.pms.dlna.DLNABinaryThumbnail;
+import net.pms.dlna.DLNAThumbnail;
+import net.pms.image.ImageFormat;
+import net.pms.image.ImagesUtil.ScaleType;
 import net.pms.service.Services;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.client.HttpResponseException;
@@ -81,6 +91,8 @@ public class CoverArtArchiveUtil extends CoverUtil {
 
 	private static final Object TAG_LATCHES_LOCK = new Object();
 	private static final List<CoverArtArchiveTagLatch> TAG_LATCHES = new ArrayList<>();
+	private static final Map<String, WeakReference<DLNABinaryThumbnail>> THUMBNAIL_CACHE = new HashMap<>();
+	private static final Map<String, ReentrantLock> THUMBNAIL_QUEUE = new HashMap<>();
 
 	/**
 	 * Used to serialize search on a per {@link Tag} basis. Every thread doing
@@ -213,9 +225,129 @@ public class CoverArtArchiveUtil extends CoverUtil {
 		coverLatch.latch.countDown();
 	}
 
+	/**
+	 * Creates a {@link DLNABinaryThumbnail} from a byte array containing a
+	 * supported image format. The maximum thumbnail size to store can be tuned
+	 * here.
+	 *
+	 * @param bytes the image data.
+	 * @return The {@link DLNABinaryThumbnail} or {@code null};
+	 */
+	@Nullable
+	protected static DLNABinaryThumbnail createThumbnail(@Nullable byte[] bytes) {
+		if (bytes == null) {
+			return null;
+		}
+		try {
+			return DLNABinaryThumbnail.toThumbnail(
+				bytes,
+				640,
+				480,
+				ScaleType.MAX,
+				ImageFormat.SOURCE,
+				false
+			);
+		} catch (IOException e) {
+			LOGGER.error("Couldn't convert image to DLNABinaryThumbnail: {}", e.getMessage());
+			LOGGER.trace("", e);
+			return null;
+		}
+	}
+
+	@Nullable
+	private static DLNABinaryThumbnail retrieveThumbnail(@Nonnull TableManager tableManager, @Nonnull String mBID) {
+		if (mBID == null) {
+			throw new IllegalArgumentException("mBID cannot be null");
+		}
+
+		TableCoverArtArchive tableCoverArtArchive = tableManager.getTableCoverArtArchive();
+		if (tableCoverArtArchive == null) {
+			LOGGER.error("Can't retrieve cover from Cover Art Archive since the table instance doesn't exist");
+			return null;
+		}
+
+		mBID = mBID.intern();
+		DLNABinaryThumbnail result;
+		ReentrantLock ticket = null;
+
+		// Check if the thumbnail is cached
+		synchronized (THUMBNAIL_CACHE) {
+			WeakReference<DLNABinaryThumbnail> reference = THUMBNAIL_CACHE.get(mBID);
+			result = reference == null ? null : reference.get();
+			if (result != null) {
+				return result;
+			}
+
+			// It's not cached, get or create a ticket.
+			synchronized (THUMBNAIL_QUEUE) {
+				ticket = THUMBNAIL_QUEUE.get(mBID);
+				if (ticket == null) {
+					ticket = new ReentrantLock();
+					THUMBNAIL_QUEUE.put(mBID, ticket);
+				}
+			}
+		}
+
+		// Queue on the ticket
+		ticket.lock();
+		try {
+			// Done queuing, check if another thread has retrieved the thumbnail while queuing
+			synchronized (THUMBNAIL_CACHE) {
+				WeakReference<DLNABinaryThumbnail> reference = THUMBNAIL_CACHE.get(mBID);
+				result = reference == null ? null : reference.get();
+				if (result != null) {
+					return result;
+				}
+			}
+
+			// Check if it's in the database
+			CoverArtArchiveEntry tableEntry = tableCoverArtArchive.findMBID(mBID);
+			if (tableEntry.isFound()) {
+				if (tableEntry.getThumbnail() != null) {
+					result = tableEntry.getThumbnail();
+				} else if (tableEntry.getCover() != null) {
+
+					// We have the cover, just generate the thumbnail
+					result = createThumbnail(tableEntry.getCover());
+
+					// Update the database with the generated thumbnail
+					try {
+						tableCoverArtArchive.updateThumbnail(mBID, result);
+					} catch (SQLException e) {
+						LOGGER.error(
+							"Could not update thumbnail for MBID \"{}\" because of an SQL error: {}",
+							mBID,
+							e.getMessage()
+						);
+						LOGGER.trace("", e);
+					}
+
+				} else if (System.currentTimeMillis() - tableEntry.getModified().getTime() < EXPIRATION_TIME) {
+
+				}
+			}
+
+			// If we have a result..? How to deal with null...
+			// Update the cache with the generated thumbnail
+			synchronized (THUMBNAIL_CACHE) {
+				THUMBNAIL_CACHE.put(mBID, new WeakReference<DLNABinaryThumbnail>(result));
+			}
+
+			// Remove the ticked from the queue
+			synchronized (THUMBNAIL_QUEUE) {
+				THUMBNAIL_QUEUE.remove(mBID);
+			}
+
+			return result;
+
+		} finally {
+			ticket.unlock();
+		}
+	}
+
 	@Override
 	@Nullable
-	protected byte[] doGetThumbnail(@Nullable Tag tag, boolean externalNetwork) {
+	protected DLNAThumbnail doGetThumbnail(@Nullable Tag tag, boolean externalNetwork) {
 		TableManager tableManager = Services.tableManager();
 		if (tableManager == null) {
 			LOGGER.error("Can't download cover from Cover Art Archive since TableManager doesn't exist");
@@ -227,85 +359,88 @@ public class CoverArtArchiveUtil extends CoverUtil {
 			return null;
 		}
 		String mBID = getMBID(tag, externalNetwork);
-		if (mBID != null) {
-			// Secure exclusive access to search for this tag
-			CoverArtArchiveCoverLatch latch = reserveCoverLatch(mBID);
-			if (latch == null) {
-				// Couldn't reserve exclusive access, giving up
+		if (mBID == null) {
+			return null;
+		}
+
+		mBID = mBID.intern();
+
+		// Secure exclusive access to search for this tag
+		CoverArtArchiveCoverLatch latch = reserveCoverLatch(mBID);
+		if (latch == null) {
+			// Couldn't reserve exclusive access, giving up
+			return null;
+		}
+		try {
+			// Check if it's cached first
+			CoverArtArchiveEntry result = tableCoverArtArchive.findMBID(mBID);
+			if (result.isFound()) {
+				if (result.getCover() != null) {
+					return result.getCover();
+				} else if (System.currentTimeMillis() - result.getModified().getTime() < EXPIRATION_TIME) {
+					// If a lookup has been done within expireTime and no result,
+					// return null. Do another lookup after expireTime has passed
+					return null;
+				}
+			}
+
+			if (!externalNetwork) {
+				LOGGER.warn("Can't download cover from Cover Art Archive since external network is disabled");
+				LOGGER.info("Either enable external network or disable cover download");
 				return null;
 			}
+
+			DefaultCoverArtArchiveClient client = new DefaultCoverArtArchiveClient();
+
+			CoverArt coverArt;
 			try {
-				// Check if it's cached first
-				CoverArtArchiveResult result = tableCoverArtArchive.findMBID(mBID);
-				if (result.isFound()) {
-					if (result.getCover() != null) {
-						return result.getCover();
-					} else if (System.currentTimeMillis() - result.getModified().getTime() < EXPIRATION_TIME) {
-						// If a lookup has been done within expireTime and no result,
-						// return null. Do another lookup after expireTime has passed
-						return null;
+				coverArt = client.getByMbid(UUID.fromString(mBID));
+			} catch (CoverArtException e) {
+				LOGGER.debug("Could not get cover with MBID \"{}\": {}", mBID, e.getMessage());
+				LOGGER.trace("", e);
+				return null;
+			}
+			if (coverArt == null || coverArt.getImages().isEmpty()) {
+				LOGGER.debug("MBID \"{}\" has no cover at CoverArtArchive", mBID);
+				tableCoverArtArchive.writeMBID(mBID, null);
+				return null;
+			}
+			CoverArtImage image = coverArt.getFrontImage();
+			if (image == null) {
+				image = coverArt.getImages().get(0);
+			}
+			byte[] cover = null;
+			try {
+				try (InputStream is = image.getLargeThumbnail()) {
+					cover = IOUtils.toByteArray(is);
+				} catch (HttpResponseException e) {
+					// Use the default image if the large thumbnail is not available
+					try (InputStream is = image.getImage()) {
+						cover = IOUtils.toByteArray(is);
 					}
 				}
-
-				if (!externalNetwork) {
-					LOGGER.warn("Can't download cover from Cover Art Archive since external network is disabled");
-					LOGGER.info("Either enable external network or disable cover download");
-					return null;
-				}
-
-				DefaultCoverArtArchiveClient client = new DefaultCoverArtArchiveClient();
-
-				CoverArt coverArt;
-				try {
-					coverArt = client.getByMbid(UUID.fromString(mBID));
-				} catch (CoverArtException e) {
-					LOGGER.debug("Could not get cover with MBID \"{}\": {}", mBID, e.getMessage());
-					LOGGER.trace("", e);
-					return null;
-				}
-				if (coverArt == null || coverArt.getImages().isEmpty()) {
-					LOGGER.debug("MBID \"{}\" has no cover at CoverArtArchive", mBID);
+				tableCoverArtArchive.writeMBID(mBID, cover);
+				return cover;
+			} catch (HttpResponseException e) {
+				if (e.getStatusCode() == 404) {
+					LOGGER.debug("Cover for MBID \"{}\" was not found at CoverArtArchive", mBID);
 					tableCoverArtArchive.writeMBID(mBID, null);
 					return null;
 				}
-				CoverArtImage image = coverArt.getFrontImage();
-				if (image == null) {
-					image = coverArt.getImages().get(0);
-				}
-				byte[] cover = null;
-				try {
-					try (InputStream is = image.getLargeThumbnail()) {
-						cover = IOUtils.toByteArray(is);
-					} catch (HttpResponseException e) {
-						// Use the default image if the large thumbnail is not available
-						try (InputStream is = image.getImage()) {
-							cover = IOUtils.toByteArray(is);
-						}
-					}
-					tableCoverArtArchive.writeMBID(mBID, cover);
-					return cover;
-				} catch (HttpResponseException e) {
-					if (e.getStatusCode() == 404) {
-						LOGGER.debug("Cover for MBID \"{}\" was not found at CoverArtArchive", mBID);
-						tableCoverArtArchive.writeMBID(mBID, null);
-						return null;
-					}
-					LOGGER.warn(
-						"Got HTTP response {} while trying to download cover for MBID \"{}\" from CoverArtArchive: {}",
-						e.getStatusCode(),
-						mBID,
-						e.getMessage()
-					);
-				} catch (IOException e) {
-					LOGGER.error("An error occurred while downloading cover for MBID \"{}\": {}", mBID, e.getMessage());
-					LOGGER.trace("", e);
-					return null;
-				}
-			} finally {
-				releaseCoverLatch(latch);
+				LOGGER.warn(
+					"Got HTTP response {} while trying to download cover for MBID \"{}\" from CoverArtArchive: {}",
+					e.getStatusCode(),
+					mBID,
+					e.getMessage()
+				);
+			} catch (IOException e) {
+				LOGGER.error("An error occurred while downloading cover for MBID \"{}\": {}", mBID, e.getMessage());
+				LOGGER.trace("", e);
+				return null;
 			}
+		} finally {
+			releaseCoverLatch(latch);
 		}
-		return null;
 	}
 
 	private static String fuzzString(String s) {
