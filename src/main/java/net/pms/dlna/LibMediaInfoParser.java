@@ -699,16 +699,18 @@ public class LibMediaInfoParser {
 			value.equals("2000")
 		) {
 			format = FormatConfiguration.AC3;
+		} else if (value.contains("truehd")) {
+			format = FormatConfiguration.TRUEHD;
+		} else if (value.equals("e-ac-3")) {
+			format = FormatConfiguration.EAC3;
+		} else if (value.contains("atmos") || value.contains("e-ac-3 joc") || value.equals("131")) {
+			format = FormatConfiguration.ATMOS;
 		} else if (value.startsWith("cook")) {
 			format = FormatConfiguration.COOK;
 		} else if (value.startsWith("qdesign")) {
 			format = FormatConfiguration.QDESIGN;
 		} else if (value.equals("realaudio lossless")) {
 			format = FormatConfiguration.RALF;
-		} else if (value.equals("e-ac-3")) {
-			format = FormatConfiguration.EAC3;
-		} else if (value.contains("truehd")) {
-			format = FormatConfiguration.TRUEHD;
 		} else if (value.equals("tta")) {
 			format = FormatConfiguration.TTA;
 		} else if (value.equals("55") || value.equals("a_mpeg/l3")) {
