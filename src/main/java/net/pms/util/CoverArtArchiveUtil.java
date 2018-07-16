@@ -39,6 +39,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.locks.ReentrantLock;
@@ -46,6 +47,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import javax.annotation.concurrent.Immutable;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
@@ -80,10 +82,14 @@ import org.xml.sax.SAXException;
  * @author Nadahar
  */
 public class CoverArtArchiveUtil extends CoverUtil {
-
 	private static final Logger LOGGER = LoggerFactory.getLogger(CoverArtArchiveUtil.class);
+
+	private static final long NO_NETWORK_EXPIRATION_TIME = Long.MAX_VALUE; // Distant future
+	private static final TimePeriod ERROR_EXPIRATION_PERIOD = new TimePeriod(4 * 60 * 1000, 2 * 60 * 1000); // 4 ± 1 minutes
+	private static final TimePeriod NOT_FOUND_EXPIRATION_PERIOD = new TimePeriod(3 * 24 * 60 * 60 * 1000, 24 * 60 * 60 * 1000); // 3 ± 0.5 days
+	private static final TimePeriod FOUND_EXPIRATION_PERIOD = new TimePeriod(14 * 24 * 60 * 60 * 1000, 6 * 24 * 60 * 60 * 1000); // 14 ± 3 days
+
 	private static final long WAIT_TIMEOUT_MS = 30000;
-	private static final long EXPIRATION_PERIOD = 24 * 60 * 60 * 1000; // 24 hours
 	private static final DocumentBuilderFactory DOCUMENT_BUILDER_FACTORY = DocumentBuilderFactory.newInstance();
 
 	/**
@@ -100,10 +106,10 @@ public class CoverArtArchiveUtil extends CoverUtil {
 	/**
 	 * Used to serialize search on a per {@link Tag} basis. Every thread doing
 	 * a search much hold a {@link CoverArtArchiveTagLatch} and release it when
-	 * the search is done and the result is written. Any other threads
+	 * the search is done and the results have been stored. Any other threads
 	 * attempting to search for the same {@link Tag} will wait for the existing
 	 * {@link CoverArtArchiveTagLatch} to be released, and can then use the
-	 * results from the previous thread instead of conducting it's own search.
+	 * results from the previous thread instead of conducting its own search.
 	 */
 	private static CoverArtArchiveTagLatch reserveTagLatch(final CoverArtArchiveTagInfo tagInfo) {
 		CoverArtArchiveTagLatch tagLatch = null;
@@ -170,7 +176,7 @@ public class CoverArtArchiveUtil extends CoverUtil {
 	 * when the search is done and the result is written. Any other threads
 	 * attempting to search for the same MBID will wait for the existing
 	 * {@link CoverArtArchiveCoverLatch} to be released, and can then use the
-	 * results from the previous thread instead of conducting it's own search.
+	 * results from the previous thread instead of conducting its own search.
 	 */
 	private static CoverArtArchiveCoverLatch reserveCoverLatch(final String mBID) {
 		CoverArtArchiveCoverLatch coverLatch = null;
@@ -199,7 +205,7 @@ public class CoverArtArchiveUtil extends CoverUtil {
 			// Check for timeout here instead of in the while loop make logging
 			// it easier.
 			if (!owner && System.currentTimeMillis() - startTime > WAIT_TIMEOUT_MS) {
-				LOGGER.debug("A Cover Art Achive search timed out while waiting it's turn");
+				LOGGER.debug("A Cover Art Achive search timed out while waiting its turn");
 				return null;
 			}
 
@@ -207,7 +213,7 @@ public class CoverArtArchiveUtil extends CoverUtil {
 				try {
 					coverLatch.latch.await();
 				} catch (InterruptedException e) {
-					LOGGER.debug("A Cover Art Archive search was interrupted while waiting it's turn");
+					LOGGER.debug("A Cover Art Archive search was interrupted while waiting its turn");
 					Thread.currentThread().interrupt();
 					return null;
 				} finally {
@@ -321,10 +327,10 @@ public class CoverArtArchiveUtil extends CoverUtil {
 			// Check if it's in the database
 			CoverArtArchiveEntry tableEntry = tableCoverArtArchive.findMBID(mBID);
 			if (
-				!tableEntry.idFound() ||
+				!tableEntry.isFound() ||
 				(
 					tableEntry.isFound() && tableEntry.getCover() == null &&
-					System.currentTimeMillis() - tableEntry.getModified().getTime() >= EXPIRATION_PERIOD
+					System.currentTimeMillis() >= tableEntry.getExpires()
 				)
 			) {
 				// Try to retrieve it
@@ -332,12 +338,12 @@ public class CoverArtArchiveUtil extends CoverUtil {
 
 				} else {
 					// External network is disabled, never expire
-					expiryTime = Long.MAX_VALUE;
+					expiryTime = NO_NETWORK_EXPIRATION_TIME;
 				}
-			} else if (tableEntry.thumbnail != null) {
+			} else if (tableEntry.getThumbnail() != null) {
 				// We have the thumbnail
 				result = tableEntry.getThumbnail();
-			} else if (tableEntry.cover != null) {
+			} else if (tableEntry.getCover() != null) {
 				// We have the cover, generate the thumbnail
 				result = createThumbnail(tableEntry.getCover());
 
@@ -361,8 +367,8 @@ public class CoverArtArchiveUtil extends CoverUtil {
 			synchronized (THUMBNAIL_CACHE) {
 				if (result != null) {
 					THUMBNAIL_CACHE.put(mBID, new CachedThumbnail(result));
-				} else if (tableEntry.found && tableEntry.modified != null) {
-					THUMBNAIL_CACHE.put(mBID, new CachedThumbnail(tableEntry.modified));
+				} else if (tableEntry.isFound() && tableEntry.getExpires() != null) {
+					THUMBNAIL_CACHE.put(mBID, new CachedThumbnail(tableEntry.getExpires()));
 				} else {
 					// This shouldn't normally happen, set a short expiry
 					THUMBNAIL_CACHE.put(mBID, new CachedThumbnail(new Timestamp(System.currentTimeMillis() + 5000)));
@@ -378,6 +384,94 @@ public class CoverArtArchiveUtil extends CoverUtil {
 
 		} finally {
 			ticket.unlock();
+		}
+	}
+
+	/**
+	 * Actually downloads the cover from CoverArtArchive. Must only be called
+	 * with a lock on a ticket from the same {@code MBID}. No queuing is done
+	 * here.
+	 *
+	 * @param tableCoverArtArchive the {@link TableCoverArtArchive} instance to
+	 *            use.
+	 * @param mBID the {@code MBID} for which to retrieve the cover art.
+	 * @return The cover art image data or {@code null}.
+	 */
+	@Nonnull
+	private static Cover downloadCover(@Nonnull TableCoverArtArchive tableCoverArtArchive, @Nonnull String mBID, boolean externalNetwork) {
+		// Check if it's cached first
+		CoverArtArchiveEntry result = tableCoverArtArchive.findMBID(mBID);
+		if (result.isFound()) {
+			if (result.getCover() != null) {
+				return new Cover(result.getCover(), result.getExpires());
+			} else if (System.currentTimeMillis() < result.getExpires()) {
+				// If a lookup has been done within expireTime and no result,
+				// return null. Do another lookup after expireTime has passed
+				return new Cover(null, result.getExpires());
+			}
+		}
+
+		if (!externalNetwork) {
+			LOGGER.warn(
+				"Can't download cover art for MBID \"{}\" from Cover Art Archive since external network access is disabled",
+				mBID
+			);
+			LOGGER.info("Either enable external network or disable cover art downloads");
+			return new Cover(null, NO_NETWORK_EXPIRATION_TIME);
+		}
+
+		DefaultCoverArtArchiveClient client = new DefaultCoverArtArchiveClient();
+
+		CoverArt coverArt;
+		try {
+			coverArt = client.getByMbid(UUID.fromString(mBID));
+		} catch (CoverArtException e) {
+			LOGGER.debug("Couldn't get cover with MBID \"{}\": {}", mBID, e.getMessage());
+			LOGGER.trace("", e);
+			return new Cover(null, ERROR_EXPIRATION_PERIOD.getTime());
+		}
+		if (coverArt == null || coverArt.getImages().isEmpty()) {
+			LOGGER.debug("MBID \"{}\" has no cover at CoverArtArchive", mBID);
+			long expiration = NOT_FOUND_EXPIRATION_PERIOD.getTime();
+			tableCoverArtArchive.writeMBID(mBID, null, null, expiration);
+			return new Cover(null, expiration);
+		}
+		CoverArtImage image = coverArt.getFrontImage();
+		if (image == null) {
+			image = coverArt.getImages().get(0);
+		}
+		byte[] cover = null;
+		try {
+			try (InputStream is = image.getLargeThumbnail()) {
+				cover = IOUtils.toByteArray(is);
+			} catch (HttpResponseException e) {
+				// Use the default image if the large thumbnail is not available
+				try (InputStream is = image.getImage()) {
+					cover = IOUtils.toByteArray(is);
+				}
+			}
+			DLNABinaryThumbnail thumbnail = cover == null ? null : createThumbnail(cover);
+			long expiration = FOUND_EXPIRATION_PERIOD.getTime();
+			tableCoverArtArchive.writeMBID(mBID, cover, thumbnail, expiration);
+			return new Cover(cover, expiration);
+		} catch (HttpResponseException e) {
+			if (e.getStatusCode() == 404) {
+				LOGGER.debug("Cover art for MBID \"{}\" was not found at CoverArtArchive", mBID);
+				long expiration = NOT_FOUND_EXPIRATION_PERIOD.getTime();
+				tableCoverArtArchive.writeMBID(mBID, null, null, expiration);
+				return new Cover(null, expiration);
+			}
+			LOGGER.warn(
+				"Got HTTP status code {} while trying to download cover art for MBID \"{}\" from CoverArtArchive: {}",
+				e.getStatusCode(),
+				mBID,
+				e.getMessage()
+			);
+			return new Cover(null, ERROR_EXPIRATION_PERIOD.getTime());
+		} catch (IOException e) {
+			LOGGER.error("An error occurred while downloading cover art for MBID \"{}\": {}", mBID, e.getMessage());
+			LOGGER.trace("", e);
+			return new Cover(null, ERROR_EXPIRATION_PERIOD.getTime());
 		}
 	}
 
@@ -413,7 +507,7 @@ public class CoverArtArchiveUtil extends CoverUtil {
 			if (result.isFound()) {
 				if (result.getCover() != null) {
 					return result.getCover();
-				} else if (System.currentTimeMillis() - result.getModified().getTime() < EXPIRATION_PERIOD) {
+				} else if (System.currentTimeMillis() - result.getExpires().getTime() < EXPIRATION_PERIOD) {
 					// If a lookup has been done within expireTime and no result,
 					// return null. Do another lookup after expireTime has passed
 					return null;
@@ -1271,6 +1365,7 @@ public class CoverArtArchiveUtil extends CoverUtil {
 		}
 	}
 
+	@Immutable
 	private static class CachedThumbnail {
 		private final WeakReference<DLNABinaryThumbnail> thumbnailReference;
 		private final long expires;
@@ -1278,11 +1373,6 @@ public class CoverArtArchiveUtil extends CoverUtil {
 		public CachedThumbnail(DLNABinaryThumbnail thumbnail) {
 			this.thumbnailReference = new WeakReference<>(thumbnail);
 			this.expires = Long.MAX_VALUE;
-		}
-
-		public CachedThumbnail(Timestamp timeStamp) {
-			this.thumbnailReference = null;
-			this.expires = timeStamp.getTime() + EXPIRATION_PERIOD;
 		}
 
 		public CachedThumbnail(long expires) {
@@ -1306,6 +1396,60 @@ public class CoverArtArchiveUtil extends CoverUtil {
 
 		public DLNABinaryThumbnail getThumbnail() {
 			return thumbnailReference == null ? null : thumbnailReference.get();
+		}
+	}
+
+	@Immutable
+	private static class Cover {
+
+		private final byte[] imageData;
+		private final long expires;
+
+		public Cover(@Nullable byte[] imageData, long expires) {
+			this.imageData = imageData;
+			this.expires = expires;
+		}
+
+		public byte[] getBytes() {
+			return imageData;
+		}
+
+		public long getExpires() {
+			return expires;
+		}
+	}
+
+	@Immutable
+	public static class TimePeriod {
+		private final long fixedPeriod;
+		private final long variation;
+
+		public TimePeriod(long fixedPeriod) {
+			this.fixedPeriod = fixedPeriod;
+			this.variation = 0;
+		}
+
+		public TimePeriod(long fixedPeriod, long variation) {
+			this.fixedPeriod = fixedPeriod;
+			this.variation = variation;
+		}
+
+		public long getFixedPeriod() {
+			return fixedPeriod;
+		}
+
+		public long getVariation() {
+			return variation;
+		}
+
+		public long getDuration() {
+			return variation <= 0 ? fixedPeriod : fixedPeriod + (long) (variation * (Math.random() - 0.5));
+		}
+
+		public long getTime() {
+			return System.currentTimeMillis() + variation <= 0 ?
+				fixedPeriod :
+				fixedPeriod + (long) (variation * (Math.random() - 0.5));
 		}
 	}
 }

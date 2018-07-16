@@ -89,7 +89,7 @@ public final class TableCoverArtArchive extends Table {
 			statement.execute(
 				"CREATE TABLE " + ID + "(" +
 					"ID IDENTITY PRIMARY KEY, " +
-					"MODIFIED DATETIME, " +
+					"EXPIRES DATETIME, " +
 					"MBID VARCHAR(36), " +
 					"COVER BLOB, " +
 					"THUMBNAIL OTHER" +
@@ -118,9 +118,10 @@ public final class TableCoverArtArchive extends Table {
 				LOGGER.trace("Upgrading table {} from version {} to {}", ID, version, version + 1);
 				switch (version) {
 					case 1:
-						// Version 2 adds field THUMBNAIL.
+						// Version 2 adds field THUMBNAIL and renames MODIFIED to EXPIRES.
 						Statement statement = connection.createStatement();
 						statement.executeUpdate("ALTER TABLE " + ID + " ADD COLUMN THUMBNAIL OTHER");
+						statement.executeUpdate("ALTER TABLE " + ID + " ALTER COLUMN MODIFIED RENAME TO EXPIRES");
 						break;
 					default:
 						throw new IllegalStateException(
@@ -145,9 +146,11 @@ public final class TableCoverArtArchive extends Table {
 	 * @param mBID the {@code MBID} to store.
 	 * @param cover the cover as a byte array.
 	 * @param thumbnail the {@link DLNABinaryThumbnail}.
+	 * @param expires the milliseconds since January 1, 1970, 00:00:00 GMT on
+	 *            which this entry expires.
 	 * @throws IllegalArgumentException If {@code mBID} is blank.
 	 */
-	public void writeMBID(@Nonnull String mBID, @Nullable byte[] cover, @Nullable DLNABinaryThumbnail thumbnail) {
+	public void writeMBID(@Nonnull String mBID, @Nullable byte[] cover, @Nullable DLNABinaryThumbnail thumbnail, long expires) {
 		if (isBlank(mBID)) {
 			throw new IllegalArgumentException("mBID cannot be blank");
 		}
@@ -167,7 +170,7 @@ public final class TableCoverArtArchive extends Table {
 							if (trace) {
 								LOGGER.trace("Updating cover for MBID \"{}\"", mBID);
 							}
-							result.updateTimestamp("MODIFIED", new Timestamp(System.currentTimeMillis()));
+							result.updateTimestamp("EXPIRES", new Timestamp(expires));
 							if (cover != null) {
 								result.updateBytes("COVER", cover);
 							} else {
@@ -188,7 +191,7 @@ public final class TableCoverArtArchive extends Table {
 						}
 
 						result.moveToInsertRow();
-						result.updateTimestamp("MODIFIED", new Timestamp(System.currentTimeMillis()));
+						result.updateTimestamp("EXPIRES", new Timestamp(expires));
 						result.updateString("MBID", mBID);
 						if (cover != null) {
 							result.updateBytes("COVER", cover);
@@ -226,7 +229,7 @@ public final class TableCoverArtArchive extends Table {
 		CoverArtArchiveEntry result;
 
 		try (Connection connection = getConnection()) {
-			String query = "SELECT COVER, MODIFIED, THUMBNAIL FROM " + ID + contructMBIDWhere(mBID);
+			String query = "SELECT COVER, EXPIRES, THUMBNAIL FROM " + ID + contructMBIDWhere(mBID);
 
 			if (trace) {
 				LOGGER.trace("Searching for cover with \"{}\"", query);
@@ -250,7 +253,7 @@ public final class TableCoverArtArchive extends Table {
 						}
 						result = new CoverArtArchiveEntry(
 							true,
-							resultSet.getTimestamp("MODIFIED"),
+							resultSet.getTimestamp("EXPIRES"),
 							resultSet.getBytes("COVER"),
 							thumbnail
 						);
@@ -375,7 +378,7 @@ public final class TableCoverArtArchive extends Table {
 	public static class CoverArtArchiveEntry {
 
 		private final boolean found;
-		private final Timestamp modified;
+		private final Timestamp expires;
 		private final byte[] cover;
 		private final DLNABinaryThumbnail thumbnail;
 
@@ -383,18 +386,18 @@ public final class TableCoverArtArchive extends Table {
 		 * Creates a new instance holding the specified values.
 		 *
 		 * @param found {@code true} if found, {@code false} otherwise.
-		 * @param modified the modified {@link Timestamp}.
+		 * @param expires the expiry time {@link Timestamp}.
 		 * @param cover the cover byte array.
 		 */
 		@SuppressFBWarnings("EI_EXPOSE_REP2")
 		public CoverArtArchiveEntry(
 			boolean found,
-			@Nullable Timestamp modified,
+			@Nullable Timestamp expires,
 			@Nullable byte[] cover,
 			@Nullable DLNABinaryThumbnail thumbnail
 		) {
 			this.found = found;
-			this.modified = modified;
+			this.expires = expires;
 			this.cover = cover;
 			this.thumbnail = thumbnail;
 		}
@@ -407,12 +410,11 @@ public final class TableCoverArtArchive extends Table {
 		}
 
 		/**
-		 * @return The modified {@link Timestamp}.
+		 * @return The expiry time {@link Timestamp}.
 		 */
 		@Nullable
-		@SuppressFBWarnings("EI_EXPOSE_REP")
-		public Timestamp getModified() {
-			return modified;
+		public long getExpires() {
+			return expires == null ? 0 : expires.getTime();
 		}
 
 		/**
