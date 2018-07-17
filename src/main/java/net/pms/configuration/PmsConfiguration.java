@@ -3432,12 +3432,13 @@ public class PmsConfiguration extends RendererConfiguration {
 		configuration.setProperty(KEY_SORT_METHOD, value);
 	}
 
+	@Nonnull
 	public CoverSupplier getAudioThumbnailMethod() {
-		return CoverSupplier.toCoverSupplier(getInt(KEY_AUDIO_THUMBNAILS_METHOD, 1));
+		return CoverSupplier.typeOf(getInt(KEY_AUDIO_THUMBNAILS_METHOD, -1), CoverSupplier.COVER_ART_ARCHIVE);
 	}
 
-	public void setAudioThumbnailMethod(CoverSupplier value) {
-		configuration.setProperty(KEY_AUDIO_THUMBNAILS_METHOD, value.toInt());
+	public void setAudioThumbnailMethod(@Nullable CoverSupplier value) {
+		configuration.setProperty(KEY_AUDIO_THUMBNAILS_METHOD, value == null ? "" : value.ordinal());
 	}
 
 	public String getAlternateThumbFolder() {

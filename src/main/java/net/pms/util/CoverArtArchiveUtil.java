@@ -54,6 +54,7 @@ import net.pms.database.TableCoverArtArchive.CoverArtArchiveEntry;
 import net.pms.database.TableManager;
 import net.pms.database.TableMusicBrainzReleases;
 import net.pms.database.TableMusicBrainzReleases.MusicBrainzReleasesResult;
+import net.pms.dlna.CoverArtAchiveThumbnail;
 import net.pms.dlna.DLNABinaryThumbnail;
 import net.pms.dlna.DLNAThumbnail;
 import net.pms.image.ImageFormat;
@@ -261,8 +262,8 @@ public class CoverArtArchiveUtil extends CoverUtil {
 		}
 	}
 
-	@Nullable
-	private static DLNABinaryThumbnail retrieveThumbnail(@Nonnull TableManager tableManager, @Nonnull String mBID, boolean externalNetwork) {
+	@Nonnull
+	private static ExpirableBinaryThumbnail retrieveThumbnail(@Nonnull TableManager tableManager, @Nonnull String mBID, boolean externalNetwork) {
 		if (mBID == null) {
 			throw new IllegalArgumentException("mBID cannot be null");
 		}
@@ -270,30 +271,24 @@ public class CoverArtArchiveUtil extends CoverUtil {
 
 		TableCoverArtArchive tableCoverArtArchive = tableManager.getTableCoverArtArchive();
 		if (tableCoverArtArchive == null) {
-			LOGGER.error("Can't retrieve cover from Cover Art Archive since the table instance doesn't exist");
-			return null;
+			throw new IllegalStateException(
+				"Can't retrieve cover from Cover Art Archive since the table instance doesn't exist"
+			);
 		}
 
-		DLNABinaryThumbnail result;
-		ReentrantLock ticket = null;
-
 		// Check if the thumbnail is cached
+		ReentrantLock ticket;
 		synchronized (THUMBNAIL_CACHE) {
 			CachedThumbnail cacheEntry = THUMBNAIL_CACHE.get(mBID);
-			result = cacheEntry == null ? null : cacheEntry.getThumbnail();
-			if (result != null) {
-				return result;
-			}
-
 			if (cacheEntry != null) {
-				// It is cached but is either not available or expired
-				if (cacheEntry.isDisposable()) {
-					// Clean the cache and continue
-					cleanCache();
-				} else {
-					// Cached as not available, return null
-					return null;
+				// Don't "optimize", we need to hold a reference to the thumbnail before we test it to avoid GC'ing
+				ExpirableBinaryThumbnail result = cacheEntry.toExpirableBinaryThumbnail();
+				if (!cacheEntry.isDisposable()) {
+					return result;
 				}
+
+				// It is cached but expired
+				cleanCache();
 			}
 
 			// It's not cached, get or create a ticket.
@@ -310,19 +305,19 @@ public class CoverArtArchiveUtil extends CoverUtil {
 		ticket.lock();
 		try {
 			// Done queuing, check if another thread has retrieved the thumbnail while queuing
-			long expiryTime;
 			synchronized (THUMBNAIL_CACHE) {
 				CachedThumbnail cacheEntry = THUMBNAIL_CACHE.get(mBID);
-				result = cacheEntry == null ? null : cacheEntry.getThumbnail();
-				if (result != null) {
-					return result;
-				}
-				if (cacheEntry != null && !cacheEntry.isDisposable()) {
-					return null;
+				if (cacheEntry != null) {
+					// Don't "optimize", we need to hold a reference to the thumbnail before we test it to avoid GC'ing
+					ExpirableBinaryThumbnail result = cacheEntry.toExpirableBinaryThumbnail();
+					if (!cacheEntry.isDisposable()) {
+						return result;
+					}
 				}
 			}
 
 			// Check if it's in the database
+			ExpirableBinaryThumbnail result;
 			CoverArtArchiveEntry tableEntry = tableCoverArtArchive.findMBID(mBID);
 			if (
 				!tableEntry.isFound() ||
@@ -334,27 +329,25 @@ public class CoverArtArchiveUtil extends CoverUtil {
 				// It's not in the database or its empty and expired - try to retrieve it
 				if (externalNetwork) {
 					Cover cover = downloadCover(tableCoverArtArchive, mBID, externalNetwork);
-					result = cover.getThumbnail();
-					if (result == null && cover.getBytes() != null) {
-						result = createThumbnail(cover.getBytes());
+					if (cover.getThumbnail() == null && cover.getBytes() != null) {
+						result = new ExpirableBinaryThumbnail(createThumbnail(cover.getBytes()), cover.getExpires());
+					} else {
+						result = new ExpirableBinaryThumbnail(cover.getThumbnail(), cover.getExpires());
 					}
-					expiryTime = cover.getExpires();
 				} else {
 					// External network is disabled, never expire
-					expiryTime = NO_NETWORK_EXPIRATION_TIME;
+					result = new ExpirableBinaryThumbnail(NO_NETWORK_EXPIRATION_TIME);
 				}
 			} else if (tableEntry.getThumbnail() != null) {
 				// We have the thumbnail
-				result = tableEntry.getThumbnail();
-				expiryTime = tableEntry.getExpires();
+				result = new ExpirableBinaryThumbnail(tableEntry.getThumbnail(), tableEntry.getExpires());
 			} else if (tableEntry.getCover() != null) {
 				// We have the cover, generate the thumbnail
-				result = createThumbnail(tableEntry.getCover());
-				expiryTime = tableEntry.getExpires();
+				result = new ExpirableBinaryThumbnail(createThumbnail(tableEntry.getCover()), tableEntry.getExpires());
 
 				// Update the database with the generated thumbnail
 				try {
-					tableCoverArtArchive.updateThumbnail(mBID, result);
+					tableCoverArtArchive.updateThumbnail(mBID, result.getThumbnail());
 				} catch (SQLException e) {
 					LOGGER.error(
 						"Could not update thumbnail for MBID \"{}\" because of an SQL error: {}",
@@ -365,22 +358,23 @@ public class CoverArtArchiveUtil extends CoverUtil {
 				}
 			} else {
 				// The entry is cached as unavailable and isn't expired
-				expiryTime = tableEntry.getExpires();
+				result = new ExpirableBinaryThumbnail(tableEntry.getExpires());
 			}
 
 			// If we have a result..? How to deal with null...
 			// Update the cache with the generated thumbnail
 			synchronized (THUMBNAIL_CACHE) {
-				THUMBNAIL_CACHE.put(mBID, new CachedThumbnail(result, expiryTime));
+				THUMBNAIL_CACHE.put(mBID, new CachedThumbnail(result));
 			}
+
+			return result;
+		} finally {
+			ticket.unlock();
 
 			// Remove the ticked from the queue
 			synchronized (THUMBNAIL_QUEUE) {
 				THUMBNAIL_QUEUE.remove(mBID);
 			}
-			return result;
-		} finally {
-			ticket.unlock();
 		}
 	}
 
@@ -460,6 +454,20 @@ public class CoverArtArchiveUtil extends CoverUtil {
 		}
 	}
 
+	@Nullable
+	public ExpirableBinaryThumbnail getThumbnail(@Nullable String mbid, boolean externalNetwork) {
+		if (isBlank(mbid)) {
+			return null;
+		}
+		TableManager tableManager = Services.tableManager();
+		if (tableManager == null) {
+			LOGGER.error("Can't download cover from Cover Art Archive since TableManager doesn't exist");
+			return null;
+		}
+
+		return retrieveThumbnail(tableManager, mbid, externalNetwork);
+	}
+
 	@Override
 	@Nullable
 	protected DLNAThumbnail doGetThumbnail(@Nullable Tag tag, boolean externalNetwork) {
@@ -474,7 +482,7 @@ public class CoverArtArchiveUtil extends CoverUtil {
 			return null;
 		}
 
-		return retrieveThumbnail(tableManager, mBID, externalNetwork);
+		return new CoverArtAchiveThumbnail(mBID, retrieveThumbnail(tableManager, mBID, externalNetwork));
 	}
 
 	private static String fuzzString(String s) {
@@ -594,12 +602,15 @@ public class CoverArtArchiveUtil extends CoverUtil {
 			}
 		}
 
-		if (!fuzzy && isNotBlank(tagInfo.year) && tagInfo.year.trim().length() > 3) {
-			if (added) {
-				query.append(and);
-			}
-			query.append("date:").append(urlEncode(tagInfo.year)).append('*');
+		if (!fuzzy) {
+			int year = StringUtil.getYear(tagInfo.year);
+			if (year > 0) {
+				if (added) {
+					query.append(and);
+				}
+				query.append("date:").append(urlEncode(tagInfo.year));
 			added = true;
+			}
 		}
 		return query.toString();
 	}
@@ -1266,22 +1277,78 @@ public class CoverArtArchiveUtil extends CoverUtil {
 	}
 
 	@Immutable
-	public static class CachedThumbnail {
+	public static interface Expirable {
+
+		public boolean isExpired();
+
+		public long getExpiryTime();
+	}
+
+	@Immutable
+	public static abstract class AbstractExpirable implements Expirable {
+		protected final long expires;
+
+		protected AbstractExpirable(long expires) {
+			this.expires = expires;
+		}
+
+		@Override
+		public boolean isExpired() {
+			return expires <= System.currentTimeMillis();
+		}
+
+		@Override
+		public long getExpiryTime() {
+			return expires;
+		}
+	}
+
+	@Immutable
+	public static abstract class ExpirableThumbnail extends AbstractExpirable {
+
+		protected ExpirableThumbnail(long expires) {
+			super(expires);
+		}
+
+		public abstract DLNAThumbnail getThumbnail();
+	}
+
+	public static class ExpirableBinaryThumbnail extends ExpirableThumbnail {
+		private final DLNABinaryThumbnail thumbnail;
+
+		public ExpirableBinaryThumbnail(DLNABinaryThumbnail thumbnail, long expires) {
+			super(expires);
+			this.thumbnail = thumbnail;
+		}
+
+		protected ExpirableBinaryThumbnail(long expires) {
+			super(expires);
+			thumbnail = null;
+		}
+
+		@Override
+		public DLNABinaryThumbnail getThumbnail() {
+			return thumbnail;
+		}
+	}
+
+	@Immutable
+	public static class CachedThumbnail extends ExpirableThumbnail {
 		private final WeakReference<DLNABinaryThumbnail> thumbnailReference;
-		private final long expires;
 
 		public CachedThumbnail(DLNABinaryThumbnail thumbnail, long expires) {
-			this.thumbnailReference = new WeakReference<>(thumbnail);
-			this.expires = expires;
+			super(expires);
+			thumbnailReference = new WeakReference<>(thumbnail);
+		}
+
+		public CachedThumbnail(@Nonnull ExpirableBinaryThumbnail expirableBinaryThumbnail) {
+			super(expirableBinaryThumbnail.getExpiryTime());
+			thumbnailReference = new WeakReference<>(expirableBinaryThumbnail.getThumbnail());
 		}
 
 		public CachedThumbnail(long expires) {
-			this.thumbnailReference = null;
-			this.expires = expires;
-		}
-
-		public boolean isExpired() {
-			return expires <= System.currentTimeMillis();
+			super(expires);
+			thumbnailReference = null;
 		}
 
 		public boolean isDisposable() {
@@ -1294,8 +1361,13 @@ public class CoverArtArchiveUtil extends CoverUtil {
 				);
 		}
 
+		@Override
 		public DLNABinaryThumbnail getThumbnail() {
 			return thumbnailReference == null ? null : thumbnailReference.get();
+		}
+
+		public ExpirableBinaryThumbnail toExpirableBinaryThumbnail() {
+			return new ExpirableBinaryThumbnail(thumbnailReference == null ? null : thumbnailReference.get(), expires);
 		}
 	}
 
@@ -1355,9 +1427,9 @@ public class CoverArtArchiveUtil extends CoverUtil {
 		}
 
 		public long getTime() {
-			return System.currentTimeMillis() + variation <= 0 ?
+			return System.currentTimeMillis() + (variation <= 0 ?
 				fixedPeriod :
-				fixedPeriod + (long) (variation * (Math.random() - 0.5));
+				fixedPeriod + (long) (variation * (Math.random() - 0.5)));
 		}
 	}
 }

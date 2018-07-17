@@ -313,7 +313,7 @@ public final class AudioUtils {
 		}
 		if (
 			PMS.getConfiguration() != null &&
-			!PMS.getConfiguration().getAudioThumbnailMethod().equals(CoverSupplier.NONE) &&
+			PMS.getConfiguration().getAudioThumbnailMethod() != CoverSupplier.NONE &&
 			(
 				StringUtils.isNotBlank(media.getFirstAudioTrack().getSongname()) ||
 				StringUtils.isNotBlank(media.getFirstAudioTrack().getArtist())

@@ -843,7 +843,7 @@ public class DLNAMediaInfo implements Cloneable {
 									ImageFormat.SOURCE,
 									false
 								);
-							} else if (!configuration.getAudioThumbnailMethod().equals(CoverSupplier.NONE)) {
+							} else if (configuration.getAudioThumbnailMethod() != CoverSupplier.NONE) {
 								thumb = CoverUtil.get().getThumbnail(t);
 							}
 							if (thumb != null) {
@@ -1913,7 +1913,7 @@ public class DLNAMediaInfo implements Cloneable {
 	}
 
 	public DLNAThumbnailInputStream getThumbnailInputStream() {
-		return thumb != null ? new DLNAThumbnailInputStream(thumb) : null;
+		return thumb != null && thumb.getBytes(false) != null ? new DLNAThumbnailInputStream(thumb) : null;
 	}
 
 	public String getValidFps(boolean ratios) {
