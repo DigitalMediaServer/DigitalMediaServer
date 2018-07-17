@@ -123,7 +123,8 @@ public class DLNAMediaAudio extends DLNAMediaLang implements Cloneable {
 	 * @return True if the audio codec is AAC-LC.
 	 */
 	public boolean isAACLC() {
-		return FormatConfiguration.AAC_LC.equalsIgnoreCase(getCodecA());
+		return FormatConfiguration.AAC_LC.equalsIgnoreCase(getCodecA()) ||
+			getCodecA() != null && getCodecA().contains("aac (lc)");
 	}
 
 	/**
@@ -134,7 +135,8 @@ public class DLNAMediaAudio extends DLNAMediaLang implements Cloneable {
 			FormatConfiguration.AC3.equalsIgnoreCase(getCodecA()) ||
 			getCodecA() != null && ((
 					getCodecA().contains("ac3") &&
-					!getCodecA().contains("mac3")
+					!getCodecA().contains("mac3") &&
+					!getCodecA().contains("eac3")
 				) ||
 				getCodecA().contains("a52")
 			);
@@ -226,7 +228,8 @@ public class DLNAMediaAudio extends DLNAMediaLang implements Cloneable {
 	 * @return True if the audio codec is EAC-3.
 	 */
 	public boolean isEAC3() {
-		return FormatConfiguration.EAC3.equalsIgnoreCase(getCodecA());
+		return FormatConfiguration.EAC3.equalsIgnoreCase(getCodecA()) ||
+			getCodecA() != null && getCodecA().contains("eac3");
 	}
 
 	/**
@@ -254,7 +257,8 @@ public class DLNAMediaAudio extends DLNAMediaLang implements Cloneable {
 	 * @return True if the audio codec is HE-AAC.
 	 */
 	public boolean isHEAAC() {
-		return FormatConfiguration.HE_AAC.equalsIgnoreCase(getCodecA());
+		return FormatConfiguration.HE_AAC.equalsIgnoreCase(getCodecA()) ||
+			getCodecA() != null && getCodecA().contains("aac (he-aac)");
 	}
 
 	/**
@@ -422,7 +426,7 @@ public class DLNAMediaAudio extends DLNAMediaLang implements Cloneable {
 	 * @return True if the audio codec is AC-3, DTS, DTS-HD or TrueHD.
 	 */
 	public boolean isNonPCMEncodedAudio() {
-		return isAC3() || isAtmos() || isDTS() || isTrueHD() || isDTSHD();
+		return isAC3() || isAtmos() || isDTS() || isTrueHD() || isDTSHD(); // isAAC() || isEAC3()
 	}
 
 	/**
