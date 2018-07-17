@@ -114,12 +114,12 @@ public final class TableCoverArtArchive extends Table {
 		}
 		connection.setAutoCommit(false);
 		try {
+			Statement statement = connection.createStatement();
 			for (int version = currentVersion; version < TABLE_VERSION; version++) {
 				LOGGER.trace("Upgrading table {} from version {} to {}", ID, version, version + 1);
 				switch (version) {
 					case 1:
 						// Version 2 adds field THUMBNAIL and renames MODIFIED to EXPIRES.
-						Statement statement = connection.createStatement();
 						statement.executeUpdate("ALTER TABLE " + ID + " ADD COLUMN THUMBNAIL OTHER");
 						statement.executeUpdate("ALTER TABLE " + ID + " ALTER COLUMN MODIFIED RENAME TO EXPIRES");
 						break;
@@ -388,6 +388,7 @@ public final class TableCoverArtArchive extends Table {
 		 * @param found {@code true} if found, {@code false} otherwise.
 		 * @param expires the expiry time {@link Timestamp}.
 		 * @param cover the cover byte array.
+		 * @param thumbnail the {@link DLNABinaryThumbnail}.
 		 */
 		@SuppressFBWarnings("EI_EXPOSE_REP2")
 		public CoverArtArchiveEntry(
@@ -410,7 +411,8 @@ public final class TableCoverArtArchive extends Table {
 		}
 
 		/**
-		 * @return The expiry time {@link Timestamp}.
+		 * @return The milliseconds since January 1, 1970, 00:00:00 GMT on which
+		 *         this entry expires.
 		 */
 		@Nullable
 		public long getExpires() {

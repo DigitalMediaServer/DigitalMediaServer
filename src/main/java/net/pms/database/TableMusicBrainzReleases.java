@@ -55,7 +55,7 @@ public final class TableMusicBrainzReleases extends Table {
 	 * definition. Table upgrade SQL must also be added to
 	 * {@link #upgradeTable()}
 	 */
-	private static final int TABLE_VERSION = 2;
+	private static final int TABLE_VERSION = 3;
 
 	/**
 	 * Should only be instantiated by {@link TableManager}.
@@ -90,7 +90,7 @@ public final class TableMusicBrainzReleases extends Table {
 			statement.execute(
 				"CREATE TABLE " + ID + "(" +
 					"ID IDENTITY PRIMARY KEY, " +
-					"MODIFIED DATETIME, " +
+					"EXPIRES DATETIME, " +
 					"MBID VARCHAR(36), " +
 					"ARTIST VARCHAR(1000), " +
 					"ALBUM VARCHAR(1000), " +
@@ -117,16 +117,21 @@ public final class TableMusicBrainzReleases extends Table {
 		}
 		connection.setAutoCommit(false);
 		try {
+			Statement statement = connection.createStatement();
 			for (int version = currentVersion; version < TABLE_VERSION; version++) {
 				LOGGER.trace("Upgrading table {} from version {} to {}", ID, version, version + 1);
 				switch (version) {
 					case 1:
 						// Version 2 increases the size of ARTIST; ALBUM, TITLE and YEAR.
-						Statement statement = connection.createStatement();
 						statement.executeUpdate("ALTER TABLE " + ID + " ALTER COLUMN ARTIST VARCHAR(1000)");
 						statement.executeUpdate("ALTER TABLE " + ID + " ALTER COLUMN ALBUM VARCHAR(1000)");
 						statement.executeUpdate("ALTER TABLE " + ID + " ALTER COLUMN TITLE VARCHAR(1000)");
 						statement.executeUpdate("ALTER TABLE " + ID + " ALTER COLUMN YEAR VARCHAR(20)");
+						break;
+					case 2:
+						// Version 2 renames MODIFIED to EXPIRES.
+						statement.executeUpdate("ALTER TABLE " + ID + " ADD COLUMN THUMBNAIL OTHER");
+						statement.executeUpdate("ALTER TABLE " + ID + " ALTER COLUMN MODIFIED RENAME TO EXPIRES");
 						break;
 					default:
 						throw new IllegalStateException(
@@ -151,8 +156,10 @@ public final class TableMusicBrainzReleases extends Table {
 	 * @param mBID the MBID to store.
 	 * @param tagInfo the {@link Tag} who's information should be associated
 	 *            with the given MBID.
+	 * @param expires the milliseconds since January 1, 1970, 00:00:00 GMT on
+	 *            which this entry expires.
 	 */
-	public void writeMBID(String mBID, CoverArtArchiveTagInfo tagInfo) {
+	public void writeMBID(String mBID, CoverArtArchiveTagInfo tagInfo, long expires) {
 		boolean trace = LOGGER.isTraceEnabled();
 
 		try (Connection connection = getConnection()) {
@@ -169,7 +176,7 @@ public final class TableMusicBrainzReleases extends Table {
 							if (trace) {
 								LOGGER.trace("Updating row {} to MBID \"{}\"", result.getInt("ID"), mBID);
 							}
-							result.updateTimestamp("MODIFIED", new Timestamp(System.currentTimeMillis()));
+							result.updateTimestamp("EXPIRES", new Timestamp(expires));
 							if (isNotBlank(mBID)) {
 								result.updateString("MBID", mBID);
 							} else {
@@ -196,7 +203,7 @@ public final class TableMusicBrainzReleases extends Table {
 						}
 
 						result.moveToInsertRow();
-						result.updateTimestamp("MODIFIED", new Timestamp(System.currentTimeMillis()));
+						result.updateTimestamp("EXPIRES", new Timestamp(expires));
 						if (isNotBlank(mBID)) {
 							result.updateString("MBID", mBID);
 						}
@@ -252,7 +259,7 @@ public final class TableMusicBrainzReleases extends Table {
 		MusicBrainzReleasesResult result;
 
 		try (Connection connection = getConnection()) {
-			String query = "SELECT MBID, MODIFIED FROM " + ID + constructTagWhere(tagInfo, false);
+			String query = "SELECT MBID, EXPIRES FROM " + ID + constructTagWhere(tagInfo, false);
 
 			if (trace) {
 				LOGGER.trace("Searching for release MBID with \"{}\"", query);
@@ -261,7 +268,7 @@ public final class TableMusicBrainzReleases extends Table {
 			try (Statement statement = connection.createStatement()) {
 				try (ResultSet resultSet = statement.executeQuery(query)) {
 					if (resultSet.next()) {
-						result = new MusicBrainzReleasesResult(true, resultSet.getTimestamp("MODIFIED"), resultSet.getString("MBID"));
+						result = new MusicBrainzReleasesResult(true, resultSet.getTimestamp("EXPIRES"), resultSet.getString("MBID"));
 					} else {
 						result = new MusicBrainzReleasesResult(false, null, null);
 					}
@@ -354,20 +361,20 @@ public final class TableMusicBrainzReleases extends Table {
 	public static class MusicBrainzReleasesResult {
 
 		private final boolean found;
-		private final Timestamp modified;
+		private final Timestamp expires;
 		private final String mBID;
 
 		/**
 		 * Creates a new instance holding the specified values.
 		 *
 		 * @param found {@code true} if found, {@code false} otherwise.
-		 * @param modified the modified {@link Timestamp}.
+		 * @param expires the expiry time {@link Timestamp}.
 		 * @param mBID the {@code MBID}.
 		 */
 		@SuppressFBWarnings("EI_EXPOSE_REP2")
-		public MusicBrainzReleasesResult(boolean found, @Nullable Timestamp modified, @Nullable String mBID) {
+		public MusicBrainzReleasesResult(boolean found, @Nullable Timestamp expires, @Nullable String mBID) {
 			this.found = found;
-			this.modified = modified;
+			this.expires = expires;
 			this.mBID = mBID;
 		}
 
@@ -379,12 +386,12 @@ public final class TableMusicBrainzReleases extends Table {
 		}
 
 		/**
-		 * @return The modified {@link Timestamp}.
+		 * @return The milliseconds since January 1, 1970, 00:00:00 GMT on which
+		 *         this expires.
 		 */
 		@Nullable
-		@SuppressFBWarnings("EI_EXPOSE_REP")
-		public Timestamp getModified() {
-			return modified;
+		public long getExpires() {
+			return expires == null ? 0 : expires.getTime();
 		}
 
 		/**
