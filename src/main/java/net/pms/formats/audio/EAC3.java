@@ -27,6 +27,11 @@ public class EAC3 extends AudioBase {
 
 	@Override
 	public String[] getSupportedExtensions() {
-		return new String[] { "eac3" };
+		return new String[] {
+			"dd+",
+			"eb3",
+			"ec3",
+			"eac3"
+		};
 	}
 }
