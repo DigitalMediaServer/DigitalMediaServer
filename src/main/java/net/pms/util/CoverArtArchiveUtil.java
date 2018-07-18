@@ -27,7 +27,6 @@ import fm.last.musicbrainz.coverart.CoverArtImage;
 import fm.last.musicbrainz.coverart.impl.DefaultCoverArtArchiveClient;
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.ref.WeakReference;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
@@ -45,7 +44,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import javax.annotation.concurrent.Immutable;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
@@ -59,6 +57,9 @@ import net.pms.dlna.DLNABinaryThumbnail;
 import net.pms.dlna.DLNAThumbnail;
 import net.pms.image.ImageFormat;
 import net.pms.image.ImagesUtil.ScaleType;
+import net.pms.image.thumbnail.Cover;
+import net.pms.image.thumbnail.ExpirableThumbnail.CachedThumbnail;
+import net.pms.image.thumbnail.ExpirableThumbnail.ExpirableBinaryThumbnail;
 import net.pms.service.Services;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.client.HttpResponseException;
@@ -164,73 +165,6 @@ public class CoverArtArchiveUtil extends CoverUtil {
 			}
 		}
 		tagLatch.latch.countDown();
-	}
-
-	private static final Object COVER_LATCHES_LOCK = new Object();
-	private static final List<CoverArtArchiveCoverLatch> COVER_LATCHES = new ArrayList<>();
-
-	/**
-	 * Used to serialize search on a per MBID basis. Every thread doing
-	 * a search much hold a {@link CoverArtArchiveCoverLatch} and release it
-	 * when the search is done and the result is written. Any other threads
-	 * attempting to search for the same MBID will wait for the existing
-	 * {@link CoverArtArchiveCoverLatch} to be released, and can then use the
-	 * results from the previous thread instead of conducting its own search.
-	 */
-	private static CoverArtArchiveCoverLatch reserveCoverLatch(final String mBID) {
-		CoverArtArchiveCoverLatch coverLatch = null;
-
-		boolean owner = false;
-		long startTime = System.currentTimeMillis();
-
-		while (!owner && !Thread.currentThread().isInterrupted()) {
-
-			// Find if any other tread is currently searching the same MBID
-			synchronized (COVER_LATCHES_LOCK) {
-				for (CoverArtArchiveCoverLatch latch : COVER_LATCHES) {
-					if (latch.mBID.equals(mBID)) {
-						coverLatch = latch;
-						break;
-					}
-				}
-				// None found, our turn
-				if (coverLatch == null) {
-					coverLatch = new CoverArtArchiveCoverLatch(mBID);
-					COVER_LATCHES.add(coverLatch);
-					owner = true;
-				}
-			}
-
-			// Check for timeout here instead of in the while loop make logging
-			// it easier.
-			if (!owner && System.currentTimeMillis() - startTime > WAIT_TIMEOUT_MS) {
-				LOGGER.debug("A Cover Art Achive search timed out while waiting its turn");
-				return null;
-			}
-
-			if (!owner) {
-				try {
-					coverLatch.latch.await();
-				} catch (InterruptedException e) {
-					LOGGER.debug("A Cover Art Archive search was interrupted while waiting its turn");
-					Thread.currentThread().interrupt();
-					return null;
-				} finally {
-					coverLatch = null;
-				}
-			}
-		}
-
-		return coverLatch;
-	}
-
-	private static void releaseCoverLatch(CoverArtArchiveCoverLatch coverLatch) {
-		synchronized (COVER_LATCHES_LOCK) {
-			if (!COVER_LATCHES.remove(coverLatch)) {
-				LOGGER.error("Concurrency error: Held coverLatch not found in latchList");
-			}
-		}
-		coverLatch.latch.countDown();
 	}
 
 	/**
@@ -1264,172 +1198,6 @@ public class CoverArtArchiveUtil extends CoverUtil {
 
 		public CoverArtArchiveTagLatch(CoverArtArchiveTagInfo info) {
 			this.info = info;
-		}
-	}
-
-	private static class CoverArtArchiveCoverLatch {
-		final String mBID;
-		final CountDownLatch latch = new CountDownLatch(1);
-
-		public CoverArtArchiveCoverLatch(String mBID) {
-			this.mBID = mBID;
-		}
-	}
-
-	@Immutable
-	public static interface Expirable {
-
-		public boolean isExpired();
-
-		public long getExpiryTime();
-	}
-
-	@Immutable
-	public static abstract class AbstractExpirable implements Expirable {
-		protected final long expires;
-
-		protected AbstractExpirable(long expires) {
-			this.expires = expires;
-		}
-
-		@Override
-		public boolean isExpired() {
-			return expires <= System.currentTimeMillis();
-		}
-
-		@Override
-		public long getExpiryTime() {
-			return expires;
-		}
-	}
-
-	@Immutable
-	public static abstract class ExpirableThumbnail extends AbstractExpirable {
-
-		protected ExpirableThumbnail(long expires) {
-			super(expires);
-		}
-
-		public abstract DLNAThumbnail getThumbnail();
-	}
-
-	public static class ExpirableBinaryThumbnail extends ExpirableThumbnail {
-		private final DLNABinaryThumbnail thumbnail;
-
-		public ExpirableBinaryThumbnail(DLNABinaryThumbnail thumbnail, long expires) {
-			super(expires);
-			this.thumbnail = thumbnail;
-		}
-
-		protected ExpirableBinaryThumbnail(long expires) {
-			super(expires);
-			thumbnail = null;
-		}
-
-		@Override
-		public DLNABinaryThumbnail getThumbnail() {
-			return thumbnail;
-		}
-	}
-
-	@Immutable
-	public static class CachedThumbnail extends ExpirableThumbnail {
-		private final WeakReference<DLNABinaryThumbnail> thumbnailReference;
-
-		public CachedThumbnail(DLNABinaryThumbnail thumbnail, long expires) {
-			super(expires);
-			thumbnailReference = new WeakReference<>(thumbnail);
-		}
-
-		public CachedThumbnail(@Nonnull ExpirableBinaryThumbnail expirableBinaryThumbnail) {
-			super(expirableBinaryThumbnail.getExpiryTime());
-			thumbnailReference = new WeakReference<>(expirableBinaryThumbnail.getThumbnail());
-		}
-
-		public CachedThumbnail(long expires) {
-			super(expires);
-			thumbnailReference = null;
-		}
-
-		public boolean isDisposable() {
-			return
-				(
-					thumbnailReference != null && thumbnailReference.get() == null
-				) ||
-				(
-					thumbnailReference == null && isExpired()
-				);
-		}
-
-		@Override
-		public DLNABinaryThumbnail getThumbnail() {
-			return thumbnailReference == null ? null : thumbnailReference.get();
-		}
-
-		public ExpirableBinaryThumbnail toExpirableBinaryThumbnail() {
-			return new ExpirableBinaryThumbnail(thumbnailReference == null ? null : thumbnailReference.get(), expires);
-		}
-	}
-
-	@Immutable
-	private static class Cover {
-
-		private final byte[] imageData;
-		private final DLNABinaryThumbnail thumbnail;
-		private final long expires;
-
-		public Cover(@Nullable byte[] imageData, @Nullable DLNABinaryThumbnail thumbnail, long expires) {
-			this.imageData = imageData;
-			this.thumbnail = thumbnail;
-			this.expires = expires;
-		}
-
-		@Nullable
-		public byte[] getBytes() {
-			return imageData;
-		}
-
-		@Nullable
-		public DLNABinaryThumbnail getThumbnail() {
-			return thumbnail;
-		}
-
-		public long getExpires() {
-			return expires;
-		}
-	}
-
-	@Immutable
-	public static class TimePeriod {
-		private final long fixedPeriod;
-		private final long variation;
-
-		public TimePeriod(long fixedPeriod) {
-			this.fixedPeriod = fixedPeriod;
-			this.variation = 0;
-		}
-
-		public TimePeriod(long fixedPeriod, long variation) {
-			this.fixedPeriod = fixedPeriod;
-			this.variation = variation;
-		}
-
-		public long getFixedPeriod() {
-			return fixedPeriod;
-		}
-
-		public long getVariation() {
-			return variation;
-		}
-
-		public long getDuration() {
-			return variation <= 0 ? fixedPeriod : fixedPeriod + (long) (variation * (Math.random() - 0.5));
-		}
-
-		public long getTime() {
-			return System.currentTimeMillis() + (variation <= 0 ?
-				fixedPeriod :
-				fixedPeriod + (long) (variation * (Math.random() - 0.5)));
 		}
 	}
 }
