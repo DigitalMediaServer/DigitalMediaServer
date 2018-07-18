@@ -27,6 +27,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.Map.Entry;
+import java.util.regex.Pattern;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import net.pms.configuration.MapFileConfiguration;
@@ -58,6 +59,9 @@ public class MapFile extends DLNAResource {
 	public static final Set<String> THUMBNAIL_EXTENSIONS = Collections.unmodifiableSet(new HashSet<>(
 		Arrays.asList(new String[] {"jpeg", "jpg", "png"})
 	));
+	public static final Pattern FOLDER_THUMBNAIL = Pattern.compile(
+		"^albumart[_.]?(?:small|large)\\.[^.]*$",Pattern.CASE_INSENSITIVE
+	);
 	private List<File> discoverable;
 	private List<File> emptyFoldersToRescan;
 	private String forcedName;
@@ -159,8 +163,7 @@ public class MapFile extends DLNAResource {
 		if (evaluateExtension && !isPotentialThumbnail(fileName)) {
 			return false;
 		}
-		fileName = fileName.toLowerCase(Locale.ROOT);
-		return fileName.startsWith("folder.") || fileName.contains("albumart");
+		return FOLDER_THUMBNAIL.matcher(fileName).matches();
 	}
 
 	/**
