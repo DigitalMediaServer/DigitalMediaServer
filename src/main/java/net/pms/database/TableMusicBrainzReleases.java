@@ -368,7 +368,7 @@ public final class TableMusicBrainzReleases extends Table {
 		 * Creates a new instance holding the specified values.
 		 *
 		 * @param found {@code true} if found, {@code false} otherwise.
-		 * @param expires the expiry time {@link Timestamp}.
+		 * @param expires the expiration time {@link Timestamp}.
 		 * @param mBID the {@code MBID}.
 		 */
 		@SuppressFBWarnings("EI_EXPOSE_REP2")

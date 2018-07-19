@@ -91,17 +91,19 @@ public class CoverArtArchiveUtil extends CoverUtil {
 
 	private static final long WAIT_TIMEOUT_MS = 30000;
 	private static final DocumentBuilderFactory DOCUMENT_BUILDER_FACTORY = DocumentBuilderFactory.newInstance();
+	private static final long THUMBNAIL_CACHE_CLEAN_INTERVAL = 2 * 60 * 1000; // 2 minutes
+
+	private final Object TAG_LATCHES_LOCK = new Object();
+	private final List<CoverArtArchiveTagLatch> TAG_LATCHES = new ArrayList<>();
+	private final Map<String, CachedThumbnail> thumbnailCache = new HashMap<>();
+	private final Map<String, ReentrantLock> thumbnailQueue = new HashMap<>();
+	private long lastThumbnailQueueClean;
 
 	/**
 	 * Do not instantiate this class, use {@link CoverUtil#get()}.
 	 */
 	protected CoverArtArchiveUtil() {
 	}
-
-	private static final Object TAG_LATCHES_LOCK = new Object();
-	private static final List<CoverArtArchiveTagLatch> TAG_LATCHES = new ArrayList<>();
-	private static final Map<String, CachedThumbnail> THUMBNAIL_CACHE = new HashMap<>();
-	private static final Map<String, ReentrantLock> THUMBNAIL_QUEUE = new HashMap<>();
 
 	/**
 	 * Used to serialize search on a per {@link Tag} basis. Every thread doing
@@ -111,7 +113,7 @@ public class CoverArtArchiveUtil extends CoverUtil {
 	 * {@link CoverArtArchiveTagLatch} to be released, and can then use the
 	 * results from the previous thread instead of conducting its own search.
 	 */
-	private static CoverArtArchiveTagLatch reserveTagLatch(final CoverArtArchiveTagInfo tagInfo) {
+	private CoverArtArchiveTagLatch reserveTagLatch(final CoverArtArchiveTagInfo tagInfo) {
 		CoverArtArchiveTagLatch tagLatch = null;
 
 		boolean owner = false;
@@ -158,7 +160,7 @@ public class CoverArtArchiveUtil extends CoverUtil {
 		return tagLatch;
 	}
 
-	private static void releaseTagLatch(CoverArtArchiveTagLatch tagLatch) {
+	private void releaseTagLatch(CoverArtArchiveTagLatch tagLatch) {
 		synchronized (TAG_LATCHES_LOCK) {
 			if (!TAG_LATCHES.remove(tagLatch)) {
 				LOGGER.error("Concurrency error: Held tagLatch not found in latchList");
@@ -197,7 +199,7 @@ public class CoverArtArchiveUtil extends CoverUtil {
 	}
 
 	@Nonnull
-	private static ExpirableBinaryThumbnail retrieveThumbnail(@Nonnull TableManager tableManager, @Nonnull String mBID, boolean externalNetwork) {
+	private ExpirableBinaryThumbnail retrieveThumbnail(@Nonnull TableManager tableManager, @Nonnull String mBID, boolean externalNetwork) {
 		if (mBID == null) {
 			throw new IllegalArgumentException("mBID cannot be null");
 		}
@@ -212,8 +214,9 @@ public class CoverArtArchiveUtil extends CoverUtil {
 
 		// Check if the thumbnail is cached
 		ReentrantLock ticket;
-		synchronized (THUMBNAIL_CACHE) {
-			CachedThumbnail cacheEntry = THUMBNAIL_CACHE.get(mBID);
+		synchronized (thumbnailCache) {
+			cleanCache(false);
+			CachedThumbnail cacheEntry = thumbnailCache.get(mBID);
 			if (cacheEntry != null) {
 				// Don't "optimize", we need to hold a reference to the thumbnail before we test it to avoid GC'ing
 				ExpirableBinaryThumbnail result = cacheEntry.toExpirableBinaryThumbnail();
@@ -222,15 +225,15 @@ public class CoverArtArchiveUtil extends CoverUtil {
 				}
 
 				// It is cached but expired
-				cleanCache();
+				cleanCache(true);
 			}
 
 			// It's not cached, get or create a ticket.
-			synchronized (THUMBNAIL_QUEUE) {
-				ticket = THUMBNAIL_QUEUE.get(mBID);
+			synchronized (thumbnailQueue) {
+				ticket = thumbnailQueue.get(mBID);
 				if (ticket == null) {
 					ticket = new ReentrantLock();
-					THUMBNAIL_QUEUE.put(mBID, ticket);
+					thumbnailQueue.put(mBID, ticket);
 				}
 			}
 		}
@@ -239,8 +242,8 @@ public class CoverArtArchiveUtil extends CoverUtil {
 		ticket.lock();
 		try {
 			// Done queuing, check if another thread has retrieved the thumbnail while queuing
-			synchronized (THUMBNAIL_CACHE) {
-				CachedThumbnail cacheEntry = THUMBNAIL_CACHE.get(mBID);
+			synchronized (thumbnailCache) {
+				CachedThumbnail cacheEntry = thumbnailCache.get(mBID);
 				if (cacheEntry != null) {
 					// Don't "optimize", we need to hold a reference to the thumbnail before we test it to avoid GC'ing
 					ExpirableBinaryThumbnail result = cacheEntry.toExpirableBinaryThumbnail();
@@ -297,8 +300,8 @@ public class CoverArtArchiveUtil extends CoverUtil {
 
 			// If we have a result..? How to deal with null...
 			// Update the cache with the generated thumbnail
-			synchronized (THUMBNAIL_CACHE) {
-				THUMBNAIL_CACHE.put(mBID, new CachedThumbnail(result));
+			synchronized (thumbnailCache) {
+				thumbnailCache.put(mBID, new CachedThumbnail(result));
 			}
 
 			return result;
@@ -306,8 +309,8 @@ public class CoverArtArchiveUtil extends CoverUtil {
 			ticket.unlock();
 
 			// Remove the ticked from the queue
-			synchronized (THUMBNAIL_QUEUE) {
-				THUMBNAIL_QUEUE.remove(mBID);
+			synchronized (thumbnailQueue) {
+				thumbnailQueue.remove(mBID);
 			}
 		}
 	}
@@ -930,16 +933,19 @@ public class CoverArtArchiveUtil extends CoverUtil {
 		return releaseList;
 	}
 
-	private static void cleanCache() {
-		synchronized (THUMBNAIL_CACHE) {
-			for (
-				Iterator<Entry<String, CachedThumbnail>> iterator = THUMBNAIL_CACHE.entrySet().iterator();
-				iterator.hasNext();
-			) {
-				Entry<String, CachedThumbnail> entry = iterator.next();
-				if (entry.getValue().isDisposable()) {
-					iterator.remove();
+	private void cleanCache(boolean force) {
+		synchronized (thumbnailCache) {
+			if (force || System.currentTimeMillis() >= lastThumbnailQueueClean + THUMBNAIL_CACHE_CLEAN_INTERVAL) {
+				for (
+					Iterator<Entry<String, CachedThumbnail>> iterator = thumbnailCache.entrySet().iterator();
+					iterator.hasNext();
+				) {
+					Entry<String, CachedThumbnail> entry = iterator.next();
+					if (entry.getValue().isDisposable()) {
+						iterator.remove();
+					}
 				}
+				lastThumbnailQueueClean = System.currentTimeMillis();
 			}
 		}
 	}
