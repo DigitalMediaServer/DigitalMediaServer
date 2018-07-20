@@ -881,4 +881,12 @@ public class FormatConfigurationRegressionTest0 {
 		// Regression assertion (captures the current behavior of the code)
 		assertTrue("'" + str0 + "' != '" + "mpeg4sp"+ "'", str0.equals("mpeg4sp"));
 	}
+
+	@Test
+	public void testDOLBYE() throws Throwable {
+		String str0 = net.pms.configuration.FormatConfiguration.DOLBYE;
+
+		// Regression assertion (captures the current behavior of the code)
+		assertTrue("'" + str0 + "' != '" + "dolbye"+ "'", str0.equals("dolbye"));
+	}
 }
