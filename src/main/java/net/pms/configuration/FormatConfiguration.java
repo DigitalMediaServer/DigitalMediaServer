@@ -72,6 +72,7 @@ public class FormatConfiguration {
 	public static final String DIVX = "divx";
 	/** Direct Stream Digital / Super Audio CD tracks */
 	public static final String DFF = "dff";
+	public static final String DOLBYE = "dolbye";
 	public static final String DSF = "dsf";
 	public static final String DTS = "dts";
 	public static final String DTSHD = "dtshd";
