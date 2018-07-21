@@ -704,6 +704,12 @@ public class LibMediaInfoParser {
 			value.equals("2000")
 		) {
 			format = FormatConfiguration.AC3;
+		} else if (value.equals("dsf")) {
+			format = FormatConfiguration.DSF;
+		} else if (value.equals("dsdiff")) {
+			format = FormatConfiguration.DFF;
+		} else if (value.equals("dsd")) {
+			format = FormatConfiguration.DSD;
 		} else if (value.startsWith("cook")) {
 			format = FormatConfiguration.COOK;
 		} else if (value.startsWith("qdesign")) {

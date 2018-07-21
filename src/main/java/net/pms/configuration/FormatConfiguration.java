@@ -73,6 +73,7 @@ public class FormatConfiguration {
 	/** Direct Stream Digital / Super Audio CD tracks */
 	public static final String DFF = "dff";
 	public static final String DOLBYE = "dolbye";
+	public static final String DSD = "dsd";
 	public static final String DSF = "dsf";
 	public static final String DTS = "dts";
 	public static final String DTSHD = "dtshd";
@@ -504,12 +505,10 @@ public class FormatConfiguration {
 				}
 			}
 
-			// MediaInfo can't correctly parse ADPCM, DFF, DSF or PNM
+			// MediaInfo can't correctly parse ADPCM or PNM
 			if (
 				renderer.isUseMediaInfo() &&
 				ext.getIdentifier() != Identifier.ADPCM &&
-				ext.getIdentifier() != Identifier.DFF &&
-				ext.getIdentifier() != Identifier.DSF &&
 				ext.getIdentifier() != Identifier.PNM
 			) {
 				LibMediaInfoParser.parse(media, file, type, renderer);
