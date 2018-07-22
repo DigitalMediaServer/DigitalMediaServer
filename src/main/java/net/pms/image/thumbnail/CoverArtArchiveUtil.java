@@ -44,7 +44,6 @@ import java.util.concurrent.locks.ReentrantLock;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import net.pms.database.TableCoverArtArchive;
 import net.pms.database.TableCoverArtArchive.CoverArtArchiveEntry;
@@ -58,6 +57,7 @@ import net.pms.image.ImagesUtil.ScaleType;
 import net.pms.image.thumbnail.ExpirableThumbnail.CachedThumbnail;
 import net.pms.image.thumbnail.ExpirableThumbnail.ExpirableBinaryThumbnail;
 import net.pms.service.Services;
+import net.pms.util.SafeDocumentBuilderFactory;
 import net.pms.util.StringUtil;
 import net.pms.util.TimePeriod;
 import org.apache.commons.io.IOUtils;
@@ -100,7 +100,7 @@ public class CoverArtArchiveUtil extends CoverUtil {
 
 	/** The time to wait for a ticket in seconds */
 	private static final long WAIT_TIMEOUT_SECONDS = 10;
-	private static final DocumentBuilderFactory DOCUMENT_BUILDER_FACTORY = DocumentBuilderFactory.newInstance();
+	private static final SafeDocumentBuilderFactory DOCUMENT_BUILDER_FACTORY = SafeDocumentBuilderFactory.newInstance();
 
 	/** How often the thumbnail cache should be cleaned automatically */
 	private static final long THUMBNAIL_CACHE_CLEAN_INTERVAL = 2 * 60 * 1000;
