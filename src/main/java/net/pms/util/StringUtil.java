@@ -42,7 +42,6 @@ import javax.annotation.Nullable;
 import javax.swing.JEditorPane;
 import javax.swing.JTextPane;
 import javax.swing.text.html.HTMLEditorKit;
-import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.OutputKeys;
 import javax.xml.transform.Transformer;
@@ -1246,7 +1245,7 @@ public class StringUtil {
 		try {
 			// Turn XML string into a document
 			Document xmlDocument =
-				DocumentBuilderFactory.newInstance().
+				SafeDocumentBuilderFactory.newInstance().
 				newDocumentBuilder().
 				parse(new InputSource(new ByteArrayInputStream(xml.getBytes("utf-8"))));
 
