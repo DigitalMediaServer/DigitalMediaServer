@@ -45,7 +45,6 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
 import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import net.pms.database.TableCoverArtArchive;
 import net.pms.database.TableCoverArtArchive.CoverArtArchiveEntry;
@@ -90,7 +89,7 @@ public class CoverArtArchiveUtil extends CoverUtil {
 	private static final TimePeriod FOUND_EXPIRATION_PERIOD = new TimePeriod(14 * 24 * 60 * 60 * 1000, 6 * 24 * 60 * 60 * 1000); // 14 ± 3 days
 
 	private static final long WAIT_TIMEOUT_SECONDS = 10;
-	private static final DocumentBuilderFactory DOCUMENT_BUILDER_FACTORY = DocumentBuilderFactory.newInstance();
+	private static final SafeDocumentBuilderFactory DOCUMENT_BUILDER_FACTORY = SafeDocumentBuilderFactory.newInstance();
 	private static final long THUMBNAIL_CACHE_CLEAN_INTERVAL = 2 * 60 * 1000; // 2 minutes
 
 	private final Map<CoverArtArchiveTagInfo, ReentrantLock> tagQueue = new HashMap<>();
