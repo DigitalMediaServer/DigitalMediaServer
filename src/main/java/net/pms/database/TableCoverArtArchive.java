@@ -98,14 +98,6 @@ public final class TableCoverArtArchive extends Table {
 		}
 	}
 
-	/**
-	 * This method <b>MUST</b> be updated if the table definition are altered.
-	 * The changes for each version in the form of {@code ALTER TABLE} must be
-	 * implemented here.
-	 * <p>
-	 * For an implementation example see
-	 * {@link TableMusicBrainzReleases#upgradeTable(Connection, int)}.
-	 */
 	@Override
 	protected void upgradeTable(@Nonnull Connection connection, int currentVersion) throws SQLException {
 		LOGGER.info("Upgrading database table \"{}\" from version {} to {}", ID, currentVersion, TABLE_VERSION);
@@ -113,8 +105,7 @@ public final class TableCoverArtArchive extends Table {
 			currentVersion = 1;
 		}
 		connection.setAutoCommit(false);
-		try {
-			Statement statement = connection.createStatement();
+		try (Statement statement = connection.createStatement()) {
 			for (int version = currentVersion; version < TABLE_VERSION; version++) {
 				LOGGER.trace("Upgrading table {} from version {} to {}", ID, version, version + 1);
 				switch (version) {

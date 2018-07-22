@@ -19,6 +19,7 @@
 package net.pms.database;
 
 import static net.pms.database.Tables.*;
+import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.apache.commons.lang3.StringUtils.left;
 import java.sql.Connection;
@@ -31,6 +32,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
 import net.pms.util.CoverArtArchiveUtil.CoverArtArchiveTagInfo;
+import net.pms.util.StringUtil;
 import org.jaudiotagger.tag.Tag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -95,7 +97,7 @@ public final class TableMusicBrainzReleases extends Table {
 					"ARTIST VARCHAR(1000), " +
 					"ALBUM VARCHAR(1000), " +
 					"TITLE VARCHAR(1000), " +
-					"YEAR VARCHAR(20), " +
+					"YEAR INT, " +
 					"ARTIST_ID VARCHAR(36), " +
 					"TRACK_ID VARCHAR(36)" +
 				")");
@@ -104,11 +106,6 @@ public final class TableMusicBrainzReleases extends Table {
 		}
 	}
 
-	/**
-	 * This method <b>MUST</b> be updated if the table definition are altered.
-	 * The changes for each version in the form of {@code ALTER TABLE} must be
-	 * implemented here.
-	 */
 	@Override
 	protected void upgradeTable(@Nonnull Connection connection, int currentVersion) throws SQLException {
 		LOGGER.info("Upgrading database table \"{}\" from version {} to {}", ID, currentVersion, TABLE_VERSION);
@@ -116,8 +113,7 @@ public final class TableMusicBrainzReleases extends Table {
 			currentVersion = 1;
 		}
 		connection.setAutoCommit(false);
-		try {
-			Statement statement = connection.createStatement();
+		try (Statement statement = connection.createStatement()) {
 			for (int version = currentVersion; version < TABLE_VERSION; version++) {
 				LOGGER.trace("Upgrading table {} from version {} to {}", ID, version, version + 1);
 				switch (version) {
@@ -129,9 +125,26 @@ public final class TableMusicBrainzReleases extends Table {
 						statement.executeUpdate("ALTER TABLE " + ID + " ALTER COLUMN YEAR VARCHAR(20)");
 						break;
 					case 2:
-						// Version 2 renames MODIFIED to EXPIRES.
-						statement.executeUpdate("ALTER TABLE " + ID + " ADD COLUMN THUMBNAIL OTHER");
+						// Version 2 renames MODIFIED to EXPIRES and changes YEAR from VARCHAR(20) to INT
 						statement.executeUpdate("ALTER TABLE " + ID + " ALTER COLUMN MODIFIED RENAME TO EXPIRES");
+						statement.executeUpdate("ALTER TABLE " + ID + " ALTER COLUMN YEAR RENAME TO OLDYEAR");
+						statement.executeUpdate("ALTER TABLE " + ID + " ADD COLUMN YEAR INT DEFAULT -1");
+						try (Statement updateStatement = connection.createStatement(ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE)) {
+							try (
+								ResultSet result = updateStatement.executeQuery(
+									"SELECT ID, OLDYEAR, YEAR FROM " + ID + " WHERE OLDYEAR IS NOT NULL"
+								)
+							) {
+								while (result.next()) {
+									int year = StringUtil.getYear(result.getString("OLDYEAR"));
+									if (year > 0) {
+										result.updateInt("YEAR", year);
+										result.updateRow();
+									}
+								}
+							}
+						}
+						statement.executeUpdate("ALTER TABLE " + ID + " DROP COLUMN OLDYEAR");
 						break;
 					default:
 						throw new IllegalStateException(
@@ -172,7 +185,7 @@ public final class TableMusicBrainzReleases extends Table {
 			try (Statement statement = connection.createStatement(ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE)) {
 				try (ResultSet result = statement.executeQuery(query)) {
 					if (result.next()) {
-						if (isNotBlank(mBID) || !isNotBlank(result.getString("MBID"))) {
+						if (isNotBlank(mBID) || isBlank(result.getString("MBID"))) {
 							if (trace) {
 								LOGGER.trace("Updating row {} to MBID \"{}\"", result.getInt("ID"), mBID);
 							}
@@ -184,7 +197,10 @@ public final class TableMusicBrainzReleases extends Table {
 							}
 							result.updateRow();
 						} else if (trace) {
-							LOGGER.trace("Leaving row {} alone since previous information seems better", result.getInt("ID"));
+							LOGGER.trace(
+								"Not updating row {} alone since the existing information seems better",
+								result.getInt("ID")
+							);
 						}
 					} else {
 						if (trace) {
@@ -216,8 +232,8 @@ public final class TableMusicBrainzReleases extends Table {
 						if (isNotBlank(tagInfo.title)) {
 							result.updateString("TITLE", left(tagInfo.title, 1000));
 						}
-						if (isNotBlank(tagInfo.year)) {
-							result.updateString("YEAR", left(tagInfo.year, 20));
+						if (tagInfo.year > 0) {
+							result.updateInt("YEAR", tagInfo.year);
 						}
 						if (isNotBlank(tagInfo.artistId)) {
 							result.updateString("ARTIST_ID", tagInfo.artistId);
@@ -247,40 +263,33 @@ public final class TableMusicBrainzReleases extends Table {
 	}
 
 	/**
-	 * Looks up MBID in the table based on the given {@link Tag}.
+	 * Looks up the {@code MBID} in the table based on the specified
+	 * {@link CoverArtArchiveTagInfo}.
 	 *
-	 * @param tagInfo the {@link Tag} for whose values should be used in the
-	 *            search.
-	 * @return The result of the search.
+	 * @param tagInfo the {@link CoverArtArchiveTagInfo} whose values should be
+	 *            used in the search.
+	 * @return The result of the search or {@code null}.
 	 */
-	@Nonnull
+	@Nullable
 	public MusicBrainzReleasesResult findMBID(CoverArtArchiveTagInfo tagInfo) {
-		boolean trace = LOGGER.isTraceEnabled();
-		MusicBrainzReleasesResult result;
-
 		try (Connection connection = getConnection()) {
 			String query = "SELECT MBID, EXPIRES FROM " + ID + constructTagWhere(tagInfo, false);
 
-			if (trace) {
-				LOGGER.trace("Searching for release MBID with \"{}\"", query);
-			}
+			LOGGER.trace("Searching for release MBID with \"{}\"", query);
 
 			try (Statement statement = connection.createStatement()) {
 				try (ResultSet resultSet = statement.executeQuery(query)) {
 					if (resultSet.next()) {
-						result = new MusicBrainzReleasesResult(true, resultSet.getTimestamp("EXPIRES"), resultSet.getString("MBID"));
-					} else {
-						result = new MusicBrainzReleasesResult(false, null, null);
+						return new MusicBrainzReleasesResult(resultSet.getTimestamp("EXPIRES"), resultSet.getString("MBID"));
 					}
+					return null;
 				}
 			}
 		} catch (SQLException e) {
 			LOGGER.error("Database error while looking up Music Brainz ID for \"{}\": {}", tagInfo, e.getMessage());
 			LOGGER.trace("", e);
-			result = new MusicBrainzReleasesResult(false, null, null);
+			return null;
 		}
-
-		return result;
 	}
 
 	private static String constructTagWhere(CoverArtArchiveTagInfo tagInfo, boolean includeAll) {
@@ -342,11 +351,11 @@ public final class TableMusicBrainzReleases extends Table {
 			added = true;
 		}
 
-		if (isNotBlank(tagInfo.year)) {
+		if (tagInfo.year > 0) {
 			if (added) {
 				where.append(and);
 			}
-			where.append("YEAR").append(sqlNullIfBlank(tagInfo.year, true, false));
+			where.append("YEAR = ").append(tagInfo.year);
 			added = true;
 		}
 
@@ -360,7 +369,6 @@ public final class TableMusicBrainzReleases extends Table {
 	@Immutable
 	public static class MusicBrainzReleasesResult {
 
-		private final boolean found;
 		private final Timestamp expires;
 		private final String mBID;
 
@@ -372,17 +380,9 @@ public final class TableMusicBrainzReleases extends Table {
 		 * @param mBID the {@code MBID}.
 		 */
 		@SuppressFBWarnings("EI_EXPOSE_REP2")
-		public MusicBrainzReleasesResult(boolean found, @Nullable Timestamp expires, @Nullable String mBID) {
-			this.found = found;
+		public MusicBrainzReleasesResult(@Nullable Timestamp expires, @Nullable String mBID) {
 			this.expires = expires;
 			this.mBID = mBID;
-		}
-
-		/**
-		 * @return {@code true} if found, {@code false} otherwise.
-		 */
-		public boolean isFound() {
-			return found;
 		}
 
 		/**

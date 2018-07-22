@@ -26,7 +26,9 @@ import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Locale;
+import javax.annotation.Nullable;
 import net.pms.PMS;
 import net.pms.configuration.FormatConfiguration;
 import net.pms.dlna.DLNAMediaAudio;
@@ -34,6 +36,7 @@ import net.pms.dlna.DLNAMediaInfo;
 import org.apache.commons.lang3.StringUtils;
 import org.jaudiotagger.tag.FieldKey;
 import org.jaudiotagger.tag.Tag;
+import org.jaudiotagger.tag.TagField;
 import org.jaudiotagger.tag.id3.ID3v1Tag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,19 +54,45 @@ public final class AudioUtils {
 	}
 
 	/**
-	 * Checks if a given {@link Tag} supports a given {@link FieldKey}.
+	 * Returns the value of the first key with the specified {@link FieldKey}
+	 * from the specified {@link Tag} if it exists. In any other case,
+	 * {@code null} is returned.
 	 *
-	 * @param tag the {@link Tag} to check for support
-	 * @param key the {@link FieldKey} to check for support for
-	 *
-	 * @return The result
+	 * @param tag the {@link Tag};
+	 * @param key the {@link FieldKey}
+	 * @return The value of the first key with the specified {@link FieldKey} or
+	 *         {@code null}.
 	 */
-	public static boolean tagSupportsFieldKey(Tag tag, FieldKey key) {
+	@Nullable
+	public static String tagGetFieldSafe(@Nullable Tag tag, @Nullable FieldKey key) {
+		if (tag == null || key == null) {
+			return null;
+		}
 		try {
-			tag.getFirst(key);
-			return true;
-		} catch (UnsupportedOperationException e) {
-			return false;
+			return tag.getFirst(key);
+		} catch (RuntimeException e) {
+			return null;
+		}
+	}
+
+	/**
+	 * Returns a {@link List} of {@link TagField}s matching the specified
+	 * {@link FieldKey} from the specified {@link Tag}. The {@link List} might
+	 * be empty. In any other case, {@code null} is returned.
+	 *
+	 * @param tag the {@link Tag};
+	 * @param key the {@link FieldKey}
+	 * @return The {@link List} of {@link TagField}s or {@code null}.
+	 */
+	@Nullable
+	public static List<TagField> tagGetFieldsSafe(@Nullable Tag tag, @Nullable FieldKey key) {
+		if (tag == null || key == null) {
+			return null;
+		}
+		try {
+			return tag.getFields(key);
+		} catch (RuntimeException e) {
+			return null;
 		}
 	}
 

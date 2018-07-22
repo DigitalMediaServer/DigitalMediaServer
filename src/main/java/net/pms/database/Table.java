@@ -149,12 +149,12 @@ public abstract class Table {
 	}
 
 	/**
-	 * This method <b>MUST</b> be updated if the table definition are altered.
+	 * This method <b>MUST</b> be updated if the table definitions are altered.
 	 * The changes for each version in the form of {@code ALTER TABLE} must be
 	 * implemented here.
 	 *
-	 * @param connection the {@link Connection} to use
-	 * @param currentVersion the version to upgrade <b>from</b>
+	 * @param connection the {@link Connection} to use.
+	 * @param currentVersion the version to upgrade <b>from</b>.
 	 * @throws SQLException If an SQL error occurs during the operation.
 	 */
 	abstract void upgradeTable(@Nonnull Connection connection, int currentVersion) throws SQLException;
