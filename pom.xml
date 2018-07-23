@@ -1597,7 +1597,7 @@
 					<plugin>
 						<groupId>de.dentrassi.maven</groupId>
 						<artifactId>rpm</artifactId>
-						<version>1.0.0</version>
+						<version>1.0.1</version>
 						<executions>
 							<execution>
 								<goals>
@@ -1607,18 +1607,16 @@
 						</executions>
 						<configuration>
 							<attach>false</attach>
+							<generateDefaultSourcePackage>false</generateDefaultSourcePackage>
 							<group>Application/Internet</group>
 							<license>GPLv2+</license>
 							<signature>
 								<keyId/>
-+								<keyringFile/>
-+								<passphrase/>
+								<keyringFile/>
+								<passphrase/>
 								<hashAlgorithm>SHA256</hashAlgorithm>
 								<skip>true</skip>
 							</signature>
-							<!--
-								Currently it is created by default with "-arch.rpm" suffix, but the  convention is to use ".arch.rpm" so it will fail to install on some distributions.
-							-->
 							<outputFileName>${project.artifactId}-${project.version}.noarch.rpm</outputFileName>
 							<leadOverrideArchitecture/>
 							<leadOverrideOperatingSystem/>
