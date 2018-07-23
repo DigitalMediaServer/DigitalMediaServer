@@ -353,18 +353,25 @@ public class CoverArtArchiveUtil extends CoverUtil {
 	@Override
 	@Nullable
 	protected DLNAThumbnail doGetThumbnail(@Nullable Tag tag, boolean externalNetwork) {
+		if (tag == null) {
+			return null;
+		}
 		TableManager tableManager = Services.tableManager();
 		if (tableManager == null) {
 			LOGGER.error("Can't download cover from Cover Art Archive since TableManager doesn't exist");
 			return null;
 		}
 
-		String mBID = getMBID(tableManager, tag, externalNetwork);
-		if (mBID == null) {
+		CoverArtArchiveTagInfo tagInfo = new CoverArtArchiveTagInfo(tag);
+		LOGGER.trace("Trying to find MBID for \"{}\"", tagInfo);
+		String mbID = getMBID(tableManager, tagInfo, externalNetwork);
+		if (mbID == null) {
+			LOGGER.trace("Failed to find MBID, returning null");
 			return null;
 		}
 
-		return new CoverArtAchiveThumbnail(mBID, retrieveThumbnail(tableManager, mBID, externalNetwork));
+		LOGGER.trace("Found MBID \"{}\", trying to find cover", mbID);
+		return new CoverArtAchiveThumbnail(mbID, retrieveThumbnail(tableManager, mbID, externalNetwork));
 	}
 
 	private static String fuzzString(String s) {
@@ -498,8 +505,8 @@ public class CoverArtArchiveUtil extends CoverUtil {
 
 	@SuppressWarnings("null")
 	@Nullable
-	private String getMBID(@Nonnull TableManager tableManager, @Nullable Tag tag, boolean externalNetwork) {
-		if (tag == null) {
+	private String getMBID(@Nonnull TableManager tableManager, @Nullable CoverArtArchiveTagInfo tagInfo, boolean externalNetwork) {
+		if (tagInfo == null) {
 			return null;
 		}
 		TableMusicBrainzReleases tableMusicBrainzReleases = tableManager.getTableMusicBrainzReleases();
@@ -508,9 +515,14 @@ public class CoverArtArchiveUtil extends CoverUtil {
 			return null;
 		}
 
-		CoverArtArchiveTagInfo tagInfo = new CoverArtArchiveTagInfo(tag);
-		if (!tagInfo.hasInfo()) {
-			LOGGER.trace("Tag has no information - aborting search");
+		if (!tagInfo.hasUsefulInfo()) {
+			if (LOGGER.isTraceEnabled()) {
+				if (tagInfo.hasInfo()) {
+					LOGGER.trace("Tag has no useful information - aborting MBID search");
+				} else {
+					LOGGER.trace("Tag has no information - aborting MBID search");
+				}
+			}
 			return null;
 		}
 
@@ -1002,6 +1014,19 @@ public class CoverArtArchiveUtil extends CoverUtil {
 				isNotBlank(title) && !"n/a".equals(title.toLowerCase(Locale.ROOT)) ||
 				year > 0 ||
 				isNotBlank(artistId) && !"n/a".equals(artistId.toLowerCase(Locale.ROOT)) ||
+				isNotBlank(trackId) && !"n/a".equals(trackId.toLowerCase(Locale.ROOT)) ||
+				isNotBlank(releaseId) && !"n/a".equals(releaseId.toLowerCase(Locale.ROOT));
+		}
+
+		/**
+		 * @return {@code true} if this {@link CoverArtArchiveTagInfo} has any
+		 *         useful information for searching for a {@code MBID},
+		 *         {@code false} otherwise.
+		 */
+		public boolean hasUsefulInfo() {
+			return
+				isNotBlank(album) && !"n/a".equals(album.toLowerCase(Locale.ROOT)) ||
+				isNotBlank(title) && !"n/a".equals(title.toLowerCase(Locale.ROOT)) ||
 				isNotBlank(trackId) && !"n/a".equals(trackId.toLowerCase(Locale.ROOT)) ||
 				isNotBlank(releaseId) && !"n/a".equals(releaseId.toLowerCase(Locale.ROOT));
 		}
