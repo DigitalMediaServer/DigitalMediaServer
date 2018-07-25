@@ -50,7 +50,7 @@ import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
  *
  * @author Nadahar
  */
-public class XMLRPCUtil {
+public class XMLRPCUtil { //TODO: (Nad) Fix XXE here and any other places in this PR
 
 	/** A static {@link XMLOutputFactory} for creating XML writers */
 	public static final XMLOutputFactory OUTPUT_FACTORY = XMLOutputFactory.newFactory();

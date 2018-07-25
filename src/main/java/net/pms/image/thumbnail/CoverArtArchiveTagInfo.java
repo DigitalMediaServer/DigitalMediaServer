@@ -62,7 +62,7 @@ public class CoverArtArchiveTagInfo implements AudioTagInfo {
 	protected final String artistId;
 
 	/** The MusicBrainz track ID */
-	protected final String trackId;
+	protected final String trackId; //TODO: (Nad) A bad MBID is never released...
 
 	/** The MusicBrainz release ID */
 	protected final String releaseId;

@@ -36,7 +36,7 @@ import org.w3c.dom.NodeList;
  *
  * @author Nadahar
  */
-public abstract class CoverUtil {
+public abstract class CoverUtil { //TODO: (Nad) Service
 
 	private static Object instanceLock = new Object();
 	private static CoverArtArchiveUtil coverArtArchiveInstance;

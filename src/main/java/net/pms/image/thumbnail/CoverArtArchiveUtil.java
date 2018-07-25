@@ -80,7 +80,7 @@ import org.xml.sax.SAXException;
  *
  * @author Nadahar
  */
-public class CoverArtArchiveUtil extends CoverUtil {
+public class CoverArtArchiveUtil extends CoverUtil { //TODO: (Nad) Ever refresh those found in ExpirableBinaryThumbnail after rebase?
 	private static final Logger LOGGER = LoggerFactory.getLogger(CoverArtArchiveUtil.class);
 
 	/** A point in time in the very distant future */
@@ -703,6 +703,11 @@ public class CoverArtArchiveUtil extends CoverUtil {
 				// Lock acquisition timed out, return nothing
 				if (trace) {
 					LOGGER.trace("Timed out while waiting for ticket acquisition, returning an empty MBID");
+					//TODO: (Nad) Expiry?
+//					LOGGER.trace(
+//						"Timed out while waiting for ticket acquisition, returning an empty MBID that expires {}",
+//						StringUtil.formatDateTimeAuto(expirationTime)
+//					);
 				}
 				return null;
 			}
@@ -733,7 +738,7 @@ public class CoverArtArchiveUtil extends CoverUtil {
 			 *   5 - Give up
 			 */
 
-			int round;
+			int round; // TODO: (Nad) Implement track number and number of tracks, generally refine
 			if (
 				isNotBlank(tagInfo.getAlbum()) ||
 				isNotBlank(tagInfo.getArtist()) ||
@@ -764,7 +769,7 @@ public class CoverArtArchiveUtil extends CoverUtil {
 						HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
 						connection.setRequestProperty("Accept-Charset", StandardCharsets.UTF_8.name());
 						int status = connection.getResponseCode();
-						if (status != 200) {
+						if (status != 200) { //TODO: (Nad) Handle 503 specifically
 							LOGGER.error(
 								"Could not lookup audio cover for \"{}\": musicbrainz.org replied with status code {}",
 								tagInfo.getTitle(),
@@ -825,7 +830,7 @@ public class CoverArtArchiveUtil extends CoverUtil {
 									release.score += 20;
 								}
 								// Prefer Single > Album > Compilation
-								if (found) {
+								if (found) { //TODO: (Nad) Redo, multiple MBID's....
 									if (release.type == ReleaseType.Single) {
 										release.score += 20;
 									} else if (release.type == null || release.type == ReleaseType.Album) {

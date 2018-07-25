@@ -88,7 +88,7 @@ public class FileUtilTest {
 	 * @throws java.lang.Exception
 	 */
 	@Test
-	public void testGetFileNameWithRewriting() throws Exception {
+	public void testGetFileNameWithRewriting() throws Exception { //TODO: (Nad) Implement prettifier test from https://github.com/UniversalMediaServer/UniversalMediaServer/pull/1630
 		// Video of a TV episode
 		assertThat(FileUtil.getFileNamePrettified("Digital.Media.Server.S01E02.720p.mkv")).isEqualTo("Digital Media Server - 102");
 

@@ -103,7 +103,7 @@ public final class TableMusicBrainzReleases extends Table {
 					"TRACK_ID VARCHAR(36)" +
 				")");
 			statement.execute("CREATE INDEX ARTIST_IDX ON " + ID + "(ARTIST)");
-			statement.execute("CREATE INDEX ARTIST_ID_IDX ON " + ID + "(ARTIST_ID)");
+			statement.execute("CREATE INDEX ARTIST_ID_IDX ON " + ID + "(ARTIST_ID)"); //TODO: (Nad) Check indexes
 		}
 	}
 
@@ -183,7 +183,7 @@ public final class TableMusicBrainzReleases extends Table {
 		boolean trace = LOGGER.isTraceEnabled();
 
 		try (Connection connection = getConnection()) {
-			String query = "SELECT * FROM " + ID + constructTagWhere(tagInfo, true);
+			String query = "SELECT * FROM " + ID + constructTagWhere(tagInfo, true); //TODO: (Nad) Check if rows are properly selected/unique
 			if (trace) {
 				LOGGER.trace("Searching for release MBID with \"{}\" before update", query);
 			}
@@ -294,7 +294,7 @@ public final class TableMusicBrainzReleases extends Table {
 			LOGGER.trace("Searching for release MBID with \"{}\"", query);
 
 			try (Statement statement = connection.createStatement()) {
-				try (ResultSet resultSet = statement.executeQuery(query)) {
+				try (ResultSet resultSet = statement.executeQuery(query)) { //TODO: (Nad) Should a more sophisticated approach be used than simply picking the first?
 					if (resultSet.next()) {
 						return new MusicBrainzReleasesResult(resultSet.getTimestamp("EXPIRES"), resultSet.getString("MBID"));
 					}
