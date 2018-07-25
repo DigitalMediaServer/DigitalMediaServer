@@ -174,11 +174,15 @@ public final class TableCoverArtArchive extends Table {
 							}
 							result.updateRow();
 						} else if (trace) {
-							LOGGER.trace("Leaving row {} alone since previous information seems better", result.getInt("ID"));
+							LOGGER.trace("Leaving row {} alone since the previous information seems better", result.getInt("ID"));
 						}
 					} else {
 						if (trace) {
-							LOGGER.trace("Inserting new cover for MBID \"{}\"", mBID);
+							LOGGER.trace(
+								"Inserting new {}cover for MBID \"{}\"",
+								cover == null || cover.length == 0 ? "empty " : "",
+								mBID
+							);
 						}
 
 						result.moveToInsertRow();

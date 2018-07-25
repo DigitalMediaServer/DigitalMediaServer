@@ -16,7 +16,7 @@
  * You should have received a copy of the GNU General Public License along with
  * this program. If not, see http://www.gnu.org/licenses/.
  */
-package net.pms.util;
+package net.pms.image.thumbnail;
 
 import static net.pms.util.StringUtil.urlEncode;
 import static org.apache.commons.lang3.StringUtils.isBlank;
@@ -43,7 +43,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import javax.annotation.concurrent.Immutable;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.ParserConfigurationException;
 import net.pms.database.TableCoverArtArchive;
@@ -56,13 +55,15 @@ import net.pms.dlna.DLNABinaryThumbnail;
 import net.pms.dlna.DLNAThumbnail;
 import net.pms.image.ImageFormat;
 import net.pms.image.ImagesUtil.ScaleType;
-import net.pms.image.thumbnail.Cover;
 import net.pms.image.thumbnail.ExpirableThumbnail.CachedThumbnail;
 import net.pms.image.thumbnail.ExpirableThumbnail.ExpirableBinaryThumbnail;
 import net.pms.service.Services;
+import net.pms.util.SafeDocumentBuilderFactory;
+import net.pms.util.StringUtil;
+import net.pms.util.TimePeriod;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.client.HttpResponseException;
-import org.jaudiotagger.tag.FieldKey;
+import org.jaudiotagger.audio.mp3.MP3File;
 import org.jaudiotagger.tag.Tag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -84,6 +85,7 @@ public class CoverArtArchiveUtil extends CoverUtil {
 	private static final Logger LOGGER = LoggerFactory.getLogger(CoverArtArchiveUtil.class);
 
 	private static final long NO_NETWORK_EXPIRATION_TIME = Long.MAX_VALUE; // Distant future
+	private static final TimePeriod IMMEDIATE_EXPIRATION_PERIOD = new TimePeriod(100);
 	private static final TimePeriod ERROR_EXPIRATION_PERIOD = new TimePeriod(4 * 60 * 1000, 2 * 60 * 1000); // 4 ± 1 minutes
 	private static final TimePeriod NOT_FOUND_EXPIRATION_PERIOD = new TimePeriod(3 * 24 * 60 * 60 * 1000, 24 * 60 * 60 * 1000); // 3 ± 0.5 days
 	private static final TimePeriod FOUND_EXPIRATION_PERIOD = new TimePeriod(14 * 24 * 60 * 60 * 1000, 6 * 24 * 60 * 60 * 1000); // 14 ± 3 days
@@ -133,16 +135,21 @@ public class CoverArtArchiveUtil extends CoverUtil {
 	}
 
 	@Nonnull
-	private ExpirableBinaryThumbnail retrieveThumbnail(@Nonnull TableManager tableManager, @Nonnull String mBID, boolean externalNetwork) {
-		if (mBID == null) {
-			throw new IllegalArgumentException("mBID cannot be null");
+	private ExpirableBinaryThumbnail retrieveThumbnail(@Nonnull TableManager tableManager, @Nonnull String mbID, boolean externalNetwork) {
+		if (mbID == null) {
+			throw new IllegalArgumentException("mbID cannot be null");
 		}
-		mBID = mBID.intern();
+		mbID = mbID.intern();
+		boolean trace = LOGGER.isTraceEnabled();
+
+		if (trace) {
+			LOGGER.trace("Trying to retrieve thumbnail for MBID \"{}\"", mbID);
+		}
 
 		TableCoverArtArchive tableCoverArtArchive = tableManager.getTableCoverArtArchive();
 		if (tableCoverArtArchive == null) {
 			throw new IllegalStateException(
-				"Can't retrieve cover from Cover Art Archive since the table instance doesn't exist"
+				"Can't find thumbnail from Cover Art Archive since the table instance doesn't exist"
 			);
 		}
 
@@ -150,11 +157,21 @@ public class CoverArtArchiveUtil extends CoverUtil {
 		ReentrantLock ticket;
 		synchronized (thumbnailCache) {
 			cleanCache(false);
-			CachedThumbnail cacheEntry = thumbnailCache.get(mBID);
+			CachedThumbnail cacheEntry = thumbnailCache.get(mbID);
 			if (cacheEntry != null) {
 				// Don't "optimize", we need to hold a reference to the thumbnail before we test it to avoid GC'ing
 				ExpirableBinaryThumbnail result = cacheEntry.toExpirableBinaryThumbnail();
 				if (!cacheEntry.isDisposable()) {
+					if (trace) {
+						if (result.getThumbnail() == null) {
+							LOGGER.trace(
+								"Found a cached entry without a thumbnail that expires {}, no thumbnail is currently available",
+								StringUtil.formatDateTimeAuto(result.getExpirationTime())
+							);
+						} else {
+							LOGGER.trace("Found a cached thumbnail: {}", result.getThumbnail());
+						}
+					}
 					return result;
 				}
 
@@ -164,10 +181,10 @@ public class CoverArtArchiveUtil extends CoverUtil {
 
 			// It's not cached, get or create a ticket.
 			synchronized (thumbnailQueue) {
-				ticket = thumbnailQueue.get(mBID);
+				ticket = thumbnailQueue.get(mbID);
 				if (ticket == null) {
 					ticket = new ReentrantLock();
-					thumbnailQueue.put(mBID, ticket);
+					thumbnailQueue.put(mbID, ticket);
 				}
 			}
 		}
@@ -176,23 +193,40 @@ public class CoverArtArchiveUtil extends CoverUtil {
 		try {
 			if (!ticket.tryLock(WAIT_TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
 				// Lock acquisition timed out, return nothing
+				long expirationTime = IMMEDIATE_EXPIRATION_PERIOD.getTime();
+				if (trace) {
+					LOGGER.trace(
+						"Timed out while waiting for ticket acquisition, returning a null thumbnail that expires {}",
+						StringUtil.formatDateTimeAuto(expirationTime)
+					);
+				}
 				return new ExpirableBinaryThumbnail(System.currentTimeMillis() + 100);
 			}
 		} catch (InterruptedException e) {
 			LOGGER.debug(
 				"CoverArtAchiveThumbnail.retrieveThumbnail() was interrupted while waiting for a ticket for MBID \"{}\"",
-				mBID
+				mbID
 			);
 			return new ExpirableBinaryThumbnail(System.currentTimeMillis() + 100);
 		}
 		try {
 			// Done queuing, check if another thread has retrieved the thumbnail while queuing
 			synchronized (thumbnailCache) {
-				CachedThumbnail cacheEntry = thumbnailCache.get(mBID);
+				CachedThumbnail cacheEntry = thumbnailCache.get(mbID);
 				if (cacheEntry != null) {
 					// Don't "optimize", we need to hold a reference to the thumbnail before we test it to avoid GC'ing
 					ExpirableBinaryThumbnail result = cacheEntry.toExpirableBinaryThumbnail();
 					if (!cacheEntry.isDisposable()) {
+						if (trace) {
+							if (result.getThumbnail() == null) {
+								LOGGER.trace(
+									"Found a cached entry without a thumbnail that expires {}, no thumbnail is currently available",
+									StringUtil.formatDateTimeAuto(result.getExpirationTime())
+								);
+							} else {
+								LOGGER.trace("Found a cached thumbnail: {}", result.getThumbnail());
+							}
+						}
 						return result;
 					}
 				}
@@ -200,7 +234,7 @@ public class CoverArtArchiveUtil extends CoverUtil {
 
 			// Check if it's in the database
 			ExpirableBinaryThumbnail result;
-			CoverArtArchiveEntry tableEntry = tableCoverArtArchive.findMBID(mBID);
+			CoverArtArchiveEntry tableEntry = tableCoverArtArchive.findMBID(mbID);
 			if (
 				!tableEntry.isFound() ||
 				(
@@ -210,7 +244,7 @@ public class CoverArtArchiveUtil extends CoverUtil {
 			) {
 				// It's not in the database or its empty and expired - try to retrieve it
 				if (externalNetwork) {
-					Cover cover = downloadCover(tableCoverArtArchive, mBID, externalNetwork);
+					Cover cover = downloadCover(tableCoverArtArchive, mbID, externalNetwork);
 					if (cover.getThumbnail() == null && cover.getBytes() != null) {
 						result = new ExpirableBinaryThumbnail(createThumbnail(cover.getBytes()), cover.getExpires());
 					} else {
@@ -229,11 +263,11 @@ public class CoverArtArchiveUtil extends CoverUtil {
 
 				// Update the database with the generated thumbnail
 				try {
-					tableCoverArtArchive.updateThumbnail(mBID, result.getThumbnail());
+					tableCoverArtArchive.updateThumbnail(mbID, result.getThumbnail());
 				} catch (SQLException e) {
 					LOGGER.error(
 						"Could not update thumbnail for MBID \"{}\" because of an SQL error: {}",
-						mBID,
+						mbID,
 						e.getMessage()
 					);
 					LOGGER.trace("", e);
@@ -246,16 +280,26 @@ public class CoverArtArchiveUtil extends CoverUtil {
 			// If we have a result..? How to deal with null...
 			// Update the cache with the generated thumbnail
 			synchronized (thumbnailCache) {
-				thumbnailCache.put(mBID, new CachedThumbnail(result));
+				thumbnailCache.put(mbID, new CachedThumbnail(result));
 			}
 
+			if (trace) {
+				if (result.getThumbnail() == null) {
+					LOGGER.trace(
+						"Didn't find a thumbnail, caching and returning a null thumbnail that expires {}",
+						StringUtil.formatDateTimeAuto(result.getExpirationTime())
+					);
+				} else {
+					LOGGER.trace("Found a thumbnail: {}", result.getThumbnail());
+				}
+			}
 			return result;
 		} finally {
 			ticket.unlock();
 
 			// Remove the ticked from the queue
 			synchronized (thumbnailQueue) {
-				thumbnailQueue.remove(mBID);
+				thumbnailQueue.remove(mbID);
 			}
 		}
 	}
@@ -267,15 +311,15 @@ public class CoverArtArchiveUtil extends CoverUtil {
 	 *
 	 * @param tableCoverArtArchive the {@link TableCoverArtArchive} instance to
 	 *            use.
-	 * @param mBID the {@code MBID} for which to retrieve the cover art.
+	 * @param mbID the {@code MBID} for which to retrieve the cover art.
 	 * @return The cover art image data or {@code null}.
 	 */
 	@Nonnull
-	private static Cover downloadCover(@Nonnull TableCoverArtArchive tableCoverArtArchive, @Nonnull String mBID, boolean externalNetwork) {
+	private static Cover downloadCover(@Nonnull TableCoverArtArchive tableCoverArtArchive, @Nonnull String mbID, boolean externalNetwork) {
 		if (!externalNetwork) {
 			LOGGER.warn(
 				"Can't download cover art for MBID \"{}\" from Cover Art Archive since external network access is disabled",
-				mBID
+				mbID
 			);
 			LOGGER.info("Either enable external network or disable cover art downloads");
 			return new Cover(null, null, NO_NETWORK_EXPIRATION_TIME);
@@ -285,16 +329,16 @@ public class CoverArtArchiveUtil extends CoverUtil {
 
 		CoverArt coverArt;
 		try {
-			coverArt = client.getByMbid(UUID.fromString(mBID));
+			coverArt = client.getByMbid(UUID.fromString(mbID));
 		} catch (CoverArtException e) {
-			LOGGER.debug("Couldn't get cover with MBID \"{}\": {}", mBID, e.getMessage());
+			LOGGER.debug("Couldn't get cover with MBID \"{}\": {}", mbID, e.getMessage());
 			LOGGER.trace("", e);
 			return new Cover(null, null, ERROR_EXPIRATION_PERIOD.getTime());
 		}
 		if (coverArt == null || coverArt.getImages().isEmpty()) {
-			LOGGER.debug("MBID \"{}\" has no cover at CoverArtArchive", mBID);
+			LOGGER.debug("MBID \"{}\" has no cover at CoverArtArchive", mbID);
 			long expiration = NOT_FOUND_EXPIRATION_PERIOD.getTime();
-			tableCoverArtArchive.writeMBID(mBID, null, null, expiration);
+			tableCoverArtArchive.writeMBID(mbID, null, null, expiration);
 			return new Cover(null, null, expiration);
 		}
 		CoverArtImage image = coverArt.getFrontImage();
@@ -313,24 +357,24 @@ public class CoverArtArchiveUtil extends CoverUtil {
 			}
 			DLNABinaryThumbnail thumbnail = cover == null ? null : createThumbnail(cover);
 			long expiration = FOUND_EXPIRATION_PERIOD.getTime();
-			tableCoverArtArchive.writeMBID(mBID, cover, thumbnail, expiration);
+			tableCoverArtArchive.writeMBID(mbID, cover, thumbnail, expiration);
 			return new Cover(cover, thumbnail, expiration);
 		} catch (HttpResponseException e) {
 			if (e.getStatusCode() == 404) {
-				LOGGER.debug("Cover art for MBID \"{}\" was not found at CoverArtArchive", mBID);
+				LOGGER.debug("Cover art for MBID \"{}\" was not found at CoverArtArchive", mbID);
 				long expiration = NOT_FOUND_EXPIRATION_PERIOD.getTime();
-				tableCoverArtArchive.writeMBID(mBID, null, null, expiration);
+				tableCoverArtArchive.writeMBID(mbID, null, null, expiration);
 				return new Cover(null, null, expiration);
 			}
 			LOGGER.warn(
 				"Got HTTP status code {} while trying to download cover art for MBID \"{}\" from CoverArtArchive: {}",
 				e.getStatusCode(),
-				mBID,
+				mbID,
 				e.getMessage()
 			);
 			return new Cover(null, null, ERROR_EXPIRATION_PERIOD.getTime());
 		} catch (IOException e) {
-			LOGGER.error("An error occurred while downloading cover art for MBID \"{}\": {}", mBID, e.getMessage());
+			LOGGER.error("An error occurred while downloading cover art for MBID \"{}\": {}", mbID, e.getMessage());
 			LOGGER.trace("", e);
 			return new Cover(null, null, ERROR_EXPIRATION_PERIOD.getTime());
 		}
@@ -343,7 +387,7 @@ public class CoverArtArchiveUtil extends CoverUtil {
 		}
 		TableManager tableManager = Services.tableManager();
 		if (tableManager == null) {
-			LOGGER.error("Can't download cover from Cover Art Archive since TableManager doesn't exist");
+			LOGGER.error("Can't find cover from Cover Art Archive since TableManager doesn't exist");
 			return null;
 		}
 
@@ -352,19 +396,19 @@ public class CoverArtArchiveUtil extends CoverUtil {
 
 	@Override
 	@Nullable
-	protected DLNAThumbnail doGetThumbnail(@Nullable Tag tag, boolean externalNetwork) {
-		if (tag == null) {
+	protected DLNAThumbnail doGetThumbnail(@Nullable AudioTagInfo tagInfo, boolean externalNetwork) {
+		if (!(tagInfo instanceof CoverArtArchiveTagInfo)) {
 			return null;
 		}
+		CoverArtArchiveTagInfo caaTagInfo = (CoverArtArchiveTagInfo) tagInfo;
 		TableManager tableManager = Services.tableManager();
 		if (tableManager == null) {
 			LOGGER.error("Can't download cover from Cover Art Archive since TableManager doesn't exist");
 			return null;
 		}
 
-		CoverArtArchiveTagInfo tagInfo = new CoverArtArchiveTagInfo(tag);
-		LOGGER.trace("Trying to find MBID for \"{}\"", tagInfo);
-		String mbID = getMBID(tableManager, tagInfo, externalNetwork);
+		LOGGER.trace("Trying to find MBID for \"{}\"", caaTagInfo);
+		String mbID = getMBID(tableManager, caaTagInfo, externalNetwork);
 		if (mbID == null) {
 			LOGGER.trace("Failed to find MBID, returning null");
 			return null;
@@ -372,6 +416,16 @@ public class CoverArtArchiveUtil extends CoverUtil {
 
 		LOGGER.trace("Found MBID \"{}\", trying to find cover", mbID);
 		return new CoverArtAchiveThumbnail(mbID, retrieveThumbnail(tableManager, mbID, externalNetwork));
+	}
+
+	@Override
+	public AudioTagInfo createAudioTagInfo(@Nonnull Tag tag) {
+		return new CoverArtArchiveTagInfo(tag);
+	}
+
+	@Override
+	public AudioTagInfo createAudioTagInfo(MP3File mp3File) {
+		return new CoverArtArchiveTagInfo(mp3File);
 	}
 
 	private static String fuzzString(String s) {
@@ -384,16 +438,16 @@ public class CoverArtArchiveUtil extends CoverUtil {
 		return sb.toString();
 	}
 
-	private static String buildMBReleaseQuery(final CoverArtArchiveTagInfo tagInfo, final boolean fuzzy) {
+	private static String buildMBReleaseQuery(@Nonnull CoverArtArchiveTagInfo tagInfo, final boolean fuzzy) {
 		final String and = urlEncode(" AND ");
 		StringBuilder query = new StringBuilder("release/?query=");
 		boolean added = false;
 
-		if (isNotBlank(tagInfo.album)) {
+		if (isNotBlank(tagInfo.getAlbum())) {
 			if (fuzzy) {
-				query.append(urlEncode(fuzzString(tagInfo.album)));
+				query.append(urlEncode(fuzzString(tagInfo.getAlbum())));
 			} else {
-				query.append(urlEncode("\"" + StringUtil.luceneEscape(tagInfo.album) + "\""));
+				query.append(urlEncode("\"" + StringUtil.luceneEscape(tagInfo.getAlbum()) + "\""));
 			}
 			added = true;
 		}
@@ -405,27 +459,27 @@ public class CoverArtArchiveUtil extends CoverUtil {
 		 */
 
 		if (
-			isNotBlank(tagInfo.trackId) &&
+			isNotBlank(tagInfo.getTrackId()) &&
 			(
-				isBlank(tagInfo.album) ||
+				isBlank(tagInfo.getAlbum()) ||
 				!(
-					isNotBlank(tagInfo.artist) ||
-					isNotBlank(tagInfo.artistId)
+					isNotBlank(tagInfo.getArtist()) ||
+					isNotBlank(tagInfo.getArtistId())
 				)
 			)
 		) {
 			if (added) {
 				query.append(and);
 			}
-			query.append("tid:").append(tagInfo.trackId);
+			query.append("tid:").append(tagInfo.getTrackId());
 			added = true;
 		} else if (
-			isNotBlank(tagInfo.title) &&
+			isNotBlank(tagInfo.getTitle()) &&
 			(
-				isBlank(tagInfo.album) ||
+				isBlank(tagInfo.getAlbum()) ||
 				!(
-					isNotBlank(tagInfo.artist) ||
-					isNotBlank(tagInfo.artistId)
+					isNotBlank(tagInfo.getArtist()) ||
+					isNotBlank(tagInfo.getArtistId())
 				)
 			)
 		) {
@@ -434,69 +488,69 @@ public class CoverArtArchiveUtil extends CoverUtil {
 			}
 			query.append("recording:");
 			if (fuzzy) {
-				query.append(urlEncode(fuzzString(tagInfo.title)));
+				query.append(urlEncode(fuzzString(tagInfo.getTitle())));
 			} else {
-				query.append(urlEncode("\"" + StringUtil.luceneEscape(tagInfo.title) + "\""));
+				query.append(urlEncode("\"" + StringUtil.luceneEscape(tagInfo.getTitle()) + "\""));
 			}
 			added = true;
 		}
 
-		if (!fuzzy && tagInfo.year > 0) {
+		if (!fuzzy && tagInfo.getYear() > 0) {
 			if (added) {
 				query.append(and);
 			}
-			query.append("date:").append(tagInfo.year).append('*');
+			query.append("date:").append(tagInfo.getYear()).append('*');
 			added = true;
 		}
 		return query.toString();
 	}
 
-	private static String buildMBRecordingQuery(final CoverArtArchiveTagInfo tagInfo, final boolean fuzzy) {
+	private static String buildMBRecordingQuery(CoverArtArchiveTagInfo tagInfo, final boolean fuzzy) {
 		final String and = urlEncode(" AND ");
 		StringBuilder query = new StringBuilder("recording/?query=");
 		boolean added = false;
 
-		if (isNotBlank(tagInfo.title)) {
+		if (isNotBlank(tagInfo.getTitle())) {
 			if (fuzzy) {
-				query.append(urlEncode(fuzzString(tagInfo.title)));
+				query.append(urlEncode(fuzzString(tagInfo.getTitle())));
 			} else {
-				query.append(urlEncode("\"" + StringUtil.luceneEscape(tagInfo.title) + "\""));
+				query.append(urlEncode("\"" + StringUtil.luceneEscape(tagInfo.getTitle()) + "\""));
 			}
 			added = true;
 		}
 
-		if (isNotBlank(tagInfo.trackId)) {
+		if (isNotBlank(tagInfo.getTrackId())) {
 			if (added) {
 				query.append(and);
 			}
-			query.append("tid:").append(tagInfo.trackId);
+			query.append("tid:").append(tagInfo.getTrackId());
 			added = true;
 		}
 
-		if (isNotBlank(tagInfo.artistId)) {
+		if (isNotBlank(tagInfo.getArtistId())) {
 			if (added) {
 				query.append(and);
 			}
-			query.append("arid:").append(tagInfo.artistId);
+			query.append("arid:").append(tagInfo.getArtistId());
 			added = true;
-		} else if (isNotBlank(tagInfo.artist)) {
+		} else if (isNotBlank(tagInfo.getArtist())) {
 			if (added) {
 				query.append(and);
 			}
 			query.append("artistname:");
 			if (fuzzy) {
-				query.append(urlEncode(fuzzString(tagInfo.artist)));
+				query.append(urlEncode(fuzzString(tagInfo.getArtist())));
 			} else {
-				query.append(urlEncode("\"" + StringUtil.luceneEscape(tagInfo.artist) + "\""));
+				query.append(urlEncode("\"" + StringUtil.luceneEscape(tagInfo.getArtist()) + "\""));
 			}
 		}
 
 		if (!fuzzy) {
-			if (tagInfo.year > 0) {
+			if (tagInfo.getYear() > 0) {
 				if (added) {
 					query.append(and);
 				}
-				query.append("date:").append(tagInfo.year).append('*');
+				query.append("date:").append(tagInfo.getYear()).append('*');
 			added = true;
 			}
 		}
@@ -509,6 +563,11 @@ public class CoverArtArchiveUtil extends CoverUtil {
 		if (tagInfo == null) {
 			return null;
 		}
+		boolean trace = LOGGER.isTraceEnabled();
+		if (trace) {
+			LOGGER.trace("Trying to resolve MBID for tag: {}", tagInfo);
+		}
+
 		TableMusicBrainzReleases tableMusicBrainzReleases = tableManager.getTableMusicBrainzReleases();
 		if (tableMusicBrainzReleases == null) {
 			LOGGER.error("Can't look up cover MBID from MusicBrainz since the table instance doesn't exist");
@@ -516,35 +575,45 @@ public class CoverArtArchiveUtil extends CoverUtil {
 		}
 
 		if (!tagInfo.hasUsefulInfo()) {
-			if (LOGGER.isTraceEnabled()) {
-				if (tagInfo.hasInfo()) {
-					LOGGER.trace("Tag has no useful information - aborting MBID search");
-				} else {
-					LOGGER.trace("Tag has no information - aborting MBID search");
-				}
+			if (trace && tagInfo.hasInfo()) {
+				LOGGER.trace("Tag has no useful information - aborting MBID search");
+			} else if (trace) {
+				LOGGER.trace("Tag has no information - aborting MBID search");
 			}
 			return null;
 		}
 
-		// No need to look up MBID if it's already in the tag
-		if (isNotBlank(tagInfo.releaseId) && !"n/a".equals(tagInfo.releaseId.toLowerCase(Locale.ROOT))) {
-			return tagInfo.releaseId.intern();
+		// No need to look up MBID if it's already in the tagInfo
+		if (isNotBlank(tagInfo.getReleaseId()) && !"n/a".equals(tagInfo.getReleaseId().toLowerCase(Locale.ROOT))) {
+			if (trace) {
+				LOGGER.trace("Found MBID {} embedded in the metadata", tagInfo.getReleaseId());
+			}
+			return tagInfo.getReleaseId().intern();
 		}
 
 		// Check if it's in the database first
 		MusicBrainzReleasesResult result = tableMusicBrainzReleases.findMBID(tagInfo);
 		if (result != null) {
 			if (isNotBlank(result.getMBID())) {
+				if (trace) {
+					LOGGER.trace("Found cached MBID \"{}\"", result.getMBID());
+				}
 				return result.getMBID().intern();
 			} else if (System.currentTimeMillis() < result.getExpires()) {
 				// If a lookup has been done within expireTime and no result,
 				// return null. Do another lookup after expireTime has passed
+				if (trace) {
+					LOGGER.trace(
+						"Found a cached entry without a MBID that expires {}, no MBID found",
+						StringUtil.formatDateTimeAuto(result.getExpires())
+					);
+				}
 				return null;
 			}
 		}
 
 		if (!externalNetwork) {
-			LOGGER.warn("Can't look up cover MBID from MusicBrainz since external network is disabled");
+			LOGGER.warn("Can't look up MBID from MusicBrainz since external network is disabled");
 			LOGGER.info("Either enable external network or disable cover download");
 			return null;
 		}
@@ -563,6 +632,9 @@ public class CoverArtArchiveUtil extends CoverUtil {
 		try {
 			if (!ticket.tryLock(WAIT_TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
 				// Lock acquisition timed out, return nothing
+				if (trace) {
+					LOGGER.trace("Timed out while waiting for ticket acquisition, returning an empty MBID");
+				}
 				return null;
 			}
 		} catch (InterruptedException e) {
@@ -593,7 +665,11 @@ public class CoverArtArchiveUtil extends CoverUtil {
 			 */
 
 			int round;
-			if (isNotBlank(tagInfo.album) || isNotBlank(tagInfo.artist) || isNotBlank(tagInfo.artistId)) {
+			if (
+				isNotBlank(tagInfo.getAlbum()) ||
+				isNotBlank(tagInfo.getArtist()) ||
+				isNotBlank(tagInfo.getArtistId())
+			) {
 				round = 1;
 			} else {
 				round = 3;
@@ -622,7 +698,7 @@ public class CoverArtArchiveUtil extends CoverUtil {
 						if (status != 200) {
 							LOGGER.error(
 								"Could not lookup audio cover for \"{}\": musicbrainz.org replied with status code {}",
-								tagInfo.title,
+								tagInfo.getTitle(),
 								status
 							);
 							return null;
@@ -652,8 +728,8 @@ public class CoverArtArchiveUtil extends CoverUtil {
 							int maxScore = 0;
 							for (ReleaseRecord release : releaseList) {
 								boolean found = false;
-								if (isNotBlank(tagInfo.artist)) {
-									String[] tagArtists = tagInfo.artist.split("[,&]");
+								if (isNotBlank(tagInfo.getArtist())) {
+									String[] tagArtists = tagInfo.getArtist().split("(?i),|&|\\sand\\s");
 									for (String artist : release.artists) {
 										for (String tagArtist : tagArtists) {
 											if (StringUtil.isEqual(tagArtist, artist, false, true, true, null)) {
@@ -664,19 +740,19 @@ public class CoverArtArchiveUtil extends CoverUtil {
 										}
 									}
 								}
-								if (isNotBlank(tagInfo.album)) {
-									if (StringUtil.isEqual(tagInfo.album, release.album, false, true, true, null)) {
+								if (isNotBlank(tagInfo.getAlbum())) {
+									if (StringUtil.isEqual(tagInfo.getAlbum(), release.album, false, true, true, null)) {
 											release.score += 30;
 											found = true;
 									}
 								}
-								if (isNotBlank(tagInfo.title)) {
-									if (StringUtil.isEqual(tagInfo.title, release.title, false, true, true, null)) {
+								if (isNotBlank(tagInfo.getTitle())) {
+									if (StringUtil.isEqual(tagInfo.getTitle(), release.title, false, true, true, null)) {
 										release.score += 40;
 										found = true;
 									}
 								}
-								if (tagInfo.year > 0 && tagInfo.year == release.year) {
+								if (tagInfo.getYear() > 0 && tagInfo.getYear() == release.year) {
 									release.score += 20;
 								}
 								// Prefer Single > Album > Compilation
@@ -700,7 +776,7 @@ public class CoverArtArchiveUtil extends CoverUtil {
 
 						if (isNotBlank(mbID)) {
 							mbID = mbID.intern();
-							if (LOGGER.isTraceEnabled()) {
+							if (trace) {
 								LOGGER.debug("MusicBrainz release ID \"{}\" found for \"{}\" with \"{}\"", mbID, tagInfo, url);
 							} else {
 								LOGGER.debug("MusicBrainz release ID \"{}\" found for \"{}\"", mbID, tagInfo);
@@ -708,7 +784,9 @@ public class CoverArtArchiveUtil extends CoverUtil {
 							tableMusicBrainzReleases.writeMBID(mbID, tagInfo, FOUND_EXPIRATION_PERIOD.getTime());
 							return mbID;
 						}
-						LOGGER.trace("No music release found with \"{}\"", url);
+						if (trace) {
+							LOGGER.trace("No music release found with \"{}\"", url);
+						}
 					} catch (IOException e) {
 						LOGGER.debug("Failed to find MBID for \"{}\": {}", query, e.getMessage());
 						LOGGER.trace("", e);
@@ -953,215 +1031,6 @@ public class CoverArtArchiveUtil extends CoverUtil {
 			for (String artist : source.artists) {
 				artists.add(artist);
 			}
-		}
-	}
-
-	/**
-	 * This class is a container to hold information used by
-	 * {@link CoverArtArchiveUtil} to look up covers.
-	 */
-	@Immutable
-	public static class CoverArtArchiveTagInfo {
-
-		/** The album name */
-		public final String album;
-
-		/** The artist name */
-		public final String artist;
-
-		/** The song title */
-		public final String title;
-
-		/** The release year */
-		public final int year;
-
-		/** The MusicBrainz artist ID */
-		public final String artistId;
-
-		/** The MusicBrainz track ID */
-		public final String trackId;
-
-		/** The MusicBrainz release ID */
-		public final String releaseId;
-
-		/**
-		 * Creates a new instance based on the specified {@link Tag}.
-		 *
-		 * @param tag the {@link Tag} to get the information from.
-		 */
-		public CoverArtArchiveTagInfo(@Nonnull Tag tag) {
-			album = AudioUtils.tagGetFieldSafe(tag, FieldKey.ALBUM);
-			artist = AudioUtils.tagGetFieldSafe(tag, FieldKey.ARTIST);
-			String tempArtistId = AudioUtils.tagGetFieldSafe(tag, FieldKey.MUSICBRAINZ_ARTISTID);
-			if (isBlank(tempArtistId)) {
-				tempArtistId = AudioUtils.tagGetFieldSafe(tag, FieldKey.MUSICBRAINZ_RELEASEARTISTID);
-			}
-			artistId = tempArtistId;
-			title = AudioUtils.tagGetFieldSafe(tag, FieldKey.TITLE);
-			year = StringUtil.getYear(AudioUtils.tagGetFieldSafe(tag, FieldKey.YEAR));
-			trackId = AudioUtils.tagGetFieldSafe(tag, FieldKey.MUSICBRAINZ_TRACK_ID);
-			releaseId = AudioUtils.tagGetFieldSafe(tag, FieldKey.MUSICBRAINZ_RELEASEID);
-		}
-
-		/**
-		 * @return {@code true} if this {@link CoverArtArchiveTagInfo} has any
-		 *         information, {@code false} if it is "blank".
-		 */
-		public boolean hasInfo() {
-			return
-				isNotBlank(album) && !"n/a".equals(album.toLowerCase(Locale.ROOT)) ||
-				isNotBlank(artist) && !"n/a".equals(artist.toLowerCase(Locale.ROOT)) ||
-				isNotBlank(title) && !"n/a".equals(title.toLowerCase(Locale.ROOT)) ||
-				year > 0 ||
-				isNotBlank(artistId) && !"n/a".equals(artistId.toLowerCase(Locale.ROOT)) ||
-				isNotBlank(trackId) && !"n/a".equals(trackId.toLowerCase(Locale.ROOT)) ||
-				isNotBlank(releaseId) && !"n/a".equals(releaseId.toLowerCase(Locale.ROOT));
-		}
-
-		/**
-		 * @return {@code true} if this {@link CoverArtArchiveTagInfo} has any
-		 *         useful information for searching for a {@code MBID},
-		 *         {@code false} otherwise.
-		 */
-		public boolean hasUsefulInfo() {
-			return
-				isNotBlank(album) && !"n/a".equals(album.toLowerCase(Locale.ROOT)) ||
-				isNotBlank(title) && !"n/a".equals(title.toLowerCase(Locale.ROOT)) ||
-				isNotBlank(trackId) && !"n/a".equals(trackId.toLowerCase(Locale.ROOT)) ||
-				isNotBlank(releaseId) && !"n/a".equals(releaseId.toLowerCase(Locale.ROOT));
-		}
-
-		@Override
-		public int hashCode() {
-			final int prime = 31;
-			int result = 1;
-			result = prime * result + ((album == null) ? 0 : album.hashCode());
-			result = prime * result + ((artist == null) ? 0 : artist.hashCode());
-			result = prime * result + ((artistId == null) ? 0 : artistId.hashCode());
-			result = prime * result + ((releaseId == null) ? 0 : releaseId.hashCode());
-			result = prime * result + ((title == null) ? 0 : title.hashCode());
-			result = prime * result + ((trackId == null) ? 0 : trackId.hashCode());
-			result = prime * result + year;
-			return result;
-		}
-
-		@Override
-		public boolean equals(Object obj) {
-			if (this == obj) {
-				return true;
-			}
-			if (obj == null) {
-				return false;
-			}
-			if (!(obj instanceof CoverArtArchiveTagInfo)) {
-				return false;
-			}
-			CoverArtArchiveTagInfo other = (CoverArtArchiveTagInfo) obj;
-			if (album == null) {
-				if (other.album != null) {
-					return false;
-				}
-			} else if (!album.equals(other.album)) {
-				return false;
-			}
-			if (artist == null) {
-				if (other.artist != null) {
-					return false;
-				}
-			} else if (!artist.equals(other.artist)) {
-				return false;
-			}
-			if (artistId == null) {
-				if (other.artistId != null) {
-					return false;
-				}
-			} else if (!artistId.equals(other.artistId)) {
-				return false;
-			}
-			if (releaseId == null) {
-				if (other.releaseId != null) {
-					return false;
-				}
-			} else if (!releaseId.equals(other.releaseId)) {
-				return false;
-			}
-			if (title == null) {
-				if (other.title != null) {
-					return false;
-				}
-			} else if (!title.equals(other.title)) {
-				return false;
-			}
-			if (trackId == null) {
-				if (other.trackId != null) {
-					return false;
-				}
-			} else if (!trackId.equals(other.trackId)) {
-				return false;
-			}
-			if (year != other.year) {
-				return false;
-			}
-			return true;
-		}
-
-		@Override
-		public String toString() {
-			StringBuilder result = new StringBuilder();
-			if (isNotBlank(artist)) {
-				result.append(artist);
-			}
-			if (isNotBlank(artistId)) {
-				if (result.length() > 0) {
-					result.append(" (").append(artistId).append(')');
-				} else {
-					result.append(artistId);
-				}
-			}
-			if (
-				result.length() > 0 &&
-				(
-					isNotBlank(title) ||
-					isNotBlank(album) ||
-					isNotBlank(trackId)
-				)
-			) {
-				result.append(" - ");
-			}
-			if (isNotBlank(album)) {
-				result.append(album);
-				if (isNotBlank(title) || isNotBlank(trackId)) {
-					result.append(": ");
-				}
-			}
-			if (isNotBlank(title)) {
-				result.append(title);
-				if (isNotBlank(trackId)) {
-					result.append(" (").append(trackId).append(')');
-				}
-			} else if (isNotBlank(trackId)) {
-				result.append(trackId);
-			}
-			if (year > 0) {
-				if (result.length() > 0) {
-					result.append(" (").append(year).append(')');
-				} else {
-					result.append(year);
-				}
-			}
-			if (isNotBlank(trackId)) {
-				if (result.length() > 0) {
-					result.append(", ");
-				}
-				result.append("trackID=").append(trackId);
-			}
-			if (isNotBlank(releaseId)) {
-				if (result.length() > 0) {
-					result.append(", ");
-				}
-				result.append("releaseId=").append(releaseId);
-			}
-			return result.toString();
 		}
 	}
 }

@@ -28,10 +28,10 @@ import net.pms.PMS;
 import net.pms.image.ColorSpaceType;
 import net.pms.image.ImageFormat;
 import net.pms.image.ImageInfo;
+import net.pms.image.thumbnail.CoverArtArchiveUtil;
+import net.pms.image.thumbnail.CoverUtil;
 import net.pms.image.thumbnail.ExpirableThumbnail.ExpirableBinaryThumbnail;
-import net.pms.util.CoverArtArchiveUtil;
 import net.pms.util.CoverSupplier;
-import net.pms.util.CoverUtil;
 
 
 public class CoverArtAchiveThumbnail implements DLNAThumbnail {

@@ -29,10 +29,10 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import javax.annotation.Nullable;
-import net.pms.PMS;
 import net.pms.configuration.FormatConfiguration;
 import net.pms.dlna.DLNAMediaAudio;
 import net.pms.dlna.DLNAMediaInfo;
+import net.pms.image.thumbnail.CoverUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.jaudiotagger.tag.FieldKey;
 import org.jaudiotagger.tag.Tag;
@@ -340,9 +340,9 @@ public final class AudioUtils {
 			LOGGER.trace("", e);
 			return false;
 		}
+		CoverUtil coverUtil = CoverUtil.get();
 		if (
-			PMS.getConfiguration() != null &&
-			PMS.getConfiguration().getAudioThumbnailMethod() != CoverSupplier.NONE &&
+			coverUtil != null &&
 			(
 				StringUtils.isNotBlank(media.getFirstAudioTrack().getSongname()) ||
 				StringUtils.isNotBlank(media.getFirstAudioTrack().getArtist())
@@ -355,7 +355,7 @@ public final class AudioUtils {
 			if (StringUtils.isNotBlank(media.getFirstAudioTrack().getArtist())) {
 				tag.setArtist(media.getFirstAudioTrack().getArtist());
 			}
-			media.setThumb(CoverUtil.get().getThumbnail(tag));
+			media.setThumb(CoverUtil.get().getThumbnail(coverUtil.createAudioTagInfo(tag)));
 		}
 		media.setThumbready(true);
 		media.setMediaparsed(true);
