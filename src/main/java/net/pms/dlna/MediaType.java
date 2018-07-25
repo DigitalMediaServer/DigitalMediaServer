@@ -18,6 +18,8 @@
  */
 package net.pms.dlna;
 
+import java.util.Locale;
+
 
 /**
  * Defines the media types.
@@ -64,8 +66,15 @@ public enum MediaType {
 		return value;
 	}
 
+	/**
+	 * @return The lower-case "code" that represents this {@link MediaType}.
+	 */
+	public String getString() {
+		return name().toLowerCase(Locale.ROOT);
+	}
+
 	@Override
 	public String toString() {
-		return "Media type " + this.name() + " (" + value + ")";
+		return "MediaType " + this.name() + " (" + value + ")";
 	}
 }
