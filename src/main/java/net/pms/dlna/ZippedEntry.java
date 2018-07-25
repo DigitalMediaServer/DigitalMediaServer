@@ -36,6 +36,12 @@ public class ZippedEntry extends DLNAResource implements IPushOutput {
 	private long length;
 	private ZipFile zipFile;
 
+	public ZippedEntry(File file, String zeName, long length) {
+		this.zeName = zeName;
+		this.file = file;
+		this.length = length;
+	}
+
 	@Override
 	protected String getThumbnailURL(DLNAImageProfile profile) {
 		if (getType() == Format.IMAGE || getType() == Format.AUDIO) {
@@ -44,12 +50,6 @@ public class ZippedEntry extends DLNAResource implements IPushOutput {
 		}
 
 		return super.getThumbnailURL(profile);
-	}
-
-	public ZippedEntry(File file, String zeName, long length) {
-		this.zeName = zeName;
-		this.file = file;
-		this.length = length;
 	}
 
 	@Override
@@ -169,9 +169,8 @@ public class ZippedEntry extends DLNAResource implements IPushOutput {
 	public DLNAThumbnailInputStream getThumbnailInputStream() throws IOException {
 		if (getMedia() != null && getMedia().getThumb() != null) {
 			return getMedia().getThumbnailInputStream();
-		} else {
-			return super.getThumbnailInputStream();
 		}
+		return super.getThumbnailInputStream();
 	}
 
 	@Override

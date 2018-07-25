@@ -37,6 +37,20 @@ import net.sf.sevenzipjbinding.simple.ISimpleInArchiveItem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+public class SevenZipEntry extends ZippedEntry implements IPushOutput {
+	private static final Logger LOGGER = LoggerFactory.getLogger(SevenZipEntry.class);
+	private File file;
+	private String zeName;
+	private long length;
+	private IInArchive arc;
+
+	public SevenZipEntry(File file, String zeName, long length) {
+		super(file, zeName, length);
+		this.zeName = zeName;
+		this.file = file;
+		this.length = length;
+	}
+
 	@Override
 	protected String getThumbnailURL(DLNAImageProfile profile) {
 		if (getType() == Format.IMAGE || getType() == Format.AUDIO) {
@@ -47,23 +61,8 @@ import org.slf4j.LoggerFactory;
 		return super.getThumbnailURL(profile);
 	}
 
-	public class SevenZipEntry extends ZippedEntry implements IPushOutput {
-		private static final Logger LOGGER = LoggerFactory.getLogger(SevenZipEntry.class);
-		private File file;
-		private String zeName;
-		private long length;
-		private IInArchive arc;
-
-
-	public SevenZipEntry(File file, String zeName, long length) {
-		super(file, zeName, length);
-		this.zeName = zeName;
-		this.file = file;
-		this.length = length;
-	}
-
 	@Override
-	public InputStream getInputStream() throws IOException {
+	public InputStream getInputStream() {
 		return null;
 	}
 
@@ -142,8 +141,9 @@ import org.slf4j.LoggerFactory;
 							return data.length;
 						}
 					});
-					if (result != ExtractOperationResult.OK)
+					if (result != ExtractOperationResult.OK) {
 						LOGGER.error("Error extracting item: " + result);
+					}
 				} catch (FileNotFoundException | SevenZipException e) {
 					LOGGER.debug("Unpack error. Possibly harmless.", e.getMessage());
 				} finally {
@@ -196,9 +196,8 @@ import org.slf4j.LoggerFactory;
 	public DLNAThumbnailInputStream getThumbnailInputStream() throws IOException {
 		if (getMedia() != null && getMedia().getThumb() != null) {
 			return getMedia().getThumbnailInputStream();
-		} else {
-			return super.getThumbnailInputStream();
 		}
+		return super.getThumbnailInputStream();
 	}
 
 	@Override
