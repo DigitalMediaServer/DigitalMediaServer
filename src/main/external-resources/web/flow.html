@@ -58,7 +58,10 @@
 {{#push}}
 			function control(op, arg) {
 				//console.log('control '+JSON.stringify(arguments));
-				var api = flowplayer();
+				var api = flowplayer(), currentPos;
+				// get the current position, default to 0
+				currentPos = api.ready ? api.video.time : 0;
+
 				switch (op) {
 					case 'play':
 						api.play();
