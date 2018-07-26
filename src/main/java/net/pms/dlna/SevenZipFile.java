@@ -19,10 +19,11 @@
 package net.pms.dlna;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.RandomAccessFile;
-import net.sf.sevenzipjbinding.ISevenZipInArchive;
+import net.sf.sevenzipjbinding.IInArchive;
 import net.sf.sevenzipjbinding.SevenZip;
 import net.sf.sevenzipjbinding.SevenZipException;
 import net.sf.sevenzipjbinding.impl.RandomAccessFileInStream;
@@ -34,31 +35,31 @@ import org.slf4j.LoggerFactory;
 public class SevenZipFile extends DLNAResource {
 	private static final Logger LOGGER = LoggerFactory.getLogger(SevenZipFile.class);
 	private File file;
-	private ISevenZipInArchive arc;
+	private IInArchive archive;
 
-	public SevenZipFile(File f) {
-		file = f;
-		setLastModified(file.lastModified());
+	public SevenZipFile(File file) {
+		this.file = file;
+		setLastModified(this.file.lastModified());
 		try {
-			RandomAccessFile rf = new RandomAccessFile(f, "r");
-			arc = SevenZip.openInArchive(null, new RandomAccessFileInStream(rf));
-			ISimpleInArchive simpleInArchive = arc.getSimpleInterface();
+			RandomAccessFile randomAccessFile = new RandomAccessFile(file, "r");
+			archive = SevenZip.openInArchive(null, new RandomAccessFileInStream(randomAccessFile));
+			ISimpleInArchive simpleInArchive = archive.getSimpleInterface();
 
 			for (ISimpleInArchiveItem item : simpleInArchive.getArchiveItems()) {
-				LOGGER.debug("found " + item.getPath() + " in arc " + file.getAbsolutePath());
+				LOGGER.debug("Found \"{}\" in archive \"{}\"", item.getPath(), this.file.getAbsolutePath());
 
 				// Skip folders for now
 				if (item.isFolder()) {
 					continue;
 				}
-				addChild(new SevenZipEntry(f, item.getPath(), item.getSize()));
+				addChild(new SevenZipEntry(file, item.getPath(), item.getSize()));
 			}
-		} catch (IOException e) {
-			LOGGER.error("Error reading archive file", e);
+		} catch (FileNotFoundException e) {
+			LOGGER.error("An error occurred while trying to read archive file \"{}\": {}", this.file, e.getMessage());
+			LOGGER.trace("", e);
 		} catch (SevenZipException e) {
-			LOGGER.error("Caught 7-Zip exception", e);
-		} catch (NullPointerException e) {
-			LOGGER.error("Caught 7-Zip Null-Pointer Exception", e);
+			LOGGER.error("An error occurred while reading archive file \"{}\": {}", this.file, e.getMessage());
+			LOGGER.trace("", e);
 		}
 	}
 
