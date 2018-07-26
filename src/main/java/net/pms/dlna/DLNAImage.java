@@ -50,6 +50,8 @@ public class DLNAImage extends Image {
 
 	private static final long serialVersionUID = 1L;
 	private static final Logger LOGGER = LoggerFactory.getLogger(DLNAImage.class);
+
+	/** The {@link DLNAImageProfile} for this {@link DLNAImage} */
 	protected final DLNAImageProfile profile;
 
 	/**
@@ -69,7 +71,7 @@ public class DLNAImage extends Image {
 		boolean copy
 	) throws DLNAProfileException {
 		super(image, copy);
-		this.profile = profile != null ? profile : findMatchingProfile(this instanceof DLNABinaryThumbnail);
+		this.profile = profile != null ? profile : findMatchingProfile(this instanceof DLNAThumbnail);
 		if (this.profile == null) {
 			throw new NullPointerException("DLNAImage: profile cannot be null");
 		}
@@ -95,7 +97,7 @@ public class DLNAImage extends Image {
 		boolean copy
 	) throws DLNAProfileException {
 		super(bytes, imageInfo, copy);
-		this.profile = profile != null ? profile : findMatchingProfile(this instanceof DLNABinaryThumbnail);
+		this.profile = profile != null ? profile : findMatchingProfile(this instanceof DLNAThumbnail);
 		if (this.profile == null) {
 			throw new NullPointerException("DLNAImage: profile cannot be null");
 		}
@@ -130,7 +132,7 @@ public class DLNAImage extends Image {
 		boolean copy
 	) throws DLNAProfileException, ParseException {
 		super(bytes, width, height, format, colorModel, metadata, true, copy);
-		this.profile = profile != null ? profile : findMatchingProfile(this instanceof DLNABinaryThumbnail);
+		this.profile = profile != null ? profile : findMatchingProfile(this instanceof DLNAThumbnail);
 		if (this.profile == null) {
 			throw new NullPointerException("DLNAImage: profile cannot be null");
 		}
@@ -140,7 +142,7 @@ public class DLNAImage extends Image {
 	/**
 	 * Creates a new {@link DLNAImage} instance.
 	 *
-	 * @param inputByteArray the source image in either GIF, JPEG or PNG format
+	 * @param bytes the source image in either GIF, JPEG or PNG format
 	 *            adhering to the DLNA restrictions for color space and
 	 *            compression.
 	 * @param format the {@link ImageFormat} the source image is in.
@@ -148,6 +150,7 @@ public class DLNAImage extends Image {
 	 *            {@link Metadata} metadata from.
 	 * @param metadata the {@link Metadata} instance describing the source
 	 *            image.
+	 * @param profile the {@link DLNAImageProfile} to use.
 	 * @param copy whether this instance should be copied or shared.
 	 * @throws DLNAProfileException if the profile compliance check fails.
 	 * @throws ParseException if {@code format} is {@code null} and parsing the
@@ -162,7 +165,7 @@ public class DLNAImage extends Image {
 		boolean copy
 	) throws DLNAProfileException, ParseException {
 		super(bytes, format, bufferedImage, metadata, copy);
-		this.profile = profile != null ? profile : findMatchingProfile(this instanceof DLNABinaryThumbnail);
+		this.profile = profile != null ? profile : findMatchingProfile(this instanceof DLNAThumbnail);
 		if (this.profile == null) {
 			throw new NullPointerException("DLNAImage: profile cannot be null");
 		}
@@ -465,7 +468,7 @@ public class DLNAImage extends Image {
 	 *            output.
 	 * @param dlnaThumbnail whether or not the output image should be restricted
 	 *            to DLNA thumbnail compliance. This also means that the output
-	 *            can be safely cast to {@link DLNABinaryThumbnail}.
+	 *            can be safely cast to {@link DLNAThumbnail}.
 	 * @param padToSize Whether padding should be used if source aspect doesn't
 	 *            match target aspect.
 	 * @return The scaled and/or converted thumbnail, {@code null} if the source
@@ -504,6 +507,14 @@ public class DLNAImage extends Image {
 		}
 	}
 
+	/**
+	 * Attempts to find a matching {@link DLNAImageProfile} for this
+	 * {@link DLNAImage} with the specified restrictions.
+	 *
+	 * @param dlnaThumbnail if {@code true}, limit the profile to those valid
+	 *            for a {@link DLNAThumbnail}.
+	 * @return The matching {@link DLNAImageProfile} or {@code null}.
+	 */
 	protected DLNAImageProfile findMatchingProfile(boolean dlnaThumbnail) {
 		if (
 			imageInfo == null || imageInfo.getFormat() == null ||
@@ -556,6 +567,12 @@ public class DLNAImage extends Image {
 		return null;
 	}
 
+	/**
+	 * Checks this {@link DLNAImage} for DLNA compliance.
+	 *
+	 * @throws DLNAProfileException If this {@link DLNAImage} isn't DLNA
+	 *             compliant.
+	 */
 	protected void checkCompliance() throws DLNAProfileException {
 		DLNAComplianceResult result = profile.checkCompliance(imageInfo);
 		if (result.isAllCorrect()) {

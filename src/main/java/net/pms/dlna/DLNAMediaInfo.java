@@ -180,7 +180,7 @@ public class DLNAMediaInfo implements Cloneable {
 	private Rational aspectRatioVideoTrack;
 	private int videoBitDepth = 8;
 
-	private volatile DLNABinaryThumbnail thumb = null;
+	private volatile DLNAThumbnail thumb = null;
 
 	private volatile ImageInfo imageInfo = null;
 
@@ -2550,17 +2550,16 @@ public class DLNAMediaInfo implements Cloneable {
 	}
 
 	/**
-	 * @return The thumb.
-	 * @since 1.50.0
+	 * @return The {@link DLNAThumbnail}.
 	 */
-	public DLNABinaryThumbnail getThumb() {
+	public DLNAThumbnail getThumb() {
 		return thumb;
 	}
 
 	/**
 	 * @param thumb the thumb to set.
 	 * @since 1.50.0
-	 * @deprecated Use {@link #setThumb(DLNABinaryThumbnail)} instead.
+	 * @deprecated Use {@link #setThumb(DLNAThumbnail)} instead.
 	 */
 	@Deprecated
 	public void setThumb(byte[] thumb) {
@@ -2583,11 +2582,12 @@ public class DLNAMediaInfo implements Cloneable {
 	}
 
 	/**
-	 * Sets the {@link DLNABinaryThumbnail} instance to use for this {@link DLNAMediaInfo} instance.
+	 * Sets the {@link DLNAThumbnail} instance to use for this
+	 * {@link DLNAMediaInfo} instance.
 	 *
-	 * @param thumbnail the {@link DLNABinaryThumbnail} to set.
+	 * @param thumbnail the {@link DLNAThumbnail} to set.
 	 */
-	public void setThumb(DLNABinaryThumbnail thumbnail) {
+	public void setThumb(DLNAThumbnail thumbnail) {
 		this.thumb = thumbnail;
 		if (thumbnail != null) {
 			thumbready = true;
