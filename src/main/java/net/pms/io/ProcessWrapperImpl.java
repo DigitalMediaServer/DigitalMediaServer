@@ -62,9 +62,42 @@ public class ProcessWrapperImpl extends Thread implements ProcessWrapper {
 	public boolean isSuccess() {
 		return success;
 	}
+
 	public ProcessWrapperImpl(List<String> cmd, OutputParams params) {
+		this(cmd, params, false, false);
+	}
+
+	public ProcessWrapperImpl(List<String> cmd, boolean useByteArrayStdConsumer, OutputParams params) {
+		this(cmd, useByteArrayStdConsumer, params, false, false);
+	}
+
+	public ProcessWrapperImpl(List<String> cmd, OutputParams params, boolean keepOutput) {
+		this(cmd, false, params, keepOutput, keepOutput);
+	}
+
+	public ProcessWrapperImpl(
+		List<String> cmd,
+		boolean useByteArrayStdConsumer,
+		OutputParams params,
+		boolean keepOutput
+	) {
+		this(cmd, useByteArrayStdConsumer, params, keepOutput, keepOutput);
+	}
+
+	public ProcessWrapperImpl(List<String> cmd, OutputParams params, boolean keepStdout, boolean keepStderr) {
+		this(cmd, false, params, keepStdout, keepStderr);
+	}
+
+	public ProcessWrapperImpl(
+		List<String> cmd,
+		boolean useByteArrayStdConsumer,
+		OutputParams params,
+		boolean keepStdout,
+		boolean keepStderr
+	) {
 		super();
-		init(cmd.toArray(new String[cmd.size()]), params, false, false);
+		this.useByteArrayStdConsumer = useByteArrayStdConsumer;
+		init(cmd.toArray(new String[cmd.size()]), params, keepStdout, keepStderr);
 	}
 
 	public ProcessWrapperImpl(String cmdArray[], OutputParams params) {
