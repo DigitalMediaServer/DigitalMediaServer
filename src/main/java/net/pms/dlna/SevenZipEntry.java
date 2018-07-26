@@ -18,6 +18,7 @@
  */
 package net.pms.dlna;
 
+import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -26,8 +27,9 @@ import java.io.OutputStream;
 import java.io.RandomAccessFile;
 import net.pms.formats.Format;
 import net.pms.util.FileUtil;
+import net.sf.sevenzipjbinding.ExtractOperationResult;
+import net.sf.sevenzipjbinding.IInArchive;
 import net.sf.sevenzipjbinding.ISequentialOutStream;
-import net.sf.sevenzipjbinding.ISevenZipInArchive;
 import net.sf.sevenzipjbinding.SevenZip;
 import net.sf.sevenzipjbinding.SevenZipException;
 import net.sf.sevenzipjbinding.impl.RandomAccessFileInStream;
@@ -35,26 +37,16 @@ import net.sf.sevenzipjbinding.simple.ISimpleInArchive;
 import net.sf.sevenzipjbinding.simple.ISimpleInArchiveItem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 public class SevenZipEntry extends DLNAResource implements IPushOutput {
 	private static final Logger LOGGER = LoggerFactory.getLogger(SevenZipEntry.class);
-	private File file;
-	private String zeName;
-	private long length;
-	private ISevenZipInArchive arc;
+	private final  File file;
+	private final String itemPath;
+	private final long length;
 
-	@Override
-	protected String getThumbnailURL(DLNAImageProfile profile) {
-		if (getType() == Format.IMAGE || getType() == Format.AUDIO) {
-			// no thumbnail support for now for zipped videos
-			return null;
-		}
-
-		return super.getThumbnailURL(profile);
-	}
-
-	public SevenZipEntry(File file, String zeName, long length) {
-		this.zeName = zeName;
+	public SevenZipEntry(File file, String itemPath, long length) {
+		this.itemPath = itemPath;
 		this.file = file;
 		this.length = length;
 	}
@@ -66,7 +58,7 @@ public class SevenZipEntry extends DLNAResource implements IPushOutput {
 
 	@Override
 	public String getName() {
-		return zeName;
+		return itemPath;
 	}
 
 	@Override
@@ -85,7 +77,7 @@ public class SevenZipEntry extends DLNAResource implements IPushOutput {
 
 	@Override
 	public String getSystemName() {
-		return FileUtil.getFileNameWithoutExtension(file.getAbsolutePath()) + "." + FileUtil.getExtension(zeName);
+		return FileUtil.getFileNameWithoutExtension(file.getAbsolutePath()) + "." + FileUtil.getExtension(itemPath);
 	}
 
 	@Override
@@ -101,63 +93,63 @@ public class SevenZipEntry extends DLNAResource implements IPushOutput {
 	}
 
 	@Override
-	public void push(final OutputStream out) throws IOException {
-		Runnable r = new Runnable() {
-			InputStream in = null;
+	public void push(final OutputStream outputStream) throws IOException {
+		Runnable runnable = new Runnable() {
 
 			@Override
 			public void run() {
-				try {
-					//byte data[] = new byte[65536];
+				try (
 					RandomAccessFile rf = new RandomAccessFile(file, "r");
-
-					arc = SevenZip.openInArchive(null, new RandomAccessFileInStream(rf));
-					ISimpleInArchive simpleInArchive = arc.getSimpleInterface();
+					IInArchive archive = SevenZip.openInArchive(null, new RandomAccessFileInStream(rf));
+					BufferedOutputStream bos = outputStream instanceof BufferedOutputStream ?
+						(BufferedOutputStream) outputStream :
+						new BufferedOutputStream(outputStream);
+				){
+					ISimpleInArchive simpleInArchive = archive.getSimpleInterface();
 					ISimpleInArchiveItem realItem = null;
 
 					for (ISimpleInArchiveItem item : simpleInArchive.getArchiveItems()) {
-						if (item.getPath().equals(zeName)) {
+						if (item.getPath().equals(itemPath)) {
 							realItem = item;
 							break;
 						}
 					}
 
 					if (realItem == null) {
-						LOGGER.trace("No such item " + zeName + " found in archive");
+						LOGGER.trace("No such item " + itemPath + " found in archive");
 						return;
 					}
 
-					realItem.extractSlow(new ISequentialOutStream() {
+					final LastException lastException = new LastException();
+					ExtractOperationResult result = realItem.extractSlow(new ISequentialOutStream() {
 						@Override
 						public int write(byte[] data) throws SevenZipException {
 							try {
-								out.write(data);
+								bos.write(data);
 							} catch (IOException e) {
-								LOGGER.debug("Caught exception", e);
-								throw new SevenZipException();
+								lastException.exception = e;
 							}
 							return data.length;
 						}
 					});
-				} catch (FileNotFoundException | SevenZipException e) {
-					LOGGER.debug("Unpack error. Possibly harmless.", e.getMessage());
-				} finally {
-					try {
-						if (in != null) {
-							in.close();
-						}
-						arc.close();
-						out.close();
-					} catch (IOException e) {
-						LOGGER.debug("Caught exception", e);
-					} catch (SevenZipException e) {
-						LOGGER.debug("Caught 7-Zip exception", e);
+					if (result != ExtractOperationResult.OK) {
+						throw new SevenZipException(result.name(), lastException.exception);
 					}
+
+				} catch (FileNotFoundException e) {
+					LOGGER.error("An error occurred while trying to read archive file \"{}\": {}", file, e.getMessage());
+					LOGGER.trace("", e);
+				} catch (SevenZipException e) {
+					LOGGER.error("An error occurred while extracting \"{}\" from \"{}\": {}", itemPath, file, e.getMessage());
+					LOGGER.trace("", e);
+				} catch (IOException e) {
+					LOGGER.error("An error occurred while closing archive file \"{}\": {}", file, e.getMessage());
+					LOGGER.trace("", e);
 				}
 			}
 		};
 
-		new Thread(r, "7Zip Extractor").start();
+		new Thread(runnable, "7Zip Extractor for \"" + itemPath + "\"").start();
 	}
 
 	@Override
@@ -193,13 +185,34 @@ public class SevenZipEntry extends DLNAResource implements IPushOutput {
 	public DLNAThumbnailInputStream getThumbnailInputStream() throws IOException {
 		if (getMedia() != null && getMedia().getThumb() != null) {
 			return getMedia().getThumbnailInputStream();
-		} else {
-			return super.getThumbnailInputStream();
 		}
+		return super.getThumbnailInputStream();
+	}
+
+	@Override
+	protected String getThumbnailURL(DLNAImageProfile profile) {
+		if (getType() == Format.IMAGE || getType() == Format.AUDIO) {
+			// no thumbnail support for now for zipped videos
+			return null;
+		}
+
+		return super.getThumbnailURL(profile);
 	}
 
 	@Override
 	public String write() {
 		return getName() + ">" + file.getAbsolutePath() + ">" + length;
+	}
+
+	/**
+	 * This class is used as a hack to hide "The pipe is being closed"
+	 * exceptions that is being thrown during extraction. The real cause for
+	 * this is unknown, but can very well be because of missing synchronization.
+	 *
+	 * @author Nadahar
+	 */
+	@SuppressFBWarnings("NM_CLASS_NOT_EXCEPTION")
+	private static class LastException {
+		private IOException exception;
 	}
 }
