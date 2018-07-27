@@ -18,8 +18,11 @@
  */
 package net.pms.image.thumbnail;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import net.pms.PMS;
+import net.pms.dlna.DLNAThumbnail;
+import org.jaudiotagger.audio.mp3.MP3File;
 import org.jaudiotagger.tag.Tag;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -99,24 +102,47 @@ public abstract class CoverUtil {
 
 	/**
 	 * Gets a thumbnail from the configured cover utility based on the specified
-	 * {@link Tag}.
+	 * {@link AudioTagInfo}.
 	 *
-	 * @param tag the {@link tag} to use while searching for a cover.
+	 * @param tagInfo the {@link AudioTagInfo} to use while searching for a
+	 *            cover.
 	 * @return The thumbnail or {@code null} if none was found.
 	 */
-	public final byte[] getThumbnail(Tag tag) {
+	@Nullable
+	public final DLNAThumbnail getThumbnail(AudioTagInfo tagInfo) {
 		boolean externalNetwork = PMS.getConfiguration().getExternalNetwork();
-		return doGetThumbnail(tag, externalNetwork);
+		return doGetThumbnail(tagInfo, externalNetwork);
 	}
 
 	/**
-	 * Gets a thumbnail from the configured cover utility based on the specified
-	 * {@link Tag}.
+	 * Gets a {@link DLNAThumbnail} from the configured cover utility based on
+	 * the specified {@link AudioTagInfo}.
 	 *
-	 * @param tag the {@link tag} to use while searching for a cover.
+	 * @param tagInfo the {@link AudioTagInfo} to use while searching for a
+	 *            cover.
 	 * @param externalNetwork {@code true} if the use of external networks
 	 *            (Internet) is allowed, {@code false} otherwise.
 	 * @return The thumbnail or {@code null} if none was found.
 	 */
-	protected abstract byte[] doGetThumbnail(Tag tag, boolean externalNetwork);
+	@Nullable
+	protected abstract DLNAThumbnail doGetThumbnail(AudioTagInfo tagInfo, boolean externalNetwork);
+
+	/**
+	 * Creates a new {@link AudioTagInfo} of the correct type based on the
+	 * specified {@link Tag}.
+	 *
+	 * @param tag the {@link Tag} to get the information from.
+	 * @return The new {@link AudioTagInfo} instance.
+	 */
+	public abstract AudioTagInfo createAudioTagInfo(@Nonnull Tag tag);
+
+	/**
+	 * Creates a new {@link AudioTagInfo} of the correct type based on the
+	 * specified {@link MP3File}. This method is used specifically for MP3 files
+	 * to extract information from both {@code IDv1} and {@code IDv2} tags.
+	 *
+	 * @param mp3File the {@link MP3File} to get the information from.
+	 * @return The new {@link AudioTagInfo} instance.
+	 */
+	public abstract AudioTagInfo createAudioTagInfo(@Nonnull MP3File mp3File);
 }
