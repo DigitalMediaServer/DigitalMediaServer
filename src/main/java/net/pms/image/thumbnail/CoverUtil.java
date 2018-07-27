@@ -18,12 +18,12 @@
  */
 package net.pms.image.thumbnail;
 
+import javax.annotation.Nullable;
 import net.pms.PMS;
 import org.jaudiotagger.tag.Tag;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 
 /**
@@ -36,7 +36,7 @@ import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 public abstract class CoverUtil {
 
 	private static Object instanceLock = new Object();
-	private static CoverUtil instance = null;
+	private static CoverArtArchiveUtil coverArtArchiveInstance;
 
 	/**
 	 * Do not instantiate this class, use {@link #get()}.
@@ -45,26 +45,35 @@ public abstract class CoverUtil {
 	}
 
 	/**
-	 * Factory method that gets an instance of correct type according to
-	 * configuration, or {@code null} if no cover utility is configured.
+	 * Returns the static instance of the configured {@link CoverSupplier} type,
+	 * or {@code null} if no {@link CoverSupplier} is configured.
 	 *
-	 * @return The {@link CoverUtil} instance.
+	 * @return The {@link CoverUtil} or {@code null}.
 	 */
-	@SuppressFBWarnings("BC_VACUOUS_INSTANCEOF")
+	@Nullable
 	public static CoverUtil get() {
-		CoverSupplier supplier = PMS.getConfiguration().getAudioThumbnailMethod();
+		return get(PMS.getConfiguration().getAudioThumbnailMethod());
+	}
+
+	/**
+	 * Returns the static instance of the specified {@link CoverSupplier} type,
+	 * or {@code null} if no valid {@link CoverSupplier} is specified.
+	 *
+	 * @param supplier the {@link CoverSupplier} whose instance to get.
+	 * @return The {@link CoverUtil} or {@code null}.
+	 */
+	@Nullable
+	public static CoverUtil get(CoverSupplier supplier) {
 		synchronized (instanceLock) {
-			switch (supplier.toInt()) {
-				case CoverSupplier.COVER_ART_ARCHIVE_INT:
-					if (instance == null || !(instance instanceof CoverArtArchiveUtil)) {
-						instance = new CoverArtArchiveUtil();
+			switch (supplier) {
+				case COVER_ART_ARCHIVE:
+					if (coverArtArchiveInstance == null) {
+						coverArtArchiveInstance = new CoverArtArchiveUtil();
 					}
-					break;
+					return coverArtArchiveInstance;
 				default:
-					instance = null;
-					break;
+					return null;
 			}
-			return instance;
 		}
 	}
 
