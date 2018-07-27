@@ -30,10 +30,10 @@ import java.util.EnumSet;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
-import net.pms.image.thumbnail.CoverArtArchiveUtil.CoverArtArchiveTagInfo;
 import org.jaudiotagger.tag.Tag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import net.pms.image.thumbnail.CoverArtArchiveTagInfo;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 /**
@@ -189,9 +189,9 @@ public final class TableMusicBrainzReleases extends Table {
 								"     Year      \"{}\"\n" +
 								"     Artist ID \"{}\"\n" +
 								"     Track ID  \"{}\"\n",
-								mBID, tagInfo.artist, tagInfo.album,
-								tagInfo.title, tagInfo.year,
-								tagInfo.artistId, tagInfo.trackId
+								mBID, tagInfo.getArtist(), tagInfo.getAlbum(),
+								tagInfo.getTitle(), tagInfo.getYear(),
+								tagInfo.getArtistId(), tagInfo.getTrackId()
 							);
 						}
 
@@ -200,23 +200,23 @@ public final class TableMusicBrainzReleases extends Table {
 						if (isNotBlank(mBID)) {
 							result.updateString("MBID", mBID);
 						}
-						if (isNotBlank(tagInfo.album)) {
-							result.updateString("ALBUM", left(tagInfo.album, 1000));
+						if (isNotBlank(tagInfo.getAlbum())) {
+							result.updateString("ALBUM", left(tagInfo.getAlbum(), 1000));
 						}
-						if (isNotBlank(tagInfo.artist)) {
-							result.updateString("ARTIST", left(tagInfo.artist, 1000));
+						if (isNotBlank(tagInfo.getArtist())) {
+							result.updateString("ARTIST", left(tagInfo.getArtist(), 1000));
 						}
-						if (isNotBlank(tagInfo.title)) {
-							result.updateString("TITLE", left(tagInfo.title, 1000));
+						if (isNotBlank(tagInfo.getTitle())) {
+							result.updateString("TITLE", left(tagInfo.getTitle(), 1000));
 						}
-						if (isNotBlank(tagInfo.year)) {
-							result.updateString("YEAR", left(tagInfo.year, 20));
+						if (tagInfo.getYear() > 0) {
+							result.updateString("YEAR", Integer.toString(tagInfo.getYear()));
 						}
-						if (isNotBlank(tagInfo.artistId)) {
-							result.updateString("ARTIST_ID", tagInfo.artistId);
+						if (isNotBlank(tagInfo.getArtistId())) {
+							result.updateString("ARTIST_ID", tagInfo.getArtistId());
 						}
-						if (isNotBlank(tagInfo.trackId)) {
-							result.updateString("TRACK_ID", tagInfo.trackId);
+						if (isNotBlank(tagInfo.getTrackId())) {
+							result.updateString("TRACK_ID", tagInfo.getTrackId());
 						}
 						result.insertRow();
 					}
@@ -240,13 +240,14 @@ public final class TableMusicBrainzReleases extends Table {
 	}
 
 	/**
-	 * Looks up MBID in the table based on the given {@link Tag}.
+	 * Looks up the {@code MBID} in the table based on the specified
+	 * {@link CoverArtArchiveTagInfo}.
 	 *
-	 * @param tagInfo the {@link Tag} for whose values should be used in the
-	 *            search.
-	 * @return The result of the search.
+	 * @param tagInfo the {@link CoverArtArchiveTagInfo} whose values should be used
+	 *            in the search.
+	 * @return The result of the search or {@code null}.
 	 */
-	@Nonnull
+	@Nullable
 	public MusicBrainzReleasesResult findMBID(CoverArtArchiveTagInfo tagInfo) {
 		boolean trace = LOGGER.isTraceEnabled();
 		MusicBrainzReleasesResult result;
@@ -281,31 +282,31 @@ public final class TableMusicBrainzReleases extends Table {
 		final String and = " AND ";
 		boolean added = false;
 
-		if (includeAll || isNotBlank(tagInfo.album)) {
-			where.append("ALBUM").append(sqlNullIfBlank(tagInfo.album, true, false));
+		if (includeAll || isNotBlank(tagInfo.getAlbum())) {
+			where.append("ALBUM").append(sqlNullIfBlank(tagInfo.getAlbum(), true, false));
 			added = true;
 		}
-		if (includeAll || isNotBlank(tagInfo.artistId)) {
+		if (includeAll || isNotBlank(tagInfo.getArtistId())) {
 			if (added) {
 				where.append(and);
 			}
-			where.append("ARTIST_ID").append(sqlNullIfBlank(tagInfo.artistId, true, false));
+			where.append("ARTIST_ID").append(sqlNullIfBlank(tagInfo.getArtistId(), true, false));
 			added = true;
 		}
-		if (includeAll || (!isNotBlank(tagInfo.artistId) && isNotBlank(tagInfo.artist))) {
+		if (includeAll || (!isNotBlank(tagInfo.getArtistId()) && isNotBlank(tagInfo.getArtist()))) {
 			if (added) {
 				where.append(and);
 			}
-			where.append("ARTIST").append(sqlNullIfBlank(tagInfo.artist, true, false));
+			where.append("ARTIST").append(sqlNullIfBlank(tagInfo.getArtist(), true, false));
 			added = true;
 		}
 
 		if (
 			includeAll || (
-				isNotBlank(tagInfo.trackId) && (
-					!isNotBlank(tagInfo.album) || !(
-						isNotBlank(tagInfo.artist) ||
-						isNotBlank(tagInfo.artistId)
+				isNotBlank(tagInfo.getTrackId()) && (
+					!isNotBlank(tagInfo.getAlbum()) || !(
+						isNotBlank(tagInfo.getArtist()) ||
+						isNotBlank(tagInfo.getArtistId())
 					)
 				)
 			)
@@ -313,16 +314,16 @@ public final class TableMusicBrainzReleases extends Table {
 			if (added) {
 				where.append(and);
 			}
-			where.append("TRACK_ID").append(sqlNullIfBlank(tagInfo.trackId, true, false));
+			where.append("TRACK_ID").append(sqlNullIfBlank(tagInfo.getTrackId(), true, false));
 			added = true;
 		}
 		if (
 			includeAll || (
-				!isNotBlank(tagInfo.trackId) && (
-					isNotBlank(tagInfo.title) && (
-						!isNotBlank(tagInfo.album) || !(
-							isNotBlank(tagInfo.artist) ||
-							isNotBlank(tagInfo.artistId)
+				!isNotBlank(tagInfo.getTrackId()) && (
+					isNotBlank(tagInfo.getTitle()) && (
+						!isNotBlank(tagInfo.getAlbum()) || !(
+							isNotBlank(tagInfo.getArtist()) ||
+							isNotBlank(tagInfo.getArtistId())
 						)
 					)
 				)
@@ -331,15 +332,15 @@ public final class TableMusicBrainzReleases extends Table {
 			if (added) {
 				where.append(and);
 			}
-			where.append("TITLE").append(sqlNullIfBlank(tagInfo.title, true, false));
+			where.append("TITLE").append(sqlNullIfBlank(tagInfo.getTitle(), true, false));
 			added = true;
 		}
 
-		if (isNotBlank(tagInfo.year)) {
+		if (includeAll || tagInfo.getYear() > 0) {
 			if (added) {
 				where.append(and);
 			}
-			where.append("YEAR").append(sqlNullIfBlank(tagInfo.year, true, false));
+			where.append("YEAR = ").append(tagInfo.getYear());
 			added = true;
 		}
 
