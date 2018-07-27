@@ -44,7 +44,6 @@ import net.pms.image.ImageFormat;
 import net.pms.image.ImageInfo;
 import net.pms.image.ImagesUtil;
 import net.pms.image.ImagesUtil.ScaleType;
-import net.pms.image.thumbnail.CoverSupplier;
 import net.pms.image.thumbnail.CoverUtil;
 import net.pms.io.OutputParams;
 import net.pms.io.ProcessWrapperImpl;
@@ -64,6 +63,7 @@ import org.jaudiotagger.audio.AudioHeader;
 import org.jaudiotagger.audio.exceptions.CannotReadException;
 import org.jaudiotagger.audio.exceptions.InvalidAudioFrameException;
 import org.jaudiotagger.audio.exceptions.ReadOnlyFileException;
+import org.jaudiotagger.audio.mp3.MP3File;
 import org.jaudiotagger.logging.ErrorMessage;
 import org.jaudiotagger.tag.FieldKey;
 import org.jaudiotagger.tag.KeyNotFoundException;
@@ -779,7 +779,13 @@ public class DLNAMediaInfo implements Cloneable {
 						if ("mp2".equals(FileUtil.getExtension(file).toLowerCase(Locale.ROOT))) {
 							af = AudioFileIO.readAs(file, "mp3");
 						} else {
-							af = AudioFileIO.read(file);
+							try {
+								// Read using magic bytes
+								af = AudioFileIO.readMagic(file);
+							} catch (CannotReadException e) {
+								// Read using file extension
+								af = AudioFileIO.read(file);
+							}
 						}
 						AudioHeader ah = af.getAudioHeader();
 
@@ -831,26 +837,24 @@ public class DLNAMediaInfo implements Cloneable {
 							}
 						}
 
-						Tag t = af.getTag();
+						Tag tag = af.getTag();
 
-						if (t != null) {
-							if (t.getArtworkList().size() > 0) {
+						if (tag != null) {
+							CoverUtil coverUtil = CoverUtil.get();
+							if (tag.getArtworkList().size() > 0) {
 								thumb = DLNABinaryThumbnail.toThumbnail(
-									t.getArtworkList().get(0).getBinaryData(),
+									tag.getArtworkList().get(0).getBinaryData(),
 									640,
 									480,
 									ScaleType.MAX,
 									ImageFormat.SOURCE,
 									false
 								);
-							} else if (!configuration.getAudioThumbnailMethod().equals(CoverSupplier.NONE)) {
-								thumb = DLNABinaryThumbnail.toThumbnail(
-									CoverUtil.get().getThumbnail(t),
-									640,
-									480,
-									ScaleType.MAX,
-									ImageFormat.SOURCE,
-									false
+							} else if (coverUtil != null) {
+								thumb = CoverUtil.get().getThumbnail(
+									af instanceof MP3File ?
+										coverUtil.createAudioTagInfo((MP3File) af) :
+										coverUtil.createAudioTagInfo(tag)
 								);
 							}
 							if (thumb != null) {
@@ -858,19 +862,19 @@ public class DLNAMediaInfo implements Cloneable {
 							}
 
 							if (!thumbOnly) {
-								audio.setAlbum(t.getFirst(FieldKey.ALBUM));
-								audio.setArtist(t.getFirst(FieldKey.ARTIST));
-								audio.setSongname(t.getFirst(FieldKey.TITLE));
-								String y = t.getFirst(FieldKey.YEAR);
+								audio.setAlbum(tag.getFirst(FieldKey.ALBUM));
+								audio.setArtist(tag.getFirst(FieldKey.ARTIST));
+								audio.setSongname(tag.getFirst(FieldKey.TITLE));
+								String y = tag.getFirst(FieldKey.YEAR);
 
 								try {
 									if (y.length() > 4) {
 										y = y.substring(0, 4);
 									}
 									audio.setYear(Integer.parseInt(((y != null && y.length() > 0) ? y : "0")));
-									y = t.getFirst(FieldKey.TRACK);
+									y = tag.getFirst(FieldKey.TRACK);
 									audio.setTrack(Integer.parseInt(((y != null && y.length() > 0) ? y : "1")));
-									audio.setGenre(t.getFirst(FieldKey.GENRE));
+									audio.setGenre(tag.getFirst(FieldKey.GENRE));
 								} catch (NumberFormatException | KeyNotFoundException e) {
 									LOGGER.debug("Error parsing unimportant metadata: " + e.getMessage());
 								}
@@ -1920,7 +1924,7 @@ public class DLNAMediaInfo implements Cloneable {
 	}
 
 	public DLNAThumbnailInputStream getThumbnailInputStream() {
-		return thumb != null ? new DLNAThumbnailInputStream(thumb) : null;
+		return thumb != null && thumb.getBytes(false) != null ? new DLNAThumbnailInputStream(thumb) : null;
 	}
 
 	public String getValidFps(boolean ratios) {
