@@ -18,157 +18,74 @@
  */
 package net.pms.image.thumbnail;
 
+import java.util.Locale;
+import javax.annotation.Nullable;
+
 /**
- * Defines the suppliers of covers/album art implemented by DMS
- * <ul>
- * <li>None</li>
- * <li>Cover Art Archive</li>
- * </ul>
+ * Defines the suppliers of covers/album art.
+ *
+ * @author Nadahar
  */
-public class CoverSupplier {
+public enum CoverSupplier {
 
-	public static final int NONE_INT = 0;
-	public static final int COVER_ART_ARCHIVE_INT = 1;
+	/** No cover/album art supplier */
+	NONE,
 
-	public static final Integer NONE_INTEGER = NONE_INT;
-	public static final Integer COVER_ART_ARCHIVE_INTEGER = COVER_ART_ARCHIVE_INT;
-
-	/**
-	 * <code>NONE</code> for no cover supplier.
-	 */
-	public static final CoverSupplier NONE = new CoverSupplier(NONE_INT, "None");
+	/** Cover Art Archive */
+	COVER_ART_ARCHIVE;
 
 	/**
-	 * <code>COVER_ART_ARCHIVE</code> for Cover Art Archive.
-	 */
-	public static final CoverSupplier COVER_ART_ARCHIVE = new CoverSupplier(COVER_ART_ARCHIVE_INT, "Cover Art Archive");
-
-	public final int CoverSupplierInt;
-	public final String CoverSupplierStr;
-
-	/**
-	 * Instantiate a {@link CoverSupplier} object.
-	 */
-	private CoverSupplier(int CoverSupplierInt, String CoverSupplierStr) {
-		this.CoverSupplierInt = CoverSupplierInt;
-		this.CoverSupplierStr = CoverSupplierStr;
-	}
-
-	/**
-	 * Returns the string representation of this {@link CoverSupplier}.
-	 */
-	@Override
-	public String toString() {
-		return CoverSupplierStr;
-	}
-
-	/**
-	 * Returns the integer representation of this {@link CoverSupplier}.
-	 */
-	public int toInt() {
-		return CoverSupplierInt;
-	}
-
-	/**
-	 * Converts a {@link CoverSupplier} to an {@link Integer} object.
+	 * Tries to parse a {@link String} to a {@link CoverSupplier}. If no match
+	 * can be found, {@code null} is returned.
 	 *
-	 * @return This {@link CoverSupplier}'s {@link Integer} mapping.
+	 * @param string the {@link String} to parse.
+	 * @return The {@link CoverSupplier} or {@code null}.
 	 */
-	public Integer toInteger() {
-		switch (CoverSupplierInt) {
-			case NONE_INT:
-				return NONE_INTEGER;
-			case COVER_ART_ARCHIVE_INT:
-				return COVER_ART_ARCHIVE_INTEGER;
-			default:
-				throw new IllegalStateException("CoverSupplier " + CoverSupplierStr + ", " + CoverSupplierInt + " is unknown.");
+	@Nullable
+	public static CoverSupplier typeOf(@Nullable String string) {
+		if (string == null) {
+			return null;
 		}
-	}
-
-	/**
-	 * Converts the {@link String} passed as argument to a {@link CoverSupplier}. If
-	 * the conversion fails, this method returns {@link #NONE}.
-	 */
-	public static CoverSupplier toCoverSupplier(String sArg) {
-		return toCoverSupplier(sArg, CoverSupplier.NONE);
-	}
-
-	/**
-	 * Converts the integer passed as argument to a {@link CoverSupplier}. If the
-	 * conversion fails, this method returns {@link #NONE}.
-	 */
-	public static CoverSupplier toCoverSupplier(int val) {
-		return toCoverSupplier(val, CoverSupplier.NONE);
-	}
-
-	/**
-	 * Converts the integer passed as argument to a {@link CoverSupplier}. If the
-	 * conversion fails, this method returns the specified default.
-	 */
-	public static CoverSupplier toCoverSupplier(int val, CoverSupplier defaultCoverSupplier) {
-		switch (val) {
-			case NONE_INT:
-				return NONE;
-			case COVER_ART_ARCHIVE_INT:
-				return COVER_ART_ARCHIVE;
-			default:
-				return defaultCoverSupplier;
-		}
-	}
-
-	/**
-	 * Converts the {@link String} passed as argument to a {@link CoverSupplier}. If
-	 * the conversion fails, this method returns the specified default.
-	 */
-	public static CoverSupplier toCoverSupplier(String sArg, CoverSupplier defaultCoverSupplier) {
-		if (sArg == null) {
-			return defaultCoverSupplier;
-		}
-
-		sArg = sArg.toLowerCase();
-		switch (sArg.toLowerCase()) {
+		switch (string.trim().toLowerCase(Locale.ROOT)) {
+			case "":
 			case "none":
-				return CoverSupplier.NONE;
+				return NONE;
 			case "coverartarchive":
 			case "coverartarchive.org":
 			case "cover art archive":
-				return CoverSupplier.COVER_ART_ARCHIVE;
+				return COVER_ART_ARCHIVE;
 			default:
-				return defaultCoverSupplier;
+				return null;
 		}
 	}
 
-	@Override
-	public int hashCode() {
-		final int prime = 31;
-		int result = 1;
-		result = prime * result + CoverSupplierInt;
-		result = prime * result + ((CoverSupplierStr == null) ? 0 : CoverSupplierStr.hashCode());
-		return result;
+	/**
+	 * Returns the {@link CoverSupplier} with the specified ordinal value.
+	 *
+	 * @param ordinal the ordinal value.
+	 * @return The {@link CoverSupplier} or {@code null}.
+	 */
+	@Nullable
+	public static CoverSupplier typeOf(int ordinal) {
+		return typeOf(ordinal, null);
 	}
 
-	@Override
-	public boolean equals(Object obj) {
-		if (this == obj) {
-			return true;
-		}
-		if (obj == null) {
-			return false;
-		}
-		if (!(obj instanceof CoverSupplier)) {
-			return false;
-		}
-		CoverSupplier other = (CoverSupplier) obj;
-		if (CoverSupplierInt != other.CoverSupplierInt) {
-			return false;
-		}
-		if (CoverSupplierStr == null) {
-			if (other.CoverSupplierStr != null) {
-				return false;
+	/**
+	 * Returns the {@link CoverSupplier} with the specified ordinal value. If no
+	 * match can be found, the specified default {@link CoverSupplier} is
+	 * returned.
+	 *
+	 * @param ordinal the ordinal value.
+	 * @param defaultSupplier the default {@link CoverSupplier}.
+	 * @return The {@link CoverSupplier} or {@code null}.
+	 */
+	@Nullable
+	public static CoverSupplier typeOf(int ordinal, @Nullable CoverSupplier defaultSupplier) {
+		for (CoverSupplier supplier : values()) {
+			if (supplier.ordinal() == ordinal) {
+				return supplier;
 			}
-		} else if (!CoverSupplierStr.equals(other.CoverSupplierStr)) {
-			return false;
 		}
-		return true;
+		return defaultSupplier;
 	}
 }
