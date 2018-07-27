@@ -34,15 +34,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import net.pms.database.TableCoverArtArchive;
-import net.pms.database.TableCoverArtArchive.CoverArtArchiveResult;
+import net.pms.database.TableCoverArtArchive.CoverArtArchiveEntry;
 import net.pms.database.TableManager;
 import net.pms.database.TableMusicBrainzReleases;
 import net.pms.database.TableMusicBrainzReleases.MusicBrainzReleasesResult;
@@ -270,15 +268,15 @@ public class CoverArtArchiveUtil extends CoverUtil {
 			}
 			try {
 				// Check if it's cached first
-				CoverArtArchiveResult result = tableCoverArtArchive.findMBID(mBID);
-				if (result.isFound()) {
-					if (result.getCover() != null) {
+				CoverArtArchiveEntry entry = tableCoverArtArchive.findMBID(mBID);
+				if (entry.isFound()) {
+					if (entry.getCover() != null) {
 						try {
-							return DLNABinaryThumbnail.toThumbnail(result.getCover());
+							return DLNABinaryThumbnail.toThumbnail(entry.getCover());
 						} catch (IOException e) {
 							return null;
 						}
-					} else if (System.currentTimeMillis() - result.getModified().getTime() < EXPIRATION_TIME) {
+					} else if (System.currentTimeMillis() < entry.getExpires()) {
 						// If a lookup has been done within expireTime and no result,
 						// return null. Do another lookup after expireTime has passed
 						return null;
@@ -303,7 +301,7 @@ public class CoverArtArchiveUtil extends CoverUtil {
 				}
 				if (coverArt == null || coverArt.getImages().isEmpty()) {
 					LOGGER.debug("MBID \"{}\" has no cover at CoverArtArchive", mBID);
-					tableCoverArtArchive.writeMBID(mBID, null);
+					tableCoverArtArchive.writeMBID(mBID, null, null, System.currentTimeMillis() + EXPIRATION_TIME);
 					return null;
 				}
 				CoverArtImage image = coverArt.getFrontImage();
@@ -320,12 +318,12 @@ public class CoverArtArchiveUtil extends CoverUtil {
 							cover = IOUtils.toByteArray(is);
 						}
 					}
-					tableCoverArtArchive.writeMBID(mBID, cover);
+					tableCoverArtArchive.writeMBID(mBID, cover, null, Long.MAX_VALUE);
 					return DLNABinaryThumbnail.toThumbnail(cover);
 				} catch (HttpResponseException e) {
 					if (e.getStatusCode() == 404) {
 						LOGGER.debug("Cover for MBID \"{}\" was not found at CoverArtArchive", mBID);
-						tableCoverArtArchive.writeMBID(mBID, null);
+						tableCoverArtArchive.writeMBID(mBID, null, null, System.currentTimeMillis() + EXPIRATION_TIME);
 						return null;
 					}
 					LOGGER.warn(
@@ -529,10 +527,10 @@ public class CoverArtArchiveUtil extends CoverUtil {
 		try {
 			// Check if it's cached first
 			MusicBrainzReleasesResult result = tableMusicBrainzReleases.findMBID(tagInfo);
-			if (result.isFound()) {
+			if (result != null) {
 				if (isNotBlank(result.getMBID())) {
 					return result.getMBID();
-				} else if (System.currentTimeMillis() - result.getModified().getTime() < EXPIRATION_TIME) {
+				} else if (System.currentTimeMillis() < result.getExpires()) {
 					// If a lookup has been done within expireTime and no result,
 					// return null. Do another lookup after expireTime has passed
 					return null;
@@ -638,10 +636,8 @@ public class CoverArtArchiveUtil extends CoverUtil {
 										found = true;
 									}
 								}
-								if (tagInfo.year > 0) {
-									if (StringUtil.isSameYear(Integer.toString(tagInfo.getYear()), release.year)) {
-										release.score += 20;
-									}
+								if (tagInfo.year > 0 && tagInfo.year == release.year) {
+									release.score += 20;
 								}
 								// Prefer Single > Album > Compilation
 								if (found) {
@@ -678,11 +674,11 @@ public class CoverArtArchiveUtil extends CoverUtil {
 			}
 			if (isNotBlank(mBID)) {
 				LOGGER.debug("MusicBrainz release ID \"{}\" found for \"{}\"", mBID, tagInfo);
-				tableMusicBrainzReleases.writeMBID(mBID, tagInfo);
+				tableMusicBrainzReleases.writeMBID(mBID, tagInfo, Long.MAX_VALUE);
 				return mBID;
 			}
 			LOGGER.debug("No MusicBrainz release found for \"{}\"", tagInfo);
-			tableMusicBrainzReleases.writeMBID(null, tagInfo);
+			tableMusicBrainzReleases.writeMBID(null, tagInfo, System.currentTimeMillis() + EXPIRATION_TIME);
 			return null;
 		} finally {
 			releaseTagLatch(latch);
@@ -700,7 +696,6 @@ public class CoverArtArchiveUtil extends CoverUtil {
 			return null;
 		}
 
-		Pattern pattern = Pattern.compile("\\d{4}");
 		int nodeListLength = nodeList.getLength();
 		ArrayList<ReleaseRecord> releaseList = new ArrayList<>(nodeListLength);
 		for (int i = 0; i < nodeListLength; i++) {
@@ -728,15 +723,9 @@ public class CoverArtArchiveUtil extends CoverUtil {
 				}
 				Element releaseYear = getChildElement(releaseElement, "date");
 				if (releaseYear != null) {
-					release.year = releaseYear.getTextContent();
-					Matcher matcher = pattern.matcher(release.year);
-					if (matcher.find()) {
-						release.year = matcher.group();
-					} else {
-						release.year = null;
-					}
+					release.year = StringUtil.getYear(releaseYear.getTextContent());
 				} else {
-					release.year = null;
+					release.year = -1;
 				}
 				Element artists = getChildElement(releaseElement, "artist-credit");
 				if (artists != null && artists.getChildNodes().getLength() > 0) {
@@ -778,7 +767,6 @@ public class CoverArtArchiveUtil extends CoverUtil {
 			return null;
 		}
 
-		Pattern pattern = Pattern.compile("\\d{4}");
 		int nodeListLength = nodeList.getLength();
 		ArrayList<ReleaseRecord> releaseList = new ArrayList<>(nodeListLength);
 		for (int i = 0; i < nodeListLength; i++) {
@@ -843,15 +831,9 @@ public class CoverArtArchiveUtil extends CoverUtil {
 						}
 						Element releaseYear = getChildElement(releaseElement, "date");
 						if (releaseYear != null) {
-							release.year = releaseYear.getTextContent();
-							Matcher matcher = pattern.matcher(release.year);
-							if (matcher.find()) {
-								release.year = matcher.group();
-							} else {
-								release.year = null;
-							}
+							release.year = StringUtil.getYear(releaseYear.getTextContent());
 						} else {
-							release.year = null;
+							release.year = -1;
 						}
 
 						if (isNotBlank(release.id)) {
@@ -894,7 +876,7 @@ public class CoverArtArchiveUtil extends CoverUtil {
 		ReleaseType type;
 
 		/** The release year */
-		String year;
+		int year;
 
 		public ReleaseRecord() {
 		}
