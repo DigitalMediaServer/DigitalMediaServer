@@ -45,7 +45,7 @@ public class FileUtilTest {
 	private final Class<?> CLASS = FileUtilTest.class;
 
 	@BeforeClass
-	public static void SetUPClass() throws ConfigurationException, InterruptedException {
+	public static void setUPClass() throws ConfigurationException, InterruptedException {
 		// Silence all log messages from the DMS code that is being tested
 		LoggerContext context = (LoggerContext) LoggerFactory.getILoggerFactory();
 		context.getLogger(Logger.ROOT_LOGGER_NAME).setLevel(Level.OFF);;
