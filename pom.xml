@@ -1239,7 +1239,7 @@
 								<id>build-windows-installer</id>
 								<configuration>
 									<scriptFile>${project.external-resources}/nsis/setup.nsi</scriptFile>
-									<outputFile>${project.name.short}-setup.exe</outputFile>
+									<outputFile>${project.name.short}-${project.version}-setup.exe</outputFile>
 								</configuration>
 								<goals>
 									<goal>make</goal>
