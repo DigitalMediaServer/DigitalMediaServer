@@ -22,3 +22,6 @@ matrix:
 install: mvn external:install 
 
 script: mvn verify -B -V
+
+notifications:
+  email: false
