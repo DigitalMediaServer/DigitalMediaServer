@@ -39,7 +39,7 @@ import org.slf4j.LoggerFactory;
  */
 public class RendererConfigurationTest {
 	@BeforeClass
-	public static void SetUPClass() {
+	public static void setUPClass() {
 		PMS.configureJNA();
 	}
 	
