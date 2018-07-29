@@ -29,7 +29,7 @@ import net.pms.PMS;
 public class LibMediaInfoParserTest {
 
 	@BeforeClass
-	public static void SetUPClass() {
+	public static void setUPClass() {
 		PMS.configureJNA();
 	}
 
