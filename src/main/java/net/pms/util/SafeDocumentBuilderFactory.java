@@ -60,6 +60,15 @@ public class SafeDocumentBuilderFactory extends DocumentBuilderFactory {
 	/** A copy of {@link javax.xml.XMLConstants.FEATURE_SECURE_PROCESSING} because this constant isn't available in all JVMs*/
 	public static final String FEATURE_SECURE_PROCESSING = "http://javax.xml.XMLConstants/feature/secure-processing";
 
+	/** A copy of {@link javax.xml.XMLConstants.ACCESS_EXTERNAL_DTD} because this constant isn't available in all JVMs*/
+	public static final String ACCESS_EXTERNAL_DTD = "http://javax.xml.XMLConstants/property/accessExternalDTD";
+
+	/** A copy of {@link javax.xml.XMLConstants.ACCESS_EXTERNAL_SCHEMA} because this constant isn't available in all JVMs*/
+	public static final String ACCESS_EXTERNAL_SCHEMA = "http://javax.xml.XMLConstants/property/accessExternalSchema";
+
+	/** A copy of {@link javax.xml.XMLConstants.ACCESS_EXTERNAL_STYLESHEET} because this constant isn't available in all JVMs*/
+	public static final String ACCESS_EXTERNAL_STYLESHEET = "http://javax.xml.XMLConstants/property/accessExternalStylesheet";
+
 	@Nonnull
 	private final DocumentBuilderFactory delegate;
 
@@ -120,6 +129,25 @@ public class SafeDocumentBuilderFactory extends DocumentBuilderFactory {
 				LOGGER.warn(
 					"Disabling \"{}\" isn't supported by document builder factory {}. XML parsing might be vulnerable for XXE exploits",
 					feature,
+					delegate.getClass().getName()
+				);
+			}
+		}
+
+		features.clear();
+		ArrayList<String> attributes = features;
+
+		attributes.add(ACCESS_EXTERNAL_DTD);
+		attributes.add(ACCESS_EXTERNAL_SCHEMA);
+		attributes.add(ACCESS_EXTERNAL_STYLESHEET);
+
+		for (String attribute : attributes) {
+			try {
+				delegate.setAttribute(attribute, "");
+			} catch (Exception e) {
+				LOGGER.warn(
+					"Disabling \"{}\" isn't supported by document builder factory {}. XML parsing might be vulnerable for XXE exploits",
+					attribute,
 					delegate.getClass().getName()
 				);
 			}

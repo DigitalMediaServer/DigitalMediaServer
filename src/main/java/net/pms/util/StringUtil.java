@@ -46,7 +46,6 @@ import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.OutputKeys;
 import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerException;
-import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import javax.xml.xpath.XPath;
@@ -1264,7 +1263,7 @@ public class StringUtil {
 			}
 
 			// Setup pretty print options
-			TransformerFactory transformerFactory = TransformerFactory.newInstance();
+			SafeTransformerFactory transformerFactory = SafeTransformerFactory.newInstance();
 			transformerFactory.setAttribute("indent-number", indentWidth);
 			Transformer transformer = transformerFactory.newTransformer();
 			transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
