@@ -14,6 +14,7 @@ import static net.pms.network.UPNPHelper.sleep;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import net.pms.dlna.protocolinfo.DeviceProtocolInfo;
 import net.pms.dlna.protocolinfo.PanasonicDmpProfiles;
+import net.pms.upnp.cling.SafeDefaultUpnpServiceConfiguration;
 import net.pms.util.BasicPlayer;
 import net.pms.util.SafeDocumentBuilderFactory;
 import net.pms.util.StringUtil;
@@ -288,7 +289,7 @@ public class UPNPControl {
 			dmsHeaders = new UpnpHeaders();
 			dmsHeaders.add(UpnpHeader.Type.USER_AGENT.getHttpName(), "DMS/" + PMS.getVersion() + " " + new ServerClientTokens());
 
-			DefaultUpnpServiceConfiguration sc = new DefaultUpnpServiceConfiguration() {
+			SafeDefaultUpnpServiceConfiguration sc = new SafeDefaultUpnpServiceConfiguration() {
 				@Override
 				public UpnpHeaders getDescriptorRetrievalHeaders(RemoteDeviceIdentity identity) {
 					return dmsHeaders;
