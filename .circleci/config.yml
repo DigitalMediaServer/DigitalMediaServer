@@ -1,0 +1,50 @@
+# Java Maven CircleCI 2.0 configuration file
+# Check https://circleci.com/docs/2.0/language-java/ for more details
+#
+
+version: 2
+jobs:
+  build:
+    docker:
+      - image: circleci/openjdk:8-jdk
+
+    working_directory: ~/DigitalMediaServer
+
+    steps:
+      - checkout
+
+      # Download and cache dependencies
+      - restore_cache:
+          keys:
+          - v1-dependencies-{{ checksum "pom.xml" }}
+          # fallback to using the latest cache if no exact match is found
+          - v1-dependencies-
+
+      - run: mvn external:install
+
+      - save_cache:
+          paths:
+            - ~/.m2
+          key: v1-dependencies-{{ checksum "pom.xml" }}
+
+      - run: mvn -B -DskipTests package -Plinux
+
+      # Upload the artifacts on an other site
+      - run:
+          name: Uploading test
+          command: |
+            set -x
+            VER="0.0.1"
+            curl --upload-file target/dms-$VER-SNAPSHOT-distribution.tar.gz https://transfer.sh/DMS-$VER-SNAPSHOT.tgz
+
+      - store_artifacts:
+          path: target/dms.jar
+          destination: SNAPSHOTS/dms-SNAPSHOT.jar
+
+      # - store_artifacts:
+          # path: target/DMS-setup.exe
+          # destination: SNAPSHOTS/DMS-SNAPSHOT.exe
+
+      - store_artifacts:
+          path: target/dms-0.0.1-SNAPSHOT-distribution.tar.gz
+          destination: SNAPSHOTS/DMS-SNAPSHOT.tgz
