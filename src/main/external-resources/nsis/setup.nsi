@@ -220,6 +220,7 @@ SectionEnd
 Section "-32-bit" sec11
 	SetOverwrite on
 	SetOutPath "$INSTDIR\win32"
+	
 	File "${PROJECT_BASEDIR}\target\bin\win32\ffmpeg.exe"
 	LockedList::AddModule "$INSTDIR\win32\MediaInfo.dll"
 SectionEnd
@@ -237,6 +238,16 @@ Section /o "-XP" sec13
 	SetOverwrite on
 	SetOutPath "$INSTDIR\win32"
 	File /r "${PROJECT_BASEDIR}\src\main\external-resources\lib\winxp"
+	NSISdl::download /TIMEOUT=30000 "https://dl.bintray.com/digitalmediaserver/DigitalMediaServer/Win32/WinXP/ffmpeg_bin_legacy-91330.zip" "$PLUGINSDIR\ffmpeg_bin_legacy-91330.zip"
+	Pop $0
+	StrCmp $0 "success" +3
+	MessageBox MB_ICONEXCLAMATION $0
+	Goto out
+	nsisunz::Unzip /noextractpath /file  "ffmpeg.exe" "$PLUGINSDIR\ffmpeg_bin_legacy-91330.zip" "$INSTDIR\win32"
+	Pop $0
+	StrCmp $0 "success" out
+	MessageBox MB_ICONEXCLAMATION $0
+	out:
 SectionEnd
 
 Section /o $(SectionCleanInstall) sec5
