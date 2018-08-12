@@ -246,20 +246,20 @@ Section /o $(SectionWindowsFirewall) sec2
 	StrCpy $FirewallStatus "1" ; Will be used later by the uninstaller
 
 	${IfNot} ${IsWinXP}
-		nsExec::Exec 'netsh advfirewall firewall add rule name="Digital Media Server - Incoming port TCP 1900/5001/9001" action=allow description="Incoming on port TCP 1900/5001/9001" dir=in enable=yes profile=private,domain protocol=tcp localport=1900,5001,9001'
+		nsExec::Exec 'netsh advfirewall firewall add rule name="Digital Media Server - Incoming port TCP 1900/5252/6363" action=allow description="Incoming on port TCP 1900/5252/6363" dir=in enable=yes profile=private,domain protocol=tcp localport=1900,5252,6363'
 		nsExec::Exec 'netsh advfirewall firewall add rule name="Digital Media Server - Incoming port UDP 1900"  action=allow description="Incoming on port UDP 1900" dir=in enable=yes profile=private,domain protocol=udp localport=1900'
 	${Else}
 		nsExec::Exec 'netsh firewall set multicastbroadcastresponse mode=enable profile=standard'
 		nsExec::Exec 'netsh firewall set multicastbroadcastresponse mode=enable profile=domain'
-		nsExec::Exec 'netsh firewall add portopening protocol=tcp port=5001 name="Digital Media Server - TCP 5001" mode=enable profile=standard'
-		nsExec::Exec 'netsh firewall add portopening protocol=tcp port=9001 name="Digital Media Server - TCP 9001" mode=enable profile=standard'
-		nsExec::Exec 'netsh firewall add portopening protocol=tcp port=5001 name="Digital Media Server - TCP 5001" mode=enable profile=domain'
-		nsExec::Exec 'netsh firewall add portopening protocol=tcp port=9001 name="Digital Media Server - TCP 9001" mode=enable profile=domain'
+		nsExec::Exec 'netsh firewall add portopening protocol=tcp port=5252 name="Digital Media Server - TCP 5252" mode=enable profile=standard'
+		nsExec::Exec 'netsh firewall add portopening protocol=tcp port=6363 name="Digital Media Server - TCP 6363" mode=enable profile=standard'
+		nsExec::Exec 'netsh firewall add portopening protocol=tcp port=5252 name="Digital Media Server - TCP 5252" mode=enable profile=domain'
+		nsExec::Exec 'netsh firewall add portopening protocol=tcp port=6363 name="Digital Media Server - TCP 6363" mode=enable profile=domain'
 		nsExec::Exec 'netsh firewall add portopening protocol=All port=1900 name="Digital Media Server - TCP/UDP 1900" mode=enable profile=standard'
 		nsExec::Exec 'netsh firewall add portopening protocol=all port=1900 name="Digital Media Server - TCP/UDP 1900" mode=enable profile=domain'
 	${EndIf}
 	; Future Windows 10 or later versions should not accept anymore "netsh" use for the firewall configuration, so a powershell script or plugin or code should be used
-	; To check if other firewalls are blocking ports: netstat -ano | findstr -i "5001" or portqry.exe -n x.x.x.x -e 5001
+	; To check if other firewalls are blocking ports: netstat -ano | findstr -i "5252" or portqry.exe -n x.x.x.x -e 5252
 SectionEnd
 
 Section /o $(SectionDownloadJava) sec3 ; http://www.oracle.com/technetwork/java/javase/windows-diskspace-140460.html
@@ -803,11 +803,11 @@ Function un.onInit
 	Pop $0
 	StrCmp $0 "" noNeed
 	${IfNot} ${IsWinXP}
-		nsExec::Exec 'netsh advfirewall firewall delete rule name="Digital Media Server - Incoming port TCP 1900/5001/9001"'
+		nsExec::Exec 'netsh advfirewall firewall delete rule name="Digital Media Server - Incoming port TCP 1900/5252/6363"'
 		nsExec::Exec 'netsh advfirewall firewall delete rule name="Digital Media Server - Incoming port UDP 1900"'
 	${ElseIf} ${IsWinXP}
-		nsExec::Exec 'netsh firewall set portopening protocol=tcp port=5001 mode=disable profile=all'
-		nsExec::Exec 'netsh firewall set portopening protocol=tcp port=9001 mode=disable profile=all'
+		nsExec::Exec 'netsh firewall set portopening protocol=tcp port=5252 mode=disable profile=all'
+		nsExec::Exec 'netsh firewall set portopening protocol=tcp port=6363 mode=disable profile=all'
 		nsExec::Exec 'netsh firewall set portopening protocol=all port=1900 mode=disable profile=all'
 	${EndIf}
 
