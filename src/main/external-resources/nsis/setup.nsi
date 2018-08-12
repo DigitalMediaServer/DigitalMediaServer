@@ -150,7 +150,7 @@ Section "!$(SectionServer)" sec1
 	CreateDirectory "$INSTDIR\plugins"
 	AccessControl::GrantOnFile "$INSTDIR\plugins" "(BU)" "GenericRead + GenericExecute + GenericWrite + Delete + FullAccess"
 	Pop $0
-	File /r /x "*.conf" /x "*.zip" /x "*.7z" /x "*.dll" /x "third-party" "${PROJECT_BASEDIR}\src\main\external-resources\plugins"
+	File /nonfatal "${PROJECT_BASEDIR}\src\main\external-resources\plugins\README.*"
 	File /r "${PROJECT_BASEDIR}\src\main\external-resources\documentation"
 	File /r "${PROJECT_BASEDIR}\src\main\external-resources\renderers"
 	File /r /x "ffmpeg*.exe" /x "avisynth" /x "MediaInfo64.dll" "${PROJECT_BASEDIR}\target\bin\win32"
