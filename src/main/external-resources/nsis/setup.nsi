@@ -158,15 +158,13 @@ Section "!$(SectionServer)" sec1
 	File "${PROJECT_BASEDIR}\src\main\external-resources\${PROJECT_NAME_SHORT}.bat"
 	File /r "${PROJECT_BASEDIR}\src\main\external-resources\web"
 	File "${PROJECT_BUILD_DIR}\${PROJECT_ARTIFACT_ID}.jar"
-;	File "${PROJECT_BASEDIR}\CHANGELOG.txt"
-	File "${PROJECT_BASEDIR}\README.md"
-	File "${PROJECT_BASEDIR}\README.txt"
+	File /nonfatal "${PROJECT_BASEDIR}\CHANGELOG.txt"
+	File "${PROJECT_BASEDIR}\EULA.rtf"
+	File "${PROJECT_BASEDIR}\README.*"
 	File "${PROJECT_BASEDIR}\LICENSE.txt"
-	File "${PROJECT_BASEDIR}\src\main\external-resources\logback.xml"
-	File "${PROJECT_BASEDIR}\src\main\external-resources\logback.headless.xml"
+	File "${PROJECT_BASEDIR}\src\main\external-resources\logback*.xml"
 	File /oname=${PROJECT_ARTIFACT_ID}.ico "${PROJECT_BASEDIR}\src\main\resources\images\logo.ico"
-	File "${PROJECT_BASEDIR}\src\main\external-resources\DummyInput.ass"
-	File "${PROJECT_BASEDIR}\src\main\external-resources\DummyInput.jpg"
+	File "${PROJECT_BASEDIR}\src\main\external-resources\DummyInput.*"
 
 	SetOutPath "$INSTDIR\win32"
 	File "${PROJECT_BASEDIR}\src\main\external-resources\lib\ctrlsender\ctrlsender.exe"
@@ -177,10 +175,8 @@ Section "!$(SectionServer)" sec1
 	; The user may have set the installation folder as the profile folder, so we can't clobber this
 	SetOutPath "$INSTDIR"
 	SetOverwrite off
-	File "${PROJECT_BASEDIR}\src\main\external-resources\${PROJECT_NAME_SHORT}.conf"
-	File "${PROJECT_BASEDIR}\src\main\external-resources\WEB.conf"
+	File "${PROJECT_BASEDIR}\src\main\external-resources\*.conf"
 	File "${PROJECT_BASEDIR}\src\main\external-resources\ffmpeg.webfilters"
-	File "${PROJECT_BASEDIR}\src\main\external-resources\VirtualFolders.conf"
 
 	; Store install folder
 	WriteRegStr HKCU "${REG_KEY_SOFTWARE}" "" "$INSTDIR"
