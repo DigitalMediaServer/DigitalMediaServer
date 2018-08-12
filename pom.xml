@@ -121,7 +121,7 @@
 
 		<!-- Workaround for Maven bug http://issues.apache.org/jira/browse/MNG-4979 -->
 		<nsis.compression>lzma</nsis.compression>
-		<nsis.compression.lzma.dictsize>64</nsis.compression.lzma.dictsize>
+		<nsis.compression.lzma.dictsize>32</nsis.compression.lzma.dictsize>
 		<nsis.compression.final>true</nsis.compression.final>
 	</properties>
 	<pluginRepositories>
