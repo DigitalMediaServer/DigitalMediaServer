@@ -47,13 +47,13 @@ import javax.swing.SwingUtilities;
 import net.pms.Messages;
 import net.pms.PMS;
 import net.pms.dlna.CodeEnter;
+import net.pms.dlna.MediaType;
 import net.pms.dlna.RootFolder;
 import net.pms.encoders.Player;
 import net.pms.encoders.PlayerFactory;
 import net.pms.encoders.PlayerId;
 import net.pms.encoders.StandardPlayerId;
 import net.pms.exception.InvalidArgumentException;
-import net.pms.formats.Format;
 import net.pms.image.thumbnail.CoverSupplier;
 import net.pms.newgui.NavigationShareTab.SharedFoldersTableModel;
 import net.pms.service.PreventSleepMode;
@@ -4628,26 +4628,25 @@ public class PmsConfiguration extends RendererConfiguration {
 		return getInt(KEY_MEDIA_LIB_SORT, UMSUtils.SORT_NO_SORT);
 	}
 
-	public boolean getWebAutoCont(Format f) {
+	public boolean getWebAutoCont(MediaType mediaType) {
 		String key = KEY_WEB_CONT_VIDEO;
 		boolean def = false;
-		if (f.isAudio()) {
+		if (mediaType == MediaType.AUDIO) {
 			key = KEY_WEB_CONT_AUDIO;
 			def = true;
-		}
-		if (f.isImage()) {
+		} else if (mediaType == MediaType.IMAGE) {
 			key = KEY_WEB_CONT_IMAGE;
 			def = false;
 		}
 		return getBoolean(key, def);
 	}
 
-	public boolean getWebAutoLoop(Format f) {
+	public boolean getWebAutoLoop(MediaType mediaType) {
 		String key = KEY_WEB_LOOP_VIDEO;
-		if (f.isAudio()) {
+		if (mediaType == MediaType.AUDIO) {
 			key = KEY_WEB_LOOP_AUDIO;
 		}
-		if (f.isImage()) {
+		if (mediaType == MediaType.IMAGE) {
 			key = KEY_WEB_LOOP_IMAGE;
 		}
 		return getBoolean(key, false);

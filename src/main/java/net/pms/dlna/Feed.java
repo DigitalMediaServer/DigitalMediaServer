@@ -97,7 +97,7 @@ public class Feed extends DLNAResource {
 		}
 	}
 
-	public Feed(String name, String url, int type) {
+	public Feed(String name, String url, MediaType type) {
 		super(type);
 		this.url = url;
 		this.name = name;
@@ -203,7 +203,7 @@ public class Feed extends DLNAResource {
 	}
 
 	protected void manageItem() {
-		FeedItem fi = new FeedItem(tempItemTitle, tempItemLink, tempItemThumbURL, null, getSpecificType());
+		FeedItem fi = new FeedItem(tempItemTitle, tempItemLink, tempItemThumbURL, null, getPredeterminedMediaType());
 		addChild(fi);
 	}
 

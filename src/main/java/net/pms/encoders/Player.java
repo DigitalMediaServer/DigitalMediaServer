@@ -47,6 +47,7 @@ import net.pms.dlna.DLNAMediaInfo;
 import net.pms.dlna.DLNAMediaSubtitle;
 import net.pms.dlna.DLNAResource;
 import net.pms.formats.Format;
+import net.pms.formats.FormatType;
 import net.pms.io.BasicSystemUtils;
 import net.pms.io.OutputParams;
 import net.pms.io.ProcessWrapper;
@@ -101,7 +102,7 @@ public abstract class Player {
 	 */
 	public abstract String getConfigurablePathKey();
 	public abstract String name();
-	public abstract int type();
+	public abstract FormatType type();
 
 	/**
 	 * @return The {@link Configuration} key under which to store this

@@ -252,7 +252,7 @@ public class FormatRecognitionTest {
 		// WEB: type=VIDEO
 		info = new DLNAMediaInfo();
 		info.setContainer("avi");
-		format.setType(Format.VIDEO);
+		format = new MPG();
 		assertTrue("isCompatible() gives the outcome true for WEB video", conf.isCompatible(info, format, configuration));
 	}
 

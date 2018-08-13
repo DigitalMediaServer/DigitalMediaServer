@@ -98,6 +98,8 @@ public class FormatConfiguration {
 	public static final String JPEG2000 = "jpeg2000";
 	public static final String LPCM = "lpcm";
 	public static final String M4A = "m4a";
+	/** Multimedia Container Format, a precursor to Matroska */
+	public static final String MCF = "mcf";
 	public static final String MKV = "mkv";
 	public static final String MI_GMC = "gmc";
 	public static final String MI_GOP = "gop";
@@ -486,7 +488,7 @@ public class FormatConfiguration {
 	/**
 	 * Chooses which parsing method to parse the file with.
 	 */
-	public void parse(DLNAMediaInfo media, InputFile file, Format ext, int type, RendererConfiguration renderer) {
+	public void parse(DLNAMediaInfo media, InputFile file, Format ext, RendererConfiguration renderer) {
 		if (file.getFile() != null) {
 			if (ext.getIdentifier() == Identifier.RA) {
 				// Special parsing for RealAudio 1.0 and 2.0 which isn't handled by MediaInfo or JAudioTagger
@@ -495,7 +497,7 @@ public class FormatConfiguration {
 					channel = FileChannel.open(file.getFile().toPath(), StandardOpenOption.READ);
 					if (AudioUtils.parseRealAudio(channel, media)) {
 						// If successful parsing is done, if not continue parsing the standard way
-						media.postParse(type, file);
+						media.postParse(file);
 						return;
 					}
 				} catch (IOException e) {
@@ -512,12 +514,12 @@ public class FormatConfiguration {
 				ext.getIdentifier() != Identifier.DSF &&
 				ext.getIdentifier() != Identifier.PNM
 			) {
-				LibMediaInfoParser.parse(media, file, type, renderer);
+				LibMediaInfoParser.parse(media, file, ext.getType(), renderer);
 			} else {
-				media.parse(file, ext, type, false, false, renderer);
+				media.parse(file, ext, false, false, renderer);
 			}
 		} else {
-			media.parse(file, ext, type, false, false, renderer);
+			media.parse(file, ext, false, false, renderer);
 		}
 	}
 

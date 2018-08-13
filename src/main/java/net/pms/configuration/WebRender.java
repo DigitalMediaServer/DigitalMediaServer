@@ -314,7 +314,7 @@ public class WebRender extends DeviceConfiguration implements RendererConfigurat
 	@Override
 	public boolean getOutputOptions(List<String> cmdList, DLNAResource resource, Player player, OutputParams params) {
 		if (player instanceof FFMpegVideo) {
-			if (resource.getFormat().isVideo()) {
+			if (resource.isVideo()) {
 				DLNAMediaInfo media = resource.getMedia();
 				boolean flash = media != null && "video/flash".equals(media.getMimeType());
 				if (flash) {

@@ -37,12 +37,12 @@ import net.pms.configuration.PmsConfiguration;
 import net.pms.configuration.RendererConfiguration;
 import net.pms.dlna.DLNAMediaInfo;
 import net.pms.dlna.DLNAResource;
+import net.pms.formats.WEB;
 import net.pms.io.OutputParams;
 import net.pms.io.OutputTextLogger;
 import net.pms.io.PipeProcess;
 import net.pms.io.ProcessWrapper;
 import net.pms.io.ProcessWrapperImpl;
-import net.pms.util.PlayerUtil;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.LineIterator;
 import org.apache.commons.lang3.StringUtils;
@@ -375,7 +375,7 @@ public class FFmpegWebVideo extends FFMpegVideo {
 
 	@Override
 	public boolean isCompatible(DLNAResource resource) {
-		if (PlayerUtil.isWebVideo(resource)) {
+		if (resource.isVideo() && resource.getFormat() instanceof WEB) {
 			String url = resource.getFileName();
 
 			ExecutableInfo executableInfo = programInfo.getExecutableInfo(currentExecutableType);

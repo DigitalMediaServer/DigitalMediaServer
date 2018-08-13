@@ -35,7 +35,7 @@ import org.slf4j.LoggerFactory;
 public abstract class Format implements Cloneable {
 	private static final Logger LOGGER = LoggerFactory.getLogger(Format.class);
 	private String icon = null;
-	protected int type = UNKNOWN;
+	protected final FormatType type;
 	protected Format secondaryFormat;
 
 	/**
@@ -45,81 +45,11 @@ public abstract class Format implements Cloneable {
 	 */
 	private String matchedExtension;
 
-	public enum Identifier {
-		AC3,
-		ADPCM,
-		ADTS,
-		AIFF,
-		APE,
-		ATRAC,
-		AU,
-		AUDIO_AS_VIDEO,
-		ASS,
-		BMP,
-		DFF,
-		DSF,
-		DTS,
-		DVRMS,
-		EAC3,
-		FLAC,
-		GIF,
-		RGBE,
-		ICNS,
-		ICO,
-		IFF,
-		IDX,
-		ISO,
-		ISOVOB,
-		JPG,
-		M4A,
-		MICRODVD,
-		MKA,
-		MKV,
-		MLP,
-		MP3,
-		MPA,
-		MPC,
-		MPG,
-		OGA,
-		OGG,
-		PCX,
-		PICT,
-		PNG,
-		PNM,
-		PSD,
-		RA,
-		RAW,
-		SAMI,
-		SGI,
-		SHN,
-		SUBRIP,
-		SUP,
-		TGA,
-		THD,
-		THREEGA,
-		THREEG2A,
-		TIFF,
-		TTA,
-		TXT,
-		WAV,
-		WBMP,
-		WEB,
-		WEBVTT,
-		WMA,
-		WV,
-		CUSTOM,
-		PLAYLIST
+	protected Format(FormatType type) {
+		this.type = type;
 	}
 
-	public static final int AUDIO    =  1;
-	public static final int IMAGE    =  2;
-	public static final int VIDEO    =  4;
-	public static final int UNKNOWN  =  8;
-	public static final int PLAYLIST = 16;
-	public static final int ISO      = 32;
-	public static final int SUBTITLE = 64;
-
-	public int getType() {
+	public FormatType getType() {
 		return type;
 	}
 
@@ -151,12 +81,6 @@ public abstract class Format implements Cloneable {
 
 	public void setSecondaryFormat(Format secondaryFormat) {
 		this.secondaryFormat = secondaryFormat;
-	}
-
-	public void setType(int type) {
-		if (isUnknown()) {
-			this.type = type;
-		}
 	}
 
 	/**
@@ -267,26 +191,6 @@ public abstract class Format implements Cloneable {
 		return false;
 	}
 
-	public boolean isVideo() {
-		return (type & VIDEO) == VIDEO;
-	}
-
-	public boolean isAudio() {
-		return (type & AUDIO) == AUDIO;
-	}
-
-	public boolean isImage() {
-		return (type & IMAGE) == IMAGE;
-	}
-
-	public boolean isUnknown() {
-		return (type & UNKNOWN) == UNKNOWN;
-	}
-
-	public boolean isSubtitle() {
-		return (type & SUBTITLE) == SUBTITLE;
-	}
-
 	@Override
 	protected Object clone() {
 		Object o = null;
@@ -302,19 +206,14 @@ public abstract class Format implements Cloneable {
 		return (Format) this.clone();
 	}
 
-	@Deprecated
-	public void parse(DLNAMediaInfo media, InputFile file, int type) {
-		parse(media, file, type, null);
-	}
-
 	/**
 	 * Chooses which parsing method to parse the file with.
 	 */
-	public void parse(DLNAMediaInfo media, InputFile file, int type, RendererConfiguration renderer) {
+	public void parse(DLNAMediaInfo media, InputFile file, RendererConfiguration renderer) {
 		if (renderer != null && renderer.isUseMediaInfo()) {
-			renderer.getFormatConfiguration().parse(media, file, this, type, renderer);
+			renderer.getFormatConfiguration().parse(media, file, this, renderer);
 		} else {
-			media.parse(file, this, type, false, false, renderer);
+			media.parse(file, this, false, false, renderer);
 		}
 
 		LOGGER.trace("Parsing results for file \"{}\": {}", file.toString(), media.toString());
@@ -366,4 +265,70 @@ public abstract class Format implements Cloneable {
 	 * @return The identifier.
 	 */
 	public abstract Identifier getIdentifier();
+
+	public static enum Identifier {
+		AC3,
+		ADPCM,
+		ADTS,
+		AIFF,
+		APE,
+		ATRAC,
+		AU,
+		AUDIO_AS_VIDEO,
+		ASS,
+		BMP,
+		DFF,
+		DSF,
+		DTS,
+		DVRMS,
+		EAC3,
+		FLAC,
+		GIF,
+		RGBE,
+		ICNS,
+		ICO,
+		IFF,
+		IDX,
+		ISO,
+		ISOVOB,
+		JPG,
+		M4A,
+		MICRODVD,
+		MKA,
+		MKV,
+		MLP,
+		MP3,
+		MPA,
+		MPC,
+		MPG,
+		OGA,
+		OGG,
+		PCX,
+		PICT,
+		PNG,
+		PNM,
+		PSD,
+		RA,
+		RAW,
+		SAMI,
+		SGI,
+		SHN,
+		SUBRIP,
+		SUP,
+		TGA,
+		THD,
+		THREEGA,
+		THREEG2A,
+		TIFF,
+		TTA,
+		TXT,
+		WAV,
+		WBMP,
+		WEB,
+		WEBVTT,
+		WMA,
+		WV,
+		CUSTOM,
+		PLAYLIST
+	}
 }

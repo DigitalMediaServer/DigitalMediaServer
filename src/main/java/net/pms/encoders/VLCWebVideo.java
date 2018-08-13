@@ -19,7 +19,7 @@
 package net.pms.encoders;
 
 import net.pms.dlna.DLNAResource;
-import net.pms.util.PlayerUtil;
+import net.pms.formats.WEB;
 
 public class VLCWebVideo extends VLCVideo {
 	public static final PlayerId ID = StandardPlayerId.VLC_WEB_VIDEO;
@@ -59,6 +59,6 @@ public class VLCWebVideo extends VLCVideo {
 
 	@Override
 	public boolean isCompatible(DLNAResource resource) {
-		return PlayerUtil.isWebVideo(resource);
+		return resource.isVideo() && resource.getFormat() instanceof WEB;
 	}
 }

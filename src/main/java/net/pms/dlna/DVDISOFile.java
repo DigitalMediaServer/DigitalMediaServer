@@ -25,7 +25,7 @@ import java.util.Map;
 import org.apache.commons.text.WordUtils;
 import net.pms.PMS;
 import net.pms.dlna.virtual.VirtualFolder;
-import net.pms.formats.Format;
+import net.pms.formats.FormatType;
 import net.pms.io.OutputParams;
 import net.pms.io.ProcessWrapperImpl;
 import net.pms.util.ProcessUtil;
@@ -165,7 +165,7 @@ public class DVDISOFile extends VirtualFolder {
 		}
 
 		if (childrenNumber() > 0) {
-			PMS.get().storeFileInCache(file, Format.ISO);
+			PMS.get().storeFileInCache(file, FormatType.ISO);
 		}
 
 	}

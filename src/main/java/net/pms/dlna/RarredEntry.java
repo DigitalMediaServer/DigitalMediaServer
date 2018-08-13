@@ -25,7 +25,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import net.pms.formats.Format;
+import net.pms.formats.FormatType;
 import net.pms.util.FileUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,7 +39,7 @@ public class RarredEntry extends DLNAResource implements IPushOutput {
 
 	@Override
 	protected String getThumbnailURL(DLNAImageProfile profile) {
-		if (getType() == Format.IMAGE || getType() == Format.AUDIO) { // no thumbnail support for now for rarred videos
+		if (MediaType.isOf(getMediaType(), MediaType.IMAGE, MediaType.AUDIO)) { // no thumbnail support for now for rarred videos
 			return null;
 		}
 
@@ -65,7 +65,7 @@ public class RarredEntry extends DLNAResource implements IPushOutput {
 
 	@Override
 	public long length() {
-		if (getPlayer() != null && getPlayer().type() != Format.IMAGE) {
+		if (getPlayer() != null && getPlayer().type() != FormatType.IMAGE) {
 			return DLNAMediaInfo.TRANS_SIZE;
 		}
 
@@ -105,9 +105,7 @@ public class RarredEntry extends DLNAResource implements IPushOutput {
 		Runnable r = new Runnable() {
 			@Override
 			public void run() {
-				Archive rarFile = null;
-				try {
-					rarFile = new Archive(file);
+				try (Archive rarFile = new Archive(file)) {
 					FileHeader header = null;
 					for (FileHeader fh : rarFile.getFileHeaders()) {
 						if (fh.getFileNameString().equals(fileHeaderName)) {
@@ -120,15 +118,18 @@ public class RarredEntry extends DLNAResource implements IPushOutput {
 						rarFile.extractFile(header, out);
 					}
 				} catch (RarException | IOException e) {
-					LOGGER.debug("Unpack error, maybe it's normal, as backend can be terminated: " + e.getMessage());
+					LOGGER.debug("Unpack error, maybe it's normal, as backend can be terminated: {}", e.getMessage());
+					LOGGER.trace("", e);
 				} finally {
 					try {
-						if (rarFile != null) {
-							rarFile.close();
-						}
 						out.close();
 					} catch (IOException e) {
-						LOGGER.debug("Caught exception", e);
+						LOGGER.error(
+							"An error occurred while trying to close the output when pushing \"{}\": {}",
+							this,
+							e.getMessage()
+						);
+						LOGGER.trace("", e);
 					}
 				}
 			}
@@ -139,7 +140,7 @@ public class RarredEntry extends DLNAResource implements IPushOutput {
 
 	@Override
 	protected void resolveOnce() {
-		if (getFormat() == null || !getFormat().isVideo()) {
+		if (!isVideo()) {
 			return;
 		}
 
@@ -156,7 +157,7 @@ public class RarredEntry extends DLNAResource implements IPushOutput {
 				InputFile input = new InputFile();
 				input.setPush(this);
 				input.setSize(length());
-				getFormat().parse(getMedia(), input, getType(), null);
+				getFormat().parse(getMedia(), input, null);
 				if (getMedia() != null && getMedia().isSLS()) {
 					setFormat(getMedia().getAudioVariantFormat());
 				}
@@ -168,8 +169,7 @@ public class RarredEntry extends DLNAResource implements IPushOutput {
 	public DLNAThumbnailInputStream getThumbnailInputStream() throws IOException {
 		if (getMedia() != null && getMedia().getThumb() != null) {
 			return getMedia().getThumbnailInputStream();
-		} else {
-			return super.getThumbnailInputStream();
 		}
+		return super.getThumbnailInputStream();
 	}
 }

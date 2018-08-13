@@ -58,7 +58,7 @@ public class WebStream extends DLNAResource {
 	@Deprecated
 	protected String thumbURL;
 
-	public WebStream(String fluxName, String url, String thumbURL, int type) {
+	public WebStream(String fluxName, String url, String thumbURL, MediaType type) {
 		super(type);
 
 		try {
@@ -82,7 +82,7 @@ public class WebStream extends DLNAResource {
 
 	@Override
 	public String write() {
-		return fluxName + ">" + url + ">" + thumbURL + ">" + getSpecificType();
+		return fluxName + ">" + url + ">" + thumbURL + ">" + getPredeterminedMediaType();
 	}
 
 	@Override
@@ -91,9 +91,8 @@ public class WebStream extends DLNAResource {
 			return DLNAThumbnailInputStream.toThumbnailInputStream(
 				FileUtil.isUrl(thumbURL) ? downloadAndSend(thumbURL, true) : new FileInputStream(thumbURL)
 			);
-		} else {
-			return super.getThumbnailInputStream();
 		}
+		return super.getThumbnailInputStream();
 	}
 
 	@Override

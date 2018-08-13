@@ -18,23 +18,22 @@
  */
 package net.pms.formats;
 
-public class ISO extends MPG {
+public class ISO extends Format {
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public Identifier getIdentifier() {
 		return Identifier.ISO;
 	}
 
 	public ISO() {
-		type = ISO;
+		super(FormatType.ISO);
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
+	@Override
+	public boolean transcodable() {
+		return true;
+	}
+
 	@Override
 	public String[] getSupportedExtensions() {
 		return new String[] {

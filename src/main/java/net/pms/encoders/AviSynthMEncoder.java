@@ -35,13 +35,14 @@ import java.util.StringTokenizer;
 import javax.swing.*;
 import net.pms.Messages;
 import net.pms.PMS;
+import net.pms.configuration.FormatConfiguration;
 import net.pms.configuration.PmsConfiguration;
 import net.pms.dlna.DLNAMediaSubtitle;
 import net.pms.dlna.DLNAResource;
+import net.pms.dlna.MediaType;
 import net.pms.formats.Format;
 import net.pms.formats.v2.SubtitleType;
 import net.pms.newgui.GuiUtil;
-import net.pms.util.PlayerUtil;
 import net.pms.util.ProcessUtil;
 import org.apache.commons.configuration.event.ConfigurationEvent;
 import org.apache.commons.configuration.event.ConfigurationListener;
@@ -387,14 +388,17 @@ public class AviSynthMEncoder extends MEncoderVideo {
 			LOGGER.trace("AviSynth/MEncoder cannot determine compatibility based on default audio track for " + resource.getSystemName());
 		}
 
-		if (
-			PlayerUtil.isVideo(resource, Format.Identifier.MKV) ||
-			PlayerUtil.isVideo(resource, Format.Identifier.MPG) ||
-			PlayerUtil.isVideo(resource, Format.Identifier.OGG)
-		) {
-			return true;
-		}
-
-		return false;
+		return resource.matches(
+			MediaType.VIDEO,
+			FormatConfiguration.MKV,
+			FormatConfiguration.MP4,
+			FormatConfiguration.MPEG1,
+			FormatConfiguration.MPEG2,
+			FormatConfiguration.MPEG4ASP,
+			FormatConfiguration.MPEG4SP,
+			FormatConfiguration.MPEGPS,
+			FormatConfiguration.MPEGTS,
+			FormatConfiguration.OGG
+		);
 	}
 }
