@@ -18,8 +18,6 @@
  */
 package net.pms.dlna;
 
-import net.pms.formats.Format;
-
 public class AudiosFeed extends Feed {
 	@Override
 	protected void manageItem() {
@@ -28,6 +26,6 @@ public class AudiosFeed extends Feed {
 	}
 
 	public AudiosFeed(String url) {
-		super("" + System.currentTimeMillis(), url, Format.AUDIO);
+		super("" + System.currentTimeMillis(), url, MediaType.AUDIO);
 	}
 }

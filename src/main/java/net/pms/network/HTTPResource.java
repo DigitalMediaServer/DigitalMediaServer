@@ -22,12 +22,14 @@ import java.io.*;
 import java.net.Authenticator;
 import java.net.URL;
 import java.net.URLConnection;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import net.pms.PMS;
 import net.pms.configuration.RendererConfiguration;
 import net.pms.dlna.DLNAMediaInfo;
 import net.pms.dlna.DLNAResource;
-import net.pms.formats.Format;
-import net.pms.util.PropertiesUtil;
+import net.pms.dlna.MediaType;
+import net.pms.formats.FormatType;
 import static net.pms.util.StringUtil.convertURLToFileName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -100,23 +102,55 @@ public class HTTPResource {
 	public HTTPResource() { }
 
 	/**
-	 * Returns for a given item type the default MIME type associated. This is used in the HTTP transfers
-	 * as in the client might do different things for different MIME types.
-	 * @param type Type for which the default MIME type is needed.
-	 * @return Default MIME associated with the file type.
+	 * Returns for a given item type the default MIME type associated. This is
+	 * used in the HTTP transfers as in the client might do different things for
+	 * different MIME types.
+	 *
+	 * @param type the {@link FormatType} for which the default MIME-type is
+	 *            needed.
+	 * @return The default MIME associated with the file {@link FormatType}.
 	 */
-	public static String getDefaultMimeType(int type) {
-		String mimeType = HTTPResource.UNKNOWN_VIDEO_TYPEMIME;
-
-		if (type == Format.VIDEO) {
-			mimeType = HTTPResource.UNKNOWN_VIDEO_TYPEMIME;
-		} else if (type == Format.IMAGE) {
-			mimeType = HTTPResource.UNKNOWN_IMAGE_TYPEMIME;
-		} else if (type == Format.AUDIO) {
-			mimeType = HTTPResource.UNKNOWN_AUDIO_TYPEMIME;
+	@Nonnull
+	public static String getDefaultMimeType(@Nullable FormatType type) {
+		if (type == null) {
+			return UNKNOWN_VIDEO_TYPEMIME; // An incorrect assumption
 		}
+		switch (type) {
+			case AUDIO:
+				return UNKNOWN_AUDIO_TYPEMIME;
+			case IMAGE:
+				return UNKNOWN_IMAGE_TYPEMIME;
+			case VIDEO:
+				return UNKNOWN_VIDEO_TYPEMIME;
+			default:
+				return UNKNOWN_VIDEO_TYPEMIME; // An incorrect assumption
+		}
+	}
 
-		return mimeType;
+	/**
+	 * Returns for a given item type the default MIME type associated. This is
+	 * used in the HTTP transfers as in the client might do different things for
+	 * different MIME types.
+	 *
+	 * @param type the {@link MediaType} for which the default MIME-type is
+	 *            needed.
+	 * @return The default MIME associated with the {@link MediaType}.
+	 */
+	@Nonnull
+	public static String getDefaultMimeType(@Nullable MediaType type) {
+		if (type == null) {
+			return UNKNOWN_VIDEO_TYPEMIME; // An incorrect assumption
+		}
+		switch (type) {
+			case AUDIO:
+				return UNKNOWN_AUDIO_TYPEMIME;
+			case IMAGE:
+				return UNKNOWN_IMAGE_TYPEMIME;
+			case VIDEO:
+				return UNKNOWN_VIDEO_TYPEMIME;
+			default:
+				return UNKNOWN_VIDEO_TYPEMIME; // An incorrect assumption
+		}
 	}
 
 	/**

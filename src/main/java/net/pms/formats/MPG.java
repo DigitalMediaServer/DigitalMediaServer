@@ -19,9 +19,7 @@
 package net.pms.formats;
 
 public class MPG extends Format {
-	/**
-	 * {@inheritDoc}
-	 */
+
 	@Override
 	public Identifier getIdentifier() {
 		return Identifier.MPG;
@@ -33,12 +31,9 @@ public class MPG extends Format {
 	}
 
 	public MPG() {
-		type = VIDEO;
+		super(FormatType.CONTAINER);
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public String[] getSupportedExtensions() {
 		return new String[] {

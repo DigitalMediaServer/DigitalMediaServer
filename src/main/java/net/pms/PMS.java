@@ -65,6 +65,7 @@ import net.pms.encoders.PlayerFactory;
 import net.pms.exception.InitializationException;
 import net.pms.formats.Format;
 import net.pms.formats.FormatFactory;
+import net.pms.formats.FormatType;
 import net.pms.io.*;
 import net.pms.logging.CacheLogger;
 import net.pms.logging.FrameAppender;
@@ -1548,7 +1549,7 @@ public class PMS {
 	 * @param file the full path to the file.
 	 * @param formatType the type constant defined in {@link Format}.
 	 */
-	public void storeFileInCache(File file, int formatType) {
+	public void storeFileInCache(File file, FormatType formatType) {
 		if (
 			getConfiguration().getUseCache() &&
 			!getDatabase().isDataExists(file.getAbsolutePath(), file.lastModified())

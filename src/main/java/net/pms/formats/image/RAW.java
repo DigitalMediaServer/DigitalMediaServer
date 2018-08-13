@@ -28,17 +28,11 @@ import com.drew.metadata.Metadata;
 public class RAW extends ImageBase {
 	private static final Logger LOGGER = LoggerFactory.getLogger(RAW.class);
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public Identifier getIdentifier() {
 		return Identifier.RAW;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public String[] getSupportedExtensions() {
 		return new String[] {
@@ -89,7 +83,7 @@ public class RAW extends ImageBase {
 	}
 
 	@Override
-	public void parse(DLNAMediaInfo media, InputFile file, int type, RendererConfiguration renderer) {
+	public void parse(DLNAMediaInfo media, InputFile file, RendererConfiguration renderer) {
 		boolean trace = LOGGER.isTraceEnabled();
 		if (media == null || file == null || file.getFile() == null) {
 			// Parsing is impossible
@@ -181,7 +175,7 @@ public class RAW extends ImageBase {
 			}
 			media.setSize(file.getSize());
 			media.setImageCount(1);
-			media.postParse(type, file);
+			media.postParse(file);
 			media.setMediaparsed(true);
 
 		} catch (IOException e) {

@@ -24,11 +24,11 @@ import net.pms.configuration.DeviceConfiguration;
 import net.pms.configuration.PmsConfiguration;
 import net.pms.dlna.DLNAMediaInfo;
 import net.pms.dlna.DLNAResource;
+import net.pms.formats.WEB;
 import net.pms.io.OutputParams;
 import net.pms.io.PipeProcess;
 import net.pms.io.ProcessWrapper;
 import net.pms.io.ProcessWrapperImpl;
-import net.pms.util.PlayerUtil;
 
 public class MEncoderWebVideo extends MEncoderVideo {
 	public static final PlayerId ID = StandardPlayerId.MENCODER_WEB_VIDEO;
@@ -154,6 +154,6 @@ public class MEncoderWebVideo extends MEncoderVideo {
 
 	@Override
 	public boolean isCompatible(DLNAResource resource) {
-		return PlayerUtil.isWebVideo(resource);
+		return resource.isVideo() && resource.getFormat() instanceof WEB;
 	}
 }

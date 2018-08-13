@@ -46,7 +46,7 @@ import net.pms.configuration.MapFileConfiguration;
 import net.pms.configuration.RendererConfiguration;
 import net.pms.dlna.virtual.VirtualFolder;
 import net.pms.dlna.virtual.VirtualVideoAction;
-import net.pms.formats.Format;
+import net.pms.formats.FormatType;
 import net.pms.io.BasicSystemUtils;
 import net.pms.io.ListProcessWrapperResult;
 import net.pms.io.SimpleProcessWrapper;
@@ -606,7 +606,7 @@ public class RootFolder extends DLNAResource {
 									parent = this;
 								}
 								if (keys[0].endsWith("stream")) {
-									int type = keys[0].startsWith("audio") ? Format.AUDIO : Format.VIDEO;
+									FormatType type = keys[0].startsWith("audio") ? FormatType.AUDIO : FormatType.CONTAINER;
 									DLNAResource playlist = PlaylistFolder.getPlaylist(values[0], values[1], type);
 									if (playlist != null) {
 										parent.addChild(playlist);

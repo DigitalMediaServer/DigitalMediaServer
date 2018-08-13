@@ -18,7 +18,6 @@ import net.pms.dlna.Playlist;
 import net.pms.dlna.RootFolder;
 import net.pms.dlna.virtual.VirtualVideoAction;
 import net.pms.encoders.Player;
-import net.pms.formats.Format;
 import net.pms.formats.v2.SubtitleType;
 import net.pms.io.OutputParams;
 import net.pms.util.SubtitleUtils;
@@ -43,13 +42,13 @@ public class RemotePlayHandler implements HttpHandler {
 		return "<html><head><script>window.refresh=true;history.back()</script></head></html>";
 	}
 
-	private static void addNextByType(DLNAResource d, HashMap<String, Object> vars) {
-		List<DLNAResource> children = d.getParent().getChildren();
-		boolean looping = configuration.getWebAutoLoop(d.getFormat());
-		int type = d.getType();
+	private static void addNextByType(DLNAResource resource, HashMap<String, Object> vars) {
+		List<DLNAResource> children = resource.getParent().getChildren();
+		MediaType type = resource.getMediaType();
+		boolean looping = configuration.getWebAutoLoop(type);
 		int size = children.size();
 		int mod = looping ? size : 9999;
-		int self = children.indexOf(d);
+		int self = children.indexOf(resource);
 		for (int step = -1; step < 2; step += 2) {
 			int i = self;
 			int offset = (step < 0 && looping) ? size : 0;
@@ -60,7 +59,7 @@ public class RemotePlayHandler implements HttpHandler {
 					break; // Not found
 				}
 				next = children.get(i);
-				if (next.getType() == type && !next.isFolder()) {
+				if (!next.isFolder() && next.getMediaType() == type) {
 					break; // Found
 				}
 				next = null;
@@ -104,9 +103,8 @@ public class RemotePlayHandler implements HttpHandler {
 			return returnPage();
 		}
 
-		Format format =  resource.getFormat();
+		MediaType mediaType = resource.getMediaType();
 		DLNAMediaInfo media = resource.getMedia();
-		MediaType mediaType = media == null ? MediaType.UNKNOWN : media.getMediaType();
 		String query = t.getRequestURI().getQuery();
 		boolean forceFlash = StringUtils.isNotEmpty(RemoteUtil.getQueryVars(query, "flash"));
 		boolean forcehtml5 = StringUtils.isNotEmpty(RemoteUtil.getQueryVars(query, "html5"));
@@ -137,7 +135,7 @@ public class RemotePlayHandler implements HttpHandler {
 		vars.put("isVideo", mediaType == MediaType.VIDEO);
 		vars.put("name", name);
 		vars.put("id1", id1);
-		vars.put("autoContinue", configuration.getWebAutoCont(format));
+		vars.put("autoContinue", configuration.getWebAutoCont(mediaType));
 		if (configuration.isDynamicPls()) {
 			if (resource.getParent() instanceof Playlist) {
 				vars.put("plsOp", "del");
@@ -154,11 +152,13 @@ public class RemotePlayHandler implements HttpHandler {
 			// do this like this to simplify the code
 			// skip all player crap since img tag works well
 			int delay = configuration.getWebImgSlideDelay() * 1000;
-			if (delay > 0 && configuration.getWebAutoCont(format)) {
+			if (delay > 0 && configuration.getWebAutoCont(mediaType)) {
 				vars.put("delay", delay);
 			}
 		} else {
-			vars.put("mediaType", mediaType.getString());
+			if (mediaType != null) {
+				vars.put("mediaType", mediaType.getString());
+			}
 			vars.put("auto", auto);
 			vars.put("mime", mimeType);
 			if (flowplayer) {

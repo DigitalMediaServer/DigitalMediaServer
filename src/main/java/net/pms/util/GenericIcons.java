@@ -33,6 +33,8 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.locks.ReentrantLock;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import javax.imageio.ImageIO;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -43,7 +45,9 @@ import net.pms.dlna.DLNAMediaInfo;
 import net.pms.dlna.DLNAResource;
 import net.pms.dlna.DLNABinaryThumbnail;
 import net.pms.dlna.DLNAThumbnailInputStream;
+import net.pms.dlna.MediaType;
 import net.pms.formats.Format;
+import net.pms.formats.FormatType;
 import net.pms.image.ImageFormat;
 import net.pms.image.ImageIOTools;
 import net.pms.image.ImagesUtil.ScaleType;
@@ -64,6 +68,7 @@ public enum GenericIcons {
 	private final BufferedImage genericUnknownIcon = readBufferedImage("formats/unknown.png");
 	private final DLNABinaryThumbnail genericFolderThumbnail;
 	private final ReentrantLock cacheLock = new ReentrantLock();
+
 	/**
 	 * All access to {@link #cache} must be protected with {@link #cacheLock}.
 	 */
@@ -113,28 +118,14 @@ public enum GenericIcons {
 			}
 		}
 
-		IconType iconType = IconType.UNKNOWN;
-		if (resource.getMedia() != null) {
-			if (resource.getMedia().isAudio()) {
-				iconType = IconType.AUDIO;
-			} else if (resource.getMedia().isImage()) {
-				iconType = IconType.IMAGE;
-			} else if (resource.getMedia().isVideo()) {
-				// FFmpeg parses images as video, try to rectify
-				if (resource.getFormat() != null && resource.getFormat().isImage()) {
-					iconType = IconType.IMAGE;
-				} else {
-					iconType = IconType.VIDEO;
-				}
-			}
-		} else if (resource.getFormat() != null) {
-			if (resource.getFormat().isAudio()) {
-				iconType = IconType.AUDIO;
-			} else if (resource.getFormat().isImage()) {
-				iconType = IconType.IMAGE;
-			} else if (resource.getFormat().isVideo()) {
-				iconType = IconType.VIDEO;
-			}
+		IconType iconType = IconType.typeOf(resource.getMediaType());
+		if (
+			iconType == IconType.VIDEO &&
+			resource.getFormat() != null &&
+			resource.getFormat().getType() == FormatType.IMAGE
+		) {
+			// FFmpeg parses images as video, try to rectify
+			iconType = IconType.IMAGE;
 		}
 
 		DLNABinaryThumbnail image = null;
@@ -378,6 +369,29 @@ public enum GenericIcons {
 		UNKNOWN,
 
 		/** Video */
-		VIDEO
+		VIDEO;
+
+		/**
+		 * Converts a {@link MediaType} to a corresponding {@link IconType}.
+		 *
+		 * @param mediaType the {@link MediaType} to convert.
+		 * @return The corresponding {@link IconType}.
+		 */
+		@Nonnull
+		public static IconType typeOf(@Nullable MediaType mediaType) {
+			if (mediaType == null) {
+				return UNKNOWN;
+			}
+			switch (mediaType) {
+				case AUDIO:
+					return AUDIO;
+				case IMAGE:
+					return IMAGE;
+				case VIDEO:
+					return VIDEO;
+				default:
+					return UNKNOWN;
+			}
+		}
 	}
 }

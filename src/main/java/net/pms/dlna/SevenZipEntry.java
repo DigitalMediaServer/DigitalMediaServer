@@ -25,7 +25,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.RandomAccessFile;
-import net.pms.formats.Format;
+import net.pms.formats.FormatType;
 import net.pms.util.FileUtil;
 import net.sf.sevenzipjbinding.ExtractOperationResult;
 import net.sf.sevenzipjbinding.IInArchive;
@@ -63,7 +63,7 @@ public class SevenZipEntry extends DLNAResource implements IPushOutput {
 
 	@Override
 	public long length() {
-		if (getPlayer() != null && getPlayer().type() != Format.IMAGE) {
+		if (getPlayer() != null && getPlayer().type() != FormatType.IMAGE) {
 			return DLNAMediaInfo.TRANS_SIZE;
 		}
 
@@ -154,7 +154,7 @@ public class SevenZipEntry extends DLNAResource implements IPushOutput {
 
 	@Override
 	public synchronized void resolve() {
-		if (getFormat() == null || !getFormat().isVideo()) {
+		if (!isVideo()) {
 			return;
 		}
 
@@ -171,7 +171,7 @@ public class SevenZipEntry extends DLNAResource implements IPushOutput {
 				InputFile input = new InputFile();
 				input.setPush(this);
 				input.setSize(length());
-				getFormat().parse(getMedia(), input, getType(), null);
+				getFormat().parse(getMedia(), input, null);
 				if (getMedia() != null && getMedia().isSLS()) {
 					setFormat(getMedia().getAudioVariantFormat());
 				}
@@ -191,7 +191,7 @@ public class SevenZipEntry extends DLNAResource implements IPushOutput {
 
 	@Override
 	protected String getThumbnailURL(DLNAImageProfile profile) {
-		if (getType() == Format.IMAGE || getType() == Format.AUDIO) {
+		if (!isVideo()) {
 			// no thumbnail support for now for zipped videos
 			return null;
 		}

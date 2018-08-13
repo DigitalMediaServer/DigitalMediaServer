@@ -25,9 +25,10 @@ import net.pms.util.FileUtil;
 public class WEB extends Format {
 	protected String url = null;
 
-	/**
-	 * {@inheritDoc}
-	 */
+	public WEB() {
+		super(null);
+	}
+
 	@Override
 	public Identifier getIdentifier() {
 		return Identifier.WEB;
@@ -59,12 +60,9 @@ public class WEB extends Format {
 		return true;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public boolean isCompatible(DLNAMediaInfo media, RendererConfiguration renderer) {
-		return type == IMAGE;
+		return type == FormatType.IMAGE;
 	}
 
 	@Override

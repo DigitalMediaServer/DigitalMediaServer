@@ -18,8 +18,6 @@
  */
 package net.pms.dlna;
 
-import net.pms.formats.Format;
-
 public class ImagesFeed extends Feed {
 	@Override
 	protected void manageItem() {
@@ -32,6 +30,6 @@ public class ImagesFeed extends Feed {
 	}
 
 	public ImagesFeed(String url) {
-		super("" + System.currentTimeMillis(), url, Format.IMAGE);
+		super("" + System.currentTimeMillis(), url, MediaType.IMAGE);
 	}
 }

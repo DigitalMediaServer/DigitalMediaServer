@@ -40,7 +40,7 @@ public class FeedItem extends DLNAResource {
 	private String thumbURL;
 	private long length;
 
-	public FeedItem(String title, String itemURL, String thumbURL, DLNAMediaInfo media, int type) {
+	public FeedItem(String title, String itemURL, String thumbURL, DLNAMediaInfo media, MediaType type) {
 		super(type);
 		this.title = title;
 		this.itemURL = itemURL;

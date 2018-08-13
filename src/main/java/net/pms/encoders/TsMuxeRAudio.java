@@ -22,10 +22,10 @@ import java.io.IOException;
 import javax.swing.JComponent;
 import net.pms.dlna.DLNAMediaInfo;
 import net.pms.dlna.DLNAResource;
-import net.pms.formats.Format;
+import net.pms.formats.AudioAsVideo;
+import net.pms.formats.FormatType;
 import net.pms.io.OutputParams;
 import net.pms.io.ProcessWrapper;
-import net.pms.util.PlayerUtil;
 
 public class TsMuxeRAudio extends TsMuxeRVideo {
 	public static final PlayerId ID = StandardPlayerId.TSMUXER_AUDIO;
@@ -80,12 +80,12 @@ public class TsMuxeRAudio extends TsMuxeRVideo {
 	}
 
 	@Override
-	public int type() {
-		return Format.VIDEO;
+	public FormatType type() {
+		return FormatType.VIDEO;
 	}
 
 	@Override
 	public boolean isCompatible(DLNAResource resource) {
-		return PlayerUtil.isVideo(resource, Format.Identifier.AUDIO_AS_VIDEO);
+		return resource.isVideo() && resource.getFormat() instanceof AudioAsVideo;
 	}
 }
