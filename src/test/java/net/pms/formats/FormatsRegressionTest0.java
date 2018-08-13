@@ -78,7 +78,7 @@ public class FormatsRegressionTest0 {
 		// The following exception was thrown during execution in test
 		// generation
 		try {
-			mPG0.parse(dLNAMediaInfo1, inputFile2, (short) 0);
+			mPG0.parse(dLNAMediaInfo1, inputFile2, null);
 			fail("Expected exception of type NullPointerException");
 		} catch (NullPointerException e) {
 			// Expected exception.
@@ -128,20 +128,14 @@ public class FormatsRegressionTest0 {
 
 	@Test
 	public void test15() throws Throwable {
-		int i0 = Format.SUBTITLE;
-
 		// Regression assertion (captures the current behavior of the code)
-		assertTrue(i0 == 64);
+		assertTrue(FormatType.SUBTITLES.getValue() == 64);
 	}
 
 	@Test
 	public void test16() throws Throwable {
 		WebVTT webVTT0 = new WebVTT();
-		boolean b1 = webVTT0.isAudio();
 		boolean b2 = webVTT0.transcodable();
-
-		// Regression assertion (captures the current behavior of the code)
-		assertTrue(b1 == false);
 
 		// Regression assertion (captures the current behavior of the code)
 		assertTrue(b2 == false);
@@ -195,10 +189,8 @@ public class FormatsRegressionTest0 {
 
 	@Test
 	public void test23() throws Throwable {
-		int i0 = Format.AUDIO;
-
 		// Regression assertion (captures the current behavior of the code)
-		assertTrue(i0 == 1);
+		assertTrue(FormatType.AUDIO.getValue() == 1);
 	}
 
 	@Test
@@ -230,10 +222,8 @@ public class FormatsRegressionTest0 {
 
 	@Test
 	public void test28() throws Throwable {
-		int i0 = Format.ISO;
-
 		// Regression assertion (captures the current behavior of the code)
-		assertTrue(i0 == 32);
+		assertTrue(FormatType.ISO.getValue() == 32);
 	}
 
 	@Test
@@ -296,12 +286,8 @@ public class FormatsRegressionTest0 {
 	public void test34() throws Throwable {
 		RA rA0 = new RA();
 		Format.Identifier identifier1 = rA0.getIdentifier();
-		boolean b2 = rA0.isUnknown();
 		assertTrue("'" + identifier1 + "' != '" + Format.Identifier.RA + "'",
 			identifier1.equals(Format.Identifier.RA));
-
-		// Regression assertion (captures the current behavior of the code)
-		assertTrue(b2 == false);
 	}
 
 	@Test
@@ -391,17 +377,15 @@ public class FormatsRegressionTest0 {
 
 	@Test
 	public void test44() throws Throwable {
-		int i0 = Format.IMAGE;
-
 		// Regression assertion (captures the current behavior of the code)
-		assertTrue(i0 == 2);
+		assertTrue(FormatType.IMAGE.getValue() == 2);
 	}
 
 	@Test
 	public void test45() throws Throwable {
 		MLP mLP0 = new MLP();
 		Format.Identifier identifier1 = mLP0.getIdentifier();
-		boolean b2 = mLP0.isAudio();
+		boolean b2 = mLP0.getType() == FormatType.AUDIO;
 		assertTrue("'" + identifier1 + "' != '" + Format.Identifier.MLP + "'",
 			identifier1.equals(Format.Identifier.MLP));
 
@@ -548,10 +532,8 @@ public class FormatsRegressionTest0 {
 
 	@Test
 	public void test61() throws Throwable {
-		int i0 = Format.PLAYLIST;
-
 		// Regression assertion (captures the current behavior of the code)
-		assertTrue(i0 == 16);
+		assertTrue(FormatType.PLAYLIST.getValue() == 16);
 	}
 
 	@Test
@@ -566,11 +548,7 @@ public class FormatsRegressionTest0 {
 	@Test
 	public void test63() throws Throwable {
 		DTS dTS0 = new DTS();
-		int i1 = dTS0.getType();
 		String[] str_array2 = dTS0.getSupportedExtensions();
-
-		// Regression assertion (captures the current behavior of the code)
-		assertTrue(i1 == 1);
 
 		// Regression assertion (captures the current behavior of the code)
 		assertNotNull(str_array2);
@@ -594,15 +572,6 @@ public class FormatsRegressionTest0 {
 
 		// Regression assertion (captures the current behavior of the code)
 		assertTrue(b2 == true);
-	}
-
-	@Test
-	public void test66() throws Throwable {
-		SubRip subRip0 = new SubRip();
-		boolean b1 = subRip0.isUnknown();
-
-		// Regression assertion (captures the current behavior of the code)
-		assertTrue(b1 == false);
 	}
 
 	@Test

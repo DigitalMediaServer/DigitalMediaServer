@@ -19,8 +19,8 @@
 package net.pms.encoders;
 
 import net.pms.dlna.DLNAResource;
-import net.pms.formats.Format;
-import net.pms.util.PlayerUtil;
+import net.pms.formats.FormatType;
+import net.pms.formats.WEB;
 
 /* XXX this is the old/obsolete VLC web audio streaming engine */
 public class VideoLanAudioStreaming extends VideoLanVideoStreaming {
@@ -54,8 +54,8 @@ public class VideoLanAudioStreaming extends VideoLanVideoStreaming {
 	}
 
 	@Override
-	public int type() {
-		return Format.AUDIO;
+	public FormatType type() {
+		return FormatType.AUDIO;
 	}
 
 	@Override
@@ -75,6 +75,6 @@ public class VideoLanAudioStreaming extends VideoLanVideoStreaming {
 
 	@Override
 	public boolean isCompatible(DLNAResource resource) {
-		return PlayerUtil.isWebAudio(resource);
+		return resource.isAudio() && resource.getFormat() instanceof WEB;
 	}
 }

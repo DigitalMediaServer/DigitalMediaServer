@@ -3,7 +3,7 @@ package net.pms.encoders;
 import java.io.File;
 import java.io.IOException;
 import net.pms.dlna.DLNAMediaInfo;
-import net.pms.formats.Format;
+import net.pms.formats.FormatType;
 import net.pms.image.ImageInfo;
 import net.pms.io.OutputParams;
 
@@ -11,8 +11,8 @@ import net.pms.io.OutputParams;
 public abstract class ImagePlayer extends Player {
 
 	@Override
-	public int type() {
-		return Format.IMAGE;
+	public FormatType type() {
+		return FormatType.IMAGE;
 	}
 
 	/**

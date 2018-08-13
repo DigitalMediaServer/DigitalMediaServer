@@ -14,7 +14,7 @@ import net.pms.configuration.RendererConfiguration;
 import net.pms.dlna.DLNAMediaInfo.RateMode;
 import net.pms.dlna.MediaInfo.StreamType;
 import net.pms.exception.UnknownFormatException;
-import net.pms.formats.Format;
+import net.pms.formats.FormatType;
 import net.pms.formats.v2.SubtitleType;
 import net.pms.image.ImageFormat;
 import net.pms.image.ImagesUtil;
@@ -59,15 +59,10 @@ public class LibMediaInfoParser {
 		return MI.isValid();
 	}
 
-	@Deprecated
-	public synchronized static void parse(DLNAMediaInfo media, InputFile inputFile, int type) {
-		parse(media, inputFile, type, null);
-	}
-
 	/**
 	 * Parse media via MediaInfo.
 	 */
-	public synchronized static void parse(DLNAMediaInfo media, InputFile inputFile, int type, RendererConfiguration renderer) {
+	public synchronized static void parse(DLNAMediaInfo media, InputFile inputFile, FormatType type, RendererConfiguration renderer) {
 		File file = inputFile.getFile();
 		ParseLogger parseLogger = LOGGER.isTraceEnabled() ? new ParseLogger() : null;
 		if (!media.isMediaparsed() && file != null && MI.isValid() && MI.Open(file.getAbsolutePath()) > 0) {
@@ -271,7 +266,7 @@ public class LibMediaInfoParser {
 
 			// set Image
 			media.setImageCount(MI.Count_Get(StreamType.Image));
-			if (media.getImageCount() > 0 || type == Format.IMAGE) {
+			if (media.getImageCount() > 0 || type == FormatType.IMAGE) {
 				boolean parseByMediainfo = false;
 				// For images use our own parser instead of MediaInfo which doesn't provide enough information
 				try {
@@ -422,7 +417,7 @@ public class LibMediaInfoParser {
 				}
 			}
 
-			media.postParse(type, inputFile);
+			media.postParse(inputFile);
 
 			if (parseLogger != null) {
 				LOGGER.trace("{}", parseLogger);

@@ -33,6 +33,7 @@ import javax.annotation.Nullable;
 import net.pms.configuration.MapFileConfiguration;
 import net.pms.formats.Format;
 import net.pms.formats.FormatFactory;
+import net.pms.formats.FormatType;
 import net.pms.util.FileUtil;
 import net.pms.util.UMSUtils;
 import net.pms.util.StringUtil.LetterCase;
@@ -260,7 +261,7 @@ public class MapFile extends DLNAResource {
 					lcFilename.endsWith(".cue") ||
 					lcFilename.endsWith(".ups")
 				) {
-					DLNAResource d = PlaylistFolder.getPlaylist(lcFilename, f.getAbsolutePath(), 0);
+					DLNAResource d = PlaylistFolder.getPlaylist(lcFilename, f.getAbsolutePath(), null);
 					if (d != null) {
 						addChild(d);
 					}
@@ -375,7 +376,12 @@ public class MapFile extends DLNAResource {
 					}
 				} else {
 					Format format = FormatFactory.getAssociatedFormat(file.getAbsolutePath());
-					if (format != null && (format.isAudio() || format.isVideo())) {
+					FormatType formatType = format == null ? null : format.getType();
+					if (
+						formatType == FormatType.AUDIO ||
+						formatType == FormatType.CONTAINER ||
+						formatType == FormatType.VIDEO
+					) {
 						audioVideo.add(file);
 					}
 				}
@@ -549,7 +555,12 @@ public class MapFile extends DLNAResource {
 
 	@Override
 	public String toString() {
-		return "MapFile [name=" + getName() + ", id=" + getResourceId() + ", format=" + getFormat() + ", children=" + getChildren() + "]";
+		StringBuilder sb = new StringBuilder(getClass().getSimpleName())
+			.append(" [name=").append(getName())
+			.append(", id=").append(getResourceId())
+			.append(", format=").append(getFormat())
+			.append(", children=").append(getChildren()).append("]");
+		return sb.toString();
 	}
 
 	/**

@@ -15,6 +15,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import javax.annotation.Nullable;
 import net.pms.Messages;
 import net.pms.PMS;
 import net.pms.dlna.*;
@@ -25,7 +26,7 @@ import net.pms.encoders.StandardPlayerId;
 import net.pms.exception.InvalidArgumentException;
 import net.pms.formats.Format;
 import net.pms.formats.Format.Identifier;
-import net.pms.formats.v2.AudioProperties;
+import net.pms.formats.FormatType;
 import net.pms.io.OutputParams;
 import net.pms.network.HTTPResource;
 import net.pms.network.SpeedStats;
@@ -1113,19 +1114,27 @@ public class RendererConfiguration extends UPNPHelper.Renderer {
 		return old;
 	}
 
-	public boolean supportsFormat(Format f) {
-		switch (f.getType()) {
-			case Format.VIDEO:
+	public boolean supportsFormat(@Nullable Format format) {
+		if (format == null || format.getType() == null) {
+			return false;
+		}
+		return supportsFormat(format.getType().toMediaType());
+	}
+
+	public boolean supportsFormat(@Nullable MediaType mediaType) {
+		if (mediaType == null) {
+			return false;
+		}
+		switch (mediaType) {
+			case VIDEO:
 				return isVideoSupported();
-			case Format.AUDIO:
+			case AUDIO:
 				return isAudioSupported();
-			case Format.IMAGE:
+			case IMAGE:
 				return isImageSupported();
 			default:
-				break;
+				return false;
 		}
-
-		return false;
 	}
 
 	public boolean isVideoSupported() {
@@ -2161,14 +2170,14 @@ public class RendererConfiguration extends UPNPHelper.Renderer {
 	 * handle a format natively, content can be streamed to the renderer. If
 	 * not, content should be transcoded before sending it to the renderer.
 	 *
-	 * @param mediaInfo The {@link DLNAMediaInfo} information parsed from the
+	 * @param media The {@link DLNAMediaInfo} information parsed from the
 	 * 				media file.
 	 * @param format The {@link Format} to test compatibility for.
 	 * @param configuration The {@link PmsConfiguration} to use while evaluating compatibility
 	 * @return True if the renderer natively supports the format, false
 	 * 				otherwise.
 	 */
-	public boolean isCompatible(DLNAMediaInfo mediaInfo, Format format, PmsConfiguration configuration) {
+	public boolean isCompatible(DLNAMediaInfo media, Format format, PmsConfiguration configuration) {
 
 		if (configuration == null) {
 			configuration = PMS.getConfiguration(this);
@@ -2183,26 +2192,26 @@ public class RendererConfiguration extends UPNPHelper.Renderer {
 			return true;
 		}
 		// Handle images differently because of automatic image transcoding
-		if (format != null && format.isImage()) {
+		if (media != null && media.isImage() || format != null && format.getType() == FormatType.IMAGE) {
 			if (
 				format.getIdentifier() == Identifier.RAW ||
-				mediaInfo != null && mediaInfo.getImageInfo() != null &&
-				mediaInfo.getImageInfo().getFormat() != null &&
-				mediaInfo.getImageInfo().getFormat().isRaw()
+				media != null && media.getImageInfo() != null &&
+				media.getImageInfo().getFormat() != null &&
+				media.getImageInfo().getFormat().isRaw()
 			) {
 				LOGGER.trace(
 					"RAW ({}) images are not supported for streaming",
-					mediaInfo != null && mediaInfo.getImageInfo() != null && mediaInfo.getImageInfo().getFormat() != null ?
-					mediaInfo.getImageInfo().getFormat() :
+					media != null && media.getImageInfo() != null && media.getImageInfo().getFormat() != null ?
+					media.getImageInfo().getFormat() :
 					format
 				);
 				return false;
 			}
-			if (mediaInfo != null && mediaInfo.getImageInfo() != null && mediaInfo.getImageInfo().isImageIOSupported()) {
+			if (media != null && media.getImageInfo() != null && media.getImageInfo().isImageIOSupported()) {
 				LOGGER.trace(
 					"Format \"{}\" will be subject to on-demand automatic transcoding with ImageIO",
-					mediaInfo.getImageInfo().getFormat() != null ?
-					mediaInfo.getImageInfo().getFormat() :
+					media.getImageInfo().getFormat() != null ?
+					media.getImageInfo().getFormat() :
 					format
 				);
 				return true;
@@ -2213,7 +2222,7 @@ public class RendererConfiguration extends UPNPHelper.Renderer {
 
 		// Use the configured "Supported" lines in the renderer.conf
 		// to see if any of them match the MediaInfo library
-		if (isUseMediaInfo() && mediaInfo != null && getFormatConfiguration().match(mediaInfo) != null) {
+		if (isUseMediaInfo() && media != null && getFormatConfiguration().match(media) != null) {
 			return true;
 		}
 

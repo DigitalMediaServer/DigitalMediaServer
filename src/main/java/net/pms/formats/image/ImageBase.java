@@ -19,12 +19,13 @@
 package net.pms.formats.image;
 
 import net.pms.formats.Format;
+import net.pms.formats.FormatType;
 
 
 public abstract class ImageBase extends Format {
 
 	public ImageBase() {
-		type = IMAGE;
+		super(FormatType.IMAGE);
 	}
 
 	@Override

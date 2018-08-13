@@ -28,7 +28,7 @@ import net.pms.PMS;
 import net.pms.dlna.Range.Time;
 import net.pms.encoders.Player;
 import net.pms.encoders.PlayerFactory;
-import net.pms.formats.Format;
+import net.pms.formats.FormatType;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -152,7 +152,7 @@ public class CueFolder extends DLNAResource {
 							}
 
 							if (realFile.getMedia() != null && realFile.getMedia().getFirstAudioTrack() != null) {
-								if (realFile.getFormat().isAudio()) {
+								if (realFile.isAudio()) {
 									realFile.getMedia().getFirstAudioTrack().setSongname(track.getTitle());
 								} else {
 									realFile.getMedia().getFirstAudioTrack().setSongname("Chapter #" + (i + 1));
@@ -186,7 +186,7 @@ public class CueFolder extends DLNAResource {
 						}
 					}
 
-					PMS.get().storeFileInCache(playlistfile, Format.PLAYLIST);
+					PMS.get().storeFileInCache(playlistfile, FormatType.PLAYLIST);
 				}
 			}
 		}

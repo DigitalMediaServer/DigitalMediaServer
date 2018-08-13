@@ -19,11 +19,12 @@
 package net.pms.formats.audio;
 
 import net.pms.formats.Format;
+import net.pms.formats.FormatType;
 
 public abstract class AudioBase extends Format {
 
 	public AudioBase() {
-		type = AUDIO;
+		super(FormatType.AUDIO);
 	}
 
 	@Override

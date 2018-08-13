@@ -18,8 +18,6 @@
  */
 package net.pms.dlna;
 
-import net.pms.formats.Format;
-
 public class VideosFeed extends Feed {
 	@Override
 	protected void manageItem() {
@@ -28,6 +26,6 @@ public class VideosFeed extends Feed {
 	}
 
 	public VideosFeed(String url) {
-		super("" + System.currentTimeMillis(), url, Format.VIDEO);
+		super("" + System.currentTimeMillis(), url, MediaType.VIDEO);
 	}
 }

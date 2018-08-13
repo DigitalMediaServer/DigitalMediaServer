@@ -13,7 +13,7 @@ public class OGG extends Format {
 	}
 
 	public OGG() {
-		type = VIDEO;
+		super(FormatType.CONTAINER);
 	}
 
 	@Override
