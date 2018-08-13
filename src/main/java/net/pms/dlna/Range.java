@@ -149,7 +149,13 @@ public abstract class Range implements Cloneable {
 
 		@Override
 		public double getDuration() {
-			return start != null ? end - start : (end != null ? end : 0);
+			if (start != null && end != null) {
+				return end - start;
+			}
+			if (start == null && end == null) {
+				return 0d;
+			}
+			return start != null ? Double.POSITIVE_INFINITY : end;
 		}
 
 		@Override

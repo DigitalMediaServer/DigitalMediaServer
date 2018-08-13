@@ -36,6 +36,7 @@ import net.pms.exception.UnknownFormatException;
 import net.pms.formats.AudioAsVideo;
 import net.pms.formats.Format;
 import net.pms.formats.Format.Identifier;
+import net.pms.formats.FormatType;
 import net.pms.formats.audio.*;
 import net.pms.formats.v2.SubtitleType;
 import net.pms.image.ExifInfo;
@@ -385,20 +386,23 @@ public class DLNAMediaInfo implements Cloneable {
 			audioTracks.get(1).isSLS();
 	}
 
+	/**
+	 * Determines the {@link MediaType} from the parsed information as it is at
+	 * the moment. The results may change if the parsed information changes.
+	 *
+	 * @return The {@link MediaType} or {@code null} if none could be
+	 *         determined.
+	 */
+	@Nullable
 	public MediaType getMediaType() {
 		if (videoTrackCount > 0) {
 			return MediaType.VIDEO;
 		}
-		switch (audioTracks.size()) {
-			case 1 :
-				return MediaType.AUDIO;
-			case 0 :
-				if (imageCount > 0) {
-					return MediaType.IMAGE;
-				}
-			default :
-				return isSLS() ? MediaType.AUDIO : MediaType.UNKNOWN;
+		if (audioTracks != null && !audioTracks.isEmpty()) {
+			return MediaType.AUDIO;
 		}
+
+		return imageCount > 0 ? MediaType.IMAGE : null;
 	}
 
 	/**
@@ -558,12 +562,13 @@ public class DLNAMediaInfo implements Cloneable {
 		}
 	}
 
-	@Deprecated
-	public void generateThumbnail(InputFile input, Format ext, int type, Double seekPosition, boolean resume) {
-		generateThumbnail(input, ext, type, seekPosition, resume, null);
-	}
-
-	public void generateThumbnail(InputFile input, Format ext, int type, double seekPosition, boolean resume, RendererConfiguration renderer) {
+	public void generateThumbnail(
+		InputFile input,
+		Format ext,
+		double seekPosition,
+		boolean resume,
+		RendererConfiguration renderer
+	) {
 		DLNAMediaInfo forThumbnail = new DLNAMediaInfo();
 		forThumbnail.setMediaparsed(mediaparsed);  // check if file was already parsed by MediaInfo
 		forThumbnail.setImageInfo(imageInfo);
@@ -576,7 +581,7 @@ public class DLNAMediaInfo implements Cloneable {
 			forThumbnail.durationSec /= 2;
 		}
 
-		forThumbnail.parse(input, ext, type, true, resume, renderer);
+		forThumbnail.parse(input, ext, true, resume, renderer);
 		thumb = forThumbnail.thumb;
 		thumbready = true;
 	}
@@ -730,15 +735,10 @@ public class DLNAMediaInfo implements Cloneable {
 		return pw;
 	}
 
-	@Deprecated
-	public void parse(InputFile inputFile, Format ext, int type, boolean thumbOnly, boolean resume) {
-		parse(inputFile, ext, type, thumbOnly, resume, null);
-	}
-
 	/**
 	 * Parse media without using MediaInfo.
 	 */
-	public void parse(InputFile inputFile, Format ext, int type, boolean thumbOnly, boolean resume, RendererConfiguration renderer) {
+	public void parse(InputFile inputFile, Format ext, boolean thumbOnly, boolean resume, RendererConfiguration renderer) {
 		int i = 0;
 
 		while (isParsing()) {
@@ -758,6 +758,8 @@ public class DLNAMediaInfo implements Cloneable {
 			return;
 		}
 
+		FormatType type = ext == null ? null : ext.getType();
+
 		if (inputFile != null) {
 			File file = inputFile.getFile();
 			if (file != null) {
@@ -769,7 +771,7 @@ public class DLNAMediaInfo implements Cloneable {
 			ProcessWrapperImpl pw = null;
 			boolean ffmpeg_parsing = true;
 
-			if (type == Format.AUDIO || ext instanceof AudioAsVideo) {
+			if (type == FormatType.AUDIO || ext instanceof AudioAsVideo) {
 				ffmpeg_parsing = false;
 				DLNAMediaAudio audio = new DLNAMediaAudio();
 
@@ -923,7 +925,7 @@ public class DLNAMediaInfo implements Cloneable {
 				}
 			}
 
-			if (type == Format.IMAGE && file != null) {
+			if (type == FormatType.IMAGE && file != null) {
 				if (!thumbOnly) {
 					try {
 						ffmpeg_parsing = false;
@@ -1000,7 +1002,7 @@ public class DLNAMediaInfo implements Cloneable {
 			}
 
 			if (ffmpeg_parsing) {
-				if (!thumbOnly || (type == Format.VIDEO && !configuration.isUseMplayerForVideoThumbs())) {
+				if (!thumbOnly || ((type == FormatType.VIDEO || type == FormatType.CONTAINER) && !configuration.isUseMplayerForVideoThumbs())) {
 					pw = getFFmpegThumbnail(inputFile, resume);
 				}
 
@@ -1035,7 +1037,7 @@ public class DLNAMediaInfo implements Cloneable {
 					}
 				}
 
-				if (configuration.isUseMplayerForVideoThumbs() && type == Format.VIDEO) {
+				if (configuration.isUseMplayerForVideoThumbs() && (type == FormatType.VIDEO || type == FormatType.CONTAINER)) {
 					try {
 						getMplayerThumbnail(inputFile, resume);
 						String frameName = "" + inputFile.hashCode();
@@ -1076,7 +1078,12 @@ public class DLNAMediaInfo implements Cloneable {
 					}
 				}
 
-				if (type == Format.VIDEO && pw != null && thumb == null && pw.getOutputByteArray() != null) {
+				if (
+					pw != null &&
+					thumb == null &&
+					(type == FormatType.VIDEO || type == FormatType.CONTAINER) &&
+					pw.getOutputByteArray() != null
+				) {
 					byte[] bytes = pw.getOutputByteArray().toByteArray();
 					if (bytes != null && bytes.length > 0) {
 						try {
@@ -1090,7 +1097,7 @@ public class DLNAMediaInfo implements Cloneable {
 				}
 			}
 
-			postParse(type, inputFile);
+			postParse(inputFile);
 			mediaparsed = true;
 		}
 	}
@@ -1468,7 +1475,7 @@ public class DLNAMediaInfo implements Cloneable {
 		return duration != null ? convertStringToTime(duration) : null;
 	}
 
-	public void postParse(int type, InputFile f) {
+	public void postParse(InputFile f) {
 		String codecA = null;
 		if (getFirstAudioTrack() != null) {
 			codecA = getFirstAudioTrack().getCodecA();
@@ -1654,16 +1661,23 @@ public class DLNAMediaInfo implements Cloneable {
 			}
 
 			if (mimeType == null) {
-				mimeType = HTTPResource.getDefaultMimeType(type);
+				mimeType = HTTPResource.getDefaultMimeType(getMediaType());
 			}
 		}
 
-		if (getFirstAudioTrack() == null || !(type == Format.AUDIO && getFirstAudioTrack().getBitsPerSample() == 24 && getFirstAudioTrack().getSampleFrequency() > 48000)) {
+		MediaType mediaType = getMediaType();
+
+		if (
+			getFirstAudioTrack() == null || !(
+				mediaType == MediaType.AUDIO &&
+				getFirstAudioTrack().getBitsPerSample() == 24 &&
+				getFirstAudioTrack().getSampleFrequency() > 48000
+		)) {
 			secondaryFormatValid = false;
 		}
 
 		// Check for external subs here
-		if (f.getFile() != null && type == Format.VIDEO && configuration.isAutoloadExternalSubtitles()) {
+		if (f.getFile() != null && mediaType == MediaType.VIDEO && configuration.isAutoloadExternalSubtitles()) {
 			FileUtil.isSubtitlesExists(f.getFile(), this);
 		}
 	}

@@ -19,11 +19,12 @@
 package net.pms.formats.subtitle;
 
 import net.pms.formats.Format;
+import net.pms.formats.FormatType;
 
 public abstract class SubtitleBase extends Format {
 
 	public SubtitleBase() {
-		type = SUBTITLE;
+		super(FormatType.SUBTITLES);
 	}
 
 	@Override

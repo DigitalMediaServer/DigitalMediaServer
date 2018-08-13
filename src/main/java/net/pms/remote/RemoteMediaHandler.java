@@ -85,7 +85,8 @@ public class RemoteMediaHandler implements HttpHandler {
 			}
 			int code = 200;
 			resource.setDefaultRenderer(defaultRenderer);
-			if (resource.getFormat().isVideo()) {
+			MediaType mediaType = resource.getMediaType();
+			if (mediaType == MediaType.VIDEO) {
 				if (flash) {
 					mimeType = "video/flash";
 				} else if (!RemoteUtil.directmime(mimeType) || RemoteUtil.transMp4(mimeType, media)) {
@@ -108,7 +109,7 @@ public class RemoteMediaHandler implements HttpHandler {
 				}
 			}
 
-			if (!RemoteUtil.directmime(mimeType) && resource.getFormat().isAudio()) {
+			if (!RemoteUtil.directmime(mimeType) && mediaType == MediaType.AUDIO) {
 				resource.setPlayer(PlayerFactory.getPlayer(StandardPlayerId.FFMPEG_AUDIO, false, false));
 				code = 206;
 			}

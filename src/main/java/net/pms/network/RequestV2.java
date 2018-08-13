@@ -40,7 +40,6 @@ import net.pms.configuration.RendererConfiguration;
 import net.pms.dlna.*;
 import net.pms.encoders.ImagePlayer;
 import net.pms.external.StartStopListenerDelegate;
-import net.pms.formats.Format;
 import net.pms.formats.v2.SubtitleType;
 import net.pms.image.ImagesUtil;
 import net.pms.io.OutputParams;
@@ -489,8 +488,7 @@ public class RequestV2 extends HTTPResource {
 						}
 					}
 
-					Format format = dlna.getFormat();
-					if (format != null && format.isVideo()) {
+					if (dlna.isVideo()) {
 						if (dlna.getMedia() != null && !configuration.isDisableSubtitles() && dlna.getMediaSubtitle() != null && dlna.getMediaSubtitle().isStreamable()) {
 							// Some renderers (like Samsung devices) allow a custom header for a subtitle URL
 							String subtitleHttpHeader = mediaRenderer.getSubtitleHttpHeader();

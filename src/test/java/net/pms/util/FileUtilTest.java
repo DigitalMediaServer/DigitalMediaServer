@@ -28,7 +28,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Random;
 import net.pms.PMS;
-import net.pms.configuration.PmsConfiguration;
 import net.pms.util.FilePermissions.FileFlag;
 import static net.pms.util.Constants.*;
 import org.apache.commons.configuration.ConfigurationException;

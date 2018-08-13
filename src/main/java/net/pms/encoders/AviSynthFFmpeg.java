@@ -39,13 +39,14 @@ import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
 import net.pms.Messages;
 import net.pms.PMS;
+import net.pms.configuration.FormatConfiguration;
 import net.pms.configuration.PmsConfiguration;
 import net.pms.dlna.DLNAMediaSubtitle;
 import net.pms.dlna.DLNAResource;
+import net.pms.dlna.MediaType;
 import net.pms.formats.Format;
 import net.pms.formats.v2.SubtitleType;
 import net.pms.newgui.GuiUtil;
-import net.pms.util.PlayerUtil;
 import net.pms.util.ProcessUtil;
 import org.apache.commons.configuration.event.ConfigurationEvent;
 import org.apache.commons.configuration.event.ConfigurationListener;
@@ -341,14 +342,6 @@ public class AviSynthFFmpeg extends FFMpegVideo {
 			LOGGER.trace("AviSynth/FFmpeg cannot determine compatibility based on default audio track for " + resource.getSystemName());
 		}
 
-		if (
-			PlayerUtil.isVideo(resource, Format.Identifier.MKV) ||
-			PlayerUtil.isVideo(resource, Format.Identifier.MPG) ||
-			PlayerUtil.isVideo(resource, Format.Identifier.OGG)
-		) {
-			return true;
-		}
-
-		return false;
+		return resource.isVideo() && isContainerCompatible(resource);
 	}
 }

@@ -30,7 +30,7 @@ public class DVRMS extends Format {
 	}
 
 	public DVRMS() {
-		type = VIDEO;
+		super(FormatType.CONTAINER);
 	}
 
 	@Override

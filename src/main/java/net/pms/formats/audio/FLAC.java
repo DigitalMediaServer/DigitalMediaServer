@@ -20,22 +20,17 @@
 import net.pms.formats.AudioAsVideo;
 
 public class FLAC extends AudioBase {
-	/**
-	 * {@inheritDoc}
-	 */
+
 	@Override
 	public Identifier getIdentifier() {
 		return Identifier.FLAC;
 	}
 
 	public FLAC() {
-		type = AUDIO;
+		super();
 		secondaryFormat = new AudioAsVideo();
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public String[] getSupportedExtensions() {
 		return new String[] {

@@ -18,6 +18,7 @@
  */
 package net.pms.encoders;
 
+import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import com.jgoodies.forms.builder.FormBuilder;
 import com.jgoodies.forms.factories.Paddings;
@@ -31,6 +32,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
+import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.annotation.Nonnull;
@@ -47,16 +49,17 @@ import net.pms.configuration.ExternalProgramInfo;
 import net.pms.configuration.FFmpegExecutableInfo;
 import net.pms.configuration.FFmpegExecutableInfo.Codec;
 import net.pms.configuration.FFmpegExecutableInfo.CoderFlags;
+import net.pms.configuration.FormatConfiguration;
 import net.pms.configuration.PmsConfiguration;
 import net.pms.configuration.RendererConfiguration;
 import net.pms.dlna.*;
 import net.pms.formats.Format;
+import net.pms.formats.FormatType;
 import net.pms.io.*;
 import net.pms.newgui.GuiUtil;
 import net.pms.platform.windows.NTStatus;
 import net.pms.util.CodecUtil;
 import net.pms.util.FormLayoutUtil;
-import net.pms.util.PlayerUtil;
 import net.pms.util.Version;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -745,8 +748,8 @@ public class TsMuxeRVideo extends Player {
 	}
 
 	@Override
-	public int type() {
-		return Format.VIDEO;
+	public FormatType type() {
+		return FormatType.VIDEO;
 	}
 	private JCheckBox tsmuxerforcefps;
 	private JCheckBox muxallaudiotracks;
@@ -829,15 +832,54 @@ public class TsMuxeRVideo extends Player {
 			LOGGER.trace("tsMuxeR cannot determine compatibility based on default audio track for " + resource.getSystemName());
 		}
 
-		if (
-			PlayerUtil.isVideo(resource, Format.Identifier.MKV) ||
-			PlayerUtil.isVideo(resource, Format.Identifier.MPG) ||
-			PlayerUtil.isVideo(resource, Format.Identifier.OGG)
-		) {
+		if (!resource.matches(
+			MediaType.VIDEO,
+			FormatConfiguration.MKV,
+			FormatConfiguration.MOV,
+			FormatConfiguration.MP4,
+			FormatConfiguration.MPEG1,
+			FormatConfiguration.MPEG2,
+			FormatConfiguration.MPEGPS,
+			FormatConfiguration.MPEGTS
+		)) {
+			return false;
+		}
+		DLNAMediaInfo media = resource.getMedia();
+		if (media == null || isBlank(media.getCodecV())) {
+			return false;
+		}
+		switch (media.getCodecV().trim().toLowerCase(Locale.ROOT)) {
+			case FormatConfiguration.H264:
+			case FormatConfiguration.H265:
+			case FormatConfiguration.MPEG2:
+			case FormatConfiguration.VC1:
+				break;
+			default:
+				return false;
+		}
+		if (media.getAudioTrackCount() < 1) {
 			return true;
 		}
-
-		return false;
+		for (DLNAMediaAudio audio : media.getAudioTracksList()) {
+			if (isBlank(audio.getCodecA())) {
+				return false;
+			}
+			switch (audio.getCodecA()) {
+				case FormatConfiguration.AAC_LC:
+				case FormatConfiguration.AAC_LTP:
+				case FormatConfiguration.AAC_MAIN:
+				case FormatConfiguration.AAC_SSR:
+				case FormatConfiguration.AC3:
+				case FormatConfiguration.EAC3:
+				case FormatConfiguration.DTS:
+				case FormatConfiguration.DTSHD:
+				case FormatConfiguration.HE_AAC:
+					break;
+				default:
+					return false;
+			}
+		}
+		return true;
 	}
 
 	@Override

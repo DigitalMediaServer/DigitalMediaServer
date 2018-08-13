@@ -31,7 +31,6 @@ import net.pms.dlna.*;
 import net.pms.encoders.Player;
 import net.pms.encoders.PlayerFactory;
 import net.pms.external.ExternalListener;
-import net.pms.formats.Format;
 import net.pms.formats.v2.SubtitleType;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -370,13 +369,7 @@ public class UMSUtils {
 			if (clazz.contains("WebStream")) {
 				if (data.contains(">")) {
 					String[] tmp = data.split(">");
-					int type;
-					try {
-						type = Integer.parseInt(tmp[3]);
-					} catch (NumberFormatException e) {
-						type = Format.UNKNOWN;
-					}
-					return new WebStream(tmp[0], tmp[1], tmp[2], type);
+					return new WebStream(tmp[0], tmp[1], tmp[2], MediaType.typeOf(tmp[3]));
 				}
 				error = true;
 			}

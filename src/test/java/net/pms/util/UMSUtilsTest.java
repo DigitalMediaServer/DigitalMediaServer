@@ -3,7 +3,6 @@ package net.pms.util;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.LoggerContext;
 import net.pms.PMS;
-import net.pms.configuration.PmsConfiguration;
 import org.apache.commons.configuration.ConfigurationException;
 import static org.assertj.core.api.Assertions.*;
 import org.junit.Before;
