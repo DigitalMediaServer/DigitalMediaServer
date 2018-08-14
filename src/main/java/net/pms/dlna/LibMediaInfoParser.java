@@ -723,6 +723,7 @@ public class LibMediaInfoParser {
 			format = FormatConfiguration.MP3;
 		} else if (
 			value.equals("lc") ||
+			value.equals("aac lc") ||
 			value.equals("00001000-0000-FF00-8000-00AA00389B71") ||
 			(
 				value.equals("aac") &&
@@ -730,19 +731,19 @@ public class LibMediaInfoParser {
 			)
 		) {
 			// mp4a-40-2, enca-67-2
-			format = FormatConfiguration.AAC_LC;
-		} else if (value.equals("ltp")) {
+			format = FormatConfiguration.AAC_LC; // v2 and v4
+		} else if (value.equals("ltp") || value.equals("aac ltp")) {
 			format = FormatConfiguration.AAC_LTP;
-		} else if (value.contains("he-aac")) {
-			format = FormatConfiguration.HE_AAC;
+		} else if (value.contains("he-aac") || value.contains("he-aacv2") || value.equals("aac lc sbr") || value.equals("aac lc sbr ps")) {
+			format = FormatConfiguration.HE_AAC; // v1 and v2
 		} else if (
 			value.equals("er bsac") ||
 			value.equals("mp4a-40-22")
 		) {
 			format = FormatConfiguration.ER_BSAC;
-		} else if (value.equals("main")) {
+		} else if (value.equals("main") || value.equals("aac main")) {
 			format = FormatConfiguration.AAC_MAIN;
-		} else if (value.equals("ssr")) {
+		} else if (value.equals("ssr") || value.equals("aac ssr")) {
 			format = FormatConfiguration.AAC_SSR;
 		} else if (value.startsWith("a_aac/")) {
 			if (value.equals("a_aac/mpeg2/main")) {
