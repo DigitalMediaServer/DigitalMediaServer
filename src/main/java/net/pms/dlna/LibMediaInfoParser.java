@@ -676,7 +676,7 @@ public class LibMediaInfoParser {
 			// only for audio files:
 			format = FormatConfiguration.MP2;
 			media.setContainer(FormatConfiguration.MP2);
-		} else if (value.equals("dts")) {
+		} else if (value.equals("dts") || value.equals("dts lbr")) {
 				format = FormatConfiguration.DTS;
 		} else if (
 				value.equals("ma") ||
@@ -687,13 +687,12 @@ public class LibMediaInfoParser {
 				value.equals("hra / core") ||
 				value.equals("hra / es matrix / core") ||
 				value.equals("hra / es discrete / core") ||
-				value.equals("DTS ES XXCH") ||
-				value.equals("DTS XLL") ||
-				value.equals("DTS XBR") ||
-				value.equals("DTS 96/24") ||
-				value.equals("DTS ES") ||
-				value.equals("DTS XXCH") ||
-				value.equals("DTS LBR") ||
+				value.equals("dts es xxch") ||
+				value.equals("dts xll") ||
+				value.equals("dts xbr") ||
+				value.equals("dts 96/24") ||
+				value.equals("dts es") ||
+				value.equals("dts xxch") ||
 				value.equals("134")
 			) {
 			format = FormatConfiguration.DTSHD;
