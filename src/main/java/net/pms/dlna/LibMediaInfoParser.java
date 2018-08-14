@@ -687,6 +687,13 @@ public class LibMediaInfoParser {
 				value.equals("hra / core") ||
 				value.equals("hra / es matrix / core") ||
 				value.equals("hra / es discrete / core") ||
+				value.equals("DTS ES XXCH") ||
+				value.equals("DTS XLL") ||
+				value.equals("DTS XBR") ||
+				value.equals("DTS 96/24") ||
+				value.equals("DTS ES") ||
+				value.equals("DTS XXCH") ||
+				value.equals("DTS LBR") ||
 				value.equals("134")
 			) {
 			format = FormatConfiguration.DTSHD;
