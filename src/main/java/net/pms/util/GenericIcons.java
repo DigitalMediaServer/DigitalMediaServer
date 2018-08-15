@@ -19,6 +19,7 @@
 package net.pms.util;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.FontMetrics;
@@ -46,6 +47,7 @@ import net.pms.dlna.DLNAResource;
 import net.pms.dlna.DLNABinaryThumbnail;
 import net.pms.dlna.DLNAThumbnailInputStream;
 import net.pms.dlna.MediaType;
+import net.pms.dlna.RealFile;
 import net.pms.formats.Format;
 import net.pms.formats.FormatType;
 import net.pms.image.ImageFormat;
@@ -141,21 +143,54 @@ public enum GenericIcons {
 			}
 			Map<String, DLNABinaryThumbnail> imageCache = typeCache.get(iconType);
 
-			String label = getLabelFromImageFormat(resource.getMedia());
-			if (label == null) {
-				label = getLabelFromFormat(resource.getFormat());
+			String label = null;
+			if (resource.isImage()) {
+				label = getLabelFromImageFormat(resource.getMedia());
 			}
 			if (label == null) {
 				label = getLabelFromContainer(resource.getMedia());
 			}
-			if (label != null && label.length() < 5) {
-				label = label.toUpperCase(Locale.ROOT);
-			} else if (label != null && label.toLowerCase(Locale.ROOT).equals(label)) {
-				label = StringUtils.capitalize(label);
+			if (label == null && resource instanceof RealFile) {
+				String extension = FileUtil.getExtension(((RealFile) resource).getFile());
+				if (isNotBlank(extension)) {
+					label = extension;
+				}
+			}
+			if (label == null) {
+				label = getLabelFromFormat(resource.getFormat());
 			}
 
 			if (isBlank(label)) {
 				label = Messages.getString("Generic.Unknown");
+			} else {
+				switch (label.toLowerCase(Locale.ROOT)) {
+					// Special capitalization
+					case "atrac":
+						label = "ATRAC";
+						break;
+					case "mpegps":
+						label = "MPEG-PS";
+						break;
+					case "mpegts":
+						label = "MPEG-TS";
+						break;
+					case "wavpack":
+						label = "WavPack";
+						break;
+					case "mpeg2":
+						label = "MPEG-2";
+						break;
+					case "mpg":
+					case "mpeg":
+						label = "MPEG";
+						break;
+					default:
+						if (label.length() < 5) {
+							label = label.toUpperCase(Locale.ROOT);
+						} else if (label.toLowerCase(Locale.ROOT).equals(label)) {
+							label = StringUtils.capitalize(label);
+						}
+				}
 			}
 
 			if (imageCache.containsKey(label)) {
@@ -207,7 +242,7 @@ public enum GenericIcons {
 
 	private static String getLabelFromImageFormat(DLNAMediaInfo mediaInfo) {
 		return
-			mediaInfo != null && mediaInfo.isImage() &&
+			mediaInfo != null &&
 			mediaInfo.getImageInfo() != null &&
 			mediaInfo.getImageInfo().getFormat() != null ?
 				mediaInfo.getImageInfo().getFormat().toString() : null;
