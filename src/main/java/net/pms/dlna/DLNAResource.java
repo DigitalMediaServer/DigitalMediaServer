@@ -231,8 +231,6 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 	@Deprecated
 	protected boolean skipTranscode = false;
 
-	private boolean allChildrenAreFolders = true;
-
 	/**
 	 * @deprecated Use standard getter and setter to access this field.
 	 *
@@ -659,10 +657,6 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 
 				LOGGER.trace("{} child \"{}\" with class \"{}\"", isNew ? "Adding new" : "Updating", child.getName(), child.getClass().getSimpleName());
 
-				if (allChildrenAreFolders && !child.isFolder()) {
-					allChildrenAreFolders = false;
-				}
-
 				child.resHash = Math.abs(child.getSystemName().hashCode() + resumeHash());
 
 				DLNAResource resumeRes = null;
@@ -725,49 +719,42 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 							resumeRes.player = playerTranscoding;
 						}
 
-						if (!allChildrenAreFolders) {
-							child.setDefaultRenderer(defaultRenderer);
+						MediaType childMediaType = child.getMediaType();
+						// Should the child be added to the #--TRANSCODE--# folder?
+						if (MediaType.isOf(childMediaType, MediaType.VIDEO, MediaType.AUDIO) && child.isTranscodeFolderAvailable()) {
+							// true: create (and append) the #--TRANSCODE--# folder to this
+							// folder if supported/enabled and if it doesn't already exist
+							VirtualFolder transcodeFolder = getTranscodeFolder(true);
+							if (transcodeFolder != null) {
+								VirtualFolder fileTranscodeFolder = new FileTranscodeVirtualFolder(child.getDisplayName(), null);
 
-							MediaType childMediaType = child.getMediaType();
-							// Should the child be added to the #--TRANSCODE--# folder?
-							if (MediaType.isOf(childMediaType, MediaType.VIDEO, MediaType.AUDIO) && child.isTranscodeFolderAvailable()) {
-								// true: create (and append) the #--TRANSCODE--# folder to this
-								// folder if supported/enabled and if it doesn't already exist
-								VirtualFolder transcodeFolder = getTranscodeFolder(true);
-								if (transcodeFolder != null) {
-									VirtualFolder fileTranscodeFolder = new FileTranscodeVirtualFolder(child.getDisplayName(), null);
+								DLNAResource newChild = child.clone();
+								newChild.player = playerTranscoding;
+								newChild.media = child.media;
+								fileTranscodeFolder.addChildInternal(newChild);
+								LOGGER.trace("Adding \"{}\" to transcode folder for player: \"{}\"", child.getName(), playerTranscoding);
 
-									DLNAResource newChild = child.clone();
-									newChild.player = playerTranscoding;
-									newChild.media = child.media;
-									fileTranscodeFolder.addChildInternal(newChild);
-									LOGGER.trace("Adding \"{}\" to transcode folder for player: \"{}\"", child.getName(), playerTranscoding);
-
-									transcodeFolder.updateChild(fileTranscodeFolder);
-								}
+								transcodeFolder.updateChild(fileTranscodeFolder);
 							}
+						}
 
-							if (childMediaType == MediaType.VIDEO && child.isSubSelectable() && !(this instanceof SubSelFile)) {
-								VirtualFolder vf = getSubSelector(true);
-								if (vf != null) {
-									DLNAResource newChild = child.clone();
-									newChild.player = playerTranscoding;
-									newChild.media = child.media;
-									LOGGER.trace("Duplicate subtitle " + child.getName() + " with player: " + playerTranscoding);
+						if (childMediaType == MediaType.VIDEO && child.isSubSelectable() && !(this instanceof SubSelFile)) {
+							VirtualFolder vf = getSubSelector(true);
+							if (vf != null) {
+								DLNAResource newChild = child.clone();
+								newChild.player = playerTranscoding;
+								newChild.media = child.media;
+								LOGGER.trace("Duplicate subtitle " + child.getName() + " with player: " + playerTranscoding);
 
-									vf.addChild(new SubSelFile(newChild));
-								}
+								vf.addChild(new SubSelFile(newChild));
 							}
+						}
 
-							if (configuration.isDynamicPls() &&
-								!child.isFolder() &&
-								defaultRenderer != null &&
-								!defaultRenderer.isNoDynPlsFolder()) {
-								addDynamicPls(child);
-							}
-						} else if (!child.format.isCompatible(child.media, defaultRenderer) && !child.isFolder()) {
-							LOGGER.trace("Ignoring file \"{}\" because it is not compatible with renderer \"{}\"", child.getName(), defaultRenderer.getRendererName());
-							children.remove(child);
+						if (configuration.isDynamicPls() &&
+							!child.isFolder() &&
+							defaultRenderer != null &&
+							!defaultRenderer.isNoDynPlsFolder()) {
+							addDynamicPls(child);
 						}
 					}
 
