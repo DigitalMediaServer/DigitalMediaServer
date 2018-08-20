@@ -27,7 +27,7 @@ import net.pms.Messages;
 import net.pms.PMS;
 import net.pms.configuration.PmsConfiguration;
 import net.pms.exception.IOKitException;
-import net.pms.io.WinUtils.Kernel32;
+import net.pms.io.WindowsSystemUtils.Kernel32;
 import net.pms.util.jna.macos.iokit.IOKitUtils;
 
 /**
