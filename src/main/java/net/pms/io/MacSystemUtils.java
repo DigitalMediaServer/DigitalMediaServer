@@ -11,6 +11,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import javax.annotation.Nonnull;
 import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -169,6 +170,12 @@ public class MacSystemUtils extends BasicSystemUtils {
 	 */
 	private static int getPingPacketDivisor(int packetSize) {
 		return (int) Math.ceil(packetSize / 8000.0);
+	}
+
+	@Override
+	@Nonnull
+	protected String getTrayIconName() {
+		return "icon-18.png";
 	}
 
 	@Override

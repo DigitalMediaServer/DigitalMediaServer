@@ -42,8 +42,8 @@ import org.slf4j.LoggerFactory;
  *
  * @author zsombor
  */
-public class WinUtils extends BasicSystemUtils {
-	private static final Logger LOGGER = LoggerFactory.getLogger(WinUtils.class);
+public class WindowsSystemUtils extends BasicSystemUtils {
+	private static final Logger LOGGER = LoggerFactory.getLogger(WindowsSystemUtils.class);
 
 	public interface Kernel32 extends Library {
 		Kernel32 INSTANCE = Native.loadLibrary("kernel32", Kernel32.class);
@@ -227,7 +227,7 @@ public class WinUtils extends BasicSystemUtils {
 	}
 
 	/** Only to be instantiated by {@link BasicSystemUtils#createInstance()}. */
-	protected WinUtils() {
+	protected WindowsSystemUtils() {
 		getVLCRegistryInfo();
 		avsPluginsFolder = getAviSynthPluginsFolder();
 		aviSynth = avsPluginsFolder != null;
@@ -354,6 +354,11 @@ public class WinUtils extends BasicSystemUtils {
 			return line.substring(line.lastIndexOf(':', msPos) + 1, msPos).trim();
 		}
 		return super.parsePingLine(line);
+	}
+
+	@Override
+	protected String getTrayIconName() {
+		return "WinSysTrayIcon.png";
 	}
 
 	@Override
