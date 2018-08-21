@@ -198,6 +198,41 @@ public class CoverArtArchiveTagInfo implements AudioTagInfo {
 	}
 
 	/**
+	 * Creates a new instance using the specified values.
+	 *
+	 * @param album the album name or {@code null}.
+	 * @param artist the artist name or {@code null}.
+	 * @param artistId the MusicBrainz artist ID or {@code null}.
+	 * @param title the song title or {@code null}.
+	 * @param year the release year or {@code -1}.
+	 * @param trackNo the track number or {@code -1}.
+	 * @param numTracks the total number of tracks or {@code -1}.
+	 * @param trackId the MusicBrainz track ID or {@code null}.
+	 * @param releaseId the MusicBrainz release ID or {@code null}.
+	 */
+	public CoverArtArchiveTagInfo(
+		@Nullable String album,
+		@Nullable String artist,
+		@Nullable String artistId,
+		@Nullable String title,
+		int year,
+		int trackNo,
+		int numTracks,
+		@Nullable String trackId,
+		@Nullable String releaseId
+	) {
+		this.album = album;
+		this.artist = artist;
+		this.artistId = artistId;
+		this.title = title;
+		this.year = year > 0 ? year : -1;
+		this.trackNo = trackNo > 0 ? trackNo : -1;
+		this.numTracks = numTracks > 0 ? numTracks : -1;
+		this.trackId = trackId;
+		this.releaseId = releaseId;
+	}
+
+	/**
 	 * @return {@code true} if this {@link CoverArtArchiveTagInfo} has any
 	 *         information, {@code false} if it is "blank".
 	 */

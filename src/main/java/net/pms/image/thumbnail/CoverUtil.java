@@ -145,4 +145,25 @@ public abstract class CoverUtil {
 	 * @return The new {@link AudioTagInfo} instance.
 	 */
 	public abstract AudioTagInfo createAudioTagInfo(@Nonnull MP3File mp3File);
+
+	/**
+	 * Creates a new {@link AudioTagInfo} of the correct type using the
+	 * specified values.
+	 *
+	 * @param album the album name or {@code null}.
+	 * @param artist the artist name or {@code null}.
+	 * @param title the song title or {@code null}.
+	 * @param year the release year or {@code -1}.
+	 * @param trackNo the track number or {@code -1}.
+	 * @param numTracks the total number of tracks or {@code -1}.
+	 * @return The new {@link AudioTagInfo} instance.
+	 */
+	public abstract AudioTagInfo createAudioTagInfo(
+		@Nullable String album,
+		@Nullable String artist,
+		@Nullable String title,
+		int year,
+		int trackNo,
+		int numTracks
+	);
 }

@@ -458,6 +458,47 @@ public class CoverArtArchiveUtil extends CoverUtil {
 		return new CoverArtArchiveTagInfo(mp3File);
 	}
 
+	@Override
+	public AudioTagInfo createAudioTagInfo(
+		@Nullable String album,
+		@Nullable String artist,
+		@Nullable String title,
+		int year,
+		int trackNo,
+		int numTracks
+	) {
+		return new CoverArtArchiveTagInfo(album, artist, null, title, year, trackNo, numTracks, null, null);
+	}
+
+	/**
+	 * Creates a new {@link AudioTagInfo} of the correct type using the
+	 * specified values.
+	 *
+	 * @param album the album name or {@code null}.
+	 * @param artist the artist name or {@code null}.
+	 * @param artistId the MusicBrainz artist ID or {@code null}.
+	 * @param title the song title or {@code null}.
+	 * @param year the release year or {@code -1}.
+	 * @param trackNo the track number or {@code -1}.
+	 * @param numTracks the total number of tracks or {@code -1}.
+	 * @param trackId the MusicBrainz track ID or {@code null}.
+	 * @param releaseId the MusicBrainz release ID or {@code null}.
+	 * @return The new {@link AudioTagInfo} instance.
+	 */
+	public CoverArtArchiveTagInfo createAudioTagInfo(
+		@Nullable String album,
+		@Nullable String artist,
+		@Nullable String artistId,
+		@Nullable String title,
+		int year,
+		int trackNo,
+		int numTracks,
+		@Nullable String trackId,
+		@Nullable String releaseId
+	) {
+		return new CoverArtArchiveTagInfo(album, artist, artistId, title, year, trackNo, numTracks, trackId, releaseId);
+	}
+
 	private static String fuzzString(String s) {
 		String[] words = s.split(" ");
 		StringBuilder sb = new StringBuilder("(");

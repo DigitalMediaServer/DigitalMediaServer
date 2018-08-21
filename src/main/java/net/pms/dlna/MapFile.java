@@ -38,6 +38,8 @@ import net.pms.util.FileUtil;
 import net.pms.util.UMSUtils;
 import net.pms.util.StringUtil.LetterCase;
 import org.apache.commons.lang3.StringUtils;
+import org.digitalmediaserver.cuelib.CueSheet;
+import org.digitalmediaserver.cuelib.io.FLACReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -228,61 +230,86 @@ public class MapFile extends DLNAResource {
 		return MapFile.THUMBNAIL_EXTENSIONS.contains(FileUtil.getExtension(fileName, LetterCase.LOWER, Locale.ROOT));
 	}
 
-	private void manageFile(File f) {
-		if (f.isFile() || f.isDirectory()) {
-			String lcFilename = f.getName().toLowerCase();
+	private void manageFile(File file) {
+		boolean isFolder = file.isDirectory();
+		if (file.isFile() || isFolder) {
+			String extension = FileUtil.getExtension(file, LetterCase.LOWER, Locale.ROOT);
 
-			if (!f.isHidden()) {
-				if (configuration.isArchiveBrowsing() && (lcFilename.endsWith(".zip") || lcFilename.endsWith(".cbz"))) {
-					addChild(new ZippedFile(f));
-				} else if (configuration.isArchiveBrowsing() && (lcFilename.endsWith(".rar") || lcFilename.endsWith(".cbr"))) {
-					addChild(new RarredFile(f));
+			if (!file.isHidden()) {
+				if (!isFolder && configuration.isArchiveBrowsing() && ("zip".equals(extension) || "cbz".equals(extension))) {
+					addChild(new ZippedFile(file));
+				} else if (!isFolder && configuration.isArchiveBrowsing() && ("rar".equals(extension) || "cbr".equals(extension))) {
+					addChild(new RarredFile(file));
 				} else if (
+					!isFolder &&
 					configuration.isArchiveBrowsing() && (
-						lcFilename.endsWith(".tar") ||
-						lcFilename.endsWith(".gzip") ||
-						lcFilename.endsWith(".gz") ||
-						lcFilename.endsWith(".7z")
+						"tar".equals(extension) ||
+						"gzip".equals(extension) ||
+						"gz".equals(extension) ||
+						"7z".equals(extension)
 					)
 				) {
-					addChild(new SevenZipFile(f));
+					addChild(new SevenZipFile(file));
 				} else if (
-					lcFilename.endsWith(".iso") ||
-					lcFilename.endsWith(".img") || (
-						f.isDirectory() &&
-						f.getName().toUpperCase(Locale.ROOT).equals("VIDEO_TS")
+					(
+						!isFolder && (
+							"iso".equals(extension) ||
+							"img".equals(extension)
+						)
+					) || (
+						isFolder && "VIDEO_TS".equals(file.getName().toUpperCase(Locale.ROOT))
 					)
 				) {
-					addChild(new DVDISOFile(f));
+					addChild(new DVDISOFile(file));
 				} else if (
-					lcFilename.endsWith(".m3u") ||
-					lcFilename.endsWith(".m3u8") ||
-					lcFilename.endsWith(".pls") ||
-					lcFilename.endsWith(".cue") ||
-					lcFilename.endsWith(".ups")
+					!isFolder && (
+						"m3u".equals(extension) ||
+						"m3u8".equals(extension) ||
+						"pls".equals(extension) ||
+						"cue".equals(extension) ||
+						"ups".equals(extension)
+					)
 				) {
-					DLNAResource d = PlaylistFolder.getPlaylist(lcFilename, f.getAbsolutePath(), null);
+					DLNAResource d = PlaylistFolder.getPlaylist(file.getName(), file.getAbsolutePath(), null);
 					if (d != null) {
 						addChild(d);
 					}
 				} else {
 					/* Optionally ignore empty directories */
-					if (f.isDirectory() && configuration.isHideEmptyFolders() && !FileUtil.isFolderRelevant(f, configuration)) {
-						LOGGER.debug("Ignoring empty/non-relevant directory: " + f.getName());
+					if (isFolder && configuration.isHideEmptyFolders() && !FileUtil.isFolderRelevant(file, configuration)) {
+						LOGGER.debug("Ignoring empty/non-relevant directory: " + file.getName());
 						// Keep track of the fact that we have empty folders, so when we're asked if we should refresh,
 						// we can re-scan the folders in this list to see if they contain something relevant
 						if (emptyFoldersToRescan == null) {
 							emptyFoldersToRescan = new ArrayList<>();
 						}
-						if (!emptyFoldersToRescan.contains(f)) {
-							emptyFoldersToRescan.add(f);
+						if (!emptyFoldersToRescan.contains(file)) {
+							emptyFoldersToRescan.add(file);
 						}
 					} else { // Otherwise add the file
-						RealFile rf = new RealFile(f);
-						if (searchList != null) {
-							searchList.add(rf);
+						CueSheet cueSheet = null;
+						if (!isFolder && "flac".equals(extension)) {
+							try {
+								cueSheet = FLACReader.getCueSheet(file.toPath());
+							} catch (IOException e) {
+								LOGGER.warn(
+									"An error occurred while scanning \"{}\" metadata for cue sheets: {}",
+									file,
+									e.getMessage()
+								);
+								LOGGER.trace("", e);
+							}
 						}
-						addChild(rf);
+						if (cueSheet != null) {
+							CueFolder cueFolder = new CueFolder(file, cueSheet);
+							addChild(cueFolder);
+						} else {
+							RealFile rf = new RealFile(file);
+							if (searchList != null) {
+								searchList.add(rf);
+							}
+							addChild(rf);
+						}
 					}
 				}
 			}
