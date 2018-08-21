@@ -1031,7 +1031,9 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 	public String setPreferredMimeType(RendererConfiguration renderer) {
 		String prev = media != null ? media.getMimeType() : null;
 		boolean parserV2 = media != null && renderer != null && renderer.isUseMediaInfo();
-		if (parserV2 && !isImage()) {
+		if (this instanceof PartialSource && ((PartialSource) this).isPartialSource()) {
+			media.setMimeType(FormatConfiguration.MIMETYPE_AUTO);
+		} else if (parserV2 && !isImage()) {
 			// See which MIME type the renderer prefers in case it supports the media
 			String preferred = renderer.getFormatConfiguration().match(media);
 			if (preferred != null) {
@@ -2488,7 +2490,14 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 					}
 
 					String duration = null;
-					if (media.getDuration() != null && media.getDuration().doubleValue() != 0.0) {
+					if (this instanceof PartialSource) {
+						PartialSource part = (PartialSource) this;
+						if (part.getClipEnd() != 0 && !Double.isInfinite(part.getClipEnd())) {
+							duration = StringUtil.formatDLNADuration(part.getClipEnd() - part.getClipStart());
+						} else if (media.getDuration() != null && media.getDuration().doubleValue() != 0.0) {
+							duration = StringUtil.formatDLNADuration(media.getDuration().doubleValue() - part.getClipStart());
+						}
+					} else if (media.getDuration() != null && media.getDuration().doubleValue() != 0.0) {
 						if (getSplitRange().isEndLimitAvailable()) {
 							duration = StringUtil.formatDLNADuration(getSplitRange().getDuration());
 						} else {
@@ -2539,7 +2548,14 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 							addAttribute(sb, "bitrate", media.getBitRate());
 						}
 						String duration = null;
-						if (media.getDuration() != null && media.getDuration().doubleValue() != 0.0) {
+						if (this instanceof PartialSource) {
+							PartialSource part = (PartialSource) this;
+							if (part.getClipEnd() != 0 && !Double.isInfinite(part.getClipEnd())) {
+								duration = StringUtil.formatDLNADuration(part.getClipEnd() - part.getClipStart());
+							} else if (media.getDuration() != null && media.getDuration().doubleValue() != 0.0) {
+								duration = StringUtil.formatDLNADuration(media.getDuration().doubleValue() - part.getClipStart());
+							}
+						} else if (media.getDuration() != null && media.getDuration().doubleValue() != 0.0) {
 							if (getSplitRange().isEndLimitAvailable()) {
 								duration = StringUtil.formatDLNADuration(getSplitRange().getDuration());
 							} else {
