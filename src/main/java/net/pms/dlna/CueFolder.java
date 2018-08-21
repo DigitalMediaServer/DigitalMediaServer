@@ -18,33 +18,66 @@
  */
 package net.pms.dlna;
 
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
-import jwbroek.cuelib.*;
+import javax.annotation.Nonnull;
+import net.pms.Messages;
 import net.pms.PMS;
-import net.pms.dlna.Range.Time;
 import net.pms.encoders.Player;
 import net.pms.encoders.PlayerFactory;
+import net.pms.formats.Format;
 import net.pms.formats.FormatType;
-import org.apache.commons.lang3.StringUtils;
+import net.pms.image.ImageFormat;
+import net.pms.image.ImagesUtil.ScaleType;
+import net.pms.image.thumbnail.AudioTagInfo;
+import net.pms.image.thumbnail.CoverUtil;
+import net.pms.util.ConversionUtil;
+import net.pms.util.FileUtil;
+import org.digitalmediaserver.cuelib.CueParser;
+import org.digitalmediaserver.cuelib.CueSheet;
+import org.digitalmediaserver.cuelib.FileData;
+import org.digitalmediaserver.cuelib.Position;
+import org.digitalmediaserver.cuelib.TrackData;
+import org.jaudiotagger.audio.AudioFile;
+import org.jaudiotagger.audio.AudioFileIO;
+import org.jaudiotagger.audio.exceptions.CannotReadException;
+import org.jaudiotagger.audio.exceptions.InvalidAudioFrameException;
+import org.jaudiotagger.audio.exceptions.ReadOnlyFileException;
+import org.jaudiotagger.tag.Tag;
+import org.jaudiotagger.tag.TagException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class CueFolder extends DLNAResource {
+
 	private static final Logger LOGGER = LoggerFactory.getLogger(CueFolder.class);
-	private File playlistfile;
+	private final File playlistfile;
+	private final CueSheet embeddedCueSheet;
+	private DLNAThumbnail thumbnail;
+	private boolean thumbnailParsed;
+	private String album;
+	private String artist;
+	private int numTracks;
 
 	public File getPlaylistfile() {
 		return playlistfile;
 	}
-	private boolean valid = true;
 
-	public CueFolder(File f) {
-		playlistfile = f;
+	public CueFolder(File file) {
+		playlistfile = file;
+		embeddedCueSheet = null;
 		setLastModified(playlistfile.lastModified());
+	}
+
+	public CueFolder(@Nonnull File file, @Nonnull CueSheet embeddedCueSheet) {
+		this.playlistfile = file;
+		this.embeddedCueSheet = embeddedCueSheet;
+		setLastModified(this.playlistfile.lastModified());
 	}
 
 	@Override
@@ -69,7 +102,7 @@ public class CueFolder extends DLNAResource {
 
 	@Override
 	public boolean isValid() {
-		return valid;
+		return true;
 	}
 
 	@Override
@@ -78,121 +111,249 @@ public class CueFolder extends DLNAResource {
 	}
 
 	@Override
-	protected void resolveOnce() {
-		if (playlistfile.length() < 10000000) {
-			CueSheet sheet;
+	public synchronized void checkThumbnail() {
+		if (thumbnailParsed) {
+			return;
+		}
+
+		if (FileUtil.isExtension(playlistfile, false, "flac")) {
+			AudioFile audioFile;
 			try {
-				sheet = CueParser.parse(playlistfile);
-			} catch (IOException e) {
-				LOGGER.info("Error in parsing cue: " + e.getMessage());
+				audioFile = AudioFileIO.readAs(playlistfile, "flac");
+				Tag tag = audioFile.getTag();
+				if (tag != null && !tag.getArtworkList().isEmpty()) {
+					thumbnail = DLNABinaryThumbnail.toThumbnail(
+						tag.getArtworkList().get(0).getBinaryData(),
+						640,
+						480,
+						ScaleType.MAX,
+						ImageFormat.SOURCE,
+						false
+					);
+				}
+			} catch (CannotReadException | IOException | TagException | ReadOnlyFileException | InvalidAudioFrameException e) {
+				LOGGER.debug("An error occurred when trying to read metadata from \"{}\": {}", playlistfile, e.getMessage());
+				LOGGER.trace("", e);
+			}
+		}
+		if (thumbnail == null) {
+			CoverUtil coverUtil = CoverUtil.get();
+			if (coverUtil == null) {
 				return;
 			}
+			AudioTagInfo tagInfo = coverUtil.createAudioTagInfo(album, artist, null, -1, -1, numTracks);
+			if (tagInfo.hasUsefulInfo()) {
+				thumbnail = coverUtil.getThumbnail(tagInfo);
+			}
+		}
+		thumbnailParsed = true;
+	}
 
-			if (sheet != null) {
-				List<FileData> files = sheet.getFileData();
-				// only the first one
-				if (files.size() > 0) {
-					FileData f = files.get(0);
-					List<TrackData> tracks = f.getTrackData();
-					Player defaultPlayer = null;
-					DLNAMediaInfo originalMedia = null;
-					ArrayList<DLNAResource> addedResources = new ArrayList<>();
-					for (int i = 0; i < tracks.size(); i++) {
-						TrackData track = tracks.get(i);
-						if (i > 0) {
-							double end = getTime(track.getIndices().get(0).getPosition());
-							if (addedResources.isEmpty()) {
-								// seems the first file was invalid or non existent
-								return;
-							}
-							DLNAResource prec = addedResources.get(i - 1);
-							int count = 0;
-							while (prec.isFolder() && i + count < addedResources.size()) { // not used anymore
-								prec = addedResources.get(i + count);
-								count++;
-							}
-							prec.getSplitRange().setEnd(end);
-							prec.getMedia().setDuration(prec.getSplitRange().getDuration());
-							LOGGER.debug("Track #" + i + " split range: " + prec.getSplitRange().getStartOrZero() + " - " + prec.getSplitRange().getDuration());
-						}
-						Position start = track.getIndices().get(0).getPosition();
-						RealFile realFile = new RealFile(new File(playlistfile.getParentFile(), f.getFile()));
-						addChild(realFile);
-						addedResources.add(realFile);
+	@Override
+	protected synchronized DLNAThumbnailInputStream getThumbnailInputStream() throws IOException {
+		if (thumbnail != null) {
+			DLNAThumbnailInputStream inputStream = DLNAThumbnailInputStream.toThumbnailInputStream(thumbnail);
+			if (inputStream != null) {
+				return inputStream;
+			}
+		}
 
-						if (i > 0 && realFile.getMedia() == null) {
-							realFile.setMedia(new DLNAMediaInfo());
-							realFile.getMedia().setMediaparsed(true);
-						}
-						realFile.resolve();
-						if (i == 0) {
-							originalMedia = realFile.getMedia();
-							if (originalMedia == null) {
-								LOGGER.trace("Couldn't resolve media \"{}\" for cue file \"{}\" - aborting", realFile.getName(), playlistfile.getAbsolutePath());
-								return;
-							}
-						}
-						realFile.getSplitRange().setStart(getTime(start));
-						realFile.setSplitTrack(i + 1);
+		return getGenericThumbnailInputStream(null);
+	}
 
-						// Assign a splitter engine if file is natively supported by renderer
-						if (realFile.getPlayer() == null) {
-							if (defaultPlayer == null) {
-								defaultPlayer = PlayerFactory.getPlayer(realFile);
-							}
+	synchronized DLNAThumbnail getThumbnail() {
+		if (!thumbnailParsed) {
+			checkThumbnail();
+		}
+		return thumbnail;
+	}
 
-							realFile.setPlayer(defaultPlayer);
-						}
-
-						if (realFile.getMedia() != null) {
-							try {
-								realFile.setMedia(originalMedia.clone());
-							} catch (CloneNotSupportedException e) {
-								LOGGER.info("Error in cloning media info: " + e.getMessage());
-							}
-
-							if (realFile.getMedia() != null && realFile.getMedia().getFirstAudioTrack() != null) {
-								if (realFile.isAudio()) {
-									realFile.getMedia().getFirstAudioTrack().setSongname(track.getTitle());
-								} else {
-									realFile.getMedia().getFirstAudioTrack().setSongname("Chapter #" + (i + 1));
-								}
-								realFile.getMedia().getFirstAudioTrack().setTrack(i + 1);
-								realFile.getMedia().setSize(-1);
-								if (StringUtils.isNotBlank(sheet.getTitle())) {
-									realFile.getMedia().getFirstAudioTrack().setAlbum(sheet.getTitle());
-								}
-								if (StringUtils.isNotBlank(sheet.getPerformer())) {
-									realFile.getMedia().getFirstAudioTrack().setArtist(sheet.getPerformer());
-								}
-								if (StringUtils.isNotBlank(track.getPerformer())) {
-									realFile.getMedia().getFirstAudioTrack().setArtist(track.getPerformer());
-								}
-							}
-
-						}
-
-					}
-
-					if (tracks.size() > 0 && addedResources.size() > 0) {
-						DLNAResource lastTrack = addedResources.get(addedResources.size() - 1);
-						Time lastTrackSplitRange = lastTrack.getSplitRange();
-						DLNAMediaInfo lastTrackMedia = lastTrack.getMedia();
-
-						if (lastTrackSplitRange != null && lastTrackMedia != null) {
-							lastTrackSplitRange.setEnd(lastTrackMedia.getDurationInSeconds());
-							lastTrackMedia.setDuration(lastTrackSplitRange.getDuration());
-							LOGGER.debug("Track #" + childrenNumber() + " split range: " + lastTrackSplitRange.getStartOrZero() + " - " + lastTrackSplitRange.getDuration());
-						}
-					}
-
-					PMS.get().storeFileInCache(playlistfile, FormatType.PLAYLIST);
+	@Override
+	protected synchronized void resolveOnce() {
+		long playlistLength = playlistfile.length();
+		if (embeddedCueSheet != null || playlistLength < 10000000) {
+			LOGGER.trace("Parsing cue sheet \"{}\"", playlistfile);
+			CueSheet cueSheet = embeddedCueSheet;
+			if (cueSheet == null) {
+				try {
+					//XXX Hardcoding UTF-8 is less than ideal, but the only other option is to somehow probe the file
+					cueSheet = CueParser.parse(playlistfile, StandardCharsets.UTF_8);
+				} catch (IOException e) {
+					LOGGER.warn("Error parsing cue file \"{}\": {}", playlistfile, e.getMessage());
+					LOGGER.trace("", e);
+					return;
 				}
 			}
+
+			if (cueSheet != null) {
+				this.album = cueSheet.getTitle();
+				this.artist = cueSheet.getPerformer();
+
+				ArrayList<CueSheetEntry> sheetResources = new ArrayList<>();
+				for (FileData fileData : cueSheet.getFileData()) {
+					ArrayList<CueSheetEntry> fileResources = new ArrayList<>();
+					List<TrackData> tracks = fileData.getTrackData();
+					Format originalFormat = null;
+					DLNAMediaInfo originalMedia = null;
+					for (int i = 0; i < tracks.size(); i++) {
+						TrackData track = tracks.get(i);
+						int trackNo = sheetResources.size() + i + 1;
+						Position start = track.getStartIndex().getPosition();
+						double startTime = start == null ? 0.0 : getTime(start);
+						Position end = (i + 1) < tracks.size() ? tracks.get(i + 1).getFirstIndex().getPosition() : null;
+						double endTime = end == null ? Double.POSITIVE_INFINITY : getTime(end);
+						File file = embeddedCueSheet == null ?
+							new File(playlistfile.getParentFile(), fileData.getFile()) :
+							playlistfile;
+						String trackTitle = isNotBlank(track.getTitle()) ?
+							track.getTitle() :
+							Messages.getString("Generic.MusicAlbumTrack") + " #" + trackNo;
+						CueSheetEntry cueSheetEntry = new CueSheetEntry(
+							file,
+							trackTitle,
+							startTime,
+							endTime
+						);
+						if (LOGGER.isTraceEnabled()) {
+							StringBuilder sb = new StringBuilder("Track #").append(trackNo);
+							if (isNotBlank(track.getTitle())) {
+								sb.append('"').append(track.getTitle()).append('"');
+							}
+							if (cueSheetEntry.isPartialSource()) {
+								LOGGER.trace(
+									"{} split range: {} - {}",
+									sb,
+									cueSheetEntry.getClipStart(),
+									cueSheetEntry.getClipEnd()
+								);
+							} else {
+								LOGGER.trace("{} will be used in its entirety", sb);
+							}
+						}
+						cueSheetEntry.setParent(this);
+						fileResources.add(cueSheetEntry);
+
+						if (originalFormat == null) {
+							// Parse the format
+							cueSheetEntry.resolveFormat();
+							originalFormat = cueSheetEntry.getFormat();
+							if (originalFormat == null) {
+								LOGGER.warn(
+									"Couldn't resolve format for track #{} ({}) in cue sheet \"{}\"",
+									trackNo,
+									cueSheetEntry.getName(),
+									playlistfile.getAbsolutePath()
+								);
+							}
+						}
+
+						Format trackFormat;
+						if (originalFormat == null) {
+							trackFormat = cueSheetEntry.getFormat();
+						} else {
+							trackFormat = originalFormat;
+							cueSheetEntry.setFormat(trackFormat);
+						}
+
+						if (originalMedia == null) {
+							// Parse the DLNAMediaInfo
+							cueSheetEntry.run();
+							originalMedia = cueSheetEntry.getMedia();
+							if (originalMedia == null) {
+								LOGGER.warn(
+									"Couldn't resolve media information for track #{} ({}) in cue sheet \"{}\"",
+									trackNo,
+									cueSheetEntry.getName(),
+									playlistfile.getAbsolutePath()
+								);
+							}
+						}
+
+						DLNAMediaInfo trackMedia;
+						if (originalMedia == null) {
+							trackMedia = cueSheetEntry.getMedia();
+						} else {
+							try {
+								trackMedia = originalMedia.clone();
+								cueSheetEntry.setMedia(trackMedia);
+							} catch (CloneNotSupportedException e) {
+								LOGGER.info(
+									"Error cloning DLNAMediaInfo: {} for track #{} in cue sheet \"{}\": {}",
+									originalMedia,
+									trackNo,
+									playlistfile.getAbsolutePath(),
+									e.getMessage()
+								);
+								LOGGER.trace("", e);
+								trackMedia = cueSheetEntry.getMedia();
+							}
+						}
+
+						cueSheetEntry.setSplitTrack(i + 1);
+
+						if (trackMedia != null && trackMedia.getFirstAudioTrack() != null) {
+							DLNAMediaAudio audio = trackMedia.getFirstAudioTrack();
+							if (trackMedia.isAudio() && audio != null) {
+								audio.setSongname(trackTitle);
+								audio.setTrack(trackNo);
+								if (isNotBlank(cueSheet.getTitle())) {
+									audio.setAlbum(cueSheet.getTitle());
+								}
+								if (isNotBlank(track.getPerformer())) {
+									audio.setArtist(track.getPerformer());
+								} else if (isNotBlank(cueSheet.getPerformer())) {
+									audio.setArtist(cueSheet.getPerformer());
+								} else if (isNotBlank(track.getSongwriter())) {
+									audio.setArtist(track.getSongwriter());
+								} else if (isNotBlank(cueSheet.getSongwriter())) {
+									audio.setArtist(cueSheet.getSongwriter());
+								}
+								if (isNotBlank(cueSheet.getGenre())) {
+									audio.setGenre(cueSheet.getGenre());
+								}
+								if (cueSheet.getYear() > 0) {
+									audio.setYear(cueSheet.getYear());
+								}
+							}
+							cueSheetEntry.getMedia().setSize(-1);
+						}
+					}
+
+					sheetResources.addAll(fileResources);
+				}
+
+				this.numTracks = sheetResources.size();
+
+				Player player = null;
+				File lastFile = null;
+				for (CueSheetEntry cueSheetEntry : sheetResources) {
+					if (lastFile == null || !lastFile.equals(cueSheetEntry.getFile())) {
+						lastFile = cueSheetEntry.getFile();
+						player = null;
+					}
+
+					// Force transcoding if splitting is used
+					if (cueSheetEntry.getPlayer() == null && cueSheetEntry.isPartialSource()) {
+						if (player == null) {
+							player = PlayerFactory.getPlayer(cueSheetEntry);
+						}
+						cueSheetEntry.setPlayer(player);
+					}
+
+					addChild(cueSheetEntry);
+				}
+				PMS.get().storeFileInCache(playlistfile, FormatType.PLAYLIST);
+			}
+		} else {
+			LOGGER.warn(
+				"Skipping cue sheet \"{}\" because it's too large ({})",
+				playlistfile,
+				ConversionUtil.formatBytes(playlistLength, true)
+			);
 		}
 	}
 
-	private double getTime(Position p) {
+	private static double getTime(Position p) {
 		return p.getMinutes() * 60 + p.getSeconds() + ((double) p.getFrames() / 100);
 	}
 }
