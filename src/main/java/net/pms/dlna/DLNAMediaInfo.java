@@ -781,13 +781,8 @@ public class DLNAMediaInfo implements Cloneable {
 						if ("mp2".equals(FileUtil.getExtension(file).toLowerCase(Locale.ROOT))) {
 							af = AudioFileIO.readAs(file, "mp3");
 						} else {
-							try {
-								// Read using magic bytes
-								af = AudioFileIO.readMagic(file);
-							} catch (CannotReadException e) {
-								// Read using file extension
-								af = AudioFileIO.read(file);
-							}
+							// Read using file extension
+							af = AudioFileIO.read(file);
 						}
 						AudioHeader ah = af.getAudioHeader();
 
@@ -853,7 +848,7 @@ public class DLNAMediaInfo implements Cloneable {
 									false
 								);
 							} else if (coverUtil != null) {
-								thumb = CoverUtil.get().getThumbnail(
+								thumb = coverUtil.getThumbnail(
 									af instanceof MP3File ?
 										coverUtil.createAudioTagInfo((MP3File) af) :
 										coverUtil.createAudioTagInfo(tag)

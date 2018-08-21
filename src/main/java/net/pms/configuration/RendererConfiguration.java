@@ -2194,6 +2194,7 @@ public class RendererConfiguration extends UPNPHelper.Renderer {
 		// Handle images differently because of automatic image transcoding
 		if (media != null && media.isImage() || format != null && format.getType() == FormatType.IMAGE) {
 			if (
+				format != null &&
 				format.getIdentifier() == Identifier.RAW ||
 				media != null && media.getImageInfo() != null &&
 				media.getImageInfo().getFormat() != null &&

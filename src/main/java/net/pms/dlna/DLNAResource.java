@@ -618,16 +618,18 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 
 		child.parent = this;
 
-		if (parent != null) {
+		if (parent != null && parent.getDefaultRenderer() != null) {
 			defaultRenderer = parent.getDefaultRenderer();
 		}
+
+		child.setDefaultRenderer(defaultRenderer);
 
 		if (configuration.useCode() && !PMS.get().masterCodeValid()) {
 			String code = PMS.get().codeDb().getCode(child);
 			if (StringUtils.isNotEmpty(code)) {
 				DLNAResource cobj = child.isCoded();
 				if (cobj == null || !((CodeEnter) cobj).getCode().equals(code)) {
-					LOGGER.debug("Resource " + child + " is coded add code folder");
+					LOGGER.debug("Resource \"{}\" is coded, adding code folder", child);
 					CodeEnter ce = new CodeEnter(child);
 					ce.parent = this;
 					ce.defaultRenderer = this.getDefaultRenderer();
@@ -1241,7 +1243,7 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 					);
 
 					for (int i = start; i < start + count && i < dlna.getChildren().size(); i++) {
-						final DLNAResource child = dlna.getChildren().get(i);
+						DLNAResource child = dlna.getChildren().get(i);
 						if (child != null) {
 							tpe.execute(child);
 							resources.add(child);
@@ -1288,7 +1290,7 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 		if (!isDiscovered()) {
 			if (configurationSpecificToRenderer.getFolderLimit() && depthLimit()) {
 				if (renderer.isPS3() || renderer.isXbox360()) {
-					LOGGER.info("Depth limit potentionally hit for " + getDisplayName());
+					LOGGER.info("Depth limit potentionally hit for {}", getDisplayName());
 				}
 
 				if (defaultRenderer != null) {
@@ -2485,16 +2487,17 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 						}
 					}
 
-					if (media.getDuration() != null) {
+					String duration = null;
+					if (media.getDuration() != null && media.getDuration().doubleValue() != 0.0) {
 						if (getSplitRange().isEndLimitAvailable()) {
-							String duration = StringUtil.formatDLNADuration(getSplitRange().getDuration());
-							wireshark.append(" duration=").append(duration);
-							addAttribute(sb, "duration", duration);
+							duration = StringUtil.formatDLNADuration(getSplitRange().getDuration());
 						} else {
-							String duration = StringUtil.formatDLNADuration(media.getDuration().doubleValue());
-							wireshark.append(" duration=").append(duration);
-							addAttribute(sb, "duration", duration);
+							duration = StringUtil.formatDLNADuration(media.getDuration().doubleValue());
 						}
+					}
+					if (duration != null) {
+						wireshark.append(" duration=").append(duration);
+						addAttribute(sb, "duration", duration);
 					}
 
 					if (media.getResolution() != null) {
@@ -2535,9 +2538,17 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 						if (media.getBitRate() > 0) {
 							addAttribute(sb, "bitrate", media.getBitRate());
 						}
+						String duration = null;
 						if (media.getDuration() != null && media.getDuration().doubleValue() != 0.0) {
-							wireshark.append(" duration=").append(StringUtil.formatDLNADuration(media.getDuration()));
-							addAttribute(sb, "duration", StringUtil.formatDLNADuration(media.getDuration()));
+							if (getSplitRange().isEndLimitAvailable()) {
+								duration = StringUtil.formatDLNADuration(getSplitRange().getDuration());
+							} else {
+								duration = StringUtil.formatDLNADuration(media.getDuration().doubleValue());
+							}
+						}
+						if (duration != null) {
+							wireshark.append(" duration=").append(duration);
+							addAttribute(sb, "duration", duration);
 						}
 
 						int transcodeFrequency = -1;
@@ -3355,7 +3366,7 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 		// (Re)start transcoding process if necessary
 		if (externalProcess == null || externalProcess.isDestroyed()) {
 			// First playback attempt => start new transcoding process
-			LOGGER.debug("Starting transcode/remux of " + getName() + " with media info: " + media);
+			LOGGER.debug("Starting transcode/remux of \"{}\" with media info: {}", getName(), media);
 			lastStartSystemTime = System.currentTimeMillis();
 			externalProcess = player.launchTranscode(this, media, params);
 			if (params.waitbeforestart > 0) {
@@ -3375,7 +3386,7 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 			media.getDurationInSeconds() > 0
 		) {
 			// Time seek request => stop running transcode process and start a new one
-			LOGGER.debug("Requesting time seek: " + params.timeseek + " seconds");
+			LOGGER.debug("Requesting time seek: {} seconds", params.timeseek);
 			params.minBufferSize = 1;
 			Runnable r = new Runnable() {
 				@Override
@@ -3487,11 +3498,6 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 	 */
 	public void checkThumbnail() {
 		// need to override if some thumbnail work is to be done when mediaparserv2 enabled
-	}
-
-	@Deprecated
-	protected void checkThumbnail(InputFile inputFile) {
-		checkThumbnail(inputFile, null);
 	}
 
 	/**
