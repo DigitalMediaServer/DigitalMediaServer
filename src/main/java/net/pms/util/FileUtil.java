@@ -18,6 +18,7 @@ import java.nio.file.Paths;
 import java.nio.file.attribute.PosixFileAttributes;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -218,6 +219,155 @@ public class FileUtil {
 	public static String getUrlExtension(String u) {
 		// Omit the query string, if any
 		return getExtension(substringBefore(u, "?"));
+	}
+
+	/**
+	 * Checks if the extension of the specified file matches one of the
+	 * specified extensions.
+	 *
+	 * @param file the {@link Path} whose extension to check.
+	 * @param caseSensitive {@code true} for a case-sensitive comparison,
+	 *            {@code false} for a case-insensitive comparison.
+	 * @param extensions the {@link Collection} of extensions to match.
+	 * @return {@code true} if a match is found, {@code false} otherwise.
+	 */
+	public static boolean isExtension(
+		@Nullable Path file,
+		boolean caseSensitive,
+		@Nullable Collection<String> extensions
+	) {
+		if (file == null || extensions == null || extensions.isEmpty()) {
+			return false;
+		}
+		Path fileName = file.getFileName();
+		if (fileName == null || isBlank(fileName.toString())) {
+			return false;
+		}
+		return isExtension(file.toString(), caseSensitive, extensions.toArray(new String[extensions.size()]));
+	}
+
+	/**
+	 * Checks if the extension of the specified file matches one of the
+	 * specified extensions.
+	 *
+	 * @param file the {@link Path} whose extension to check.
+	 * @param caseSensitive {@code true} for a case-sensitive comparison,
+	 *            {@code false} for a case-insensitive comparison.
+	 * @param extensions one or more extensions to match.
+	 * @return {@code true} if a match is found, {@code false} otherwise.
+	 */
+	public static boolean isExtension(
+		@Nullable Path file,
+		boolean caseSensitive,
+		@Nullable String... extensions
+	) {
+		if (file == null || extensions == null || extensions.length == 0) {
+			return false;
+		}
+		Path fileName = file.getFileName();
+		if (fileName == null || isBlank(fileName.toString())) {
+			return false;
+		}
+		return isExtension(fileName.toString(), caseSensitive, extensions);
+	}
+
+	/**
+	 * Checks if the extension of the specified file matches one of the
+	 * specified extensions.
+	 *
+	 * @param file the {@link File} whose extension to check.
+	 * @param caseSensitive {@code true} for a case-sensitive comparison,
+	 *            {@code false} for a case-insensitive comparison.
+	 * @param extensions the {@link Collection} of extensions to match.
+	 * @return {@code true} if a match is found, {@code false} otherwise.
+	 */
+	public static boolean isExtension(
+		@Nullable File file,
+		boolean caseSensitive,
+		@Nullable Collection<String> extensions
+	) {
+		if (file == null || file.getName() == null || extensions == null || extensions.isEmpty()) {
+			return false;
+		}
+		return isExtension(file.getName(), caseSensitive, extensions.toArray(new String[extensions.size()]));
+	}
+
+	/**
+	 * Checks if the extension of the specified file matches one of the
+	 * specified extensions.
+	 *
+	 * @param file the {@link File} whose extension to check.
+	 * @param caseSensitive {@code true} for a case-sensitive comparison,
+	 *            {@code false} for a case-insensitive comparison.
+	 * @param extensions one or more extensions to match.
+	 * @return {@code true} if a match is found, {@code false} otherwise.
+	 */
+	public static boolean isExtension(
+		@Nullable File file,
+		boolean caseSensitive,
+		@Nullable String... extensions
+	) {
+		if (file == null || file.getName() == null || extensions == null || extensions.length == 0) {
+			return false;
+		}
+		return isExtension(file.getName(), caseSensitive, extensions);
+	}
+
+	/**
+	 * Checks if the extension of the specified filename matches one of the
+	 * specified extensions.
+	 *
+	 * @param fileName the filename whose extension to check.
+	 * @param caseSensitive {@code true} for a case-sensitive comparison,
+	 *            {@code false} for a case-insensitive comparison.
+	 * @param extensions the {@link Collection} of extensions to match.
+	 * @return {@code true} if a match is found, {@code false} otherwise.
+	 */
+	public static boolean isExtension(
+		@Nullable String fileName,
+		boolean caseSensitive,
+		@Nullable Collection<String> extensions
+	) {
+		if (extensions == null || extensions.isEmpty()) {
+			return false;
+		}
+		return isExtension(fileName, caseSensitive, extensions.toArray(new String[extensions.size()]));
+	}
+
+	/**
+	 * Checks if the extension of the specified filename matches one of the
+	 * specified extensions.
+	 *
+	 * @param fileName the filename whose extension to check.
+	 * @param caseSensitive {@code true} for a case-sensitive comparison,
+	 *            {@code false} for a case-insensitive comparison.
+	 * @param extensions one or more extensions to match.
+	 * @return {@code true} if a match is found, {@code false} otherwise.
+	 */
+	public static boolean isExtension(
+		@Nullable String fileName,
+		boolean caseSensitive,
+		@Nullable String... extensions
+	) {
+		if (extensions == null || extensions.length == 0) {
+			return false;
+		}
+		String extension = getExtension(fileName, caseSensitive ? null : LetterCase.LOWER, Locale.ROOT);
+		if (extension == null) {
+			return false;
+		}
+		for (String matchExtension : extensions) {
+			if (matchExtension == null) {
+				continue;
+			}
+			if (!caseSensitive) {
+				matchExtension = matchExtension.toLowerCase(Locale.ROOT);
+			}
+			if (extension.equals(matchExtension)) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	/**
