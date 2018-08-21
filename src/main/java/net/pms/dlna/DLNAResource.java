@@ -430,7 +430,7 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 	public String getDlnaContentFeatures(RendererConfiguration mediaRenderer) {
 		// TODO: Determine renderer's correct localization value
 		int localizationValue = 1;
-		String dlnaOrgPnFlags = getDlnaOrgPnFlags(mediaRenderer, localizationValue);
+		String dlnaOrgPnFlags = getDlnaOrgPnFlags(mediaRenderer, localizationValue, null);
 		return (dlnaOrgPnFlags != null ? (dlnaOrgPnFlags + ";") : "") + getDlnaOrgOpFlags(mediaRenderer) + ";DLNA.ORG_CI=0;DLNA.ORG_FLAGS=01700000000000000000000000000000";
 	}
 
@@ -925,6 +925,9 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 			} else if (this instanceof DVDISOTitle) {
 				forceTranscode = true;
 				LOGGER.trace("DVD video track \"{}\" will be transcoded because streaming isn't supported", getName());
+			} else if (this instanceof PartialSource && ((PartialSource) this).isPartialSource()) {
+				forceTranscode = true;
+				LOGGER.trace(prependTraceReason + "we just want a part of the source", getName());
 			} else if (!format.isCompatible(media, renderer)) {
 				isIncompatible = true;
 				LOGGER.trace(prependTraceReason + "it is not supported by the renderer", getName());
@@ -1844,41 +1847,44 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 	 * @return String representation of the DLNA.ORG_OP flags
 	 */
 	private String getDlnaOrgOpFlags(RendererConfiguration mediaRenderer) {
-		String dlnaOrgOpFlags = "01"; // seek by byte (exclusive)
-
-		if (mediaRenderer.isSeekByTime() && player != null && player.isTimeSeekable()) {
-			/**
-			 * Some renderers - e.g. the PS3 and Panasonic TVs - behave erratically when
-			 * transcoding if we keep the default seek-by-byte permission on when permitting
-			 * seek-by-time.
-			 *
-			 * It's not clear if this is a bug in the DLNA libraries of these renderers or a bug
-			 * in DMS, but setting an option in the renderer conf that disables seek-by-byte when
-			 * we permit seek-by-time - e.g.:
-			 *
-			 *    SeekByTime = exclusive
-			 *
-			 * works around it.
-			 */
-
-			/**
-			 * TODO (e.g. in a beta release): set seek-by-time (exclusive) here for *all* renderers:
-			 * seek-by-byte isn't needed here (both the renderer and the engine support seek-by-time)
-			 * and may be buggy on other renderers than the ones we currently handle.
-			 *
-			 * In the unlikely event that a renderer *requires* seek-by-both here, it can
-			 * opt in with (e.g.):
-			 *
-			 *    SeekByTime = both
-			 */
-			if (mediaRenderer.isSeekByTimeExclusive()) {
-				dlnaOrgOpFlags = "10"; // seek by time (exclusive)
-			} else {
-				dlnaOrgOpFlags = "11"; // seek by both
-			}
+		if (player != null && player.isTimeSeekable()) {
+			return "DLNA.ORG_OP=10";
 		}
 
-		return "DLNA.ORG_OP=" + dlnaOrgOpFlags;
+		return mediaRenderer == null || !mediaRenderer.isSeekByTime()?
+			"DLNA.ORG_OP=01" :
+			mediaRenderer.isSeekByTimeExclusive() ? "DLNA.ORG_OP=10" : "DLNA.ORG_OP=11";
+
+		/*
+		 * 01 - seek by byte only
+		 * 10 - seek by time only
+		 * 11 - seek by both
+		 *
+		 * Included is the old explanation of this mess:
+		 *
+		 * Some renderers - e.g. the PS3 and Panasonic TVs - behave erratically when
+		 * transcoding if we keep the default seek-by-byte permission on when permitting
+		 * seek-by-time.
+		 *
+		 * It's not clear if this is a bug in the DLNA libraries of these renderers or a bug
+		 * in DMS, but setting an option in the renderer conf that disables seek-by-byte when
+		 * we permit seek-by-time - e.g.:
+		 *
+		 *    SeekByTime = exclusive
+		 *
+		 * works around it.
+		 */
+
+		/*
+		 * TODO (e.g. in a beta release): set seek-by-time (exclusive) here for *all* renderers:
+		 * seek-by-byte isn't needed here (both the renderer and the engine support seek-by-time)
+		 * and may be buggy on other renderers than the ones we currently handle.
+		 *
+		 * In the unlikely event that a renderer *requires* seek-by-both here, it can
+		 * opt in with (e.g.):
+		 *
+		 *    SeekByTime = both
+		 */
 	}
 
 	/**
@@ -1891,12 +1897,15 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 	 * @param mediaRenderer
 	 * 			Media Renderer for which to represent this information.
 	 * @param localizationValue
+	 * @param mime hack to avoid constatly looking it up
 	 * @return String representation of the DLNA.ORG_PN flags
 	 */
-	private String getDlnaOrgPnFlags(RendererConfiguration mediaRenderer, int localizationValue) {
+	private String getDlnaOrgPnFlags(RendererConfiguration mediaRenderer, int localizationValue, String mime) {
 		// Use device-specific DMS conf, if any
 		PmsConfiguration configurationSpecificToRenderer = PMS.getConfiguration(mediaRenderer);
-		String mime = getRendererMimeType(mediaRenderer);
+		if (mime == null) {
+			mime = getRendererMimeType(mediaRenderer);
+		}
 
 		String dlnaOrgPnFlags = null;
 
@@ -2295,7 +2304,9 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 
 				} else if (mime.equals(AUDIO_MP3_TYPEMIME)) {
 					dlnaOrgPnFlags = "DLNA.ORG_PN=MP3";
-				} else if (mime.substring(0, 9).equals(AUDIO_LPCM_TYPEMIME) || mime.equals(AUDIO_WAV_TYPEMIME)) {
+				} else if (mime.equals(AUDIO_WAV_TYPEMIME)) {
+					dlnaOrgPnFlags = "DLNA.ORG_PN=WAV";
+				} else if (mime.substring(0, 9).equals(AUDIO_LPCM_TYPEMIME)) {
 					dlnaOrgPnFlags = "DLNA.ORG_PN=LPCM";
 				}
 			}
@@ -2457,15 +2468,16 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 			appendImage(sb, mediaRenderer);
 		} else if (!isFolder) {
 			int indexCount = 1;
-			if (mediaRenderer.isDLNALocalizationRequired()) {
+			String mime = getRendererMimeType(mediaRenderer);
+			if (mediaRenderer.isDLNALocalizationRequired() && ("video/vnd.dlna.mpeg-tts".equals(mime) || MPEG_TYPEMIME.equals(mime))) {
 				indexCount = getDLNALocalesCount();
 			}
 
 			for (int c = 0; c < indexCount; c++) {
 				openTag(sb, "res");
 				addAttribute(sb, "xmlns:dlna", "urn:schemas-dlna-org:metadata-1-0/");
-				String dlnaOrgPnFlags = getDlnaOrgPnFlags(mediaRenderer, c);
-				String tempString = "http-get:*:" + getRendererMimeType(mediaRenderer) + ":" + (dlnaOrgPnFlags != null ? (dlnaOrgPnFlags + ";") : "") + getDlnaOrgOpFlags(mediaRenderer);
+				String dlnaOrgPnFlags = getDlnaOrgPnFlags(mediaRenderer, c, mime);
+				String tempString = "http-get:*:" + mime + ":" + (dlnaOrgPnFlags != null ? (dlnaOrgPnFlags + ";") : "") + getDlnaOrgOpFlags(mediaRenderer);
 				wireshark.append(' ').append(tempString);
 				addAttribute(sb, "protocolInfo", tempString);
 				if (subsAreValidForStreaming && mediaRenderer.offerSubtitlesByProtocolInfo() && !mediaRenderer.useClosedCaption()) {
@@ -2488,7 +2500,14 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 					}
 
 					String duration = null;
-					if (media.getDuration() != null && media.getDuration().doubleValue() != 0.0) {
+					if (this instanceof PartialSource) {
+						PartialSource part = (PartialSource) this;
+						if (part.getClipEnd() != 0 && !Double.isInfinite(part.getClipEnd())) {
+							duration = StringUtil.formatDLNADuration(part.getClipEnd() - part.getClipStart());
+						} else if (media.getDuration() != null && media.getDuration().doubleValue() != 0.0) {
+							duration = StringUtil.formatDLNADuration(media.getDuration().doubleValue() - part.getClipStart());
+						}
+					} else if (media.getDuration() != null && media.getDuration().doubleValue() != 0.0) {
 						if (getSplitRange().isEndLimitAvailable()) {
 							duration = StringUtil.formatDLNADuration(getSplitRange().getDuration());
 						} else {
@@ -2539,7 +2558,14 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 							addAttribute(sb, "bitrate", media.getBitRate());
 						}
 						String duration = null;
-						if (media.getDuration() != null && media.getDuration().doubleValue() != 0.0) {
+						if (this instanceof PartialSource) {
+							PartialSource part = (PartialSource) this;
+							if (part.getClipEnd() != 0 && !Double.isInfinite(part.getClipEnd())) {
+								duration = StringUtil.formatDLNADuration(part.getClipEnd() - part.getClipStart());
+							} else if (media.getDuration() != null && media.getDuration().doubleValue() != 0.0) {
+								duration = StringUtil.formatDLNADuration(media.getDuration().doubleValue() - part.getClipStart());
+							}
+						} else if (media.getDuration() != null && media.getDuration().doubleValue() != 0.0) {
 							if (getSplitRange().isEndLimitAvailable()) {
 								duration = StringUtil.formatDLNADuration(getSplitRange().getDuration());
 							} else {
@@ -3253,7 +3279,7 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 	public synchronized InputStream getInputStream(Range range, RendererConfiguration mediarenderer) throws IOException {
 		// Use device-specific DMS conf, if any
 		PmsConfiguration configurationSpecificToRenderer = PMS.getConfiguration(mediarenderer);
-		LOGGER.trace("Asked stream chunk : " + range + " of " + getName() + " and player " + player);
+		LOGGER.trace("Asked to stream chunk : {} of \"{}\" with player {}", range, getName(), player);
 
 		// shagrath: small fix, regression on chapters
 		boolean timeseek_auto = false;
