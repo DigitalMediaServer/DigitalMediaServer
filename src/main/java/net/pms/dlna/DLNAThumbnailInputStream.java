@@ -171,9 +171,8 @@ public class DLNAThumbnailInputStream extends ByteArrayInputStream {
 	 * @return The populated {@link DLNAThumbnailInputStream} or {@code null} if
 	 *         the source {@link DLNAThumbnail} is {@code null}.
 	 */
-
 	public static DLNAThumbnailInputStream toThumbnailInputStream(DLNAThumbnail thumbnail) {
-		return thumbnail != null ? new DLNAThumbnailInputStream(thumbnail) : null;
+		return thumbnail != null && thumbnail.getBytes(false) != null ? new DLNAThumbnailInputStream(thumbnail) : null;
 	}
 
 	/**

@@ -153,7 +153,9 @@ public class RealFile extends MapFile {
 			setFormat(FormatFactory.getAssociatedFormat(getFile().getAbsolutePath()));
 		}
 
-		super.resolveFormat();
+		if (getFormat() == null) {
+			super.resolveFormat();
+		}
 	}
 
 	@Override
@@ -161,6 +163,7 @@ public class RealFile extends MapFile {
 		return ProcessUtil.getShortFileNameIfWideChars(getFile().getAbsolutePath());
 	}
 
+	@SuppressWarnings("deprecation")
 	@Override
 	public synchronized void resolve() {
 		File file = getFile();
@@ -209,13 +212,13 @@ public class RealFile extends MapFile {
 				}
 
 				if (getFormat() != null) {
-					getFormat().parse(getMedia(), input, getParent().getDefaultRenderer());
+					getFormat().parse(getMedia(), input, parent == null ? null : parent.getDefaultRenderer());
 					if (getMedia() != null && getMedia().isSLS()) {
 						setFormat(getMedia().getAudioVariantFormat());
 					}
 				} else {
 					// Don't think that will ever happen
-					getMedia().parse(input, getFormat(), false, isResume(), getParent().getDefaultRenderer());
+					getMedia().parse(input, getFormat(), false, isResume(), parent == null ? null : parent.getDefaultRenderer());
 				}
 
 				if (configuration.getUseCache() && getMedia().isMediaparsed() && !getMedia().isParsing()) {
