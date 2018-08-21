@@ -51,6 +51,7 @@ import net.pms.dlna.DLNAMediaSubtitle;
 import net.pms.dlna.DLNAResource;
 import net.pms.dlna.FileTranscodeVirtualFolder;
 import net.pms.dlna.InputFile;
+import net.pms.dlna.PartialSource;
 import net.pms.formats.Format;
 import net.pms.formats.FormatType;
 import net.pms.formats.PLAYLIST;
@@ -794,7 +795,7 @@ public class FFMpegVideo extends Player {
 		} else if (renderer.isTranscodeFastStart()){
 			params.manageFastStart();
 		} else {
-			params.waitbeforestart = 2500;
+			params.waitbeforestart = 1;
 		}
 
 		setAudioAndSubs(filename, media, params);
@@ -811,9 +812,32 @@ public class FFMpegVideo extends Player {
 			cmdList.add("fatal");
 		}
 
-		if (params.timeseek > 0) {
+		double start = Math.max(params.timeseek, 0.0);
+		double end = params.timeend > 0 ? params.timeend : Double.POSITIVE_INFINITY;
+		if (dlna instanceof PartialSource) {
+			PartialSource partial = (PartialSource) dlna;
+			if (partial.isPartialSource()) {
+				start += partial.getClipStart();
+				if (!Double.isInfinite(end)) {
+					end += partial.getClipStart();
+				}
+				double clipEnd = partial.getClipEnd();
+				if (clipEnd == 0.0) {
+					clipEnd = Double.POSITIVE_INFINITY;
+				}
+				end = Math.min(end, clipEnd);
+			}
+		}
+
+		if (start > 0.0) {
 			cmdList.add("-ss");
-			cmdList.add(String.valueOf(params.timeseek));
+			cmdList.add(String.valueOf(start));
+		}
+
+		if (!Double.isInfinite(end)) {
+			double duration = end - start;
+			cmdList.add("-t");
+			cmdList.add(String.valueOf(duration));
 		}
 
 		// Decoder threads
@@ -992,11 +1016,6 @@ public class FFMpegVideo extends Player {
 		if (nThreads > 0) {
 			cmdList.add("-threads");
 			cmdList.add(String.valueOf(nThreads));
-		}
-
-		if (params.timeend > 0) {
-			cmdList.add("-t");
-			cmdList.add(String.valueOf(params.timeend));
 		}
 
 		// Add the output options (-f, -c:a, -c:v, etc.)
