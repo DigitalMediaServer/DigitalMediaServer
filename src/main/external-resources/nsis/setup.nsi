@@ -199,6 +199,7 @@ Section "!$(SectionServer)" sec1
 	WriteUninstaller "$INSTDIR\${UninstallEXE}"
 
 	ReadEnvStr $R0 "ALLUSERSPROFILE"
+	File /nonfatal "$R0\renderers"
 	SetOutPath "$R0\${PROJECT_NAME_CAMEL}"
 	CreateDirectory "$R0\${PROJECT_NAME_CAMEL}\data"
 	AccessControl::GrantOnFile "$R0\${PROJECT_NAME_CAMEL}" "(BU)" "GenericRead + GenericExecute + GenericWrite + Delete + FullAccess"
