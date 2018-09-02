@@ -18,6 +18,8 @@
  */
 package net.pms.service;
 
+import java.util.concurrent.TimeUnit;
+
 
 /**
  * This interface must be implemented by all instances managed by
@@ -29,21 +31,89 @@ package net.pms.service;
 public interface Service {
 
 	/**
-	 * Starts this {@link Service}. This will be called automatically by the
+	 * Attempts to start this {@link Service}. This will be called automatically by the //TODO: (Nad) Service change logic? JavaDocs
 	 * constructor, and need only be called if {@link #stop()} has been called
 	 * previously.
 	 */
-	public void start();
+	public boolean start();
 
 	/**
-	 * Stops this {@link Service}. This will cause the {@link Service} to
-	 * terminate all operations.
+	 * Attempts to stop this {@link Service}. This will cause the
+	 * {@link Service} to terminate all operations.
+	 *
+	 * @return {@code true} if the {@link ServiceState} was
+	 *         {@link ServiceState#RUNNING} and the stop sequence was
+	 *         successfully initiated, {@code false} otherwise.
 	 */
-	public void stop();
+	public boolean stop();
 
 	/**
-	 * @return {@code true} if this {@link Service} is currently started,
+	 * Attempts to make sure that this {@link Service} reaches the
+	 * {@link ServiceState#STOPPED} state before returning. This will cause the
+	 * {@link Service} to terminate all operation. If the {@link Service} is
+	 * already stopped, this method will return immediately.
+	 *
+	 * @param timeout the maximum time to wait.
+	 * @param unit the {@link TimeUnit} of the {@code timeout} argument.
+	 * @return {@code true} if this {@link Service} was or reached the
+	 *         {@link ServiceState#STOPPED} state, {@code false} it the
+	 *         operation timed out.
+	 * @throws InterruptedException If the thread was interrupted while waiting.
+	 */
+	public boolean stopAndWait(long timeout, TimeUnit unit) throws InterruptedException;
+
+	/**
+	 * @return {@code true} if this {@link Service} is currently running,
 	 *         {@code false} otherwise.
 	 */
-	public boolean isAlive();
+	public boolean isRunning();
+
+	/**
+	 * @return {@code true} if this {@link Service} is currently stopping,
+	 *         {@code false} otherwise.
+	 */
+	public boolean isStopping();
+
+	/**
+	 * @return {@code true} if this {@link Service} is currently stopped,
+	 *         {@code false} otherwise.
+	 */
+	public boolean isStopped();
+
+	/**
+	 * @return The current {@link ServiceState} of this {@link Service}.
+	 */
+	public ServiceState getServiceState();
+
+	/**
+	 * Waits for this {@link Service} to stop. <b>This method does not initiate
+	 * stopping of the {@link Service}, so to avoid waiting "forever" make sure
+	 * that {@link #stop()} has been or will be called</b>. If the
+	 * {@link Service} is already stopped, this method returns immediately.
+	 * <p>
+	 * To initiate stopping and wait, use {@link #stopAndWait(long, TimeUnit)}
+	 * instead.
+	 *
+	 * @param timeout the maximum time to wait.
+	 * @param unit the {@link TimeUnit} of the {@code timeout} argument.
+	 * @return {@code true} if the {@link Service} was stopped, {@code false} if
+	 *         the operation timed out.
+	 * @throws InterruptedException If the thread was interrupted while waiting.
+	 */
+    public boolean awaitStop(long timeout, TimeUnit unit) throws InterruptedException;
+
+	/**
+	 * The {@link Service} run states.
+	 */
+	public enum ServiceState {
+
+		/** The {@link Service} is running */
+		RUNNING,
+
+		/** The {@link Service} is stopping */
+		STOPPING,
+
+		/** The {@link Service} is stopped */
+		STOPPED;
+	}
 }

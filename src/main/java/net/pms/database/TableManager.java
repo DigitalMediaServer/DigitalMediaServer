@@ -188,7 +188,7 @@ public class TableManager implements Service {
 	}
 
 	@Override
-	public synchronized boolean isAlive() {
+	public synchronized boolean isRunning() {
 		return connected;
 	}
 

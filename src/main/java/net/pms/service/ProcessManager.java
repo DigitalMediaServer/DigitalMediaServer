@@ -74,11 +74,15 @@ public class ProcessManager implements Service {
 	public static final int CTRL_BREAK_EVENT = 1;
 
 	/** The queue of incoming {@link ProcessTicket}s. */
+	@GuardedBy("incoming")
 	protected final LinkedList<ProcessTicket> incoming = new LinkedList<>();
 
 	/** The {@link ProcessTerminator} thread */
-	@GuardedBy("incoming")
+	@GuardedBy("this")
 	protected ProcessTerminator terminator;
+
+	@GuardedBy("this")
+	protected ServiceState state = ServiceState.STOPPED;
 
 	/**
 	 * Creates a new instance and starts the {@link ProcessTerminator} thread.
@@ -89,20 +93,35 @@ public class ProcessManager implements Service {
 
 	/**
 	 * Starts the {@link ProcessManager}. This will be called automatically in
-	 * the constructor, and need only be called if {@link #stop()} has
+	 * the constructor, and need only be called if {@link #stop()} has //TODO: (Nad) Rly?
 	 * previously been called.
+	 * <p>
+	 * If the current state is {@link ServiceState#STOPPING}, this method will
+	 * wait for the state to reach {@link ServiceState#STOPPED} before starting.
 	 */
 	@Override
-	public void start() {
-		synchronized (incoming) {
-			if (terminator == null || !terminator.isAlive()) {
-				LOGGER.debug("Starting ProcessManager");
-				terminator = new ProcessTerminator(this);
-				terminator.start();
-			} else if (LOGGER.isDebugEnabled()) {
-				LOGGER.warn("ProcessManager is already running, start attempt failed");
+	public synchronized boolean start() {
+		if (state == ServiceState.STOPPING) {
+			try {
+				awaitStop(30, TimeUnit.SECONDS);
+			} catch (InterruptedException e) {
+				LOGGER.warn("ProcessManager was interrupted while waiting to start");
 			}
 		}
+		if (state == ServiceState.STOPPING) {
+			LOGGER.error("Timed out while waiting for the previous ProcessManager to stop, start attempt failed");
+			return false;
+		} else if (state == ServiceState.RUNNING && LOGGER.isDebugEnabled()) {
+			LOGGER.warn("ProcessManager is already running, start attempt failed");
+			return false;
+		}
+		if (terminator != null) {
+			throw new AssertionError("Internal error in ProcessManager");
+		}
+		LOGGER.debug("Starting ProcessManager");
+		terminator = new ProcessTerminator(this);
+		terminator.start();
+		return true;
 	}
 
 	/**
@@ -110,42 +129,104 @@ public class ProcessManager implements Service {
 	 * thread to terminate all managed processes and stop.
 	 */
 	@Override
-	public void stop() {
-		ProcessTerminator currentTerminator;
-		synchronized (incoming) {
-			currentTerminator = terminator;
-			terminator = null;
-		}
-		if (currentTerminator != null) {
-			LOGGER.debug("Stopping ProcessManager");
-			currentTerminator.interrupt();
-			try {
-				currentTerminator.join();
-			} catch (InterruptedException e) {
-				LOGGER.debug("ProcessManager was interrupted while waiting for the process terminator to terminate");
+	public boolean stop() {
+		synchronized (this) {
+			if (state != ServiceState.RUNNING) {
+				return false;
 			}
+			terminator.interrupt();
+			state = ServiceState.STOPPING;
 		}
+		LOGGER.debug("Stopping ProcessManager");
+		return true;
 	}
 
 	@Override
-	public boolean isAlive() {
-		synchronized (incoming) {
-			return terminator != null && terminator.isAlive();
+	public synchronized boolean stopAndWait(long timeout, TimeUnit unit) throws InterruptedException {
+		if (unit == null) {
+			throw new IllegalArgumentException("unit cannot be null");
+		}
+		if (timeout < 0) {
+			throw new IllegalArgumentException("timeout cannot be negative");
+		}
+		if (state == ServiceState.STOPPED) {
+			return true;
+		}
+		stop();
+		return awaitStop(timeout, unit);
+	}
+
+	@Override
+	public synchronized boolean isRunning() {
+		return state == ServiceState.RUNNING;
+	}
+
+	@Override
+	public synchronized boolean isStopped() {
+		return state == ServiceState.STOPPED;
+	}
+
+	@Override
+	public synchronized boolean isStopping() {
+		return state == ServiceState.STOPPING;
+	}
+
+	@Override
+	public synchronized ServiceState getServiceState() {
+		return state;
+	}
+
+	@Override
+	public synchronized boolean awaitStop(long timeout, @Nonnull TimeUnit unit) throws InterruptedException {
+		if (unit == null) {
+			throw new IllegalArgumentException("unit cannot be null");
+		}
+		if (timeout < 0) {
+			throw new IllegalArgumentException("timeout cannot be negative");
+		}
+		if (state == ServiceState.STOPPED) {
+			return true;
+		}
+
+		long nanos = unit.toNanos(timeout);
+		long millis;
+		if (nanos == Long.MAX_VALUE) {
+			// Ignore the nanoseconds
+			nanos = 0;
+			millis = unit.toMillis(timeout);
+		} else {
+			millis = nanos / 1000000; //TODO: (Nad) Check
+			nanos %= 1000000;
+			// Since wait() can't really handle nanoseconds, it's rounded to the closest millisecond.
+			if (nanos >= 500000 || (nanos != 0 && millis == 0)) {
+				millis++;
+			}
+		}
+
+		long endTime = System.currentTimeMillis() + millis;
+		for (;;) {
+			wait(millis);
+			if (state == ServiceState.STOPPED) {
+				return true;
+			} else if (System.currentTimeMillis() >= endTime) {
+				return false;
+			}
 		}
 	}
 
+	protected synchronized void setStopping() { //TODO: (Nad) Use
+		state = ServiceState.STOPPING;
+	}
+
 	/**
-	 * Detaches the {@link ProcessTerminator} thread unless a new has already
+	 * Detaches the {@link ProcessTerminator} thread unless a new has already //TODO: (Nad) JavaDocs
 	 * been set.
 	 *
-	 * @param terminator the {@link ProcessTerminator} instance to clear.
 	 */
-	protected void clearWorker(ProcessTerminator terminator) {
-		synchronized (incoming) {
-			if (this.terminator == terminator) {
-				this.terminator = null;
-			}
-		}
+	protected synchronized void setStopped() {
+		terminator = null;
+		state = ServiceState.STOPPED;
+		this.notifyAll();
 	}
 
 	/**
@@ -279,12 +360,13 @@ public class ProcessManager implements Service {
 		synchronized (incoming) {
 			incoming.add(ticket);
 			incoming.notify();
-			if (terminator == null || !terminator.isAlive()) {
-				LOGGER.warn(
-					"ProcessManager added the following ticket while no ProcessTerminator is processing tickets: {}",
-					ticket
-				);
-			}
+		}
+		if (!isRunning()) {
+			LOGGER.warn(
+				"ProcessManager added the following ticket but isn't processing tickets ({}): {}",
+				getServiceState(),
+				ticket
+			);
 		}
 	}
 
@@ -909,7 +991,6 @@ public class ProcessManager implements Service {
 				work(false);
 			} catch (InterruptedException e) {
 				Thread.interrupted();
-				owner.clearWorker(this);
 				LOGGER.debug("Shutting down ProcessTerminator");
 				try {
 					work(true);
@@ -924,7 +1005,6 @@ public class ProcessManager implements Service {
 					);
 				}
 			} catch (Throwable e) {
-				owner.clearWorker(this);
 				LOGGER.error(
 					"Unexpected error in ProcessTerminator, shutting down managed processes: {}",
 					e.getMessage()
@@ -947,6 +1027,7 @@ public class ProcessManager implements Service {
 			if (LOGGER.isDebugEnabled()) {
 				LOGGER.debug("ProcessTerminator has stopped");
 			}
+			owner.setStopped();
 		}
 
 		/**
@@ -959,6 +1040,8 @@ public class ProcessManager implements Service {
 		 */
 		protected void work(final boolean shutdown) throws InterruptedException {
 			if (shutdown) {
+				owner.setStopping();
+
 				// Reschedule running processes for immediate shutdown
 				ArrayList<ProcessInfo> reschedule = new ArrayList<>();
 				for (Iterator<Entry<Long, ProcessInfo>> iterator = processes.entrySet().iterator(); iterator.hasNext();) {

@@ -739,7 +739,7 @@ public class PMS {
 					LOGGER.debug("Shutting down all active processes");
 
 					if (Services.processManager() != null) {
-						Services.processManager().stop();
+						Services.processManager().stop(); //TODO: (Nad) Service here
 					}
 					for (Process p : currentProcesses) {
 						try {
