@@ -31,9 +31,11 @@ import java.util.concurrent.TimeUnit;
 public interface Service {
 
 	/**
-	 * Attempts to start this {@link Service}. This will be called automatically by the //TODO: (Nad) Service change logic? JavaDocs
-	 * constructor, and need only be called if {@link #stop()} has been called
-	 * previously.
+	 * Attempts to start this {@link Service}.
+	 *
+	 * @return {@code true} if this {@link Service} started, {@code false} if it
+	 *         failed to start or the state was already
+	 *         {@link ServiceState#RUNNING}.
 	 */
 	public boolean start();
 
@@ -100,7 +102,7 @@ public interface Service {
 	 *         the operation timed out.
 	 * @throws InterruptedException If the thread was interrupted while waiting.
 	 */
-    public boolean awaitStop(long timeout, TimeUnit unit) throws InterruptedException;
+	public boolean awaitStop(long timeout, TimeUnit unit) throws InterruptedException;
 
 	/**
 	 * The {@link Service} run states.

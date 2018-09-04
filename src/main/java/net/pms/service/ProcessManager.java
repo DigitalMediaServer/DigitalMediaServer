@@ -63,7 +63,7 @@ import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
  * @author Nadahar
  */
 @ThreadSafe
-public class ProcessManager implements Service {
+public class ProcessManager extends AbstractSynchronizedService {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(ProcessManager.class);
 
@@ -78,43 +78,19 @@ public class ProcessManager implements Service {
 	protected final LinkedList<ProcessTicket> incoming = new LinkedList<>();
 
 	/** The {@link ProcessTerminator} thread */
-	@GuardedBy("this")
+	@GuardedBy("lock")
 	protected ProcessTerminator terminator;
 
-	@GuardedBy("this")
-	protected ServiceState state = ServiceState.STOPPED;
-
 	/**
-	 * Creates a new instance and starts the {@link ProcessTerminator} thread.
+	 * Creates and starts a new instance.
 	 */
 	public ProcessManager() {
 		start();
 	}
 
-	/**
-	 * Starts the {@link ProcessManager}. This will be called automatically in
-	 * the constructor, and need only be called if {@link #stop()} has //TODO: (Nad) Rly?
-	 * previously been called.
-	 * <p>
-	 * If the current state is {@link ServiceState#STOPPING}, this method will
-	 * wait for the state to reach {@link ServiceState#STOPPED} before starting.
-	 */
 	@Override
-	public synchronized boolean start() {
-		if (state == ServiceState.STOPPING) {
-			try {
-				awaitStop(30, TimeUnit.SECONDS);
-			} catch (InterruptedException e) {
-				LOGGER.warn("ProcessManager was interrupted while waiting to start");
-			}
-		}
-		if (state == ServiceState.STOPPING) {
-			LOGGER.error("Timed out while waiting for the previous ProcessManager to stop, start attempt failed");
-			return false;
-		} else if (state == ServiceState.RUNNING && LOGGER.isDebugEnabled()) {
-			LOGGER.warn("ProcessManager is already running, start attempt failed");
-			return false;
-		}
+	@GuardedBy("lock")
+	protected boolean doStart() {
 		if (terminator != null) {
 			throw new AssertionError("Internal error in ProcessManager");
 		}
@@ -124,109 +100,17 @@ public class ProcessManager implements Service {
 		return true;
 	}
 
-	/**
-	 * Stops the {@link ProcessManager}. This will cause its process terminator
-	 * thread to terminate all managed processes and stop.
-	 */
 	@Override
-	public boolean stop() {
-		synchronized (this) {
-			if (state != ServiceState.RUNNING) {
-				return false;
-			}
-			terminator.interrupt();
-			state = ServiceState.STOPPING;
-		}
-		LOGGER.debug("Stopping ProcessManager");
+	@GuardedBy("lock")
+	protected boolean doStop() {
+		terminator.interrupt();
 		return true;
 	}
 
 	@Override
-	public synchronized boolean stopAndWait(long timeout, TimeUnit unit) throws InterruptedException {
-		if (unit == null) {
-			throw new IllegalArgumentException("unit cannot be null");
-		}
-		if (timeout < 0) {
-			throw new IllegalArgumentException("timeout cannot be negative");
-		}
-		if (state == ServiceState.STOPPED) {
-			return true;
-		}
-		stop();
-		return awaitStop(timeout, unit);
-	}
-
-	@Override
-	public synchronized boolean isRunning() {
-		return state == ServiceState.RUNNING;
-	}
-
-	@Override
-	public synchronized boolean isStopped() {
-		return state == ServiceState.STOPPED;
-	}
-
-	@Override
-	public synchronized boolean isStopping() {
-		return state == ServiceState.STOPPING;
-	}
-
-	@Override
-	public synchronized ServiceState getServiceState() {
-		return state;
-	}
-
-	@Override
-	public synchronized boolean awaitStop(long timeout, @Nonnull TimeUnit unit) throws InterruptedException {
-		if (unit == null) {
-			throw new IllegalArgumentException("unit cannot be null");
-		}
-		if (timeout < 0) {
-			throw new IllegalArgumentException("timeout cannot be negative");
-		}
-		if (state == ServiceState.STOPPED) {
-			return true;
-		}
-
-		long nanos = unit.toNanos(timeout);
-		long millis;
-		if (nanos == Long.MAX_VALUE) {
-			// Ignore the nanoseconds
-			nanos = 0;
-			millis = unit.toMillis(timeout);
-		} else {
-			millis = nanos / 1000000; //TODO: (Nad) Check
-			nanos %= 1000000;
-			// Since wait() can't really handle nanoseconds, it's rounded to the closest millisecond.
-			if (nanos >= 500000 || (nanos != 0 && millis == 0)) {
-				millis++;
-			}
-		}
-
-		long endTime = System.currentTimeMillis() + millis;
-		for (;;) {
-			wait(millis);
-			if (state == ServiceState.STOPPED) {
-				return true;
-			} else if (System.currentTimeMillis() >= endTime) {
-				return false;
-			}
-		}
-	}
-
-	protected synchronized void setStopping() { //TODO: (Nad) Use
-		state = ServiceState.STOPPING;
-	}
-
-	/**
-	 * Detaches the {@link ProcessTerminator} thread unless a new has already //TODO: (Nad) JavaDocs
-	 * been set.
-	 *
-	 */
-	protected synchronized void setStopped() {
+	@GuardedBy("lock")
+	protected void doSetStopped() {
 		terminator = null;
-		state = ServiceState.STOPPED;
-		this.notifyAll();
 	}
 
 	/**
@@ -335,6 +219,7 @@ public class ProcessManager implements Service {
 			0
 		));
 	}
+
 	/**
 	 * Removes a {@link Process} from management by this {@link ProcessManager}.
 	 * This will cause the reference to the {@link Process} to be released

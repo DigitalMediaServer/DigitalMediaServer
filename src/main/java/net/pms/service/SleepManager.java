@@ -19,6 +19,8 @@
 package net.pms.service;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
+import java.util.concurrent.TimeUnit;
+import javax.annotation.Nonnull;
 import javax.annotation.concurrent.GuardedBy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,7 +61,7 @@ import net.pms.util.jna.macos.iokit.IOKitUtils;
  *
  * @author Nadahar
  */
-public class SleepManager implements Service {
+public class SleepManager extends AbstractSynchronizedService {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(SleepManager.class);
 
@@ -67,23 +69,20 @@ public class SleepManager implements Service {
 	 * A reference count for incremented and decremented with
 	 * {@link #startPlaying()} and {@link #stopPlaying()}
 	 */
-	@GuardedBy("this")
+	@GuardedBy("lock")
 	protected int playingCount;
 
 	/** The cached value of {@link PmsConfiguration#getPreventSleep()} */
-	@GuardedBy("this")
+	@GuardedBy("lock")
 	protected PreventSleepMode mode = PMS.getConfiguration().getPreventSleep();
 
 	/** An internal state flag tracking if sleep is currently prevented */
-	@GuardedBy("this")
+	@GuardedBy("lock")
 	protected boolean sleepPrevented;
 
 	/** The attached worker thread */
-	@GuardedBy("this")
+	@GuardedBy("lock")
 	protected AbstractSleepWorker worker;
-
-	@GuardedBy("this")
-	private boolean started;
 
 	/**
 	 * Creates and starts a {@link SleepManager} instance.
@@ -96,10 +95,12 @@ public class SleepManager implements Service {
 	 * Registers a start playing event with this {@link SleepManager} and
 	 * prevents the system from sleeping if configured and necessary.
 	 */
-	public synchronized void startPlaying() {
-		playingCount++;
-		if (isPreventSleepSupported() && !sleepPrevented && mode == PreventSleepMode.PLAYBACK) {
-			preventSleep();
+	public void startPlaying() {
+		synchronized (lock) {
+			playingCount++;
+			if (isPreventSleepSupported() && !sleepPrevented && mode == PreventSleepMode.PLAYBACK) {
+				preventSleep();
+			}
 		}
 	}
 
@@ -107,31 +108,37 @@ public class SleepManager implements Service {
 	 * Registers a stop playing event with this {@link SleepManager} and allows
 	 * the system to sleep again if configured and necessary.
 	 */
-	public synchronized void stopPlaying() {
-		if (playingCount == 0) {
-			LOGGER.error("Sleepmanager cannot decrease playing reference count as it's already zero");
-			return;
-		}
-		playingCount--;
-		if (isPreventSleepSupported() && playingCount == 0 && sleepPrevented && mode == PreventSleepMode.PLAYBACK) {
-			allowSleep();
+	public void stopPlaying() {
+		synchronized (lock) {
+			if (playingCount == 0) {
+				LOGGER.error("Sleepmanager cannot decrease playing reference count as it's already zero");
+				return;
+			}
+			playingCount--;
+			if (isPreventSleepSupported() && playingCount == 0 && sleepPrevented && mode == PreventSleepMode.PLAYBACK) {
+				allowSleep();
+			}
 		}
 	}
 
 	/**
 	 * Resets the system sleep timer if configured and necessary.
 	 */
-	public synchronized void postponeSleep() {
-		if (isPreventSleepSupported() && mode == PreventSleepMode.PLAYBACK && !sleepPrevented) {
-			resetSleepTimer();
+	public void postponeSleep() {
+		synchronized (lock) {
+			if (isPreventSleepSupported() && mode == PreventSleepMode.PLAYBACK && !sleepPrevented) {
+				resetSleepTimer();
+			}
 		}
 	}
 
 	/**
 	 * @return The current "playing" reference count value.
 	 */
-	public synchronized int getPlayingCount() {
-		return playingCount;
+	public int getPlayingCount() {
+		synchronized (lock) {
+			return playingCount;
+		}
 	}
 
 	/**
@@ -139,95 +146,80 @@ public class SleepManager implements Service {
 	 * {@code mode} equals the current mode, no action is taken.
 	 *
 	 * @param mode the new {@link PreventSleepMode}.
+	 * @throws IllegalArgumentException If {@code mode} is {@code null}.
 	 */
-	public synchronized void setMode(PreventSleepMode mode) {
+	public void setMode(@Nonnull PreventSleepMode mode) {
 		if (mode == null) {
-			LOGGER.error("Ignoring attempt to set PreventSleepMode to null");
-			return;
+			throw new IllegalArgumentException("mode cannot be null");
 		}
 
-		if (this.mode != mode) {
-			this.mode = mode;
-			switch (mode) {
-				case NEVER:
-					if (sleepPrevented) {
-						allowSleep();
-					}
-					break;
-				case PLAYBACK:
-					if (playingCount > 0 && !sleepPrevented) {
-						preventSleep();
-					} else if (playingCount == 0 && sleepPrevented) {
-						allowSleep();
-					}
-					break;
-				case RUNNING:
-					if (!sleepPrevented) {
-						preventSleep();
-					}
-					break;
-				default:
-					throw new IllegalStateException("PreventSleepMode value not implemented: " + mode.getValue());
-			}
-			if (worker != null) {
-				worker.setMode(mode);
+		synchronized (lock) {
+			if (this.mode != mode) {
+				this.mode = mode;
+				switch (mode) {
+					case NEVER:
+						if (sleepPrevented) {
+							allowSleep();
+						}
+						break;
+					case PLAYBACK:
+						if (playingCount > 0 && !sleepPrevented) {
+							preventSleep();
+						} else if (playingCount == 0 && sleepPrevented) {
+							allowSleep();
+						}
+						break;
+					case RUNNING:
+						if (!sleepPrevented) {
+							preventSleep();
+						}
+						break;
+					default:
+						throw new IllegalStateException("PreventSleepMode value not implemented: " + mode.getValue());
+				}
+				if (worker != null) {
+					worker.setMode(mode);
+				}
 			}
 		}
 	}
 
-	/**
-	 * Starts the {@link SleepManager}. This will be called automatically in the
-	 * constructor, and need only be called if {@link #stop()} has been called
-	 * previously.
-	 */
 	@Override
-	public synchronized void start() {
-		LOGGER.debug("Starting SleepManager");
-		if (Platform.isWindows() || Platform.isMac()) {
-			started = true;
-			if (mode == PreventSleepMode.RUNNING || mode == PreventSleepMode.PLAYBACK && playingCount > 0) {
-				preventSleep();
-			}
-		} else {
+	@GuardedBy("lock")
+	protected boolean doStart() {
+		if (!Platform.isWindows() && !Platform.isMac()) {
 			LOGGER.debug("SleepManager doesn't support current platform");
+			return false;
 		}
-	}
-
-	/**
-	 * Stops the {@link SleepManager}. This will cause its worker thread to
-	 * terminate and any sleep mode prevention to be cancelled.
-	 */
-	@Override
-	public void stop() {
-		AbstractSleepWorker localWorker = null;
-		synchronized (this) {
-			if (started) {
-				LOGGER.debug("Stopping SleepManager");
-				localWorker = worker;
-				started = false;
-			}
+		LOGGER.debug("Starting SleepManager");
+		state = ServiceState.RUNNING;
+		if (mode == PreventSleepMode.RUNNING || mode == PreventSleepMode.PLAYBACK && playingCount > 0) {
+			preventSleep();
 		}
-		if (localWorker != null) {
-			localWorker.interrupt();
-			try {
-				localWorker.join();
-			} catch (InterruptedException e) {
-				LOGGER.debug("SleepManager was interrupted while waiting for the sleep worker to terminate");
-			}
-		}
+		return true;
 	}
 
 	@Override
-	public synchronized boolean isRunning() {
-		return started;
+	@GuardedBy("lock")
+	protected boolean doStop() {
+		worker.interrupt();
+		return true;
+	}
+
+	@Override
+	@GuardedBy("lock")
+	protected void doSetStopped() {
+		worker = null;
 	}
 
 	/**
 	 * Convenience method that calls {@link #stop()} and then {@link #start()}.
 	 */
-	public synchronized void restart() {
-		stop();
-		start();
+	public void restart(long timeout, TimeUnit unit) {
+		synchronized (lock) {
+			stopAndWait(timeout, unit);
+			start();
+		}
 	}
 
 	/**
@@ -277,13 +269,6 @@ public class SleepManager implements Service {
 			}
 			worker.start();
 		}
-	}
-
-	/**
-	 * For internal use only, detaches the worker thread.
-	 */
-	protected synchronized void clearWorker() {
-		worker = null;
 	}
 
 	/**
@@ -412,14 +397,15 @@ public class SleepManager implements Service {
 				}
 			} catch (InterruptedException e) {
 				LOGGER.debug("Shutting down sleep worker");
+				owner.setStopping();
 				if (sleepPrevented) {
 					doAllowSleep();
 				}
-				owner.clearWorker();
 			} catch (Throwable e) {
 				LOGGER.error("Unexpected error in SleepManager worker thread, shutting down worker: {}", e.getMessage());
 				LOGGER.trace("", e);
 			}
+			owner.setStopped();
 		}
 
 		/**
