@@ -60,11 +60,33 @@ public abstract class AbstractSynchronizedService implements Service {
 	 */
 	@Override
 	public boolean start() {
+		return start(30, TimeUnit.SECONDS);
+	}
+
+	/**
+	 * Attempts to start this {@link Service}.
+	 * <p>
+	 * If the current state is {@link ServiceState#STOPPING}, this method will
+	 * wait for the state to reach {@link ServiceState#STOPPED} before starting.
+	 *
+	 * @param timeout the maximum time to wait for this {@link Service} to stop.
+	 * @param unit the {@link TimeUnit} of the {@code timeout} argument.
+	 * @return {@code true} if this {@link Service} started, {@code false} if it
+	 *         failed to start or the state was already
+	 *         {@link ServiceState#RUNNING}.
+	 */
+	public boolean start(long timeout, TimeUnit unit) {
+		if (unit == null) {
+			throw new IllegalArgumentException("unit cannot be null");
+		}
+		if (timeout < 0) {
+			throw new IllegalArgumentException("timeout cannot be negative");
+		}
 		boolean result;
 		synchronized (lock) {
 			if (state == ServiceState.STOPPING) {
 				try {
-					awaitStop(30, TimeUnit.SECONDS);
+					awaitStop(timeout, unit);
 				} catch (InterruptedException e) {
 					LOGGER.warn("{} was interrupted while waiting to start", getClass().getSimpleName());
 				}
@@ -140,6 +162,36 @@ public abstract class AbstractSynchronizedService implements Service {
 			stop();
 			return awaitStop(timeout, unit);
 		}
+	}
+
+	/**
+	 * Attempts to restart this {@link Service}. This method will trigger a
+	 * shutdown and block until {@link ServiceState#STOPPED} is reached or the
+	 * specified timeout expires. Only if {@link ServiceState#STOPPED} was
+	 * reached, a start attempt will be made.
+	 *
+	 * @param timeout the maximum time to wait for this {@link Service} to stop.
+	 * @param unit the {@link TimeUnit} of the {@code timeout} argument.
+	 * @return {@code true} if this operation succeeded, false if either the
+	 *         shutdown timed out or the start failed.
+	 * @throws InterruptedException If the thread was interrupted while waiting
+	 *             for this {@link Service} to stop.
+	 */
+	public boolean restart(long timeout, TimeUnit unit) {
+		boolean result;
+		synchronized (lock) {
+			try {
+				result = stopAndWait(timeout, unit);
+			} catch (InterruptedException e) {
+				LOGGER.debug("{} was interrupted during restart", getClass().getSimpleName());
+				return false;
+			}
+			if (!result) {
+				return false;
+			}
+			result = start();
+		}
+		return result;
 	}
 
 	@Override

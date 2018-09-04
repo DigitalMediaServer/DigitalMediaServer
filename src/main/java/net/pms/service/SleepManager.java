@@ -19,7 +19,6 @@
 package net.pms.service;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
-import java.util.concurrent.TimeUnit;
 import javax.annotation.Nonnull;
 import javax.annotation.concurrent.GuardedBy;
 import org.slf4j.Logger;
@@ -210,16 +209,6 @@ public class SleepManager extends AbstractSynchronizedService {
 	@GuardedBy("lock")
 	protected void doSetStopped() {
 		worker = null;
-	}
-
-	/**
-	 * Convenience method that calls {@link #stop()} and then {@link #start()}.
-	 */
-	public void restart(long timeout, TimeUnit unit) {
-		synchronized (lock) {
-			stopAndWait(timeout, unit);
-			start();
-		}
 	}
 
 	/**
