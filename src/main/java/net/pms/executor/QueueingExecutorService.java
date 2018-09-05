@@ -19,13 +19,13 @@ public class QueueingExecutorService extends AbstractExecutorService implements 
 
 
 	@Override
-	public void start() {
+	public boolean start() {
 		// TODO Auto-generated method stub
 
 	}
 
 	@Override
-	public void stop() {
+	public boolean stop() {
 		shutdown();
 	}
 
@@ -113,5 +113,41 @@ public class QueueingExecutorService extends AbstractExecutorService implements 
 	public void execute(Runnable command) {
 		// TODO Auto-generated method stub
 
+	}
+
+	@Override
+	public boolean stopAndWait(long timeout, TimeUnit unit) throws InterruptedException {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public boolean isStopping() {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public boolean isStopped() {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public boolean isError() {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public ServiceState getServiceState() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public boolean awaitStop(long timeout, TimeUnit unit) throws InterruptedException {
+		// TODO Auto-generated method stub
+		return false;
 	}
 }
