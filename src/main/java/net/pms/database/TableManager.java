@@ -45,6 +45,7 @@ import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import net.pms.Messages;
 import net.pms.PMS;
 import net.pms.configuration.PmsConfiguration;
+import net.pms.service.AbstractSynchronizedService;
 import net.pms.service.Service;
 import net.pms.util.ConversionUtil;
 import net.pms.util.StringUtil;
@@ -56,7 +57,7 @@ import net.pms.util.StringUtil;
  *
  * @author Nadahar
  */
-public class TableManager implements Service {
+public class TableManager extends AbstractSynchronizedService {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(TableManager.class);
 
@@ -74,16 +75,13 @@ public class TableManager implements Service {
 	@Nullable
 	private final TableMusicBrainzReleases tableMusicBrainzReleases;
 
-	@GuardedBy("this")
+	@GuardedBy("lock")
 	private JdbcConnectionPool connectionPool;
 
-	@GuardedBy("this")
-	private boolean connected;
-
-	@GuardedBy("this")
+	@GuardedBy("lock")
 	private Exception lastException;
 
-	@GuardedBy("this")
+	@GuardedBy("lock")
 	private Set<Table> futureTables;
 
 	/**
@@ -129,17 +127,8 @@ public class TableManager implements Service {
 		start();
 	}
 
-	/**
-	 * Starts this {@link TableManager}. This will be called automatically by the
-	 * constructor, and need only be called if the previous call failed or
-	 * {@link #stop()} has been called.
-	 */
 	@Override
-	public synchronized void start() {
-		if (connected) {
-			LOGGER.debug("TableManager is already started, ignoring start request");
-			return;
-		}
+	protected boolean doStart() {
 		LOGGER.debug("Starting check of tables for database {}", databaseName);
 		lastException = null;
 		futureTables = null;
@@ -148,7 +137,8 @@ public class TableManager implements Service {
 			Class.forName("org.h2.Driver");
 		} catch (ClassNotFoundException e) {
 			lastException = e;
-			return;
+			state = ServiceState.ERROR;
+			return false;
 		}
 
 		createConnectionPool();
@@ -161,11 +151,10 @@ public class TableManager implements Service {
 				for (Table table : tables.values()) {
 					table.checkTable(connection);
 				}
-				connected = true;
-			} else {
-				LOGGER.debug("The database has too new database tables");
-				clearConnectionPool();
+				return true;
 			}
+			LOGGER.debug("The database has too new database tables");
+			clearConnectionPool();
 		} catch (SQLException e) {
 			LOGGER.error("Database tables check failed with: {}", e.getMessage());
 			if (LOGGER.isTraceEnabled() && e.getErrorCode() != ErrorCode.DATABASE_ALREADY_OPEN_1) {
@@ -174,6 +163,8 @@ public class TableManager implements Service {
 			lastException = e;
 			clearConnectionPool();
 		}
+		state = ServiceState.ERROR;
+		return false;
 	}
 
 	/**
@@ -182,22 +173,35 @@ public class TableManager implements Service {
 	 * Existing connections will continue to work until they are closed.
 	 */
 	@Override
-	public synchronized void stop() {
-		clearConnectionPool();
-		connected = false;
+	public boolean stop() {
+		boolean result = super.stop();
+		if (result) {
+			setStopped();
+		}
+		return result;
 	}
 
 	@Override
-	public synchronized boolean isRunning() {
-		return connected;
+	protected boolean doStop() {
+		setStopping();
+		clearConnectionPool();
+		return true;
 	}
 
 	/**
 	 * @return {@code true} if an error was registered during the last call to
 	 *         {@link #start()}, {@code false} otherwise.
 	 */
-	public synchronized boolean isError() {
-		return lastException != null || futureTables != null && !futureTables.isEmpty();
+	@Override
+	public boolean isError() {
+		synchronized (lock) {
+			return super.isError() || futureTables != null && !futureTables.isEmpty();
+		}
+	}
+
+	@Override
+	protected boolean clearErrorOnStart() {
+		return true;
 	}
 
 	/**
@@ -205,10 +209,12 @@ public class TableManager implements Service {
 	 *         {@link ErrorCode#DATABASE_ALREADY_OPEN_1}, {@code false}
 	 *         otherwise.
 	 */
-	public synchronized boolean isAlreadyOpenError() {
-		return
-			lastException instanceof SQLException &&
-			((SQLException) lastException).getErrorCode() == ErrorCode.DATABASE_ALREADY_OPEN_1;
+	public boolean isAlreadyOpenError() {
+		synchronized (lock) {
+			return
+				lastException instanceof SQLException &&
+				((SQLException) lastException).getErrorCode() == ErrorCode.DATABASE_ALREADY_OPEN_1;
+		}
 	}
 
 	/**
@@ -216,18 +222,22 @@ public class TableManager implements Service {
 	 *         {@link ErrorCode#FILE_VERSION_ERROR_1}, {@code false}
 	 *         otherwise.
 	 */
-	public synchronized boolean isWrongVersionOrCorrupt() {
-		return
-			lastException instanceof SQLException &&
-			((SQLException) lastException).getErrorCode() == ErrorCode.FILE_VERSION_ERROR_1;
+	public boolean isWrongVersionOrCorrupt() {
+		synchronized (lock) {
+			return
+				lastException instanceof SQLException &&
+				((SQLException) lastException).getErrorCode() == ErrorCode.FILE_VERSION_ERROR_1;
+		}
 	}
 
 	/**
 	 * @return {@code true} if tables of too new version was registered during
 	 *         the last call to {@link #start()}, {@code false} otherwise.
 	 */
-	public synchronized boolean hasFutureTables() {
-		return futureTables != null && !futureTables.isEmpty();
+	public boolean hasFutureTables() {
+		synchronized (lock) {
+			return futureTables != null && !futureTables.isEmpty();
+		}
 	}
 
 	/**
@@ -268,7 +278,7 @@ public class TableManager implements Service {
 	public List<TableId> getFutureTables(boolean includeRelated, boolean sort, final boolean rootLanguage) {
 		ArrayList<TableId> result = new ArrayList<>();
 		ArrayList<Table> tempTables;
-		synchronized (this) {
+		synchronized (lock) {
 			if (futureTables == null || futureTables.isEmpty()) {
 				return result;
 			}
@@ -312,7 +322,7 @@ public class TableManager implements Service {
 	 */
 	public boolean hasFutureTablesRelated() {
 		ArrayList<Table> tempTables;
-		synchronized (this) {
+		synchronized (lock) {
 			if (futureTables == null || futureTables.isEmpty()) {
 				return false;
 			}
@@ -327,8 +337,10 @@ public class TableManager implements Service {
 	 *         {@link #start()} or {@code null} of no error was registered.
 	 */
 	@Nullable
-	public synchronized Exception getError() {
-		return lastException;
+	public Exception getError() {
+		synchronized (lock) {
+			return lastException;
+		}
 	}
 
 	/**
@@ -341,27 +353,33 @@ public class TableManager implements Service {
 	 *         {@link TableManager} isn't connected to a database.
 	 */
 	@Nullable
-	public synchronized Connection getConnection() {
-		if (!connected) {
-			if (lastException != null) {
-				LOGGER.debug(
-					"Rejecting request for database connection due to previous error: {}",
-					lastException.getMessage()
-				);
+	public Connection getConnection() {
+		synchronized (lock) {
+			if (!isRunning()) {
+				if (hasFutureTables()) {
+					LOGGER.debug("Rejected request for database connection because future tables exist");
+					return null;
+				}
+				if (lastException != null) {
+					LOGGER.debug(
+						"Rejecting request for database connection due to previous error: {}",
+						lastException.getMessage()
+					);
+					return null;
+				}
+				LOGGER.debug("Rejecting request for database connection because TableManager is disconnected");
 				return null;
 			}
-			LOGGER.debug("Rejecting request for database connection because TableManager is disconnected");
-			return null;
-		}
-		try {
-			return connectionPool.getConnection();
-		} catch (SQLException e) {
-			LOGGER.error("Unable to acquire database connection: {}", e.getMessage());
-			LOGGER.trace("", e);
-			lastException = e;
-			connected = false;
-			clearConnectionPool();
-			return null;
+			try {
+				return connectionPool.getConnection();
+			} catch (SQLException e) {
+				LOGGER.error("Unable to acquire database connection: {}", e.getMessage());
+				LOGGER.trace("", e);
+				lastException = e;
+				clearConnectionPool();
+				state = ServiceState.ERROR;
+				return null;
+			}
 		}
 	}
 
@@ -375,9 +393,9 @@ public class TableManager implements Service {
 	 */
 	@Nonnull
 	@SuppressFBWarnings("DMI_EMPTY_DB_PASSWORD")
-	public synchronized Connection getMaintenanceConnection() throws SQLException {
-		if (connected) {
-			throw new IllegalStateException("TableManager is not in a disconnected state");
+	public Connection getMaintenanceConnection() throws SQLException {
+		if (isRunning()) {
+			throw new IllegalStateException("TableManager is in a running state");
 		}
 		return DriverManager.getConnection(url, "sa", "");
 	}

@@ -75,7 +75,7 @@ public abstract class AbstractSynchronizedService implements Service {
 	 *         failed to start or the state was already
 	 *         {@link ServiceState#RUNNING}.
 	 */
-	public boolean start(long timeout, TimeUnit unit) {
+	public boolean start(long timeout, @Nonnull TimeUnit unit) {
 		if (unit == null) {
 			throw new IllegalArgumentException("unit cannot be null");
 		}
@@ -84,6 +84,10 @@ public abstract class AbstractSynchronizedService implements Service {
 		}
 		boolean result;
 		synchronized (lock) {
+			if (state == ServiceState.ERROR && !clearErrorOnStart()) {
+				LOGGER.error("Attempt to start {} was rejected because it is in an error state", getClass().getSimpleName());
+				return false;
+			}
 			if (state == ServiceState.STOPPING) {
 				try {
 					awaitStop(timeout, unit);
@@ -102,9 +106,20 @@ public abstract class AbstractSynchronizedService implements Service {
 				return false;
 			}
 			result = doStart();
-			state = ServiceState.RUNNING;
+			if (result) {
+				state = ServiceState.RUNNING;
+			}
 		}
 		return result;
+	}
+
+	/**
+	 * @return {@code true} if the implementation allows
+	 *         {@link #start(long, TimeUnit)} to clear an error state,
+	 *         {@code false} otherwise.
+	 */
+	protected boolean clearErrorOnStart() {
+		return false;
 	}
 
 	/**
@@ -122,10 +137,18 @@ public abstract class AbstractSynchronizedService implements Service {
 		boolean result;
 		synchronized (lock) {
 			if (state != ServiceState.RUNNING) {
+				if (state == ServiceState.ERROR) {
+					LOGGER.error(
+						"Failed to initialize shutdown of {} because it is in an error state",
+						getClass().getSimpleName()
+					);
+				}
 				return false;
 			}
 			result = doStop();
-			state = ServiceState.STOPPING;
+			if (result) {
+				state = ServiceState.STOPPING;
+			}
 		}
 		if (LOGGER.isDebugEnabled()) {
 			if (result) {
@@ -146,6 +169,36 @@ public abstract class AbstractSynchronizedService implements Service {
 	 */
 	@GuardedBy("lock")
 	protected abstract boolean doStop();
+
+	/**
+	 * Sets the state to {@link ServiceState#STOPPING}.
+	 */
+	protected void setStopping() {
+		synchronized (lock) {
+			state = ServiceState.STOPPING;
+		}
+	}
+
+	/**
+	 * Performs potential cleanup operation and sets the state to
+	 * {@link ServiceState#STOPPED} before notifying any waiting threads that
+	 * the {@link Service} has stopped.
+	 */
+	protected void setStopped() {
+		synchronized (lock) {
+			doSetStopped();
+			state = ServiceState.STOPPED;
+			lock.notifyAll();
+		}
+	}
+
+	/**
+	 * Prototype method that performs cleanup operations after stopping. Always
+	 * called with a lock on {@code lock} by {@link AbstractSynchronizedService}.
+	 */
+	@GuardedBy("lock")
+	protected void doSetStopped() {
+	}
 
 	@Override
 	public boolean stopAndWait(long timeout, TimeUnit unit) throws InterruptedException {
@@ -216,6 +269,13 @@ public abstract class AbstractSynchronizedService implements Service {
 	}
 
 	@Override
+	public boolean isError() {
+		synchronized (lock) {
+			return state == ServiceState.ERROR;
+		}
+	}
+
+	@Override
 	public ServiceState getServiceState() {
 		synchronized (lock) {
 			return state;
@@ -230,66 +290,36 @@ public abstract class AbstractSynchronizedService implements Service {
 		if (timeout < 0) {
 			throw new IllegalArgumentException("timeout cannot be negative");
 		}
+
+		long nanos = unit.toNanos(timeout);
+		long millis;
+		if (nanos == Long.MAX_VALUE) {
+			// Ignore the nanoseconds
+			nanos = 0;
+			millis = unit.toMillis(timeout);
+		} else {
+			millis = nanos / 1000000; //TODO: (Nad) Check
+			nanos %= 1000000;
+			// Since wait() can't really handle nanoseconds, it's rounded to the closest millisecond.
+			if (nanos >= 500000 || (nanos != 0 && millis == 0)) {
+				millis++;
+			}
+		}
+		long endTime = System.currentTimeMillis() + millis;
+
 		synchronized (lock) {
-			if (state == ServiceState.STOPPED) {
-				return true;
-			}
-
-			long nanos = unit.toNanos(timeout);
-			long millis;
-			if (nanos == Long.MAX_VALUE) {
-				// Ignore the nanoseconds
-				nanos = 0;
-				millis = unit.toMillis(timeout);
-			} else {
-				millis = nanos / 1000000; //TODO: (Nad) Check
-				nanos %= 1000000;
-				// Since wait() can't really handle nanoseconds, it's rounded to the closest millisecond.
-				if (nanos >= 500000 || (nanos != 0 && millis == 0)) {
-					millis++;
-				}
-			}
-
-			long endTime = System.currentTimeMillis() + millis;
 			for (;;) {
-				lock.wait(millis);
+				if (state == ServiceState.ERROR) {
+					LOGGER.error("Aborted waiting for {} to stop since it is in an error state", getClass().getSimpleName());
+					return false;
+				}
 				if (state == ServiceState.STOPPED) {
 					return true;
 				} else if (System.currentTimeMillis() >= endTime) {
 					return false;
 				}
+				lock.wait(millis);
 			}
 		}
-	}
-
-	/**
-	 * Sets the state to {@link ServiceState#STOPPING}.
-	 */
-	protected void setStopping() {
-		synchronized (lock) {
-			state = ServiceState.STOPPING;
-		}
-	}
-
-	/**
-	 * Performs potential cleanup operation and sets the state to
-	 * {@link ServiceState#STOPPED} before notifying any waiting threads that
-	 * the {@link Service} has stopped.
-	 */
-	protected void setStopped() {
-		synchronized (lock) {
-			doSetStopped();
-			state = ServiceState.STOPPED;
-			lock.notifyAll();
-		}
-	}
-
-	/**
-	 * Prototype method that performs any cleanup operations after stopping.
-	 * Always called with a lock on {@code lock} by
-	 * {@link AbstractSynchronizedService}.
-	 */
-	@GuardedBy("lock")
-	protected void doSetStopped() {
 	}
 }

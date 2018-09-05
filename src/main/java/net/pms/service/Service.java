@@ -83,6 +83,12 @@ public interface Service {
 	public boolean isStopped();
 
 	/**
+	 * @return {@code true} if this {@link Service} is in an {@code error}
+	 *         state, {@code false} otherwise.
+	 */
+	public boolean isError();
+
+	/**
 	 * @return The current {@link ServiceState} of this {@link Service}.
 	 */
 	public ServiceState getServiceState();
@@ -116,6 +122,9 @@ public interface Service {
 		STOPPING,
 
 		/** The {@link Service} is stopped */
-		STOPPED;
+		STOPPED,
+
+		/** The {@link Service} is in an error state */
+		ERROR;
 	}
 }
