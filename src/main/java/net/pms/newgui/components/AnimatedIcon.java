@@ -356,7 +356,6 @@ public class AnimatedIcon implements Icon, ActionListener {
 		if (nextStage.permanent) {
 			this.permanentStage = nextStage;
 		}
-		repeat = false;
 		if (!timer.isRunning() && suspendLevel == 0) {
 			timer.restart();
 		}
@@ -465,9 +464,7 @@ public class AnimatedIcon implements Icon, ActionListener {
 	 */
 	public void restartArm() {
 		setCurrentFrameIndex(0, false);
-		if (runState == RunState.RUNNING) {
-			runState = RunState.PAUSED;
-		}
+		pause();
 	}
 
 	/**
@@ -649,6 +646,9 @@ public class AnimatedIcon implements Icon, ActionListener {
 			.append(", Max Width=").append(maxIconWidth)
 			.append(", Max Height=").append(maxIconHeight)
 			.append(", Frames: ").append(frames.size());
+		if (frames.size() > 1) {
+			sb.append(", Current Frame: ").append(currentFrameIndex);
+		}
 		if (debug) {
 			for (int i = 0; i < frames.size(); i++) {
 				sb.append("\n").append(i).append(": ").append(frames.get(i));
@@ -767,28 +767,22 @@ public class AnimatedIcon implements Icon, ActionListener {
 		// This runs in Swing's event dispatcher thread, so no thread safety
 		// is needed.
 
-		int nextFrameIndex = getNextFrameIndex(currentFrameIndex);
-		if (nextFrameIndex < 0 || nextFrameIndex == currentFrameIndex) {
-			pause();
+		int nextFrameIndex = (currentFrameIndex + 1) % frames.size();
+		if (nextFrameIndex == 0) {
+			// End of sequence
 			if (nextStage != null) {
 				if (component instanceof AnimatedIconCallback) {
 					((AnimatedIconCallback) component).setNextIcon(nextStage);
 				}
 				nextStage = permanentStage;
+				pause();
+				return;
+			} else if (!repeat) {
+				pause();
+				return;
 			}
-		} else {
-			setCurrentFrameIndex(nextFrameIndex, true);
 		}
-	}
-
-	private int getNextFrameIndex(int currentIndex) {
-		if (repeat && nextStage == null) {
-			return ++currentIndex % frames.size();
-		}
-		if (currentIndex >= frames.size() - 1) {
-			return -1;
-		}
-		return ++currentIndex;
+		setCurrentFrameIndex(nextFrameIndex, true);
 	}
 
 	/**

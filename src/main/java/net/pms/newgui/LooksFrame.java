@@ -64,7 +64,6 @@ import net.pms.newgui.components.AnimatedIconListener.WindowIconifyListener;
 import net.pms.newgui.components.ImageButton;
 import net.pms.newgui.components.AnimatedIconListenerAction;
 import net.pms.newgui.components.WindowProperties;
-import net.pms.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -630,7 +629,8 @@ public class LooksFrame extends JFrame implements IFrame {
 					reload.setEnabled(true);
 					if (restartRequredIcon == reload.getIcon()) {
 						reload.setToolTipText(Messages.getString("LooksFrame.28"));
-						restartRequredIcon.setNextStage(new AnimatedIconStage(AnimatedIconType.DEFAULTICON, restartIcon, false));
+						reload.setNextIcon(new AnimatedIconStage(AnimatedIconType.DEFAULTICON, restartIcon, false));
+						restartRequredIcon.restartArm();
 					}
 				}
 			}
