@@ -228,7 +228,6 @@ Section "Program Files"
 	SetOverwrite off
 	File "${PROJECT_BASEDIR}\src\main\external-resources\DMS.conf"
 	File "${PROJECT_BASEDIR}\src\main\external-resources\WEB.conf"
-	File "${PROJECT_BASEDIR}\src\main\external-resources\ffmpeg.webfilters"
 	File "${PROJECT_BASEDIR}\src\main\external-resources\VirtualFolders.conf"
 
 	; Remove old renderer files to prevent conflicts
@@ -321,7 +320,6 @@ Section "Program Files"
 ; 	AccessControl::GrantOnFile "$R0\DigitalMediaServer\data" "(BU)" "FullAccess"
 	File "${PROJECT_BASEDIR}\src\main\external-resources\DMS.conf"
 	File "${PROJECT_BASEDIR}\src\main\external-resources\WEB.conf"
-	File "${PROJECT_BASEDIR}\src\main\external-resources\ffmpeg.webfilters"
 	File "${PROJECT_BASEDIR}\src\main\external-resources\VirtualFolders.conf"
 SectionEnd
 
@@ -581,7 +579,6 @@ Section "Uninstall"
 	Delete /REBOOTOK "$INSTDIR\LICENSE.txt"
 	Delete /REBOOTOK "$INSTDIR\debug.log"
 	Delete /REBOOTOK "$INSTDIR\debug.log.prev"
-	Delete /REBOOTOK "$INSTDIR\ffmpeg.webfilters"
 	Delete /REBOOTOK "$INSTDIR\logback.xml"
 	Delete /REBOOTOK "$INSTDIR\logback.headless.xml"
 	Delete /REBOOTOK "$INSTDIR\icon.ico"
