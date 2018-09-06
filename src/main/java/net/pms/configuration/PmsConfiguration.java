@@ -304,7 +304,6 @@ public class PmsConfiguration extends RendererConfiguration {
 	protected static final String KEY_SHOW_IPHOTO_LIBRARY = "show_iphoto_library";
 	protected static final String KEY_SHOW_ITUNES_LIBRARY = "show_itunes_library";
 	protected static final String KEY_SHOW_SPLASH_SCREEN = "show_splash_screen";
-	protected static final String KEY_SINGLE = "single_instance";
 	protected static final String KEY_SKIP_LOOP_FILTER_ENABLED = "mencoder_skip_loop_filter";
 	protected static final String KEY_SKIP_NETWORK_INTERFACES = "skip_network_interfaces";
 	protected static final String KEY_SORT_METHOD = "sort_method";
@@ -4484,44 +4483,6 @@ public class PmsConfiguration extends RendererConfiguration {
 
 	public void setDepth3D(int value) {
 		configuration.setProperty(KEY_3D_SUBTITLES_DEPTH, value);
-	}
-
-	/**
-	 * @deprecated
-	 * @see #setRunSingleInstance(boolean)
-	 */
-	@Deprecated
-	public void setSingle(boolean value) {
-		setRunSingleInstance(value);
-	}
-
-	/**
-	 * Set whether DMS should allow only one instance by shutting down
-	 * the first one when a second one is launched.
-	 *
-	 * @param value whether to kill the old DMS instance
-	 */
-	public void setRunSingleInstance(boolean value) {
-		configuration.setProperty(KEY_SINGLE, value);
-	}
-
-	/**
-	 * @deprecated
-	 * @see #isRunSingleInstance()
-	 */
-	@Deprecated
-	public boolean getSingle() {
-		return isRunSingleInstance();
-	}
-
-	/**
-	 * Whether DMS should allow only one instance by shutting down
-	 * the first one when a second one is launched.
-	 *
-	 * @return value whether to kill the old DMS instance
-	 */
-	public boolean isRunSingleInstance() {
-		return getBoolean(KEY_SINGLE, true);
 	}
 
 	/**

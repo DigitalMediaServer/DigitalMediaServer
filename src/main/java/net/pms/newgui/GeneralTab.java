@@ -69,7 +69,6 @@ public class GeneralTab {
 	private JCheckBox appendProfileName;
 	private JCheckBox runWizardOnProgramStartup;
 	private LooksFrame looksFrame;
-	private JCheckBox singleInstance;
 	private CustomJButton installService;
 	private JCheckBox showSplashScreen;
 	private JTextField currentLanguage = new JTextField();
@@ -214,20 +213,6 @@ public class GeneralTab {
 		});
 		builder.add(GuiUtil.getPreferredSizeComponent(runWizardOnProgramStartup), FormLayoutUtil.flip(cc.xyw(1, ypos, 9), colSpec, orientation));
 		ypos += 2;
-
-		if (!configuration.isHideAdvancedOptions()) {
-			singleInstance = new JCheckBox(Messages.getString("GeneralTab.10"), configuration.isRunSingleInstance());
-			singleInstance.setContentAreaFilled(false);
-			singleInstance.setToolTipText(Messages.getString("GeneralTab.11"));
-			singleInstance.addActionListener(new ActionListener() {
-				@Override
-				public void actionPerformed(ActionEvent e) {
-					configuration.setRunSingleInstance(singleInstance.isSelected());
-				}
-			});
-			builder.add(GuiUtil.getPreferredSizeComponent(singleInstance), FormLayoutUtil.flip(cc.xyw(1, ypos, 9), colSpec, orientation));
-			ypos += 2;
-		}
 
 		ArrayList<RendererConfiguration> allConfs = RendererConfiguration.getEnabledRenderersConfigurations();
 		ArrayList<Object> keyValues = new ArrayList<>();
