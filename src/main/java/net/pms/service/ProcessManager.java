@@ -103,7 +103,9 @@ public class ProcessManager extends AbstractSynchronizedService {
 	@Override
 	@GuardedBy("lock")
 	protected boolean doStop() {
-		terminator.interrupt();
+		if (terminator != null) {
+			terminator.interrupt();
+		}
 		return true;
 	}
 

@@ -201,7 +201,9 @@ public class SleepManager extends AbstractSynchronizedService {
 	@Override
 	@GuardedBy("lock")
 	protected boolean doStop() {
-		worker.interrupt();
+		if (worker != null) {
+			worker.interrupt();
+		}
 		return true;
 	}
 
