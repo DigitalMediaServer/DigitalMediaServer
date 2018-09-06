@@ -54,13 +54,12 @@ public class ConfigurationReader {
 	}
 
 	// quote strings
-	private String quote(Object value) {
+	private static String quote(Object value) {
 		if ((value != null) && (value instanceof String)) {
 			String s = (String) value;
 			return String.format("\"%s\"", s.replace("\"", "\\\""));
-		} else {
-			return String.valueOf(value);
 		}
+		return String.valueOf(value);
 	}
 
 	// log configuration settings that override the previous value,
@@ -246,6 +245,10 @@ public class ConfigurationReader {
 	 * @return The value configured for the key.
 	 */
 	String getNonBlankConfigurationString(String key, String def) {
+		return getNonBlankConfigurationString(key, def, true);
+	}
+
+	String getNonBlankConfigurationString(String key, String def, boolean log) {
 		String value;
 		String s = configuration.getString(key);
 
@@ -257,7 +260,9 @@ public class ConfigurationReader {
 			value = null;
 		}
 
-		log(key, value, def);
+		if (log) {
+			log(key, value, def);
+		}
 		return value;
 	}
 

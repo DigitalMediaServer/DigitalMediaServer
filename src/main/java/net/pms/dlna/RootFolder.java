@@ -560,6 +560,7 @@ public class RootFolder extends DLNAResource {
 	private void addWebFolder(File webConf) {
 		try {
 			try (LineNumberReader br = new LineNumberReader(new InputStreamReader(new FileInputStream(webConf), StandardCharsets.UTF_8))) {
+				LOGGER.trace("Reading web configuration from \"{}\"", webConf);
 				String line;
 				while ((line = br.readLine()) != null) {
 					line = line.trim();
@@ -634,16 +635,16 @@ public class RootFolder extends DLNAResource {
 							}
 						} catch (ArrayIndexOutOfBoundsException e) {
 							// catch exception here and go with parsing
-							LOGGER.info("Error at line " + br.getLineNumber() + " of WEB.conf: " + e.getMessage());
-							LOGGER.debug(null, e);
+							LOGGER.info("Error at line {} in WEB.conf: {}", br.getLineNumber(), e.getMessage());
+							LOGGER.trace("", e);
 						}
 					}
 				}
 			}
 		} catch (FileNotFoundException e) {
-			LOGGER.debug("Can't read web configuration file {}", e.getMessage());
+			LOGGER.trace("Web configuration \"{}\" not found: {}", webConf, e.getMessage());
 		} catch (IOException e) {
-			LOGGER.warn("Unexpected error in WEB.conf: " + e.getMessage());
+			LOGGER.warn("Unexpected error in WEB.conf: {}", e.getMessage());
 			LOGGER.debug("", e);
 		}
 	}

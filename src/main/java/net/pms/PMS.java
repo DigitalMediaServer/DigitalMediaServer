@@ -331,15 +331,24 @@ public class PMS {
 		}
 		LOGGER.info("Profile name: {}", configuration.getProfileName());
 		LOGGER.info("");
-		if (configuration.useWebInterface()) {
-			String webConfPath = configuration.getWebConfPath();
-			LOGGER.info("Web configuration file: {}", webConfPath);
-			try {
-				// Don't use the {} syntax here as the check needs to be performed on every log level
-				LOGGER.info("Web configuration file permissions: " + FileUtil.getFilePermissions(webConfPath));
-			} catch (FileNotFoundException e) {
-				LOGGER.info("Web configuration file not found: {}", e.getMessage());
+		if (configuration.getExternalNetwork()) {
+			File webConf = new File(configuration.getWebConfPath());
+			if (webConf.exists()) {
+				LOGGER.info("Web configuration file: {}", webConf.getAbsolutePath());
+				try {
+					FilePermissions webConfPermissions= FileUtil.getFilePermissions(webConf);
+					LOGGER.info("Web configuration file permissions: {}", webConfPermissions);
+				} catch (FileNotFoundException e) {
+					// Should not happen
+					LOGGER.info("Web configuration file not found: {}", e.getMessage());
+				}
+				LOGGER.info("");
+			} else if (configuration.isWebConfPathSpecified()) {
+				LOGGER.warn("Couldn't read the specified web configuration file \"{}\"", webConf);
+				LOGGER.info("");
 			}
+		} else {
+			LOGGER.info("Internet/external network access is denied");
 			LOGGER.info("");
 		}
 
