@@ -3866,6 +3866,10 @@ public class PmsConfiguration extends RendererConfiguration {
 		return PROFILE_FOLDER;
 	}
 
+	public boolean isWebConfPathSpecified() {
+		return isNotBlank(configuration.getString(KEY_WEB_CONF_PATH));
+	}
+
 	/**
 	 * Returns the absolute path to the WEB.conf file. By default
 	 * this is <pre>PROFILE_DIRECTORY + File.pathSeparator + WEB.conf</pre>,
@@ -3880,7 +3884,7 @@ public class PmsConfiguration extends RendererConfiguration {
 		// to the logfile/Logs tab.
 		if (WEB_CONF_PATH == null) {
 			WEB_CONF_PATH = FileUtil.getFileLocation(
-				getString(KEY_WEB_CONF_PATH, null),
+				configurationReader.getNonBlankConfigurationString(KEY_WEB_CONF_PATH, null, false),
 				PROFILE_FOLDER,
 				DEFAULT_WEB_CONF_FILENAME
 			).getFilePath();
