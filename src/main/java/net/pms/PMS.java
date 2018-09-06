@@ -27,14 +27,10 @@ import com.sun.net.httpserver.HttpServer;
 import java.awt.*;
 import java.io.*;
 import java.net.BindException;
-import java.nio.charset.Charset;
-import java.nio.charset.IllegalCharsetNameException;
 import java.nio.charset.StandardCharsets;
-import java.nio.charset.UnsupportedCharsetException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.security.AccessControlException;
 import java.sql.SQLException;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -1518,10 +1514,6 @@ public class PMS {
 				LOGGER.trace("", e);
 			}
 
-			if (getConfiguration().isRunSingleInstance()) {
-				killOld();
-			}
-
 			// Create the PMS instance returned by get()
 			createInstance(options); // Calls new() then init()
 		} catch (ConfigurationException | InitializationException e) {
@@ -1778,150 +1770,6 @@ public class PMS {
 		} catch (Exception e) {
 			LOGGER.warn("Could not rename \"{}\" to \"{}\": {}", fullLogFileName, newLogFileName, e.getMessage());
 			LOGGER.trace("", e);
-		}
-	}
-
-	/**
-	 * Restart handling
-	 */
-	private static void killOld() {
-		// Note: failure here doesn't necessarily mean we need admin rights,
-		// only that we lack the required permission for these specific items.
-		try {
-			killProc();
-		} catch (AccessControlException e) {
-			LOGGER.error(
-				"Failed to check for already running instance: " + e.getMessage() +
-				(Platform.isWindows() ? "\nDMS might need to run as an administrator to access the PID file" : "")
-			);
-		} catch (FileNotFoundException e) {
-			LOGGER.debug("PID file not found, cannot check for running process");
-		} catch (IOException e) {
-			LOGGER.error("Error killing old process: " + e);
-		}
-
-		try {
-			dumpPid();
-		} catch (FileNotFoundException e) {
-			LOGGER.error(
-				"Failed to write PID file: "+ e.getMessage() +
-				(Platform.isWindows() ? "\nDMS might need to run as an administrator to enforce single instance" : "")
-			);
-		} catch (IOException e) {
-			LOGGER.error("Error dumping PID " + e);
-		}
-	}
-
-	/*
-	 * This method is only called for Windows OS'es, so specialized Windows charset handling is allowed
-	 */
-	private static boolean verifyPidName(String pid) throws IOException, IllegalAccessException {
-		if (!Platform.isWindows()) {
-			throw new IllegalAccessException("verifyPidName can only be called from Windows!");
-		}
-		ProcessBuilder pb = new ProcessBuilder("tasklist", "/FI", "\"PID eq " + pid + "\"", "/V", "/NH", "/FO", "CSV");
-		pb.redirectErrorStream(true);
-		Process p = pb.start();
-		String line;
-
-		Charset charset = null;
-		int codepage = WinUtils.getOEMCP();
-		String[] aliases = {"cp" + codepage, "MS" + codepage};
-		for (String alias : aliases) {
-			try {
-				charset = Charset.forName(alias);
-				break;
-			} catch (IllegalCharsetNameException | UnsupportedCharsetException e) {
-				charset = null;
-			}
-		}
-		if (charset == null) {
-			charset = Charset.defaultCharset();
-			LOGGER.warn("Couldn't find a supported charset for {}, using default ({})", aliases, charset);
-		}
-		try (BufferedReader in = new BufferedReader(new InputStreamReader(p.getInputStream(), charset))) {
-			try {
-				p.waitFor();
-			} catch (InterruptedException e) {
-				return false;
-			}
-			line = in.readLine();
-		}
-
-		if (line == null) {
-			return false;
-		}
-
-		// remove all " and convert to common case before splitting result on ,
-		String[] tmp = line.toLowerCase().replaceAll("\"", "").split(",");
-		// if the line is too short we don't kill the process
-		if (tmp.length < 9) {
-			return false;
-		}
-
-		// check first and last, update since taskkill changed
-		// also check 2nd last since we migh have ", POSSIBLY UNSTABLE" in there
-		boolean dms = tmp[tmp.length - 1].contains("digital media server") ||
-			  		  tmp[tmp.length - 2].contains("digital media server");
-		return tmp[0].equals("javaw.exe") && dms;
-	}
-
-	private static String pidFile() {
-		return configuration.getDataFile("dms.pid");
-	}
-
-	private static void killProc() throws AccessControlException, IOException{
-		ProcessBuilder pb = null;
-		String pid;
-		String pidFile = pidFile();
-		if (!FileUtil.getFilePermissions(pidFile).isReadable()) {
-			throw new AccessControlException("Cannot read " + pidFile);
-		}
-
-		try (BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(pidFile), StandardCharsets.US_ASCII))) {
-			pid = in.readLine();
-		}
-
-		if (pid == null) {
-			return;
-		}
-
-		if (Platform.isWindows()) {
-			try {
-				if (verifyPidName(pid)) {
-					pb = new ProcessBuilder("taskkill", "/F", "/PID", pid, "/T");
-				}
-			} catch (IllegalAccessException e) {
-				// Impossible
-			}
-		} else if (Platform.isFreeBSD() || Platform.isLinux() || Platform.isOpenBSD() || Platform.isSolaris()) {
-			pb = new ProcessBuilder("kill", "-9", pid);
-		}
-
-		if (pb == null) {
-			return;
-		}
-
-		try {
-			Process p = pb.start();
-			p.waitFor();
-		} catch (InterruptedException e) {
-			LOGGER.trace("Got interrupted while trying to kill process by PID " + e);
-		}
-	}
-
-	public static long getPID() {
-		String processName = java.lang.management.ManagementFactory.getRuntimeMXBean().getName();
-		return Long.parseLong(processName.split("@")[0]);
-	}
-
-	private static void dumpPid() throws IOException {
-		try (FileOutputStream out = new FileOutputStream(pidFile())) {
-			long pid = getPID();
-			LOGGER.debug("Writing PID: " + pid);
-			String data = String.valueOf(pid) + "\r\n";
-			out.write(data.getBytes(StandardCharsets.US_ASCII));
-			out.flush();
 		}
 	}
 
