@@ -4172,7 +4172,7 @@ public class PmsConfiguration extends RendererConfiguration {
 	}
 
 	public Level getLoggingFilterConsole() {
-		return Level.toLevel(getString(KEY_LOGGING_FILTER_CONSOLE, "INFO"),Level.INFO);
+		return Level.toLevel(getString(KEY_LOGGING_FILTER_CONSOLE, "TRACE"), Level.INFO);
 	}
 
 	public void setLoggingFilterConsole(Level value) {
@@ -4180,7 +4180,7 @@ public class PmsConfiguration extends RendererConfiguration {
 	}
 
 	public Level getLoggingFilterLogsTab() {
-		return Level.toLevel(getString(KEY_LOGGING_FILTER_LOGS_TAB, "INFO"),Level.INFO);
+		return Level.toLevel(getString(KEY_LOGGING_FILTER_LOGS_TAB, "INFO"), Level.INFO);
 	}
 
 	public void setLoggingFilterLogsTab(Level value) {
@@ -4749,8 +4749,8 @@ public class PmsConfiguration extends RendererConfiguration {
 	}
 
 	public String getRootLogLevel() {
-		String level = getString(KEY_ROOT_LOG_LEVEL, "DEBUG").toUpperCase();
-		return "ALL TRACE DEBUG INFO WARN ERROR OFF".contains(level) ? level : "DEBUG";
+		String level = getString(KEY_ROOT_LOG_LEVEL, "INFO").toUpperCase();
+		return "ALL TRACE DEBUG INFO WARN ERROR OFF".contains(level) ? level : "INFO";
 	}
 
 	public void setRootLogLevel(ch.qos.logback.classic.Level level) {
