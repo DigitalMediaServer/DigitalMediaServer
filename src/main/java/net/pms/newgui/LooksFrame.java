@@ -108,7 +108,7 @@ public class LooksFrame extends JFrame implements IFrame {
 		AnimatedIcon.buildAnimation("button-restart-requiredF%d.png", 0, 24, true, 800, 300, 15)
 	);
 	private AnimatedIcon restartIcon;
-	private AbstractButton webinterface;
+	private ImageButton webinterface;
 	private JLabel status;
 	private final static Object lookAndFeelInitializedLock = new Object();
 	private volatile static boolean lookAndFeelInitialized = false;
@@ -398,45 +398,43 @@ public class LooksFrame extends JFrame implements IFrame {
 
 		toolBar.add(new JPanel());
 
-		if (PMS.getConfiguration().useWebInterface()) {
-			webinterface = createToolBarButton(Messages.getString("LooksFrame.29"), "button-wif.png");
-			webinterface.addActionListener(new ActionListener() {
-				@Override
-				public void actionPerformed(ActionEvent e) {
-					String error = null;
-					if (PMS.get().getWebInterface() != null && isNotBlank(PMS.get().getWebInterface().getUrl())) {
+		webinterface = createToolBarButton(Messages.getString("LooksFrame.29"), "button-wif.png");
+		webinterface.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				String error = null;
+				if (PMS.get().getWebInterface() != null && isNotBlank(PMS.get().getWebInterface().getUrl())) {
+					try {
+						URI uri = new URI(PMS.get().getWebInterface().getUrl());
 						try {
-							URI uri = new URI(PMS.get().getWebInterface().getUrl());
-							try {
-								Desktop.getDesktop().browse(uri);
-							} catch (RuntimeException | IOException be) {
-								LOGGER.error("Cound not open the default web browser: {}", be.getMessage());
-								LOGGER.trace("", be);
-								error = Messages.getString("LooksFrame.BrowserError") + "\n" + be.getMessage();
-							}
-						} catch (URISyntaxException se) {
-							LOGGER.error(
-								"Could not form a valid web interface URI from \"{}\": {}",
-								PMS.get().getWebInterface().getUrl(),
-								se.getMessage()
-							);
-							LOGGER.trace("", se);
-							error = Messages.getString("LooksFrame.URIError");
+							Desktop.getDesktop().browse(uri);
+						} catch (RuntimeException | IOException be) {
+							LOGGER.error("Cound not open the default web browser: {}", be.getMessage());
+							LOGGER.trace("", be);
+							error = Messages.getString("LooksFrame.BrowserError") + "\n" + be.getMessage();
 						}
-					}
-					else {
+					} catch (URISyntaxException se) {
+						LOGGER.error(
+							"Could not form a valid web interface URI from \"{}\": {}",
+							PMS.get().getWebInterface().getUrl(),
+							se.getMessage()
+						);
+						LOGGER.trace("", se);
 						error = Messages.getString("LooksFrame.URIError");
 					}
-					if (error != null) {
-						JOptionPane.showMessageDialog(null, error, Messages.getString("Dialog.Error"), JOptionPane.ERROR_MESSAGE);
-					}
 				}
-			});
-			webinterface.setToolTipText(Messages.getString("LooksFrame.30"));
-			webinterface.setEnabled(configuration.useWebInterface());
-			toolBar.add(webinterface);
-			toolBar.addSeparator(new Dimension(20, 1));
-		}
+				else {
+					error = Messages.getString("LooksFrame.URIError");
+				}
+				if (error != null) {
+					JOptionPane.showMessageDialog(null, error, Messages.getString("Dialog.Error"), JOptionPane.ERROR_MESSAGE);
+				}
+			}
+		});
+		webinterface.setToolTipText(Messages.getString("LooksFrame.30"));
+		webinterface.setEnabled(false);
+		toolBar.add(webinterface);
+		toolBar.addSeparator(new Dimension(20, 1));
 
 		restartIcon = (AnimatedIcon) reload.getIcon();
 		restartRequredIcon.startArm();
@@ -602,6 +600,23 @@ public class LooksFrame extends JFrame implements IFrame {
 	@Override
 	public void updateBuffer() {
 		st.updateCurrentBitrate();
+	}
+
+	/**
+	 * Sets the enabled status of the web interface button.
+	 *
+	 * @param value {@code true} if the button should be enabled, {@code false}
+	 *            otherwise.
+	 */
+	@Override
+	public void webInterfaceEnabled(final boolean value) {
+		SwingUtilities.invokeLater(new Runnable() {
+
+			@Override
+			public void run() {
+				webinterface.setEnabled(value);
+			}
+		});
 	}
 
 	/**
