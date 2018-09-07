@@ -168,7 +168,9 @@ public class TableManager implements Service {
 			}
 		} catch (SQLException e) {
 			LOGGER.error("Database tables check failed with: {}", e.getMessage());
-			LOGGER.trace("", e);
+			if (LOGGER.isTraceEnabled() && e.getErrorCode() != ErrorCode.DATABASE_ALREADY_OPEN_1) {
+				LOGGER.trace("", e);
+			}
 			lastException = e;
 			clearConnectionPool();
 		}
