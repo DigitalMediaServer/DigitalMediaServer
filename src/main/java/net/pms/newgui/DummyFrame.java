@@ -49,6 +49,10 @@ public class DummyFrame implements IFrame {
 	}
 
 	@Override
+	public void webInterfaceEnabled(boolean value) {
+	}
+
+	@Override
 	public void setReloadable(boolean reload) {
 	}
 
@@ -76,6 +80,7 @@ public class DummyFrame implements IFrame {
 	public void setScanLibraryEnabled(boolean flag) {
 	}
 
+	@Override
 	public String getLog() {
 		return StringUtils.join(log, "\n");
 	}

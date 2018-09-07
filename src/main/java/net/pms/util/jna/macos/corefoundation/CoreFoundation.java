@@ -1277,11 +1277,14 @@ public interface CoreFoundation extends Library {
 		@Override
 		public String toString() {
 			if (this.getPointer() == null) {
-				return "null";
+				return null;
 			}
 			long maxSize = Math.max(
-				INSTANCE.CFStringGetMaximumSizeForEncoding(INSTANCE.CFStringGetLength(this),
-					CFStringBuiltInEncodings.kCFStringEncodingUTF8.getValue()), 1);
+				INSTANCE.CFStringGetMaximumSizeForEncoding(
+					INSTANCE.CFStringGetLength(this),
+					CFStringBuiltInEncodings.kCFStringEncodingUTF8.getValue()),
+				1
+			);
 			StringByReference buffer = new StringByReference(maxSize);
 			INSTANCE.CFStringGetCString(this, buffer, maxSize, CFStringBuiltInEncodings.kCFStringEncodingUTF8.getValue());
 			return buffer.getValue(StandardCharsets.UTF_8);

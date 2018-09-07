@@ -31,8 +31,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.math.RoundingMode;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -55,6 +53,7 @@ import net.pms.encoders.StandardPlayerId;
 import net.pms.exception.InvalidArgumentException;
 import net.pms.formats.Format;
 import net.pms.image.thumbnail.CoverSupplier;
+import net.pms.io.BasicSystemUtils;
 import net.pms.newgui.NavigationShareTab.SharedFoldersTableModel;
 import net.pms.service.PreventSleepMode;
 import net.pms.service.Services;
@@ -375,7 +374,7 @@ public class PmsConfiguration extends RendererConfiguration {
 	protected static final String PROFILE_FOLDER_NAME = Build.getProfileFolderName();
 
 	// The default profile name displayed on the renderer
-	protected static String HOSTNAME;
+	protected static final String COMPUTER_NAME = BasicSystemUtils.INSTANCE.getComputerName();
 
 	protected static String DEFAULT_AVI_SYNTH_SCRIPT;
 	protected static final int MAX_MAX_MEMORY_DEFAULT_SIZE = 400;
@@ -1131,7 +1130,8 @@ public class PmsConfiguration extends RendererConfiguration {
 	}
 
 	public String getServerDisplayName() {
-		if (isAppendProfileName()) {
+		String profileName = isAppendProfileName() ? getProfileName() : null;
+		if (profileName != null) {
 			return String.format("%s [%s]", getString(KEY_SERVER_NAME, PMS.getName()), getProfileName());
 		}
 		return getString(KEY_SERVER_NAME, PMS.getName());
@@ -3902,16 +3902,7 @@ public class PmsConfiguration extends RendererConfiguration {
 	}
 
 	public String getProfileName() {
-		if (HOSTNAME == null) { // Initialise this lazily
-			try {
-				HOSTNAME = InetAddress.getLocalHost().getHostName();
-			} catch (UnknownHostException e) {
-				LOGGER.info("Can't determine hostname");
-				HOSTNAME = "unknown host";
-			}
-		}
-
-		return getString(KEY_PROFILE_NAME, HOSTNAME);
+		return getString(KEY_PROFILE_NAME, COMPUTER_NAME);
 	}
 
 	public int getUpnpPort() {

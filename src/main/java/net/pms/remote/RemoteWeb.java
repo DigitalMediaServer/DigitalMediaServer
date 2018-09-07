@@ -26,6 +26,7 @@ import net.pms.dlna.DLNAThumbnailInputStream;
 import net.pms.dlna.RealFile;
 import net.pms.dlna.RootFolder;
 import net.pms.image.ImageFormat;
+import net.pms.io.BasicSystemUtils;
 import net.pms.network.HTTPResource;
 import net.pms.newgui.DbgPacker;
 import net.pms.util.FileUtil;
@@ -47,10 +48,6 @@ public class RemoteWeb {
 	private RemoteUtil.ResourceManager resources;
 	private static final PmsConfiguration configuration = PMS.getConfiguration();
 	private static final int defaultPort = configuration.getWebPort();
-
-	public RemoteWeb() throws IOException {
-		this(defaultPort);
-	}
 
 	public RemoteWeb(int port) throws IOException {
 		if (port <= 0) {
@@ -515,9 +512,13 @@ public class RemoteWeb {
 	}
 
 	public String getUrl() {
-		if (server != null) {
+		if (server != null && server.getAddress() != null) {
+			String host = server.getAddress().getAddress().isAnyLocalAddress() ?
+				BasicSystemUtils.INSTANCE.getLocalHostname() :
+				server.getAddress().getAddress().getHostAddress();
+
 			return (server instanceof HttpsServer ? "https://" : "http://") +
-				PMS.get().getServer().getHost() + ":" + server.getAddress().getPort();
+				host + ":" + server.getAddress().getPort();
 		}
 		return null;
 	}

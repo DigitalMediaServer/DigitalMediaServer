@@ -620,6 +620,7 @@ public class PMS {
 		if (configuration.useWebInterface()) {
 			try {
 				web = new RemoteWeb(configuration.getWebPort());
+				frame.webInterfaceEnabled(true);
 			} catch (BindException b) {
 				LOGGER.error("FATAL ERROR: Unable to bind web interface on port: " + configuration.getWebPort() + ", because: " + b.getMessage());
 				LOGGER.info("Maybe another process is running or the hostname is wrong.");
@@ -745,13 +746,13 @@ public class PMS {
 		}
 
 		if (web != null && web.getServer() != null) {
-			LOGGER.info("WEB interface is available at: " + web.getUrl());
+			LOGGER.info("WEB interface is available at: {}", web.getUrl());
 		}
 
 		// initialize the cache
 		if (configuration.getUseCache()) {
 			mediaLibrary = new MediaLibrary();
-			LOGGER.info("A tiny cache admin interface is available at: http://" + server.getHost() + ":" + server.getPort() + "/console/home");
+			LOGGER.info("A tiny cache admin interface is available at: http://{}:{}/console/home", server.getHost(), server.getPort());
 		}
 
 		// XXX: this must be called:

@@ -28,6 +28,7 @@ public interface IFrame {
 	public void setConnectionState(ConnectionState connectionState);
 	public void addRenderer(RendererConfiguration renderer);
 	public void updateRenderer(RendererConfiguration renderer);
+	public void webInterfaceEnabled(boolean value);
 	public void setReloadable(boolean reload);
 	public void addEngines();
 	public void setStatusLine(String line);
