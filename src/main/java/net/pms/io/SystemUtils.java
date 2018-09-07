@@ -4,6 +4,7 @@ import java.io.File;
 import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.nio.file.Path;
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import net.pms.newgui.LooksFrame;
 import net.pms.util.Version;
@@ -76,4 +77,18 @@ public interface SystemUtils {
 	 */
 	@Nullable
 	public Double getWindowsVersion();
+
+	/**
+	 * @return The locally resolvable name of the local computer or
+	 *         {@code "localhost"} if no resolvable name could be found.
+	 */
+	@Nonnull
+	public String getLocalHostname();
+
+	/**
+	 * @return The name of the local computer or {@code null} if it
+	 *         couldn't be resolved.
+	 */
+	@Nullable
+	public String getComputerName();
 }
