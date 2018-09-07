@@ -187,6 +187,7 @@ public class PmsConfiguration extends RendererConfiguration {
 	protected static final String KEY_FORCED_SUBTITLE_LANGUAGE = "forced_subtitle_language";
 	protected static final String KEY_FORCED_SUBTITLE_TAGS = "forced_subtitle_tags";
 	public    static final String KEY_GPU_ACCELERATION = "gpu_acceleration";
+	protected static final String KEY_GUI_CLOSE_ACTION = "gui_close_action";
 	protected static final String KEY_GUI_LOG_SEARCH_CASE_SENSITIVE = "gui_log_search_case_sensitive";
 	protected static final String KEY_GUI_LOG_SEARCH_MULTILINE = "gui_log_search_multiline";
 	protected static final String KEY_GUI_LOG_SEARCH_USE_REGEX = "gui_log_search_use_regex";
@@ -257,7 +258,7 @@ public class PmsConfiguration extends RendererConfiguration {
 	protected static final String KEY_MIN_PLAY_TIME_FILE = "min_playtime_file";
 	protected static final String KEY_MIN_PLAY_TIME_WEB = "min_playtime_web";
 	protected static final String KEY_MIN_STREAM_BUFFER = "minimum_web_buffer_size";
-	protected static final String KEY_MINIMIZED = "minimized";
+	protected static final String KEY_GUI_START_HIDDEN = "gui_start_hidden";
 	protected static final String KEY_MPEG2_MAIN_SETTINGS = "mpeg2_main_settings";
 	protected static final String KEY_MUX_ALLAUDIOTRACKS = "tsmuxer_mux_all_audiotracks";
 	protected static final String KEY_NETWORK_INTERFACE = "network_interface";
@@ -2083,23 +2084,23 @@ public class PmsConfiguration extends RendererConfiguration {
 	}
 
 	/**
-	 * Returns true if DMS should start minimized, i.e. without its window
-	 * opened. Default value false: to start with a window.
+	 * Returns {@code true} if DMS should start hidden, i.e. without the GUI
+	 * visible.
 	 *
-	 * @return True if DMS should start minimized, false otherwise.
+	 * @return {@code true} if DMS should start hidden, {@code false} otherwise.
 	 */
-	public boolean isMinimized() {
-		return getBoolean(KEY_MINIMIZED, false);
+	public boolean isGUIStartHidden() {
+		return getBoolean(KEY_GUI_START_HIDDEN, false);
 	}
 
 	/**
-	 * Set to true if DMS should start minimized, i.e. without its window
-	 * opened.
+	 * Sets whether DMS should start with the GUI hidden or not.
 	 *
-	 * @param value True if DMS should start minimized, false otherwise.
+	 * @param value {@code true} if DMS should start hidden, {@code false}
+	 *            otherwise.
 	 */
-	public void setMinimized(boolean value) {
-		configuration.setProperty(KEY_MINIMIZED, value);
+	public void setGUIStartHidden(boolean value) {
+		configuration.setProperty(KEY_GUI_START_HIDDEN, value);
 	}
 
 	/**
@@ -3992,6 +3993,26 @@ public class PmsConfiguration extends RendererConfiguration {
 	}
 
 	/**
+	 * @return the {@link GUICloseAction} to use.
+	 */
+	public GUICloseAction getGUICloseAction() {
+		return GUICloseAction.typeOf(getString(KEY_GUI_CLOSE_ACTION, GUICloseAction.ASK.getValue()));
+	}
+
+	/**
+	 * Sets what action should be taken when the GUI window is closed.
+	 *
+	 * @param value the {@link GUICloseAction} to use.
+	 */
+	public void setGUICloseAction(GUICloseAction value) {
+		if (value == null) {
+			configuration.setProperty(KEY_GUI_CLOSE_ACTION, "");
+		} else {
+			configuration.setProperty(KEY_GUI_CLOSE_ACTION, value.getValue());
+		}
+	}
+
+	/**
 	 * Get the state of the GUI log tab "Case sensitive" check box
 	 * @return true if enabled, false if disabled
 	 */
@@ -4766,5 +4787,52 @@ public class PmsConfiguration extends RendererConfiguration {
 
 	public int getAliveDelay() {
 		return getInt(KEY_ALIVE_DELAY, 0);
+	}
+
+	public static enum GUICloseAction {
+
+		/** Ask the user what to do */
+		ASK,
+
+		/** Hide the GUI */
+		HIDE,
+
+		/** Quit */
+		QUIT;
+
+		public String getValue() {
+			return name().toLowerCase(Locale.ROOT);
+		}
+		@Override
+		public String toString() {
+			switch (this) {
+				case ASK:
+					return Messages.getString("Generic.Ask");
+				case HIDE:
+					return Messages.getString("GeneralTab.HideWindowOption");
+				case QUIT:
+					return Messages.getString("LooksFrame.5");
+				default:
+					throw new IllegalStateException("Unimplemented enum value: " + name());
+			}
+		}
+
+		public static GUICloseAction typeOf(String value) {
+			if (value == null) {
+				return ASK;
+			}
+			value = value.trim().toLowerCase(Locale.ROOT);
+			switch (value) {
+				case "hide":
+				case "minimize":
+					return HIDE;
+				case "exit":
+				case "quit":
+				case "stop":
+					return QUIT;
+				default:
+					return ASK;
+			}
+		}
 	}
 }
