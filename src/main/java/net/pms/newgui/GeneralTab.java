@@ -50,9 +50,10 @@ public class GeneralTab {
 	private static final String COL_SPEC = "left:pref, 3dlu, p, 3dlu , p, 3dlu, p, 3dlu, pref:grow";
 	private static final String ROW_SPEC = "p, 0dlu, p, 0dlu, p, 3dlu, p, 3dlu, p, 3dlu, p, 3dlu, p, 3dlu, p, 3dlu, p, 3dlu, p, 3dlu, p, 3dlu, p, 15dlu, p, 3dlu, p, 3dlu, p, 3dlu, p, 3dlu, p, 3dlu, p, 15dlu, p, 3dlu, p, 3dlu, p, 3dlu, p, 3dlu, p, 3dlu, p, 3dlu, p, 3dlu, p";
 
-	public JCheckBox smcheckBox;
+	private JCheckBox startHiddenCheckBox;
+	private JCheckBox hideOnClose;
 	private JCheckBox autoStart;
-	private JCheckBox hideAdvancedOptions;
+	private JCheckBox showAdvancedOptions;
 	private JCheckBox newHTTPEngine;
 	private JComboBox<String> preventSleep;
 	private JTextField host;
@@ -91,15 +92,6 @@ public class GeneralTab {
 		builder.opaque(true);
 
 		CellConstraints cc = new CellConstraints();
-
-		smcheckBox = new JCheckBox(Messages.getString("NetworkTab.3"), configuration.isMinimized());
-		smcheckBox.setContentAreaFilled(false);
-		smcheckBox.addItemListener(new ItemListener() {
-			@Override
-			public void itemStateChanged(ItemEvent e) {
-				configuration.setMinimized((e.getStateChange() == ItemEvent.SELECTED));
-			}
-		});
 
 		JComponent cmp = builder.addSeparator(Messages.getString("NetworkTab.5"), FormLayoutUtil.flip(cc.xyw(1, ypos, 9), colSpec, orientation));
 		cmp = (JComponent) cmp.getComponent(0);
@@ -153,8 +145,7 @@ public class GeneralTab {
 			ypos += 2;
 		}
 
-		builder.add(smcheckBox, FormLayoutUtil.flip(cc.xy(1, ypos), colSpec, orientation));
-
+		int xpos = 1;
 		if (Platform.isWindows()) {
 			autoStart = new JCheckBox(Messages.getString("NetworkTab.57"), configuration.isAutoStart());
 			autoStart.setContentAreaFilled(false);
@@ -164,7 +155,34 @@ public class GeneralTab {
 					configuration.setAutoStart((e.getStateChange() == ItemEvent.SELECTED));
 				}
 			});
-			builder.add(GuiUtil.getPreferredSizeComponent(autoStart), FormLayoutUtil.flip(cc.xy(3, ypos), colSpec, orientation));
+			builder.add(GuiUtil.getPreferredSizeComponent(autoStart), FormLayoutUtil.flip(cc.xy(xpos, ypos), colSpec, orientation));
+			xpos += 2;
+		}
+
+		if (SystemTray.isSupported()) {
+			hideOnClose = new JCheckBox(Messages.getString("GeneralTab.HideOnClose"), configuration.isGUIHideOnClose());
+			hideOnClose.setContentAreaFilled(false);
+			hideOnClose.setToolTipText(Messages.getString("GeneralTab.HideOnCloseToolTip"));
+			hideOnClose.addItemListener(new ItemListener() {
+				@Override
+				public void itemStateChanged(ItemEvent e) {
+					configuration.setGUIHideOnClose(e.getStateChange() == ItemEvent.SELECTED);
+				}
+			});
+			builder.add(hideOnClose, FormLayoutUtil.flip(cc.xy(xpos, ypos), colSpec, orientation));
+			xpos += 2;
+
+			startHiddenCheckBox = new JCheckBox(Messages.getString("GeneralTab.StartHidden"), configuration.isGUIStartHidden());
+			startHiddenCheckBox.setContentAreaFilled(false);
+			startHiddenCheckBox.addItemListener(new ItemListener() {
+				@Override
+				public void itemStateChanged(ItemEvent e) {
+					configuration.setGUIStartHidden((e.getStateChange() == ItemEvent.SELECTED));
+				}
+			});
+
+			builder.add(startHiddenCheckBox, FormLayoutUtil.flip(cc.xy(xpos, ypos), colSpec, orientation));
+			xpos += 2;
 		}
 
 		showSplashScreen = new JCheckBox(Messages.getString("NetworkTab.74"), configuration.isShowSplashScreen());
@@ -176,10 +194,10 @@ public class GeneralTab {
 			}
 		});
 
-		builder.add(GuiUtil.getPreferredSizeComponent(showSplashScreen), FormLayoutUtil.flip(cc.xy(5, ypos), colSpec, orientation));
+		builder.add(GuiUtil.getPreferredSizeComponent(showSplashScreen), FormLayoutUtil.flip(cc.xy(xpos, ypos), colSpec, orientation));
 		ypos += 2;
 
-		if (!configuration.isHideAdvancedOptions()) {
+		if (!configuration.isHideAdvancedOptions() && Platform.isWindows()) {
 			installService = new CustomJButton();
 			refreshInstallServiceButtonState();
 
@@ -187,20 +205,20 @@ public class GeneralTab {
 			ypos += 2;
 		}
 
-		hideAdvancedOptions = new JCheckBox(Messages.getString("NetworkTab.61"), configuration.isHideAdvancedOptions());
-		hideAdvancedOptions.setContentAreaFilled(false);
-		hideAdvancedOptions.addActionListener(new ActionListener() {
+		showAdvancedOptions = new JCheckBox(Messages.getString("GeneralTab.ShowAdvancedOptions"), !configuration.isHideAdvancedOptions());
+		showAdvancedOptions.setContentAreaFilled(false);
+		showAdvancedOptions.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				configuration.setHideAdvancedOptions(hideAdvancedOptions.isSelected());
-				if (hideAdvancedOptions.isSelected()) {
+				configuration.setHideAdvancedOptions(!showAdvancedOptions.isSelected());
+				if (!showAdvancedOptions.isSelected()) {
 					looksFrame.setViewLevel(ViewLevel.NORMAL);
 				} else {
 					looksFrame.setViewLevel(ViewLevel.ADVANCED);
 				}
 			}
 		});
-		builder.add(GuiUtil.getPreferredSizeComponent(hideAdvancedOptions), FormLayoutUtil.flip(cc.xyw(1, ypos, 9), colSpec, orientation));
+		builder.add(GuiUtil.getPreferredSizeComponent(showAdvancedOptions), FormLayoutUtil.flip(cc.xyw(1, ypos, 9), colSpec, orientation));
 		ypos += 2;
 
 		runWizardOnProgramStartup = new JCheckBox(Messages.getString("GeneralTab.9"), configuration.isRunWizard());
@@ -490,80 +508,74 @@ public class GeneralTab {
 	 *  - Add the correct action listener
 	 */
 	private void refreshInstallServiceButtonState() {
-		if (System.getProperty(LooksFrame.START_SERVICE) != null || !Platform.isWindows()) {
-			installService.setEnabled(false);
-			installService.setText(Messages.getString("NetworkTab.4"));
-		} else {
-			installService.setEnabled(true);
+		installService.setEnabled(true);
+		boolean isServiceInstalled = WindowsUtil.isServiceInstalled();
 
-			boolean isServiceInstalled = WindowsUtil.isServiceInstalled();
+		if (isServiceInstalled) {
+			// Update button text and tooltip
+			installService.setText(Messages.getString("GeneralTab.2"));
+			installService.setToolTipText(null);
 
-			if (isServiceInstalled) {
-				// Update button text and tooltip
-				installService.setText(Messages.getString("GeneralTab.2"));
-				installService.setToolTipText(null);
+			// Remove all attached action listeners
+			for (ActionListener al : installService.getActionListeners()) {
+				installService.removeActionListener(al);
+			}
 
-				// Remove all attached action listeners
-				for (ActionListener al : installService.getActionListeners()) {
-					installService.removeActionListener(al);
+			// Attach the button clicked action listener
+			installService.addActionListener(new ActionListener() {
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					WindowsUtil.uninstallWin32Service();
+					LOGGER.info("Uninstalled DMS Windows service");
+
+					// Refresh the button state after it has been clicked
+					refreshInstallServiceButtonState();
+
+					JOptionPane.showMessageDialog(
+						looksFrame,
+						Messages.getString("GeneralTab.3"),
+						Messages.getString("Dialog.Information"),
+						JOptionPane.INFORMATION_MESSAGE
+					);
 				}
+			});
+		} else {
+			// Update button text and tooltip
+			installService.setText(Messages.getString("NetworkTab.4"));
+			installService.setToolTipText(Messages.getString("NetworkTab.63"));
 
-				// Attach the button clicked action listener
-				installService.addActionListener(new ActionListener() {
-					@Override
-					public void actionPerformed(ActionEvent e) {
-						WindowsUtil.uninstallWin32Service();
-						LOGGER.info("Uninstalled DMS Windows service");
+			// Remove all attached action listeners
+			for (ActionListener al : installService.getActionListeners()) {
+				installService.removeActionListener(al);
+			}
+
+			// Attach the button clicked action listener
+			installService.addActionListener(new ActionListener() {
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					if (WindowsUtil.installWin32Service()) {
+						LOGGER.info("Installed DMS Windows service");
 
 						// Refresh the button state after it has been clicked
 						refreshInstallServiceButtonState();
 
 						JOptionPane.showMessageDialog(
 							looksFrame,
-							Messages.getString("GeneralTab.3"),
+							Messages.getString("NetworkTab.11") +
+							Messages.getString("NetworkTab.12"),
 							Messages.getString("Dialog.Information"),
 							JOptionPane.INFORMATION_MESSAGE
 						);
+					} else {
+						JOptionPane.showMessageDialog(
+							looksFrame,
+							Messages.getString("NetworkTab.14"),
+							Messages.getString("Dialog.Error"),
+							JOptionPane.ERROR_MESSAGE
+						);
 					}
-				});
-			} else {
-				// Update button text and tooltip
-				installService.setText(Messages.getString("NetworkTab.4"));
-				installService.setToolTipText(Messages.getString("NetworkTab.63"));
-
-				// Remove all attached action listeners
-				for (ActionListener al : installService.getActionListeners()) {
-					installService.removeActionListener(al);
 				}
-
-				// Attach the button clicked action listener
-				installService.addActionListener(new ActionListener() {
-					@Override
-					public void actionPerformed(ActionEvent e) {
-						if (WindowsUtil.installWin32Service()) {
-							LOGGER.info("Installed DMS Windows service");
-
-							// Refresh the button state after it has been clicked
-							refreshInstallServiceButtonState();
-
-							JOptionPane.showMessageDialog(
-								looksFrame,
-								Messages.getString("NetworkTab.11") +
-								Messages.getString("NetworkTab.12"),
-								Messages.getString("Dialog.Information"),
-								JOptionPane.INFORMATION_MESSAGE
-							);
-						} else {
-							JOptionPane.showMessageDialog(
-								looksFrame,
-								Messages.getString("NetworkTab.14"),
-								Messages.getString("Dialog.Error"),
-								JOptionPane.ERROR_MESSAGE
-							);
-						}
-					}
-				});
-			}
+			});
 		}
 	}
 

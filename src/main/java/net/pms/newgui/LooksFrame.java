@@ -29,6 +29,8 @@ import com.sun.jna.Platform;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -71,7 +73,6 @@ public class LooksFrame extends JFrame implements IFrame {
 	private static final Logger LOGGER = LoggerFactory.getLogger(LooksFrame.class);
 
 	private final PmsConfiguration configuration;
-	public static final String START_SERVICE = "start.service";
 	private final WindowProperties windowProperties;
 	private static final long serialVersionUID = 8723727186288427690L;
 	protected static final Dimension STANDARD_SIZE = new Dimension(1000, 750);
@@ -249,12 +250,24 @@ public class LooksFrame extends JFrame implements IFrame {
 		if (configuration == null) {
 			throw new IllegalArgumentException("configuration can't be null");
 		}
+		setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
 		setResizable(true);
 		windowProperties = new WindowProperties(this, STANDARD_SIZE, MINIMUM_SIZE, windowConfiguration);
 		this.configuration = configuration;
 		minimizeListenerRegistrar.register(restartRequredIcon);
 		Options.setDefaultIconSize(new Dimension(18, 18));
 		Options.setUseNarrowButtons(true);
+
+		addWindowListener(new WindowAdapter() {
+			@Override
+			public void windowClosing(WindowEvent e) {
+				if (SystemTray.isSupported() && PMS.getConfiguration().isGUIHideOnClose()) {
+					e.getWindow().setVisible(false);
+				} else {
+					quit();
+				}
+			}
+		});
 
 		// Set view level, can be omitted if ViewLevel is implemented in configuration
 		// by setting the view level as variable initialization
@@ -321,8 +334,6 @@ public class LooksFrame extends JFrame implements IFrame {
 		setTitle("Test");
 		setIconImage(readImageIcon("icon-32.png").getImage());
 
-		setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
-
 		JComponent jp = buildContent();
 		String showScrollbars = System.getProperty("scrollbars", "").toLowerCase();
 
@@ -372,14 +383,13 @@ public class LooksFrame extends JFrame implements IFrame {
 		}
 
 		setTitle(title);
-		setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
 
 		// Display tooltips immediately and for a long time
 		ToolTipManager.sharedInstance().setInitialDelay(400);
 		ToolTipManager.sharedInstance().setDismissDelay(60000);
 		ToolTipManager.sharedInstance().setReshowDelay(400);
 
-		if (!configuration.isMinimized() && System.getProperty(START_SERVICE) == null) {
+		if (!configuration.isGUIStartHidden() || !SystemTray.isSupported()) {
 			setVisible(true);
 		}
 		BasicSystemUtils.INSTANCE.addSystemTray(this);
@@ -458,9 +468,6 @@ public class LooksFrame extends JFrame implements IFrame {
 			}
 		});
 		toolBar.add(quit);
-		if (System.getProperty(START_SERVICE) != null) {
-			quit.setEnabled(false);
-		}
 		toolBar.add(new JPanel());
 
 		// Apply the orientation to the toolbar and all components in it
