@@ -23,6 +23,7 @@ import com.sun.jna.Native;
 import com.sun.jna.Platform;
 import com.sun.jna.WString;
 import com.sun.jna.platform.win32.Advapi32Util;
+import com.sun.jna.platform.win32.Kernel32Util;
 import com.sun.jna.platform.win32.Win32Exception;
 import com.sun.jna.platform.win32.WinReg;
 import com.sun.jna.ptr.LongByReference;
@@ -364,6 +365,18 @@ public class WinUtils extends BasicSystemUtils {
 		try {
 			return Double.valueOf(System.getProperty("os.version"));
 		} catch (NullPointerException | NumberFormatException e) {
+			return null;
+		}
+	}
+
+	@Override
+	@Nullable
+	public String getComputerName() {
+		try {
+			return Kernel32Util.getComputerName();
+		} catch (Win32Exception e) {
+			LOGGER.error("The call to Kernel32.getComputerName() failed with: {}", e.getMessage());
+			LOGGER.trace("", e);
 			return null;
 		}
 	}
