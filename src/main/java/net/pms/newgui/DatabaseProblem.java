@@ -239,7 +239,7 @@ public class DatabaseProblem {
 		// Set the width of the text panels by font size to accommodate font scaling
 		double avgCharWidth = SwingUtils.getComponentAverageCharacterWidth(descriptionText);
 		textWidth = (int) Math.round(avgCharWidth * 100);
-		Insets buttonInsets = createButtonInsets(avgCharWidth);
+		Insets buttonInsets = SwingUtils.createButtonInsets(avgCharWidth);
 		renameButton.setMargin(buttonInsets);
 		backupDowngradeButton.setMargin(buttonInsets);
 		downgradeButton.setMargin(buttonInsets);
@@ -415,14 +415,6 @@ public class DatabaseProblem {
 
 		return rootPanel;
 
-	}
-
-	private static Insets createButtonInsets(double avgCharWidth) {
-		return new Insets(
-			(int) Math.round(0.5 * avgCharWidth),
-			(int) Math.round(4 * avgCharWidth),
-			(int) Math.round(0.5 * avgCharWidth),
-			(int) Math.round(4 * avgCharWidth));
 	}
 
 	/**

@@ -21,15 +21,17 @@ package net.pms.util;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.FontMetrics;
+import java.awt.Insets;
 import java.awt.font.FontRenderContext;
 import java.awt.font.LineBreakMeasurer;
 import java.awt.font.TextAttribute;
 import java.text.AttributedCharacterIterator;
 import java.text.AttributedString;
+import javax.annotation.Nonnull;
 import javax.swing.text.JTextComponent;
 
 /**
- * This is a utility class for various reusable Swing methods. *
+ * This is a utility class for various reusable Swing methods.
  */
 public class SwingUtils {
 
@@ -63,29 +65,29 @@ public class SwingUtils {
 		}
 
 		FontMetrics metrics = textComponent.getFontMetrics(textComponent.getFont());
-	    FontRenderContext rendererContext = metrics.getFontRenderContext();
-	    float formatWidth = width - textComponent.getInsets().left - textComponent.getInsets().right;
+		FontRenderContext rendererContext = metrics.getFontRenderContext();
+		float formatWidth = width - textComponent.getInsets().left - textComponent.getInsets().right;
 
-	    int lines = 0;
-	    String[] paragraphs = text.split("\n");
-	    for (String paragraph : paragraphs) {
-	    	if (paragraph.isEmpty()) {
-	    		lines++;
-	    	} else {
+		int lines = 0;
+		String[] paragraphs = text.split("\n");
+		for (String paragraph : paragraphs) {
+			if (paragraph.isEmpty()) {
+				lines++;
+			} else {
 				AttributedString attributedText = new AttributedString(paragraph);
 				attributedText.addAttribute(TextAttribute.FONT, textComponent.getFont());
-			    AttributedCharacterIterator charIterator = attributedText.getIterator();
-			    LineBreakMeasurer lineMeasurer = new LineBreakMeasurer(charIterator, rendererContext);
+				AttributedCharacterIterator charIterator = attributedText.getIterator();
+				LineBreakMeasurer lineMeasurer = new LineBreakMeasurer(charIterator, rendererContext);
 
-			    lineMeasurer.setPosition(charIterator.getBeginIndex());
-			    while (lineMeasurer.getPosition() < charIterator.getEndIndex()) {
-			    	lineMeasurer.nextLayout(formatWidth);
-			    	lines++;
-			    }
-	    	}
-	    }
+				lineMeasurer.setPosition(charIterator.getBeginIndex());
+				while (lineMeasurer.getPosition() < charIterator.getEndIndex()) {
+					lineMeasurer.nextLayout(formatWidth);
+					lines++;
+				}
+			}
+		}
 
-	    return new Dimension(width, metrics.getHeight() * lines + textComponent.getInsets().top + textComponent.getInsets().bottom);
+		return new Dimension(width, metrics.getHeight() * lines + textComponent.getInsets().top + textComponent.getInsets().bottom);
 	}
 
 	/**
@@ -112,15 +114,69 @@ public class SwingUtils {
 	 *        average character width.
 	 * @return The average width in pixels
 	 */
-	public static float getComponentAverageCharacterWidth(Component component) {
+	public static double getComponentAverageCharacterWidth(@Nonnull Component component) {
 		FontMetrics metrics = component.getFontMetrics(component.getFont());
 		int i = 0;
-		float avgWidth = 0;
+		double avgWidth = 0;
 		for (int width : metrics.getWidths()) {
 			avgWidth += width;
 			i++;
 		}
 		return avgWidth / i;
+	}
+
+	/**
+	 * Creates {@link Insets} with predefined factors suitable for buttons which
+	 * scales with the average character width.
+	 *
+	 * @param component the {@link Component} from which to measure the average
+	 *            character width.
+	 * @return The new {@link Insets}.
+	 */
+	public static Insets createButtonInsets(@Nonnull Component component) {
+		return createScalableInsets(component, 4.0, 0.5);
+	}
+
+	/**
+	 * Creates {@link Insets} which scales with the average character width.
+	 *
+	 * @param component the {@link Component} from which to measure the average
+	 *            character width.
+	 * @param xFactor the factor of the horizontal insets.
+	 * @param yFactor the factor of the vertical insets.
+	 * @return The new {@link Insets}.
+	 */
+	public static Insets createScalableInsets(@Nonnull Component component, double xFactor, double yFactor) {
+		return createScalableInsets(SwingUtils.getComponentAverageCharacterWidth(component), xFactor, yFactor);
+	}
+
+	/**
+	 * Creates {@link Insets} with predefined factors suitable for buttons which
+	 * scales with the average character width.
+	 *
+	 * @param avgCharWidth the average character width (can be found with
+	 *            {@link #getComponentAverageCharacterWidth(Component)}).
+	 * @return The new {@link Insets}.
+	 */
+	public static Insets createButtonInsets(double avgCharWidth) {
+		return createScalableInsets(avgCharWidth, 4.0, 0.5);
+	}
+
+	/**
+	 * Creates {@link Insets} which scales with the average character width.
+	 *
+	 * @param avgCharWidth the average character width (can be found with
+	 *            {@link #getComponentAverageCharacterWidth(Component)}).
+	 * @param xFactor the factor of the horizontal insets.
+	 * @param yFactor the factor of the vertical insets.
+	 * @return The new {@link Insets}.
+	 */
+	public static Insets createScalableInsets(double avgCharWidth, double xFactor, double yFactor) {
+		return new Insets(
+			(int) Math.round(yFactor * avgCharWidth),
+			(int) Math.round(xFactor * avgCharWidth),
+			(int) Math.round(yFactor * avgCharWidth),
+			(int) Math.round(xFactor * avgCharWidth));
 	}
 
 }

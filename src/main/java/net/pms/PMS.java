@@ -470,25 +470,10 @@ public class PMS {
 				// The user has chosen to run the wizard
 
 				// Total number of questions
-				int numberOfQuestions = 3;
+				int numberOfQuestions = 2;
 
 				// The current question number
 				int currentQuestionNumber = 1;
-
-				// Ask if they want DMS to start minimized
-				int whetherToStartMinimized = JOptionPane.showConfirmDialog(
-					null,
-					Messages.getString("Wizard.3"),
-					Messages.getString("Wizard.2") + " " + (currentQuestionNumber++) + " " + Messages.getString("Wizard.4") + " " + numberOfQuestions,
-					JOptionPane.YES_NO_OPTION
-				);
-				if (whetherToStartMinimized == JOptionPane.YES_OPTION) {
-					configuration.setMinimized(true);
-					save();
-				} else if (whetherToStartMinimized == JOptionPane.NO_OPTION) {
-					configuration.setMinimized(false);
-					save();
-				}
 
 				// Ask if their network is wired, etc.
 				Object[] wizardOptions = {
@@ -533,17 +518,17 @@ public class PMS {
 				}
 
 				// Ask if they want to hide advanced options
-				int whetherToHideAdvancedOptions = JOptionPane.showConfirmDialog(
+				int showAdvancedOptions = JOptionPane.showConfirmDialog(
 					null,
-					Messages.getString("Wizard.11"),
+					Messages.getString("Wizard.AdvancedOptions"),
 					Messages.getString("Wizard.2") + " " + (currentQuestionNumber++) + " " + Messages.getString("Wizard.4") + " " + numberOfQuestions,
 					JOptionPane.YES_NO_OPTION
 				);
-				if (whetherToHideAdvancedOptions == JOptionPane.YES_OPTION) {
-					configuration.setHideAdvancedOptions(true);
-					save();
-				} else if (whetherToHideAdvancedOptions == JOptionPane.NO_OPTION) {
+				if (showAdvancedOptions == JOptionPane.YES_OPTION) {
 					configuration.setHideAdvancedOptions(false);
+					save();
+				} else if (showAdvancedOptions == JOptionPane.NO_OPTION) {
+					configuration.setHideAdvancedOptions(true);
 					save();
 				}
 

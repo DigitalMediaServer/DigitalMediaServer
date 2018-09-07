@@ -265,8 +265,9 @@ public class LanguageSelection {
 		// Set the width of the text panels by font size to accommodate font scaling
 		double avgCharWidth = SwingUtils.getComponentAverageCharacterWidth(descriptionText);
 		textWidth = (int) Math.round(avgCharWidth * 100);
-		selectButton.setMargin(createButtonInsets(avgCharWidth));
-		applyButton.setMargin(createButtonInsets(avgCharWidth));
+		Insets buttonInsets = SwingUtils.createButtonInsets(avgCharWidth);
+		selectButton.setMargin(buttonInsets);
+		applyButton.setMargin(buttonInsets);
 
 		descriptionText.setPreferredSize(SwingUtils.getWordWrappedTextDimension(descriptionText, textWidth));
 
@@ -441,15 +442,6 @@ public class LanguageSelection {
 		selectButton.setActionCommand("select");
 
 		return rootPanel;
-
-	}
-
-	private static Insets createButtonInsets(double avgCharWidth) {
-		return new Insets(
-			(int) Math.round(0.5 * avgCharWidth),
-			(int) Math.round(4 * avgCharWidth),
-			(int) Math.round(0.5 * avgCharWidth),
-			(int) Math.round(4 * avgCharWidth));
 	}
 
 	public boolean isAborted() {
