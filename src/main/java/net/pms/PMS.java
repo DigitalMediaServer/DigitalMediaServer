@@ -91,7 +91,6 @@ import org.slf4j.LoggerFactory;
 @SuppressWarnings("restriction")
 public class PMS {
 	private static final String SCROLLBARS = "scrollbars";
-	private static final String NATIVELOOK = "nativelook";
 	private static final String CONSOLE = "console";
 	private static final String NOCONSOLE = "noconsole";
 	public static final String CROWDIN_LINK = "http://crowdin.com/project/DigitalMediaServer";
@@ -1242,11 +1241,6 @@ public class PMS {
 				case CONSOLE:
 					result.put(Option.HEADLESS, null);
 					break;
-				case "-n":
-				case "--nativelook":
-				case NATIVELOOK:
-					result.put(Option.NATIVE_LOOK, null);
-					break;
 				case "-s":
 				case "--scrollbars":
 				case SCROLLBARS:
@@ -1344,10 +1338,6 @@ public class PMS {
 		out.println("  -v, --trace                     Force logging level to TRACE.");
 		out.println("  -c, --headless                  Run without GUI.");
 		out.println("  -C, --noconsole                 Fail if a GUI can't be created.");
-		if (!Platform.isWindows() && !Platform.isMac()) {
-			out.println("  -n, --nativelook                Attempt to use the graphical environment's");
-			out.println("                                  native look.");
-		}
 		out.println("  -s, --scrollbars                Force horizontal and vertical GUI scroll bars.");
 		out.println("  -db, --database");
 		out.println("     log, trace                   Enable database logging.");
@@ -1399,9 +1389,6 @@ public class PMS {
 		// Apply options
 		if (options.containsKey(Option.HEADLESS)) {
 			forceHeadless();
-		}
-		if (options.containsKey(Option.NATIVE_LOOK)) {
-			System.setProperty(NATIVELOOK, Boolean.toString(true));
 		}
 		if (options.containsKey(Option.SCROLLBARS)) {
 			System.setProperty(SCROLLBARS, Boolean.toString(true));
@@ -2178,9 +2165,6 @@ public class PMS {
 
 		/** Display help and exit */
 		HELP,
-
-		/** Attempt to use the graphical environment's native look under Linux */
-		NATIVE_LOOK,
 
 		/** Never use headless mode */
 		NOCONSOLE,
