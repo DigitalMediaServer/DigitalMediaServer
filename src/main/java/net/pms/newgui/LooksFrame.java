@@ -69,6 +69,7 @@ import net.pms.newgui.components.ImageButton;
 import net.pms.newgui.components.AnimatedIconListenerAction;
 import net.pms.newgui.components.WindowProperties;
 import net.pms.platform.macos.Cocoa;
+import net.pms.platform.macos.Cocoa.NSApplicationActivationOptions;
 import net.pms.remote.RemoteWeb;
 import net.pms.util.KeyedComboBoxModel;
 import org.slf4j.Logger;
@@ -259,8 +260,13 @@ public class LooksFrame extends JFrame implements IFrame {
 			public void windowClosing(WindowEvent e) {
 				if (SystemTray.isSupported()) {
 					GUICloseAction closeAction = PMS.getConfiguration().getGUICloseAction();
-					Boolean[] remember = {Boolean.FALSE};
+					boolean withDialog = false;
 					if (closeAction == GUICloseAction.ASK) {
+						if (Platform.isMac()) {
+							// Bring the application to the front so that the dialog is visible
+							Cocoa.activate(NSApplicationActivationOptions.NSApplicationActivateIgnoringOtherApps);
+						}
+						Boolean[] remember = {Boolean.FALSE};
 						String hideOption = Messages.getString("GeneralTab.HideWindowOption");
 						int result = JOptionPane.showOptionDialog(
 							e.getComponent(),
@@ -282,9 +288,19 @@ public class LooksFrame extends JFrame implements IFrame {
 								((KeyedComboBoxModel<GUICloseAction, String>) gt.closeAction.getModel()).setSelectedKey(closeAction);
 							}
 						}
+						withDialog = true;
 					}
 					if (closeAction == GUICloseAction.HIDE) {
 						if (Platform.isMac()) {
+							if (withDialog) {
+								try {
+									// Sleep for a little while to give macOS the time to dispose of the dialog,
+									// otherwise the dialog and not the main window might be hidden
+									Thread.sleep(100);
+								} catch (InterruptedException e1) {
+									// Oh well... no time to wait it seems.
+								}
+							}
 							Cocoa.hide();
 						} else {
 							e.getWindow().setVisible(false);

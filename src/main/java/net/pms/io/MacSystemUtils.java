@@ -1,6 +1,8 @@
 package net.pms.io;
 
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.NetworkInterface;
@@ -13,6 +15,9 @@ import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.drew.lang.annotations.Nullable;
+import net.pms.newgui.LooksFrame;
+import net.pms.platform.macos.Cocoa;
+import net.pms.platform.macos.Cocoa.NSApplicationActivationOptions;
 import net.pms.platform.macos.SystemConfiguration;
 import net.pms.util.jna.macos.corefoundation.CoreFoundation;
 import net.pms.util.jna.macos.corefoundation.CoreFoundation.CFStringRef;
@@ -39,6 +44,17 @@ public class MacSystemUtils extends BasicSystemUtils {
 	@Override
 	public boolean isNetworkInterfaceLoopback(NetworkInterface ni) throws SocketException {
 		return false;
+	}
+
+	@Override
+	protected ActionListener buildShowItemActionListener(LooksFrame frame) {
+		return new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				Cocoa.unhide();
+				Cocoa.activate(NSApplicationActivationOptions.NSApplicationActivateIgnoringOtherApps);
+			}
+		};
 	}
 
 	/**

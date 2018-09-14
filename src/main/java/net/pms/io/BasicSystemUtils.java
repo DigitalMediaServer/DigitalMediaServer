@@ -162,24 +162,14 @@ public class BasicSystemUtils implements SystemUtils {
 			Image trayIconImage = resolveTrayIcon();
 
 			PopupMenu popup = new PopupMenu();
-			MenuItem defaultItem = new MenuItem(Messages.getString("LooksFrame.5"));
-			MenuItem traceItem = new MenuItem(Messages.getString("LooksFrame.6"));
+			MenuItem quitItem = new MenuItem(Messages.getString("LooksFrame.5"));
+			MenuItem showItem = new MenuItem(Messages.getString("LooksFrame.6"));
 
-			defaultItem.addActionListener(new ActionListener() {
-				@Override
-				public void actionPerformed(ActionEvent e) {
-					frame.quit();
-				}
-			});
-
-			traceItem.addActionListener(new ActionListener() {
-				@Override
-				public void actionPerformed(ActionEvent e) {
-					frame.setVisible(true);
-				}
-			});
+			showItem.addActionListener(buildShowItemActionListener(frame));
+			popup.add(showItem);
 
 			if (PMS.getConfiguration().useWebInterface()) {
+				popup.addSeparator();
 				webInterfaceItem = new MenuItem(Messages.getString("LooksFrame.29"));
 				webInterfaceItem.setEnabled(false);
 				webInterfaceItem.addActionListener(new ActionListener() {
@@ -190,8 +180,15 @@ public class BasicSystemUtils implements SystemUtils {
 				});
 				popup.add(webInterfaceItem);
 			}
-			popup.add(traceItem);
-			popup.add(defaultItem);
+
+			popup.addSeparator();
+			quitItem.addActionListener(new ActionListener() {
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					frame.quit();
+				}
+			});
+			popup.add(quitItem);
 
 			final TrayIcon trayIcon = new TrayIcon(trayIconImage, PMS.getName(), popup);
 
@@ -206,9 +203,19 @@ public class BasicSystemUtils implements SystemUtils {
 			try {
 				tray.add(trayIcon);
 			} catch (AWTException e) {
-				LOGGER.debug("Caught exception", e);
+				LOGGER.error("Couldn't add system tray icon: {}", e.getMessage());
+				LOGGER.trace("", e);
 			}
 		}
+	}
+
+	protected ActionListener buildShowItemActionListener(final LooksFrame frame) {
+		return new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				frame.setVisible(true);
+			}
+		};
 	}
 
 	/**
