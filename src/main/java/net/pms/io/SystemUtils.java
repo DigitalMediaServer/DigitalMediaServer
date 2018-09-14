@@ -40,6 +40,13 @@ public interface SystemUtils {
 	public void addSystemTray(final LooksFrame frame);
 
 	/**
+	 * Sets the enabled status of the system tray web interface menu item.
+	 *
+	 * @param value the enabled status.
+	 */
+	public void setWebInterfaceSystemTrayEnabled(boolean value);
+
+	/**
 	 * Fetch the hardware address for a network interface.
 	 *
 	 * @param ni Interface to fetch the mac address for

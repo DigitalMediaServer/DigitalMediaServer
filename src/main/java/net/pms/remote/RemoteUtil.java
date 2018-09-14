@@ -12,6 +12,7 @@ import java.net.URLClassLoader;
 import java.net.URLConnection;
 import java.nio.charset.Charset;
 import java.util.*;
+import javax.annotation.Nullable;
 import net.pms.Messages;
 import net.pms.PMS;
 import net.pms.configuration.IpFilter;
@@ -376,7 +377,8 @@ public class RemoteUtil {
 						searchPathsList.add(tmpUrl.getPath());
 					}
 				} catch (MalformedURLException e) {
-					LOGGER.debug("Error adding resource url: " + e);
+					LOGGER.debug("Error adding resource url: {}", e.getMessage());
+					LOGGER.trace("", e);
 				}
 			}
 			searchPaths = searchPathsList.toArray(new String[searchPathsList.size()]);
@@ -384,6 +386,7 @@ public class RemoteUtil {
 			templates = new HashMap<>();
 		}
 
+		@Nullable
 		public InputStream getInputStream(String filename) {
 			InputStream stream = getResourceAsStream(filename);
 			if (stream == null) {
@@ -392,7 +395,8 @@ public class RemoteUtil {
 					try {
 						stream = new FileInputStream(file);
 					} catch (Exception e) {
-						LOGGER.debug("Error opening stream: " + e);
+						LOGGER.debug("Error opening stream: {}", e.getMessage());
+						LOGGER.trace("", e);
 					}
 				}
 			}

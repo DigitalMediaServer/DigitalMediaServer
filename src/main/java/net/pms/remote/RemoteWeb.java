@@ -68,6 +68,13 @@ public class RemoteWeb {
 			}
 		});
 
+		// Check that web interface resources are available
+		try (InputStream is = resources.getInputStream("start.html")) {
+			if (is == null) {
+				throw new FileNotFoundException("Web interface resources not found");
+			}
+		}
+
 		//readCred();
 
 		// Setup the socket address

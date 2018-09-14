@@ -605,9 +605,12 @@ public class PMS {
 			try {
 				web = new RemoteWeb(configuration.getWebPort());
 				frame.webInterfaceEnabled(true);
-			} catch (BindException b) {
-				LOGGER.error("FATAL ERROR: Unable to bind web interface on port: " + configuration.getWebPort() + ", because: " + b.getMessage());
+			} catch (FileNotFoundException e) {
+				LOGGER.error("Web interface not available: {}", e.getMessage());
+			} catch (BindException e) {
+				LOGGER.error("FATAL ERROR: Unable to bind web interface on port {}: {}", configuration.getWebPort(), e.getMessage());
 				LOGGER.info("Maybe another process is running or the hostname is wrong.");
+				LOGGER.trace("", e);
 			}
 		}
 

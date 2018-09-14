@@ -69,6 +69,8 @@ public class BasicSystemUtils implements SystemUtils {
 	protected Version vlcVersion;
 	protected boolean aviSynth;
 
+	protected MenuItem webInterfaceItem;
+
 	protected static BasicSystemUtils createInstance() {
 		if (Platform.isWindows()) {
 			return new WinUtils();
@@ -146,6 +148,13 @@ public class BasicSystemUtils implements SystemUtils {
 	}
 
 	@Override
+	public void setWebInterfaceSystemTrayEnabled(boolean value) {
+		if (webInterfaceItem != null) {
+			webInterfaceItem.setEnabled(value);
+		}
+	}
+
+	@Override
 	public void addSystemTray(final LooksFrame frame) {
 		if (SystemTray.isSupported()) {
 			SystemTray tray = SystemTray.getSystemTray();
@@ -171,7 +180,8 @@ public class BasicSystemUtils implements SystemUtils {
 			});
 
 			if (PMS.getConfiguration().useWebInterface()) {
-				MenuItem webInterfaceItem = new MenuItem(Messages.getString("LooksFrame.29"));
+				webInterfaceItem = new MenuItem(Messages.getString("LooksFrame.29"));
+				webInterfaceItem.setEnabled(false);
 				webInterfaceItem.addActionListener(new ActionListener() {
 					@Override
 					public void actionPerformed(ActionEvent e) {

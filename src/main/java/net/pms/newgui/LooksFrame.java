@@ -680,6 +680,7 @@ public class LooksFrame extends JFrame implements IFrame {
 			@Override
 			public void run() {
 				webinterface.setEnabled(value);
+				BasicSystemUtils.INSTANCE.setWebInterfaceSystemTrayEnabled(value);
 			}
 		});
 	}

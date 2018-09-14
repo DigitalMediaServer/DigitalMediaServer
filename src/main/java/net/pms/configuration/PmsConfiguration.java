@@ -4521,6 +4521,7 @@ public class PmsConfiguration extends RendererConfiguration {
 		return getBoolean(KEY_WEB_HTTPS, false);
 	}
 
+	@Nonnull
 	public File getWebPath() {
 		File path = new File(getString(KEY_WEB_PATH, "web"));
 		if (!path.exists()) {
@@ -4529,16 +4530,8 @@ public class PmsConfiguration extends RendererConfiguration {
 			if (debugPath.exists()) {
 				return debugPath;
 			}
-
-			if (!path.mkdirs()) {
-				path = null;
-			}
 		}
 		return path;
-	}
-
-	public File getWebFile(String file) {
-		return new File(getWebPath().getAbsolutePath() + File.separator + file);
 	}
 
 	public boolean isWebAuthenticate() {
