@@ -140,9 +140,9 @@
 	<dependencies>
 		<!-- TODO this can be removed when MEncoder is removed -->
 		<dependency>
-			<groupId>org.beanshell</groupId>
-			<artifactId>bsh-core</artifactId>
-			<version>2.0b4</version>
+			<groupId>org.apache-extras.beanshell</groupId>
+			<artifactId>bsh</artifactId>
+			<version>2.0b6</version>
 		</dependency>
 		<dependency>
 			<groupId>commons-collections</groupId>
