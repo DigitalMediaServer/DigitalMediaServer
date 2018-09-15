@@ -196,10 +196,15 @@ public class RealFile extends MapFile {
 							);
 						}
 					} catch (InvalidClassException e) {
-						LOGGER.debug("Cached information about {} seems to be from a previous version, reparsing information", getName());
-						LOGGER.trace("", e);
+						LOGGER.debug(
+							"Cached information about \"{}\" seems to be from a previous version, reparsing information: {}",
+							getName(),
+							e.getMessage()
+						);
 					} catch (IOException | SQLException e) {
-						LOGGER.debug("Error while getting cached information about {}, reparsing information: {}", getName(), e.getMessage());
+						LOGGER.warn(
+							"Error getting cached information about \"{}\", reparsing information: {}", getName(), e.getMessage()
+						);
 						LOGGER.trace("", e);
 					}
 
