@@ -77,6 +77,7 @@ public class FormatConfiguration {
 	public static final String DTS = "dts";
 	public static final String DTSHD = "dtshd";
 	public static final String DV = "dv";
+	public static final String DVRMS = "dvr-ms";
 	public static final String EAC3 = "eac3";
 	public static final String ER_BSAC = "erbsac";
 	public static final String FFV1 = "ffv1";
