@@ -569,6 +569,10 @@ public class LibMediaInfoParser {
 		) {
 			format = FormatConfiguration.WMV;
 		} else if (
+			value.startsWith("dvr")
+		) {
+			media.setContainer(FormatConfiguration.DVRMS);
+		} else if (
 			streamType == StreamType.Video && (
 				value.contains("mjpg") ||
 				value.contains("mjpeg") ||

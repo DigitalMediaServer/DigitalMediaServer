@@ -1482,6 +1482,7 @@ public class DLNAMediaInfo implements Cloneable {
 					mimeType = HTTPResource.AVI_TYPEMIME;
 					break;
 				case FormatConfiguration.ASF:
+				case FormatConfiguration.DVRMS:
 					mimeType = HTTPResource.ASF_TYPEMIME;
 					break;
 				case FormatConfiguration.FLV:

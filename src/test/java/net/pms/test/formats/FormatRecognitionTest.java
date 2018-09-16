@@ -188,9 +188,9 @@ public class FormatRecognitionTest {
 
 		// DVRMS: false
 		DLNAMediaInfo info = new DLNAMediaInfo();
-		info.setContainer("dvr");
+		info.setContainer("dvr-ms");
 		Format format = new DVRMS();
-		format.match("test.dvr");
+		format.match("test.dvr-ms");
 		assertFalse("isCompatible() gives the outcome false for DVRMS",	conf.isCompatible(info, format, configuration));
 
 		// ISO: false
