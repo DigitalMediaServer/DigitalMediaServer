@@ -279,7 +279,7 @@ public class BasicSystemUtils implements SystemUtils {
 	 */
 	@Nonnull
 	protected String getTrayIconName() {
-		return "icon-24st.png";
+		return "icon-24.png";
 	}
 
 	@Override

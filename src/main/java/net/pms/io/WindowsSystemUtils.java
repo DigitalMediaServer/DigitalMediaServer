@@ -27,6 +27,7 @@ import com.sun.jna.platform.win32.Kernel32Util;
 import com.sun.jna.platform.win32.Win32Exception;
 import com.sun.jna.platform.win32.WinReg;
 import com.sun.jna.ptr.LongByReference;
+import java.awt.Toolkit;
 import java.io.File;
 import java.nio.CharBuffer;
 import java.nio.file.Path;
@@ -358,7 +359,7 @@ public class WindowsSystemUtils extends BasicSystemUtils {
 
 	@Override
 	protected String getTrayIconName() {
-		return "WinSysTrayIcon.png";
+		return Toolkit.getDefaultToolkit().getScreenResolution() > 96 ? "icon-32.png" : "icon-16.png";
 	}
 
 	@Override
