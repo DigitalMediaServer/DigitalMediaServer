@@ -32,6 +32,7 @@ import java.io.File;
 import java.nio.CharBuffer;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import net.pms.util.FileUtil;
 import net.pms.util.Version;
@@ -358,8 +359,24 @@ public class WindowsSystemUtils extends BasicSystemUtils {
 	}
 
 	@Override
+	@Nonnull
 	protected String getTrayIconName() {
-		return Toolkit.getDefaultToolkit().getScreenResolution() > 96 ? "icon-32.png" : "icon-16.png";
+		int dpi = Toolkit.getDefaultToolkit().getScreenResolution();
+		switch (dpi) {
+			case 96:
+				return "icon-16.png";
+			case 120:
+				return "icon-20.png";
+			case 144:
+				return "icon-24.png";
+			case 168:
+				return "icon-28.png";
+			case 192:
+				return "icon-32.png";
+			default:
+				// This will be scaled, so use a large one for a better end result
+				return "icon-256.png";
+		}
 	}
 
 	@Override
