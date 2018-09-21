@@ -116,6 +116,7 @@ InstallDirRegKey HKCU "${REG_KEY_SOFTWARE}" ""
 Var CopyLeft
 Var FirewallStatus
 Var RAM
+Var NoSSL
 
 ;https://msdn.microsoft.com/en-us/library/ms645502(v=vs.85).aspx
 !macro WindowSize x y cx cy
@@ -194,16 +195,20 @@ Section "!$(SectionServer)" sec1
 	WriteRegDWORD HKLM "${REG_KEY_UNINSTALL}" "NoRepair" 0x00000001
 	WriteRegStr HKLM "${REG_KEY_UNINSTALL}" "FirewallSettings" "$FirewallStatus"
 
+	ReadEnvStr $R0 "ALLUSERSPROFILE"
+	CreateDirectory "$R0\renderers"
+	CreateDirectory "$R0\saved-configuration"
+	
 	SetOutPath "$INSTDIR"
 	SetOverwrite on
 	WriteUninstaller "$INSTDIR\${UninstallEXE}"
 
-	ReadEnvStr $R0 "ALLUSERSPROFILE"
-	CreateDirectory "$R0\renderers"
-	File /nonfatal "$R0\renderers"
-	SetOutPath "$R0"
-	CreateDirectory "$R0\saved-configuration"
-	File /nonfatal "$R0\saved-configuration"
+	System::Call 'Kernel32::SetEnvironmentVariable(t, t)i ("INSTDIR", "$INSTDIR").r0'
+	StrCmp $0 0 0 +2
+	MessageBox MB_OK "Can't set environment variable"
+	nsExec::Exec 'xcopy /C /Q /Y "%ALLUSERSPROFILE%\DigitalMediaServer\saved-configuration\*.conf" "%ALLUSERSPROFILE%\DigitalMediaServer"'
+	nsExec::Exec 'xcopy /C /Q /Y "%ALLUSERSPROFILE%\DigitalMediaServer\renderers\*.conf" "%INSTDIR%\renderers"'
+
 	SetOutPath "$R0\${PROJECT_NAME_CAMEL}"
 	CreateDirectory "$R0\${PROJECT_NAME_CAMEL}\data"
 	AccessControl::GrantOnFile "$R0\${PROJECT_NAME_CAMEL}" "(BU)" "GenericRead + GenericExecute + GenericWrite + Delete + FullAccess"
@@ -285,6 +290,7 @@ Section /o $(SectionDownloadJava) sec3 ; http://www.oracle.com/technetwork/java/
 		; http://javadl.sun.com/webapps/download/AutoDL?BundleId=106307
 		StrCpy $0 "http://javadl.oracle.com/webapps/download/AutoDL?BundleId=227550_e758a0de34e24606bca991d704f6dcbf"
 		StrCpy $1 "jre-8u151-windows-i586.exe"
+		StrCpy $NoSSL "/NOSSL"
 	${EndIf}
 	${If} ${IsWinXP}
 	${AndIf} ${RunningX64}
@@ -292,19 +298,10 @@ Section /o $(SectionDownloadJava) sec3 ; http://www.oracle.com/technetwork/java/
 		; http://javadl.sun.com/webapps/download/AutoDL?BundleId=106309
 		StrCpy $0 "http://javadl.oracle.com/webapps/download/AutoDL?BundleId=227552_e758a0de34e24606bca991d704f6dcbf"
 		StrCpy $1 "jre-8u151-windows-x64.exe"
-	${EndIf}
-	${If} ${IsWinXP}
-	${AndIfNot} ${RunningX64}
-		NSISdl::download /TIMEOUT=30000 "$0" "$PLUGINSDIR\$1"
-		; /TRANSLATE2 downloading connecting second minute hour seconds minutes hours progress
-		Pop $0
-		StrCmp $0 "success" JavaDownloadOK
-		${WordReplaceS} $(DownloadError) "%s" $0 "+1" $0
-		MessageBox MB_ICONEXCLAMATION $0
-		Goto End
+		StrCpy $NoSSL "/NOSSL"
 	${EndIf}
 	${WordReplaceS} $(Downloading) "%s" "Oracle Java 8" "+1" $2
-	inetc::get /WEAKSECURITY /RESUME "" /CONNECTTIMEOUT 30 /MODERNPOPUP "$1" /CAPTION "$2" /QUESTION $(ConfirmCancel) /TRANSLATE $(DownloadingFile) $(Downloaded) $(TimeRemaining) $(Speed) $(CancelButton) /USERAGENT "Mozilla/5.0 (Windows NT 6.3; rv:48.0) Gecko/20100101 Firefox/48.0" /HEADER "Cookie: oraclelicense=accept-securebackup-cookie" /NOCOOKIES "$0" "$PLUGINSDIR\$1" /END
+	inetc::get /WEAKSECURITY $NoSSL /RESUME "" /CONNECTTIMEOUT 30 /MODERNPOPUP "$1" /CAPTION "$2" /QUESTION $(ConfirmCancel) /TRANSLATE $(DownloadingFile) $(Downloaded) $(TimeRemaining) $(Speed) $(CancelButton) /USERAGENT "Mozilla/5.0 (Windows NT 6.3; rv:48.0) Gecko/20100101 Firefox/48.0" /HEADER "Cookie: oraclelicense=accept-securebackup-cookie" /NOCOOKIES "$0" "$PLUGINSDIR\$1" /END
 	Pop $0
 	StrCmpS $0 "OK" JavaDownloadOK
 	${WordReplaceS} $(DownloadError) "%s" $0 "+1" $0
