@@ -282,7 +282,11 @@ public class DLNAMediaAudio extends DLNAMediaLang implements Cloneable {
 	 * @return True if the audio codec is MP3.
 	 */
 	public boolean isMP3() {
-		return FormatConfiguration.MP3.equalsIgnoreCase(getCodecA());
+		return
+			FormatConfiguration.MP3.equalsIgnoreCase(getCodecA()) ||
+			getCodecA() != null && (
+				getCodecA().contains("mp3")
+			);
 	}
 
 	/**
