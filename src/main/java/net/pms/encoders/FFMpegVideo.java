@@ -103,6 +103,7 @@ public class FFMpegVideo extends Player {
 	public static final String KEY_FFMPEG_EXECUTABLE_TYPE = "ffmpeg_executable_type";
 	public static final String NAME = "FFmpeg Video";
 	private static final String DEFAULT_QSCALE = "3";
+	public static String DEFAULT_AUDIO_SAMPLING_RATE = "48000";
 
 	// Not to be instantiated by anything but PlayerFactory
 	FFMpegVideo() {
@@ -630,8 +631,11 @@ public class FFMpegVideo extends Player {
 		audioBitrateOptions.add("-q:a");
 		audioBitrateOptions.add(DEFAULT_QSCALE);
 
+		if (params.mediaRenderer.isTranscodeAudioTo441()) {
+			DEFAULT_AUDIO_SAMPLING_RATE = "44100";
+		}
 		audioBitrateOptions.add("-ar");
-		audioBitrateOptions.add("" + params.mediaRenderer.getTranscodedVideoAudioSampleRate());
+		audioBitrateOptions.add(DEFAULT_AUDIO_SAMPLING_RATE);
 
 		return audioBitrateOptions;
 	}
@@ -1065,8 +1069,11 @@ public class FFMpegVideo extends Player {
 				}
 
 				if (!customFFmpegOptions.contains("-ar ")) {
+					if (params.mediaRenderer.isTranscodeAudioTo441()) {
+						DEFAULT_AUDIO_SAMPLING_RATE = "44100";
+					}
 					cmdList.add("-ar");
-					cmdList.add("" + params.mediaRenderer.getTranscodedVideoAudioSampleRate());
+					cmdList.add(DEFAULT_AUDIO_SAMPLING_RATE);
 				}
 			}
 

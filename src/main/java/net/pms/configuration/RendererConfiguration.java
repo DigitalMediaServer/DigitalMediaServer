@@ -197,7 +197,6 @@ public class RendererConfiguration extends UPNPHelper.Renderer {
 	protected static final String TRANSCODE_FAST_START = "TranscodeFastStart";
 	protected static final String TRANSCODE_VIDEO = "TranscodeVideo";
 	protected static final String TRANSCODED_SIZE = "TranscodedVideoFileSize";
-	protected static final String TRANSCODED_VIDEO_AUDIO_SAMPLE_RATE = "TranscodedVideoAudioSampleRate";
 	protected static final String UPNP_DETAILS = "UpnpDetailsSearch";
 	protected static final String UPNP_ALLOW = "UpnpAllow";
 	protected static final String USER_AGENT = "UserAgentSearch";
@@ -2321,10 +2320,6 @@ public class RendererConfiguration extends UPNPHelper.Renderer {
 
 	public static ArrayList<String> getAllRenderersNames() {
 		return allRenderersNames;
-	}
-
-	public int getTranscodedVideoAudioSampleRate() {
-		return getInt(TRANSCODED_VIDEO_AUDIO_SAMPLE_RATE, 48000);
 	}
 
 	public boolean isLimitFolders() {
