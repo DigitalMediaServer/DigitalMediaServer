@@ -208,6 +208,7 @@ public class FFmpegAudio extends FFMpegVideo {
 
 		// Make sure FFmpeg doesn't try to encode embedded images into the stream
 		cmdList.add("-vn");
+		cmdList.add("-dn");
 
 		// Encoder threads
 		if (nThreads > 0) {
@@ -218,8 +219,10 @@ public class FFmpegAudio extends FFMpegVideo {
 		if (params.mediaRenderer.isTranscodeToMP3()) {
 			cmdList.add("-f");
 			cmdList.add("mp3");
-			cmdList.add("-ab");
-			cmdList.add("320000");
+			cmdList.add("-b:a");
+			cmdList.add("320k");
+			cmdList.add("-sample_fmt");
+			cmdList.add("s16p");
 		} else if (params.mediaRenderer.isTranscodeToWAV()) {
 			cmdList.add("-f");
 			cmdList.add("wav");
