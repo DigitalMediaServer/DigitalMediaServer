@@ -226,6 +226,8 @@ public class FFmpegAudio extends FFMpegVideo {
 		} else if (params.mediaRenderer.isTranscodeToWAV()) {
 			cmdList.add("-f");
 			cmdList.add("wav");
+			cmdList.add("-c:a");
+			cmdList.add("pcm_s16le");
 		} else { // default: LPCM
 			cmdList.add("-f");
 			cmdList.add("s16be");
