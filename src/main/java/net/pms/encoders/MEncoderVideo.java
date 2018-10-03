@@ -884,35 +884,45 @@ public class MEncoderVideo extends Player {
 		}
 
 		// Decide whether to defer to tsMuxeR or continue to use MEncoder
-		boolean deferToTsmuxer = true;
+		boolean deferToTsmuxer = PlayerFactory.isPlayerActive(TsMuxeRVideo.ID);
 		VideoLevel videoLevelLimit = params.mediaRenderer.getVideoLevelLimit(media.getVideoCodec());
 		String prependTraceReason = "Not muxing the video stream with tsMuxeR via MEncoder because ";
 		if (!configuration.isMencoderMuxWhenCompatible()) {
 			deferToTsmuxer = false;
 			LOGGER.trace(prependTraceReason + "the user setting is disabled");
+		} else if (!deferToTsmuxer) {
+			LOGGER.warn(
+				prependTraceReason + "tsMuxeR {}",
+				PlayerFactory.isPlayerAvailable(TsMuxeRVideo.ID) ? "is disabled" : "isn't available"
+			);
 		}
-		if (deferToTsmuxer == true && !configuration.getHideTranscodeEnabled() && dlna.isNoName() && (dlna.getParent() instanceof FileTranscodeVirtualFolder)) {
+		if (
+			deferToTsmuxer &&
+			!configuration.getHideTranscodeEnabled() &&
+			dlna.isNoName() &&
+			dlna.getParent() instanceof FileTranscodeVirtualFolder
+		) {
 			deferToTsmuxer = false;
 			LOGGER.trace(prependTraceReason + "the file is being played via a MEncoder entry in the transcode folder.");
 		}
-		if (deferToTsmuxer == true && !params.mediaRenderer.isMuxH264MpegTS()) {
+		if (deferToTsmuxer && !params.mediaRenderer.isMuxH264MpegTS()) {
 			deferToTsmuxer = false;
 			LOGGER.trace(prependTraceReason + "the renderer does not support H.264 inside MPEG-TS.");
 		}
-		if (deferToTsmuxer == true && params.sid != null) {
+		if (deferToTsmuxer && params.sid != null) {
 			deferToTsmuxer = false;
 			LOGGER.trace(prependTraceReason + "we need to burn subtitles.");
 		}
-		if (deferToTsmuxer == true && isDVD) {
+		if (deferToTsmuxer && isDVD) {
 			deferToTsmuxer = false;
 			LOGGER.trace(prependTraceReason + "this is a DVD track.");
 		}
-		if (deferToTsmuxer == true && avisynth()) {
+		if (deferToTsmuxer && avisynth()) {
 			deferToTsmuxer = false;
 			LOGGER.trace(prependTraceReason + "we are using AviSynth.");
 		}
 		if (
-			deferToTsmuxer == true &&
+			deferToTsmuxer &&
 			videoLevelLimit != null &&
 			!videoLevelLimit.isGreaterThanOrEqualTo(media.getVideoLevel())
 		) {
@@ -931,32 +941,32 @@ public class MEncoderVideo extends Player {
 				}
 			}
 		}
-		if (deferToTsmuxer == true && !media.isMuxable(params.mediaRenderer)) {
+		if (deferToTsmuxer && !media.isMuxable(params.mediaRenderer)) {
 			deferToTsmuxer = false;
 			LOGGER.trace(prependTraceReason + "the video stream is not muxable to this renderer");
 		}
-		if (deferToTsmuxer == true && intOCW > 0 && intOCH > 0) {
+		if (deferToTsmuxer && intOCW > 0 && intOCH > 0) {
 			deferToTsmuxer = false;
 			LOGGER.trace(prependTraceReason + "we need to transcode to apply overscan compensation.");
 		}
-		if (deferToTsmuxer == true && !aspectRatiosMatch) {
+		if (deferToTsmuxer && !aspectRatiosMatch) {
 			deferToTsmuxer = false;
 			LOGGER.trace(prependTraceReason + "we need to transcode to apply the correct aspect ratio.");
 		}
 		if (
-			deferToTsmuxer == true &&
+			deferToTsmuxer &&
 			!params.mediaRenderer.isPS3() &&
 			media.isWebDl(filename, params)
 		) {
 			deferToTsmuxer = false;
 			LOGGER.trace(prependTraceReason + "the version of tsMuxeR supported by this renderer does not support WEB-DL files.");
 		}
-		if (deferToTsmuxer == true && "bt.601".equals(media.getMatrixCoefficients())) {
+		if (deferToTsmuxer && "bt.601".equals(media.getMatrixCoefficients())) {
 			deferToTsmuxer = false;
 			LOGGER.trace(prependTraceReason + "the colorspace probably isn't supported by the renderer.");
 		}
 		if (
-			deferToTsmuxer == true && (
+			deferToTsmuxer && (
 				params.mediaRenderer.isKeepAspectRatio() ||
 				params.mediaRenderer.isKeepAspectRatioTranscoding()
 			) &&
@@ -965,7 +975,7 @@ public class MEncoderVideo extends Player {
 			deferToTsmuxer = false;
 			LOGGER.trace(prependTraceReason + "the renderer needs us to add borders so it displays the correct aspect ratio of " + media.getAspectRatioContainer() + ".");
 		}
-		if (deferToTsmuxer == true && !params.mediaRenderer.isResolutionCompatibleWithRenderer(media.getWidth(), media.getHeight())) {
+		if (deferToTsmuxer && !params.mediaRenderer.isResolutionCompatibleWithRenderer(media.getWidth(), media.getHeight())) {
 			deferToTsmuxer = false;
 			LOGGER.trace(prependTraceReason + "the resolution is incompatible with the renderer.");
 		}
