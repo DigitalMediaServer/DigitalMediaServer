@@ -319,6 +319,7 @@ public class FFMpegVideo extends Player {
 		List<String> transcodeOptions = new ArrayList<>();
 		final String filename = dlna.getFileName();
 		final RendererConfiguration renderer = params.mediaRenderer;
+
 		String customFFmpegOptions = renderer.getCustomFFmpegOptions();
 
 		if (
@@ -366,13 +367,15 @@ public class FFMpegVideo extends Player {
 					transcodeOptions.add("-an");
 				} else if (type() == FormatType.AUDIO) {
 					// Skip
-				} else if (renderer.isTranscodeToAAC()) {
-					transcodeOptions.add("-c:a");
-					transcodeOptions.add("aac");
 				} else {
-					if (!customFFmpegOptions.contains("-c:a ")) {
-						transcodeOptions.add("-c:a");
-						transcodeOptions.add("ac3");
+					if (!customFFmpegOptions.matches(".*-(c:a|codec:a|acodec) [^ ]+.*")) {
+						if (renderer.isTranscodeToAAC()) {
+							transcodeOptions.add("-c:a");
+							transcodeOptions.add("aac");
+						} else {
+								transcodeOptions.add("-c:a");
+								transcodeOptions.add("ac3");
+						}
 					}
 				}
 			}
@@ -386,17 +389,27 @@ public class FFMpegVideo extends Player {
 
 			// Output video codec
 			if (renderer.isTranscodeToH264() || renderer.isTranscodeToH265()) {
-				if (!customFFmpegOptions.contains("-c:v")) {
+				if (!customFFmpegOptions.matches(".*-(c:v|codec:v|vcodec) [^ ]+.*")) {
 					transcodeOptions.add("-c:v");
 					if (renderer.isTranscodeToH264()) {
 						transcodeOptions.add("libx264");
 					} else {
 						transcodeOptions.add("libx265");
 					}
-					transcodeOptions.add("-tune");
-					transcodeOptions.add("zerolatency");
+
+					if (!customFFmpegOptions.contains("-tune")) {
+						transcodeOptions.add("-tune");
+						transcodeOptions.add("zerolatency");
+					}
+
+					//Consider encoders which have "preset" option
+					if (!customFFmpegOptions.contains("-preset")) {
+						transcodeOptions.add("-preset");
+						transcodeOptions.add("ultrafast");
+					}
+
 				}
-				if (!customFFmpegOptions.contains("-preset")) {
+				if (!customFFmpegOptions.contains("-preset") && customFFmpegOptions.matches(".*-(libx264|libx265).*")) {
 					transcodeOptions.add("-preset");
 					transcodeOptions.add("ultrafast");
 				}
@@ -404,11 +417,15 @@ public class FFMpegVideo extends Player {
 					transcodeOptions.add("-level");
 					transcodeOptions.add("31");
 				}
-				transcodeOptions.add("-pix_fmt");
-				transcodeOptions.add("yuv420p");
+				if (!customFFmpegOptions.contains("-pix_fmt")) {
+					transcodeOptions.add("-pix_fmt");
+					transcodeOptions.add("yuv420p");
+				}
 			} else if (!dtsRemux) {
-				transcodeOptions.add("-c:v");
-				transcodeOptions.add("mpeg2video");
+				if (!customFFmpegOptions.matches(".*-(c:v|codec:v|vcodec) [^ ]+.*")) {
+					transcodeOptions.add("-c:v");
+					transcodeOptions.add("mpeg2video");
+				}
 			}
 
 			if (!customFFmpegOptions.contains("-f")) {
@@ -581,34 +598,37 @@ public class FFMpegVideo extends Player {
 			videoBitrateOptions.addAll(new ArrayList<>(Arrays.asList(customOptions)));
 		} else {
 			// Add x264 quality settings
-			String x264CRF = configuration.getx264ConstantRateFactor();
-
-			// Remove comment from the value
-			if (x264CRF.contains("/*")) {
-				x264CRF = x264CRF.substring(x264CRF.indexOf("/*"));
-			}
-
-			if (x264CRF.contains("Automatic")) {
-				if (x264CRF.contains("Wireless") || maximumBitrate < 70) {
-					x264CRF = "19";
-					// Lower quality for 720p+ content
-					if (media.getWidth() > 1280) {
-						x264CRF = "23";
-					} else if (media.getWidth() > 720) {
-						x264CRF = "22";
-					}
-				} else {
-					x264CRF = "16";
-
-					// Lower quality for 720p+ content
-					if (media.getWidth() > 720) {
+			String customFFmpegOptions = params.mediaRenderer.getCustomFFmpegOptions();
+			if (!customFFmpegOptions.matches(".*-(crf|b|b:v|q|q:v|(x264opts|x264-params) +([^ =]+=)*(crf|bitrate|B|q|qp)=).*")) {
+				String x264CRF = configuration.getx264ConstantRateFactor();
+	
+				// Remove comment from the value
+				if (x264CRF.contains("/*")) {
+					x264CRF = x264CRF.substring(x264CRF.indexOf("/*"));
+				}
+	
+				if (x264CRF.contains("Automatic")) {
+					if (x264CRF.contains("Wireless") || maximumBitrate < 70) {
 						x264CRF = "19";
+						// Lower quality for 720p+ content
+						if (media.getWidth() > 1280) {
+							x264CRF = "23";
+						} else if (media.getWidth() > 720) {
+							x264CRF = "22";
+						}
+					} else {
+						x264CRF = "16";
+	
+						// Lower quality for 720p+ content
+						if (media.getWidth() > 720) {
+							x264CRF = "19";
+						}
 					}
 				}
-			}
-			if (isNotBlank(x264CRF) && !params.mediaRenderer.nox264()) {
-				videoBitrateOptions.add("-crf");
-				videoBitrateOptions.add(x264CRF);
+				if (isNotBlank(x264CRF) && !params.mediaRenderer.nox264()) {
+					videoBitrateOptions.add("-crf");
+					videoBitrateOptions.add(x264CRF);
+				}
 			}
 		}
 
@@ -1032,7 +1052,7 @@ public class FFMpegVideo extends Player {
 
 			String customFFmpegOptions = renderer.getCustomFFmpegOptions();
 
-			// Audio bitrate
+			// Audio channel bitrate sample rate
 			if (!ac3Remux && !dtsRemux && !(type() == FormatType.AUDIO)) {
 				int channels = 0;
 				if (
@@ -1055,7 +1075,7 @@ public class FFMpegVideo extends Player {
 					cmdList.add(String.valueOf(channels));
 				}
 
-				if (!customFFmpegOptions.contains("-ab ")) {
+				if (!customFFmpegOptions.matches(".*-(ab|b:a|q:a).*")) {
 					cmdList.add("-ab");
 					if (renderer.isTranscodeToAAC()) {
 						cmdList.add(Math.min(configuration.getAudioBitrate(), 320) + "k");
@@ -1064,7 +1084,7 @@ public class FFMpegVideo extends Player {
 					}
 				}
 
-				if (!customFFmpegOptions.contains("-ar ")) {
+				if (!customFFmpegOptions.contains("-ar ") && params.aid.getSampleFrequency() != params.mediaRenderer.getTranscodedVideoAudioSampleRate()) {
 					cmdList.add("-ar");
 					cmdList.add("" + params.mediaRenderer.getTranscodedVideoAudioSampleRate());
 				}
