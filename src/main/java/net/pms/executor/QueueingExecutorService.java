@@ -1,23 +1,17 @@
 package net.pms.executor;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.ConcurrentModificationException;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.AbstractExecutorService;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.AbstractQueuedSynchronizer;
 import java.util.concurrent.locks.Condition;
@@ -243,27 +237,7 @@ public class QueueingExecutorService extends AbstractExecutorService implements 
 	/**
 	 * The default rejected execution handler
 	 */
-	private static final RejectedExecutionHandler defaultHandler = new AbortPolicy();
-
-	/**
-	 * Permission required for callers of shutdown and shutdownNow. We
-	 * additionally require (see checkShutdownAccess) that callers have
-	 * permission to actually interrupt threads in the worker set (as governed
-	 * by Thread.interrupt, which relies on ThreadGroup.checkAccess, which in
-	 * turn relies on SecurityManager.checkAccess). Shutdowns are attempted only
-	 * if these checks pass.
-	 *
-	 * All actual invocations of Thread.interrupt (see interruptIdleWorkers and
-	 * interruptWorkers) ignore SecurityExceptions, meaning that the attempted
-	 * interrupts silently fail. In the case of shutdown, they should not fail
-	 * unless the SecurityManager has inconsistent policies, sometimes allowing
-	 * access to a thread and sometimes not. In such cases, failure to actually
-	 * interrupt threads may disable or delay full termination. Other uses of
-	 * interruptIdleWorkers are advisory, and failure to actually interrupt will
-	 * merely delay response to configuration changes so is not handled
-	 * exceptionally.
-	 */
-	private static final RuntimePermission shutdownPerm = new RuntimePermission("modifyThread");
+	private static final RejectedExecutionHandler defaultHandler = new RejectedExecutionHandler.DiscardPolicy();
 
 	/**
 	 * Class Worker mainly maintains interrupt control state for threads running
@@ -427,29 +401,6 @@ public class QueueingExecutorService extends AbstractExecutorService implements 
 	 */
 
 	/**
-	 * If there is a security manager, makes sure caller has permission to shut
-	 * down threads in general (see shutdownPerm). If this passes, additionally
-	 * makes sure the caller is allowed to interrupt each worker thread. This
-	 * might not be true even if first check passed, if the SecurityManager
-	 * treats some threads specially.
-	 */
-	private void checkShutdownAccess() {
-		SecurityManager security = System.getSecurityManager();
-		if (security != null) {
-			security.checkPermission(shutdownPerm);
-			final ReentrantLock mainLock = this.mainLock;
-			mainLock.lock();
-			try {
-				for (Worker w : workers) {
-					security.checkAccess(w.thread);
-				}
-			} finally {
-				mainLock.unlock();
-			}
-		}
-	}
-
-	/**
 	 * Interrupts all threads, even if active. Ignores SecurityExceptions (in
 	 * which case some threads may remain uninterrupted).
 	 */
@@ -515,36 +466,18 @@ public class QueueingExecutorService extends AbstractExecutorService implements 
 
 	private static final boolean ONLY_ONE = true;
 
-	/*
-	 * Misc utilities, most of which are also exported to
-	 * ScheduledThreadPoolExecutor
-	 */
-
 	/**
 	 * Invokes the rejected execution handler for the given command.
-	 * Package-protected for use by ScheduledThreadPoolExecutor.
 	 */
-	final void reject(Runnable command) {
+	protected void reject(Runnable command) {
 		handler.rejectedExecution(command, this);
 	}
 
 	/**
 	 * Performs any further cleanup following run state transition on invocation
-	 * of shutdown. A no-op here, but used by ScheduledThreadPoolExecutor to
-	 * cancel delayed tasks.
+	 * of shutdown.
 	 */
-	void onShutdown() {
-	}
-
-	/**
-	 * State check needed by ScheduledThreadPoolExecutor to enable running tasks
-	 * during shutdown.
-	 *
-	 * @param shutdownOK true if should return true if SHUTDOWN
-	 */
-	final boolean isRunningOrShutdown(boolean shutdownOK) {
-		int rs = runStateOf(ctl.get());
-		return rs == RUNNING || (rs == SHUTDOWN && shutdownOK);
+	void onShutdown() { //TODO: (Nad) Needed?
 	}
 
 	/**
@@ -1063,17 +996,15 @@ public class QueueingExecutorService extends AbstractExecutorService implements 
 	 * This method does not wait for previously submitted tasks to complete
 	 * execution. Use {@link #awaitTermination awaitTermination} to do that.
 	 *
-	 * @throws SecurityException {@inheritDoc}
 	 */
 	@Override
 	public void shutdown() {
 		final ReentrantLock mainLock = this.mainLock;
 		mainLock.lock();
 		try {
-			checkShutdownAccess();
 			advanceRunState(SHUTDOWN);
 			interruptIdleWorkers();
-			onShutdown(); // hook for ScheduledThreadPoolExecutor
+			onShutdown();
 		} finally {
 			mainLock.unlock();
 		}
@@ -1096,7 +1027,6 @@ public class QueueingExecutorService extends AbstractExecutorService implements 
 	 * {@link Thread#interrupt}, so any task that fails to respond to interrupts
 	 * may never terminate.
 	 *
-	 * @throws SecurityException {@inheritDoc}
 	 */
 	@Override
 	public List<Runnable> shutdownNow() {
@@ -1104,7 +1034,6 @@ public class QueueingExecutorService extends AbstractExecutorService implements 
 		final ReentrantLock mainLock = this.mainLock;
 		mainLock.lock();
 		try {
-			checkShutdownAccess();
 			advanceRunState(STOP);
 			interruptWorkers();
 			tasks = drainQueue();
@@ -1700,110 +1629,6 @@ public class QueueingExecutorService extends AbstractExecutorService implements 
 	 * should generally invoke {@code super.terminated} within this method.
 	 */
 	protected void terminated() {
-	}
-
-	/* Predefined RejectedExecutionHandlers */
-
-	/**
-	 * A handler for rejected tasks that runs the rejected task directly in the
-	 * calling thread of the {@code execute} method, unless the executor has
-	 * been shut down, in which case the task is discarded.
-	 */
-	public static class CallerRunsPolicy implements RejectedExecutionHandler {
-
-		/**
-		 * Creates a {@code CallerRunsPolicy}.
-		 */
-		public CallerRunsPolicy() {
-		}
-
-		/**
-		 * Executes task r in the caller's thread, unless the executor has been
-		 * shut down, in which case the task is discarded.
-		 *
-		 * @param r the runnable task requested to be executed
-		 * @param e the executor attempting to execute this task
-		 */
-		public void rejectedExecution(Runnable r, QueueingExecutorService e) {
-			if (!e.isShutdown()) {
-				r.run();
-			}
-		}
-	}
-
-	/**
-	 * A handler for rejected tasks that throws a
-	 * {@code RejectedExecutionException}.
-	 */
-	public static class AbortPolicy implements RejectedExecutionHandler {
-
-		/**
-		 * Creates an {@code AbortPolicy}.
-		 */
-		public AbortPolicy() {
-		}
-
-		/**
-		 * Always throws RejectedExecutionException.
-		 *
-		 * @param r the runnable task requested to be executed
-		 * @param e the executor attempting to execute this task
-		 * @throws RejectedExecutionException always.
-		 */
-		public void rejectedExecution(Runnable r, QueueingExecutorService e) {
-			throw new RejectedExecutionException("Task " + r.toString() + " rejected from " + e.toString());
-		}
-	}
-
-	/**
-	 * A handler for rejected tasks that silently discards the rejected task.
-	 */
-	public static class DiscardPolicy implements RejectedExecutionHandler {
-
-		/**
-		 * Creates a {@code DiscardPolicy}.
-		 */
-		public DiscardPolicy() {
-		}
-
-		/**
-		 * Does nothing, which has the effect of discarding task r.
-		 *
-		 * @param r the runnable task requested to be executed
-		 * @param e the executor attempting to execute this task
-		 */
-		public void rejectedExecution(Runnable r, QueueingExecutorService e) {
-		}
-	}
-
-	/**
-	 * A handler for rejected tasks that discards the oldest unhandled request
-	 * and then retries {@code execute}, unless the executor is shut down, in
-	 * which case the task is discarded.
-	 */
-	public static class DiscardOldestPolicy implements RejectedExecutionHandler {
-
-		/**
-		 * Creates a {@code DiscardOldestPolicy} for the given executor.
-		 */
-		public DiscardOldestPolicy() {
-		}
-
-		/**
-		 * Obtains and ignores the next task that the executor would otherwise
-		 * execute, if one is immediately available, and then retries execution
-		 * of task r, unless the executor is shut down, in which case task r is
-		 * instead discarded.
-		 *
-		 * @param r the runnable task requested to be executed
-		 * @param e the executor attempting to execute this task
-		 */
-		public void rejectedExecution(Runnable r, QueueingExecutorService e) {
-			if (!e.isShutdown()) {
-				e.getQueue().poll();
-				e.execute(r);
-			}
-		}
 	}
 
 	@Override
