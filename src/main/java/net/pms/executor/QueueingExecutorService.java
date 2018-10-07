@@ -1,10 +1,12 @@
 package net.pms.executor;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.ConcurrentModificationException;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Queue;
 import java.util.concurrent.AbstractExecutorService;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Executors;
@@ -16,6 +18,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.AbstractQueuedSynchronizer;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
+import javax.annotation.Nonnull;
+import javax.annotation.concurrent.GuardedBy;
+import org.fourthline.cling.support.avtransport.callback.GetTransportInfo;
 import net.pms.service.Service;
 
 public class QueueingExecutorService extends AbstractExecutorService implements Service {
@@ -67,7 +72,7 @@ public class QueueingExecutorService extends AbstractExecutorService implements 
 	 * seeing that it is empty, we see that workerCount is 0 (which sometimes
 	 * entails a recheck -- see below).
 	 */
-	private final AtomicInteger ctl = new AtomicInteger(ctlOf(RUNNING, 0));
+	private final AtomicInteger controlState = new AtomicInteger(ctlOf(RUNNING, 0));
 	private static final int COUNT_BITS = Integer.SIZE - 3;
 	private static final int CAPACITY = (1 << COUNT_BITS) - 1;
 
@@ -112,14 +117,14 @@ public class QueueingExecutorService extends AbstractExecutorService implements 
 	 * Attempt to CAS-increment the workerCount field of ctl.
 	 */
 	private boolean compareAndIncrementWorkerCount(int expect) {
-		return ctl.compareAndSet(expect, expect + 1);
+		return controlState.compareAndSet(expect, expect + 1);
 	}
 
 	/**
 	 * Attempt to CAS-decrement the workerCount field of ctl.
 	 */
 	private boolean compareAndDecrementWorkerCount(int expect) {
-		return ctl.compareAndSet(expect, expect - 1);
+		return controlState.compareAndSet(expect, expect - 1);
 	}
 
 	/**
@@ -128,7 +133,7 @@ public class QueueingExecutorService extends AbstractExecutorService implements 
 	 * performed within getTask.
 	 */
 	private void decrementWorkerCount() {
-		do {} while (!compareAndDecrementWorkerCount(ctl.get()));
+		do {} while (!compareAndDecrementWorkerCount(controlState.get()));
 	}
 
 	/**
@@ -140,7 +145,7 @@ public class QueueingExecutorService extends AbstractExecutorService implements 
 	 * as DelayQueues for which poll() is allowed to return null even if it may
 	 * later return non-null when delays expire.
 	 */
-	private final BlockingQueue<Runnable> workQueue;
+	private final Queue<Runnable> incoming;
 
 	/**
 	 * Lock held on access to workers set and related bookkeeping. While we
@@ -239,6 +244,223 @@ public class QueueingExecutorService extends AbstractExecutorService implements 
 	 */
 	private static final RejectedExecutionHandler defaultHandler = new RejectedExecutionHandler.DiscardPolicy();
 
+	protected static class ThreadInfo {
+		protected Thread thread;
+		protected long idleStart;
+	}
+
+	protected static class PoolManager {
+
+		protected volatile int minimumPoolSize;
+		protected volatile int corePoolSize;
+		protected volatile int corePoolThreshold;
+		protected volatile int maximumPoolSize;
+		protected volatile long keepAlive;
+		protected volatile long coreKeepAlive;
+
+		public int adjust(Collection<ThreadInfo> threads, Collection<ThreadInfo> idle, int queueSize) {
+
+			int add = 0;
+			int numIdle = idle.size();
+			int numThreads = threads.size() + numIdle; //TODO: (Nad) Wait time..?
+			List<ThreadInfo> remove = null;
+
+			int diff = queueSize - numIdle;
+			if (diff > 0) {
+				if (numThreads < corePoolSize) {
+					add = corePoolSize - numThreads;
+					diff -= corePoolSize - numThreads;
+				}
+				if (diff > corePoolThreshold) {
+					add += diff;
+				}
+			} else if (diff < 0 && numIdle > 0) {
+				remove = new ArrayList<>();
+				long now = System.currentTimeMillis();
+				long duration;
+				if (numThreads > corePoolSize) {
+					duration = keepAlive;
+					int nonCore = numThreads - corePoolSize;
+					for (ThreadInfo idleThread : idle) { //TODO: (Nad) Sort idle?
+						if (nonCore == 0) {
+							break;
+						}
+						if (idleThread.idleStart + duration < now) {
+							remove.add(idleThread);
+							nonCore--;
+							numIdle--;
+							diff++;
+						}
+					}
+				}
+				if (diff < 0 && numIdle > 0) {
+					duration = coreKeepAlive;
+					List<ThreadInfo> remainingIdle = new ArrayList<>(idle);
+					remainingIdle.removeAll(remove);
+					now = System.currentTimeMillis();
+					for (ThreadInfo idleThread : remainingIdle) {
+						if (idleThread.idleStart + duration < now) {
+							remove.add(idleThread);
+							numIdle--; // Needed?
+						}
+					}
+				}
+			}
+
+			if (numThreads + add > maximumPoolSize) {
+				add = maximumPoolSize - numThreads;
+			}
+			if (remove != null && numThreads - remove.size() < minimumPoolSize) {
+				diff = minimumPoolSize - numThreads + remove.size();
+				Iterator<ThreadInfo> iterator = remove.iterator();
+				while (diff > 0 && iterator.hasNext()) {
+					iterator.next();
+					iterator.remove();
+					diff--;
+				}
+			}
+			if (numThreads + add < minimumPoolSize) {
+				add = minimumPoolSize - numThreads;
+			}
+			return add;
+		}
+	}
+
+	protected static class Manager extends Thread {
+
+		protected Queue<Runnable> queue;
+
+		public Manager(Queue<Runnable> queue) {
+			this.queue = queue;
+		}
+
+		@Override
+		public void run() {
+			while (true) {
+				synchronized (this) {
+					while (!queue.isEmpty()) {
+
+					}
+					try {
+						wait();
+					} catch (InterruptedException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+				}
+			}
+		}
+	}
+
+	protected static class Worker2 implements Runnable { //TODO: (Nad) Inherit Thread instead?
+
+		protected final QueueingExecutorService manager;
+
+		protected final Thread thread;
+
+		@GuardedBy("this")
+		protected Directive directive;
+
+		@GuardedBy("this")
+		protected boolean terminate;
+
+		// Only ever modified by manager and self
+		protected Runnable currentTask;
+
+		public Worker2(@Nonnull QueueingExecutorService manager) {
+			if (manager == null) {
+				throw new IllegalArgumentException("manager cannot be null");
+			}
+			this.manager = manager;
+			this.thread = manager.getThreadFactory().newThread(this);
+			this.thread.start();
+		}
+
+		protected synchronized void terminate() {
+			terminate = true;
+			notify();
+		}
+
+		@Override
+		public void run() {
+			synchronized (this) {
+				while (!terminate) {
+					if (currentTask != null) {
+						try { //TODO: (Nad) Exception handling for before and after
+							manager.beforeExecute(thread, currentTask);
+							Throwable thrown = null;
+							try {
+								currentTask.run();
+								//TODO: (Nad) INterrupted?
+							} catch (Throwable t) {
+								thrown = t;
+							} finally {
+								manager.afterExecute(currentTask, thrown);
+							}
+						} finally {
+							synchronized (this) {
+								currentTask = null;
+								directive = null;
+							}
+						}
+					}
+					//manager.reportIdle();
+					try {
+						this.wait();
+					} catch (InterruptedException e) {
+						return; //TODO: (Nad) Figure out
+					}
+				}
+			}
+
+
+
+//			Thread workerThread = Thread.currentThread();
+//			Runnable task = worker.firstTask;
+//			worker.firstTask = null;
+//			worker.unlock(); // allow interrupts
+//			boolean completedAbruptly = true;
+//			try {
+//				while (task != null || (task = getTask()) != null) {
+//					worker.lock();
+//					// If pool is stopping, ensure thread is interrupted;
+//					// if not, ensure thread is not interrupted. This
+//					// requires a recheck in second case to deal with
+//					// shutdownNow race while clearing interrupt
+//					if ((runStateAtLeast(controlState.get(), STOP) || (Thread.interrupted() && runStateAtLeast(controlState.get(), STOP))) && !workerThread.isInterrupted()) {
+//						workerThread.interrupt();
+//					}
+//					try {
+//						beforeExecute(workerThread, task);
+//						Throwable thrown = null;
+//						try {
+//							task.run();
+//						} catch (RuntimeException x) {
+//							thrown = x;
+//							throw x;
+//						} catch (Error x) {
+//							thrown = x;
+//							throw x;
+//						} catch (Throwable x) {
+//							thrown = x;
+//							throw new Error(x);
+//						} finally {
+//							afterExecute(task, thrown);
+//						}
+//					} finally {
+//						task = null;
+//						worker.completedTasks++;
+//						worker.unlock();
+//					}
+//				}
+//				completedAbruptly = false;
+//			} finally {
+//				processWorkerExit(worker, completedAbruptly);
+//			}
+		}
+
+	}
+
 	/**
 	 * Class Worker mainly maintains interrupt control state for threads running
 	 * tasks, along with other minor bookkeeping. This class opportunistically
@@ -253,7 +475,7 @@ public class QueueingExecutorService extends AbstractExecutorService implements 
 	 * initialize lock state to a negative value, and clear it upon start (in
 	 * runWorker).
 	 */
-	private final class Worker extends AbstractQueuedSynchronizer implements Runnable {
+	private final class Worker extends AbstractQueuedSynchronizer implements Runnable { //TODO: (Nad) Worker
 
 		/**
 		 * This class will never be serialized, but we provide a
@@ -350,8 +572,8 @@ public class QueueingExecutorService extends AbstractExecutorService implements 
 	 */
 	private void advanceRunState(int targetState) {
 		for (;;) {
-			int c = ctl.get();
-			if (runStateAtLeast(c, targetState) || ctl.compareAndSet(c, ctlOf(targetState, workerCountOf(c)))) {
+			int c = controlState.get();
+			if (runStateAtLeast(c, targetState) || controlState.compareAndSet(c, ctlOf(targetState, workerCountOf(c)))) {
 				break;
 			}
 		}
@@ -368,8 +590,8 @@ public class QueueingExecutorService extends AbstractExecutorService implements 
 	 */
 	final void tryTerminate() {
 		for (;;) {
-			int c = ctl.get();
-			if (isRunning(c) || runStateAtLeast(c, TIDYING) || (runStateOf(c) == SHUTDOWN && !workQueue.isEmpty())) {
+			int c = controlState.get();
+			if (isRunning(c) || runStateAtLeast(c, TIDYING) || (runStateOf(c) == SHUTDOWN && !incoming.isEmpty())) {
 				return;
 			}
 			if (workerCountOf(c) != 0) { // Eligible to terminate
@@ -380,11 +602,11 @@ public class QueueingExecutorService extends AbstractExecutorService implements 
 			final ReentrantLock mainLock = this.mainLock;
 			mainLock.lock();
 			try {
-				if (ctl.compareAndSet(c, ctlOf(TIDYING, 0))) {
+				if (controlState.compareAndSet(c, ctlOf(TIDYING, 0))) {
 					try {
 						terminated();
 					} finally {
-						ctl.set(ctlOf(TERMINATED, 0));
+						controlState.set(ctlOf(TERMINATED, 0));
 						termination.signalAll();
 					}
 					return;
@@ -480,24 +702,24 @@ public class QueueingExecutorService extends AbstractExecutorService implements 
 	void onShutdown() { //TODO: (Nad) Needed?
 	}
 
-	/**
-	 * Drains the task queue into a new list, normally using drainTo. But if the
-	 * queue is a DelayQueue or any other kind of queue for which poll or
-	 * drainTo may fail to remove some elements, it deletes them one by one.
-	 */
-	private List<Runnable> drainQueue() {
-		BlockingQueue<Runnable> q = workQueue;
-		List<Runnable> taskList = new ArrayList<Runnable>();
-		q.drainTo(taskList);
-		if (!q.isEmpty()) {
-			for (Runnable r : q.toArray(new Runnable[0])) {
-				if (q.remove(r)) {
-					taskList.add(r);
-				}
-			}
-		}
-		return taskList;
-	}
+//	/**
+//	 * Drains the task queue into a new list, normally using drainTo. But if the
+//	 * queue is a DelayQueue or any other kind of queue for which poll or
+//	 * drainTo may fail to remove some elements, it deletes them one by one.
+//	 */
+//	private List<Runnable> drainQueue() {
+//		Queue<Runnable> q = incoming;
+//		List<Runnable> taskList = new ArrayList<Runnable>();
+//		q.drainTo(taskList);
+//		if (!q.isEmpty()) {
+//			for (Runnable r : q.toArray(new Runnable[0])) {
+//				if (q.remove(r)) {
+//					taskList.add(r);
+//				}
+//			}
+//		}
+//		return taskList;
+//	}
 
 	/*
 	 * Methods for creating, running and cleaning up after workers
@@ -529,11 +751,11 @@ public class QueueingExecutorService extends AbstractExecutorService implements 
 	 */
 	private boolean addWorker(Runnable firstTask, boolean core) {
 		retry: for (;;) {
-			int c = ctl.get();
+			int c = controlState.get();
 			int rs = runStateOf(c);
 
 			// Check if queue empty only if necessary.
-			if (rs >= SHUTDOWN && !(rs == SHUTDOWN && firstTask == null && !workQueue.isEmpty())) {
+			if (rs >= SHUTDOWN && !(rs == SHUTDOWN && firstTask == null && !incoming.isEmpty())) {
 				return false;
 			}
 
@@ -545,7 +767,7 @@ public class QueueingExecutorService extends AbstractExecutorService implements 
 				if (compareAndIncrementWorkerCount(c)) {
 					break retry;
 				}
-				c = ctl.get();  // Re-read ctl
+				c = controlState.get();  // Re-read ctl
 				if (runStateOf(c) != rs) {
 					continue retry;
 					// else CAS failed due to workerCount change; retry inner
@@ -567,7 +789,7 @@ public class QueueingExecutorService extends AbstractExecutorService implements 
 					// Recheck while holding lock.
 					// Back out on ThreadFactory failure or if
 					// shut down before lock acquired.
-					int c = ctl.get();
+					int c = controlState.get();
 					int rs = runStateOf(c);
 
 					if (rs < SHUTDOWN || (rs == SHUTDOWN && firstTask == null)) {
@@ -644,11 +866,11 @@ public class QueueingExecutorService extends AbstractExecutorService implements 
 
 		tryTerminate();
 
-		int c = ctl.get();
+		int c = controlState.get();
 		if (runStateLessThan(c, STOP)) {
 			if (!completedAbruptly) {
 				int min = allowCoreThreadTimeOut ? 0 : corePoolSize;
-				if (min == 0 && !workQueue.isEmpty()) {
+				if (min == 0 && !incoming.isEmpty()) {
 					min = 1;
 				}
 				if (workerCountOf(c) >= min) {
@@ -676,11 +898,11 @@ public class QueueingExecutorService extends AbstractExecutorService implements 
 		boolean timedOut = false; // Did the last poll() time out?
 
 		retry: for (;;) {
-			int c = ctl.get();
+			int c = controlState.get();
 			int rs = runStateOf(c);
 
 			// Check if queue empty only if necessary.
-			if (rs >= SHUTDOWN && (rs >= STOP || workQueue.isEmpty())) {
+			if (rs >= SHUTDOWN && (rs >= STOP || incoming.isEmpty())) {
 				decrementWorkerCount();
 				return null;
 			}
@@ -697,7 +919,7 @@ public class QueueingExecutorService extends AbstractExecutorService implements 
 				if (compareAndDecrementWorkerCount(c)) {
 					return null;
 				}
-				c = ctl.get();  // Re-read ctl
+				c = controlState.get();  // Re-read ctl
 				if (runStateOf(c) != rs) {
 					continue retry;
 					// else CAS failed due to workerCount change; retry inner
@@ -705,15 +927,16 @@ public class QueueingExecutorService extends AbstractExecutorService implements 
 				}
 			}
 
-			try {
-				Runnable r = timed ? workQueue.poll(keepAliveTime, TimeUnit.NANOSECONDS) : workQueue.take();
+//			try {
+				Runnable r = incoming.poll(); //TODO: (Nad) Replaced to compile
+//				Runnable r = timed ? incoming.poll(keepAliveTime, TimeUnit.NANOSECONDS) : incoming.take();
 				if (r != null) {
 					return r;
 				}
 				timedOut = true;
-			} catch (InterruptedException retry) {
-				timedOut = false;
-			}
+//			} catch (InterruptedException retry) {
+//				timedOut = false;
+//			}
 		}
 	}
 
@@ -754,26 +977,26 @@ public class QueueingExecutorService extends AbstractExecutorService implements 
 	 * thread's UncaughtExceptionHandler have as accurate information as we can
 	 * provide about any problems encountered by user code.
 	 *
-	 * @param w the worker
+	 * @param worker the worker
 	 */
-	final void runWorker(Worker w) {
-		Thread wt = Thread.currentThread();
-		Runnable task = w.firstTask;
-		w.firstTask = null;
-		w.unlock(); // allow interrupts
+	final void runWorker(Worker worker) {
+		Thread workerThread = Thread.currentThread();
+		Runnable task = worker.firstTask;
+		worker.firstTask = null;
+		worker.unlock(); // allow interrupts
 		boolean completedAbruptly = true;
 		try {
 			while (task != null || (task = getTask()) != null) {
-				w.lock();
+				worker.lock();
 				// If pool is stopping, ensure thread is interrupted;
 				// if not, ensure thread is not interrupted. This
 				// requires a recheck in second case to deal with
 				// shutdownNow race while clearing interrupt
-				if ((runStateAtLeast(ctl.get(), STOP) || (Thread.interrupted() && runStateAtLeast(ctl.get(), STOP))) && !wt.isInterrupted()) {
-					wt.interrupt();
+				if ((runStateAtLeast(controlState.get(), STOP) || (Thread.interrupted() && runStateAtLeast(controlState.get(), STOP))) && !workerThread.isInterrupted()) {
+					workerThread.interrupt();
 				}
 				try {
-					beforeExecute(wt, task);
+					beforeExecute(workerThread, task);
 					Throwable thrown = null;
 					try {
 						task.run();
@@ -791,13 +1014,13 @@ public class QueueingExecutorService extends AbstractExecutorService implements 
 					}
 				} finally {
 					task = null;
-					w.completedTasks++;
-					w.unlock();
+					worker.completedTasks++;
+					worker.unlock();
 				}
 			}
 			completedAbruptly = false;
 		} finally {
-			processWorkerExit(w, completedAbruptly);
+			processWorkerExit(worker, completedAbruptly);
 		}
 	}
 
@@ -925,7 +1148,7 @@ public class QueueingExecutorService extends AbstractExecutorService implements 
 		}
 		this.corePoolSize = corePoolSize;
 		this.maximumPoolSize = maximumPoolSize;
-		this.workQueue = workQueue;
+		this.incoming = workQueue;
 		this.keepAliveTime = unit.toNanos(keepAliveTime);
 		this.threadFactory = threadFactory;
 		this.handler = handler;
@@ -968,15 +1191,15 @@ public class QueueingExecutorService extends AbstractExecutorService implements 
 		 * 3. If we cannot queue task, then we try to add a new thread. If it
 		 * fails, we know we are shut down or saturated and so reject the task.
 		 */
-		int c = ctl.get();
+		int c = controlState.get();
 		if (workerCountOf(c) < corePoolSize) {
 			if (addWorker(command, true)) {
 				return;
 			}
-			c = ctl.get();
+			c = controlState.get();
 		}
-		if (isRunning(c) && workQueue.offer(command)) {
-			int recheck = ctl.get();
+		if (isRunning(c) && incoming.offer(command)) {
+			int recheck = controlState.get();
 			if (!isRunning(recheck) && remove(command)) {
 				reject(command);
 			} else if (workerCountOf(recheck) == 0) {
@@ -1036,17 +1259,18 @@ public class QueueingExecutorService extends AbstractExecutorService implements 
 		try {
 			advanceRunState(STOP);
 			interruptWorkers();
-			tasks = drainQueue();
+//			tasks = drainQueue(); // TODO: (Nad) replace..
 		} finally {
 			mainLock.unlock();
 		}
 		tryTerminate();
-		return tasks;
+//		return tasks;
+		return null;
 	}
 
 	@Override
 	public boolean isShutdown() {
-		return !isRunning(ctl.get());
+		return !isRunning(controlState.get());
 	}
 
 	/**
@@ -1060,13 +1284,13 @@ public class QueueingExecutorService extends AbstractExecutorService implements 
 	 * @return true if terminating but not yet terminated
 	 */
 	public boolean isTerminating() {
-		int c = ctl.get();
+		int c = controlState.get();
 		return !isRunning(c) && runStateLessThan(c, TERMINATED);
 	}
 
 	@Override
 	public boolean isTerminated() {
-		return runStateAtLeast(ctl.get(), TERMINATED);
+		return runStateAtLeast(controlState.get(), TERMINATED);
 	}
 
 	@Override
@@ -1076,7 +1300,7 @@ public class QueueingExecutorService extends AbstractExecutorService implements 
 		mainLock.lock();
 		try {
 			for (;;) {
-				if (runStateAtLeast(ctl.get(), TERMINATED)) {
+				if (runStateAtLeast(controlState.get(), TERMINATED)) {
 					return true;
 				}
 				if (nanos <= 0) {
@@ -1163,16 +1387,16 @@ public class QueueingExecutorService extends AbstractExecutorService implements 
 		}
 		int delta = corePoolSize - this.corePoolSize;
 		this.corePoolSize = corePoolSize;
-		if (workerCountOf(ctl.get()) > corePoolSize) {
+		if (workerCountOf(controlState.get()) > corePoolSize) {
 			interruptIdleWorkers();
 		} else if (delta > 0) {
 			// We don't really know how many new threads are "needed".
 			// As a heuristic, prestart enough new workers (up to new
 			// core size) to handle the current number of tasks in
 			// queue, but stop if queue becomes empty while doing so.
-			int k = Math.min(delta, workQueue.size());
+			int k = Math.min(delta, incoming.size());
 			while (k-- > 0 && addWorker(null, true)) {
-				if (workQueue.isEmpty()) {
+				if (incoming.isEmpty()) {
 					break;
 				}
 			}
@@ -1198,7 +1422,7 @@ public class QueueingExecutorService extends AbstractExecutorService implements 
 	 * @return {@code true} if a thread was started
 	 */
 	public boolean prestartCoreThread() {
-		return workerCountOf(ctl.get()) < corePoolSize && addWorker(null, true);
+		return workerCountOf(controlState.get()) < corePoolSize && addWorker(null, true);
 	}
 
 	/**
@@ -1206,7 +1430,7 @@ public class QueueingExecutorService extends AbstractExecutorService implements 
 	 * started even if corePoolSize is 0.
 	 */
 	void ensurePrestart() {
-		int wc = workerCountOf(ctl.get());
+		int wc = workerCountOf(controlState.get());
 		if (wc < corePoolSize) {
 			addWorker(null, true);
 		} else if (wc == 0) {
@@ -1289,7 +1513,7 @@ public class QueueingExecutorService extends AbstractExecutorService implements 
 			throw new IllegalArgumentException();
 		}
 		this.maximumPoolSize = maximumPoolSize;
-		if (workerCountOf(ctl.get()) > maximumPoolSize) {
+		if (workerCountOf(controlState.get()) > maximumPoolSize) {
 			interruptIdleWorkers();
 		}
 	}
@@ -1356,8 +1580,8 @@ public class QueueingExecutorService extends AbstractExecutorService implements 
 	 *
 	 * @return the task queue
 	 */
-	public BlockingQueue<Runnable> getQueue() {
-		return workQueue;
+	public Queue<Runnable> getQueue() {
+		return incoming;
 	}
 
 	/**
@@ -1376,7 +1600,7 @@ public class QueueingExecutorService extends AbstractExecutorService implements 
 	 * @return true if the task was removed
 	 */
 	public boolean remove(Runnable task) {
-		boolean removed = workQueue.remove(task);
+		boolean removed = incoming.remove(task);
 		tryTerminate(); // In case SHUTDOWN and now empty
 		return removed;
 	}
@@ -1391,7 +1615,7 @@ public class QueueingExecutorService extends AbstractExecutorService implements 
 	 * of interference by other threads.
 	 */
 	public void purge() {
-		final BlockingQueue<Runnable> q = workQueue;
+		final Queue<Runnable> q = incoming;
 		try {
 			Iterator<Runnable> it = q.iterator();
 			while (it.hasNext()) {
@@ -1427,7 +1651,7 @@ public class QueueingExecutorService extends AbstractExecutorService implements 
 		try {
 			// Remove rare and surprising possibility of
 			// isTerminated() && getPoolSize() > 0
-			return runStateAtLeast(ctl.get(), TIDYING) ? 0 : workers.size();
+			return runStateAtLeast(controlState.get(), TIDYING) ? 0 : workers.size();
 		} finally {
 			mainLock.unlock();
 		}
@@ -1490,7 +1714,7 @@ public class QueueingExecutorService extends AbstractExecutorService implements 
 					++n;
 				}
 			}
-			return n + workQueue.size();
+			return n + incoming.size();
 		} finally {
 			mainLock.unlock();
 		}
@@ -1543,10 +1767,10 @@ public class QueueingExecutorService extends AbstractExecutorService implements 
 		} finally {
 			mainLock.unlock();
 		}
-		int c = ctl.get();
+		int c = controlState.get();
 		String rs = (runStateLessThan(c, SHUTDOWN) ? "Running" : (runStateAtLeast(c, TERMINATED) ? "Terminated" : "Shutting down"));
 		return super.toString() + "[" + rs + ", pool size = " + nworkers + ", active threads = " + nactive + ", queued tasks = " +
-			workQueue.size() + ", completed tasks = " + ncompleted + "]";
+			incoming.size() + ", completed tasks = " + ncompleted + "]";
 	}
 
 	/* Extension hooks */

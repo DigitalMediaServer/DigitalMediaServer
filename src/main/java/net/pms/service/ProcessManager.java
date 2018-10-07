@@ -56,9 +56,9 @@ import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
  * This class is used to manage the shutdown of external processes if they run
  * longer than their expected run time or hangs. It uses its own thread and
  * internal scheduling to shut down managed processes once their run time
- * expires. A graceful shutdown is initially escalating to less graceful methods
- * until successful. If nothing works, the shutdown is left to the JVM with
- * {@link Process#destroy()} with its known shortcomings.
+ * expires. A graceful shutdown is initially attempted, escalating to less
+ * graceful methods until successful. If nothing works, the shutdown is left to
+ * the JVM with {@link Process#destroy()} with its known shortcomings.
  *
  * @author Nadahar
  */

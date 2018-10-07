@@ -62,7 +62,7 @@ public class ByteProcessWrapperConsumer implements ProcessWrapperConsumer<BytePr
 				return result;
 			}
 		};
-		FutureTask<byte[]> result = new FutureTask<byte[]>(callable);
+		FutureTask<byte[]> result = new FutureTask<byte[]>(callable); //TODO: (Nad) Service Callable reference
 		Thread runner;
 		if (isBlank(threadName)) {
 			runner = new Thread(result);

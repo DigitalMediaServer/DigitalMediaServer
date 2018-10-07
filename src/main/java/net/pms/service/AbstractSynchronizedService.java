@@ -300,7 +300,7 @@ public abstract class AbstractSynchronizedService implements Service {
 		} else {
 			millis = nanos / 1000000; //TODO: (Nad) Check
 			nanos %= 1000000;
-			// Since wait() can't really handle nanoseconds, it's rounded to the closest millisecond.
+			// Since wait() can't handle nanoseconds, it's rounded to the closest millisecond.
 			if (nanos >= 500000 || (nanos != 0 && millis == 0)) {
 				millis++;
 			}
