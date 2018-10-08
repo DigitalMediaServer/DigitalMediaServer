@@ -26,6 +26,7 @@ import com.sun.jna.Platform;
 import com.sun.net.httpserver.HttpServer;
 import java.awt.*;
 import java.io.*;
+import java.lang.reflect.InvocationTargetException;
 import java.net.BindException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -397,21 +398,56 @@ public class PMS {
 			(configuration.getLanguageRawString() == null ||
 			!Languages.isValid(configuration.getLanguageRawString()))
 		) {
-			LanguageSelection languageDialog = new LanguageSelection(null, PMS.getLocale(), false);
-			languageDialog.show();
-			if (languageDialog.isAborted()) {
+			final boolean[] aborted = new boolean[1];
+			try {
+				SwingUtilities.invokeAndWait(new Runnable() {
+					@Override
+					public void run() {
+						LanguageSelection languageDialog = new LanguageSelection(null, PMS.getLocale(), false);
+						languageDialog.show();
+						aborted[0] = languageDialog.isAborted();
+					}
+				});
+			} catch (InterruptedException e) {
+				LOGGER.info("LanguageSelection dialog was interrupted, aborting...");
+				return false;
+			} catch (InvocationTargetException e) {
+				LOGGER.error("An error occurred during the LanguageSelection dialog: {}", e);
+				return false;
+			}
+			if (aborted[0]) {
 				return false;
 			}
 		}
 
 		// Initialize splash screen
-		WindowPropertiesConfiguration windowConfiguration = null;
-		Splash splash = null;
+		final WindowPropertiesConfiguration[] windowConfiguration = new WindowPropertiesConfiguration[1];
+		final Splash[] splash = new Splash[1];
+
 		if (!isHeadless()) {
-			windowConfiguration = new WindowPropertiesConfiguration(
-				Paths.get(configuration.getProfileFolder()).resolve("DMS.dat")
-			);
-			splash = new Splash(configuration, windowConfiguration.getGraphicsConfiguration());
+			final boolean initSplash =
+				configuration.isShowSplashScreen() &&
+				!configuration.isGUIStartHidden();
+			try {
+				SwingUtilities.invokeAndWait(new Runnable() {
+
+					@Override
+					public void run() {
+						windowConfiguration[0] = new WindowPropertiesConfiguration(
+							Paths.get(configuration.getProfileFolder()).resolve("DMS.dat")
+						);
+						if (initSplash) {
+							splash[0] = new Splash(configuration, windowConfiguration[0].getGraphicsConfiguration());
+						}
+					}
+				});
+			} catch (InterruptedException e) {
+				LOGGER.info("Creation of WindowPropertiesConfiguration or Splash was interrupted, aborting...");
+				return false;
+			} catch (InvocationTargetException e) {
+				LOGGER.error("An error occurred during creation of WindowPropertiesConfiguration or Splash: {}", e);
+				return false;
+			}
 		}
 
 		// Call this as early as possible
@@ -419,17 +455,29 @@ public class PMS {
 
 		// Initialize database
 		try {
-			if (!initializeDatabase(options, splash)) {
-				if (splash != null) {
-					splash.dispose();
-					splash = null;
+			if (!initializeDatabase(options, splash[0])) {
+				if (splash[0] != null) {
+					SwingUtilities.invokeLater(new Runnable() {
+
+						@Override
+						public void run() {
+							splash[0].dispose();
+							splash[0] = null;
+						}
+					});
 				}
 				return false;
 			}
 		} catch (InitializationException e) {
-			if (splash != null) {
-				splash.dispose();
-				splash = null;
+			if (splash[0] != null) {
+				SwingUtilities.invokeLater(new Runnable() {
+
+					@Override
+					public void run() {
+						splash[0].dispose();
+						splash[0] = null;
+					}
+				});
 			}
 			throw e;
 		}
@@ -455,103 +503,7 @@ public class PMS {
 
 		// Wizard
 		if (configuration.isRunWizard() && !isHeadless()) {
-			// Hide splash screen
-			if (splash != null) {
-				splash.setVisible(false);
-			}
-			// Ask the user if they want to run the wizard
-			int whetherToRunWizard = JOptionPane.showConfirmDialog(
-				null,
-				Messages.getString("Wizard.1"),
-				Messages.getString("Dialog.Question"),
-				JOptionPane.YES_NO_OPTION
-			);
-			if (whetherToRunWizard == JOptionPane.YES_OPTION) {
-				// The user has chosen to run the wizard
-
-				// Total number of questions
-				int numberOfQuestions = 2;
-
-				// The current question number
-				int currentQuestionNumber = 1;
-
-				// Ask if their network is wired, etc.
-				Object[] wizardOptions = {
-					Messages.getString("Wizard.8"),
-					Messages.getString("Wizard.9"),
-					Messages.getString("Wizard.10")
-				};
-				int networkType = JOptionPane.showOptionDialog(
-					null,
-					Messages.getString("Wizard.7"),
-					Messages.getString("Wizard.2") + " " + (currentQuestionNumber++) + " " + Messages.getString("Wizard.4") + " " + numberOfQuestions,
-					JOptionPane.YES_NO_CANCEL_OPTION,
-					JOptionPane.QUESTION_MESSAGE,
-					null,
-					wizardOptions,
-					wizardOptions[1]
-				);
-				switch (networkType) {
-					case JOptionPane.YES_OPTION:
-						// Wired (Gigabit)
-						configuration.setMaximumBitrate("0");
-						configuration.setMPEG2MainSettings("Automatic (Wired)");
-						configuration.setx264ConstantRateFactor("Automatic (Wired)");
-						save();
-						break;
-					case JOptionPane.NO_OPTION:
-						// Wired (100 Megabit)
-						configuration.setMaximumBitrate("90");
-						configuration.setMPEG2MainSettings("Automatic (Wired)");
-						configuration.setx264ConstantRateFactor("Automatic (Wired)");
-						save();
-						break;
-					case JOptionPane.CANCEL_OPTION:
-						// Wireless
-						configuration.setMaximumBitrate("30");
-						configuration.setMPEG2MainSettings("Automatic (Wireless)");
-						configuration.setx264ConstantRateFactor("Automatic (Wireless)");
-						save();
-						break;
-					default:
-						break;
-				}
-
-				// Ask if they want to hide advanced options
-				int showAdvancedOptions = JOptionPane.showConfirmDialog(
-					null,
-					Messages.getString("Wizard.AdvancedOptions"),
-					Messages.getString("Wizard.2") + " " + (currentQuestionNumber++) + " " + Messages.getString("Wizard.4") + " " + numberOfQuestions,
-					JOptionPane.YES_NO_OPTION
-				);
-				if (showAdvancedOptions == JOptionPane.YES_OPTION) {
-					configuration.setHideAdvancedOptions(false);
-					save();
-				} else if (showAdvancedOptions == JOptionPane.NO_OPTION) {
-					configuration.setHideAdvancedOptions(true);
-					save();
-				}
-
-				JOptionPane.showMessageDialog(
-					null,
-					Messages.getString("Wizard.13"),
-					Messages.getString("Wizard.12"),
-					JOptionPane.INFORMATION_MESSAGE
-				);
-
-				configuration.setRunWizard(false);
-				save();
-			} else if (whetherToRunWizard == JOptionPane.NO_OPTION) {
-				// The user has chosen to not run the wizard
-				// Do not ask them again
-				configuration.setRunWizard(false);
-				save();
-			}
-
-			// Unhide splash screen
-			if (splash != null) {
-				splash.setVisible(true);
-			}
+			ConfigurationWizard.run(configuration, splash[0]);
 		}
 
 		fileWatcher = new FileWatcher();
@@ -559,7 +511,21 @@ public class PMS {
 		globalRepo = new GlobalIdRepo();
 
 		if (!isHeadless()) {
-			frame = new LooksFrame(configuration, windowConfiguration);
+			try {
+				SwingUtilities.invokeAndWait(new Runnable() {
+
+					@Override
+					public void run() {
+						frame = new LooksFrame(configuration, windowConfiguration[0]);
+					}
+				});
+			} catch (InterruptedException e) {
+				LOGGER.info("Creation of the main GUI window was interrupted, aborting...");
+				return false;
+			} catch (InvocationTargetException e) {
+				LOGGER.error("An error occurred during creation of the main GUI window: {}", e);
+				return false;
+			}
 		} else {
 			LOGGER.info("Graphics environment not available or headless mode is forced");
 			LOGGER.info("Switching to console mode");
@@ -567,9 +533,16 @@ public class PMS {
 		}
 
 		// Close splash screen
-		if (splash != null) {
-			splash.dispose();
-			splash = null;
+		if (splash[0] != null) {
+
+			SwingUtilities.invokeLater(new Runnable() {
+
+				@Override
+				public void run() {
+					splash[0].dispose();
+					splash[0] = null;
+				}
+			});
 		}
 
 		/*
@@ -821,7 +794,7 @@ public class PMS {
 
 	private static boolean initializeDatabase(
 		@Nullable Map<Option, Object> options,
-		@Nullable Splash splash
+		@Nullable final Splash splash
 	) throws InitializationException {
 		Services services = Services.get();
 		if (Services.get() == null) {
@@ -829,7 +802,7 @@ public class PMS {
 		}
 
 		services.createTableManager();
-		TableManager tableManager = services.getTableManager();
+		final TableManager tableManager = services.getTableManager();
 		if (tableManager.isError()) {
 			if (options != null && options.containsKey(Option.DB_BACKUP_DOWNGRADE) && tableManager.hasFutureTables()) {
 				try {
@@ -984,16 +957,33 @@ public class PMS {
 			}
 
 			// Handle with GUI
-			if (splash != null) {
-				splash.setVisible(false);
+			final boolean[] aborted = new boolean[1];
+
+			try {
+				SwingUtilities.invokeAndWait(new Runnable() {
+
+					@Override
+					public void run() {
+						if (splash != null) {
+							splash.setVisible(false);
+						}
+						DatabaseProblem databaseProblem = new DatabaseProblem(null, tableManager);
+						databaseProblem.show();
+						aborted[0] = databaseProblem.isAborted();
+						if (!aborted[0] && splash != null) {
+							splash.setVisible(true);
+						}
+					}
+				});
+			} catch (InterruptedException e) {
+				LOGGER.info("DatabaseProblem dialog was interrupted, aborting...");
+				return false;
+			} catch (InvocationTargetException e) {
+				LOGGER.error("An error occurred during the DatabaseProblem dialog: {}", e);
+				return false;
 			}
-				DatabaseProblem databaseProblem = new DatabaseProblem(null, tableManager);
-				databaseProblem.show();
-				if (databaseProblem.isAborted()) {
-					return false;
-				}
-			if (splash != null) {
-				splash.setVisible(true);
+			if (aborted[0]) {
+				return false;
 			}
 		}
 
@@ -1503,7 +1493,7 @@ public class PMS {
 			// Create the PMS instance returned by get()
 			createInstance(options); // Calls new() then init()
 		} catch (ConfigurationException | InitializationException e) {
-			StringBuilder sb = new StringBuilder();
+			final StringBuilder sb = new StringBuilder();
 			String errorMessage;
 			if (e instanceof ConfigurationException) {
 				sb.append(Messages.getString("Application.ConfigurationError")).append(".");
@@ -1517,15 +1507,27 @@ public class PMS {
 			LOGGER.debug("", e);
 
 			if (!isHeadless()) {
-				ErrorDialog errorDialog = new ErrorDialog(
-					null,
-					Messages.getString("PMS.42"),
-					sb.toString(),
-					null,
-					e,
-					LOGGER.isTraceEnabled()
-				);
-				errorDialog.show();
+				try {
+					SwingUtilities.invokeAndWait(new Runnable() {
+
+						@Override
+						public void run() {
+							ErrorDialog errorDialog = new ErrorDialog(
+								null,
+								Messages.getString("PMS.42"),
+								sb.toString(),
+								null,
+								e,
+								LOGGER.isTraceEnabled()
+							);
+							errorDialog.show();
+						}
+					});
+				} catch (InterruptedException e1) {
+					LOGGER.error("Interrupted during the error dialog");
+				} catch (InvocationTargetException e1) {
+					LOGGER.error("An error occurred during the error dialog: {}", e1);
+				}
 			}
 		}
 	}
@@ -1536,14 +1538,6 @@ public class PMS {
 
 	public HttpServer getWebServer() {
 		return web == null ? null : web.getServer();
-	}
-
-	public void save() {
-		try {
-			configuration.save();
-		} catch (ConfigurationException e) {
-			LOGGER.error("Could not save configuration", e);
-		}
 	}
 
 	/**
