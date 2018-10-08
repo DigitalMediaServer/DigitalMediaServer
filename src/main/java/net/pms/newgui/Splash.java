@@ -57,9 +57,6 @@ public class Splash extends JFrame implements MouseListener {
 	public Splash(@Nonnull PmsConfiguration configuration, @Nullable GraphicsConfiguration graphicsConfiguration) {
 		super(graphicsConfiguration);
 		this.configuration = configuration;
-		if (!configuration.isShowSplashScreen() || System.getProperty("console") != null || configuration.isGUIStartHidden()) {
-			return;
-		}
 
 		URL imageURL = getClass().getResource("/resources/images/splash.png");
 		if (imageURL == null) {

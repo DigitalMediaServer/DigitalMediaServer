@@ -1,7 +1,9 @@
 package net.pms.newgui;
 
 import java.io.File;
+import java.lang.reflect.InvocationTargetException;
 import javax.swing.JFileChooser;
+import javax.swing.SwingUtilities;
 import javax.swing.filechooser.FileFilter;
 import net.pms.Messages;
 
@@ -21,17 +23,32 @@ public class ProfileChooser {
 	}
 
 	public static void display() {
-		final JFileChooser fc = new JFileChooser();
+		try {
+			SwingUtilities.invokeAndWait(new Runnable() {
 
-		fc.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
-		fc.setDialogTitle(Messages.getString("ProfileChooser.1"));
-		fc.setFileFilter(new ProfileChooserFileFilter());
+				@Override
+				public void run() {
+					final JFileChooser fc = new JFileChooser();
 
-		int returnVal = fc.showDialog(null, Messages.getString("ProfileChooser.2"));
+					fc.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
+					fc.setDialogTitle(Messages.getString("ProfileChooser.1"));
+					fc.setFileFilter(new ProfileChooserFileFilter());
 
-		if (returnVal == JFileChooser.APPROVE_OPTION) {
-			File file = fc.getSelectedFile();
-			System.setProperty("dms.profile.path", file.getAbsolutePath());
-		} // else the open command was cancelled by the user
+					int returnVal = fc.showDialog(null, Messages.getString("ProfileChooser.2"));
+
+					if (returnVal == JFileChooser.APPROVE_OPTION) {
+						File file = fc.getSelectedFile();
+						System.setProperty("dms.profile.path", file.getAbsolutePath());
+					} // else the open command was cancelled by the user
+				}
+			});
+		} catch (InterruptedException e) {
+			// No logging is available before the profile is selected, so simply output to standard error
+			System.err.println("ProfileChooser was interrupted..");
+		} catch (InvocationTargetException e) {
+			// No logging is available before the profile is selected, so simply output to standard error
+			System.err.println("An error occurred while running ProfileChooser:");
+			e.printStackTrace();
+		}
 	}
 }
