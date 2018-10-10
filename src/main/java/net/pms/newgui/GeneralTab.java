@@ -267,12 +267,12 @@ public class GeneralTab {
 		if (!configuration.isHideAdvancedOptions()) {
 			// Edit DMS configuration file manually
 			CustomJButton confEdit = new CustomJButton(Messages.getString("NetworkTab.51"));
-			confEdit.setToolTipText(configuration.getProfilePath());
+			confEdit.setToolTipText(configuration.getConfigurationFile().toString());
 			confEdit.addActionListener(new ActionListener() {
 				@Override
 				public void actionPerformed(ActionEvent e) {
 					JPanel tPanel = new JPanel(new BorderLayout());
-					final File conf = new File(configuration.getProfilePath());
+					final File conf = configuration.getConfigurationFile().toFile();
 					final JTextArea textArea = new JTextArea();
 					textArea.setFont(new Font("Courier", Font.PLAIN, 12));
 					JScrollPane scrollPane = new JScrollPane(textArea);

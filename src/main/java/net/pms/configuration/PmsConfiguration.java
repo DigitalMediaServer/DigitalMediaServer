@@ -61,7 +61,6 @@ import net.pms.util.ConversionUtil;
 import net.pms.util.FilePermissions;
 import net.pms.util.FileUtil;
 import net.pms.util.ConversionUtil.UnitPrefix;
-import net.pms.util.FileUtil.FileLocation;
 import net.pms.util.FullyPlayedAction;
 import net.pms.util.Languages;
 import net.pms.util.LogSystemInformationMode;
@@ -366,10 +365,6 @@ public class PmsConfiguration extends RendererConfiguration {
 	protected static final String KEY_WEB_WIDTH = "web_width";
 	protected static final String KEY_X264_CONSTANT_RATE_FACTOR = "x264_constant_rate_factor";
 
-	// Deprecated settings
-	@Deprecated
-	protected static final String KEY_MENCODER_ASS_DEFAULTSTYLE = "mencoder_ass_defaultstyle";
-
 	// The name of the subdirectory under which DMS config files are stored for this build (default: DMS).
 	// See Build for more details
 	protected static final String PROFILE_FOLDER_NAME = Build.getProfileFolderName();
@@ -475,16 +470,16 @@ public class PmsConfiguration extends RendererConfiguration {
 			DMS_PROFILE = folder/dev.conf     # profile dir = folder
 			DMS_PROFILE = /path/to/some.file  # profile dir = /path/to/
 	 */
-	protected static final String DEFAULT_PROFILE_FILENAME = "DMS.conf";
+	protected static final String DEFAULT_CONFIGURATION_FILENAME = "DMS.conf";
 	protected static final String ENV_PROFILE_PATH = "DMS_PROFILE";
 	protected static final String DEFAULT_WEB_CONF_FILENAME = "WEB.conf";
 	protected static final String DEFAULT_CREDENTIALS_FILENAME = "DMS.cred";
 
 	// Path to directory containing DMS config files
-	protected static final String PROFILE_FOLDER;
+	protected static final Path PROFILE_FOLDER;
 
-	// Absolute path to profile file e.g. /path/to/DMS.conf
-	protected static final String PROFILE_PATH;
+	// Absolute path to configuration file e.g. /path/to/DMS.conf
+	protected static final Path CONFIGURATION_FILE;
 
 	// Absolute path to WEB.conf file e.g. /path/to/WEB.conf
 	protected static String WEB_CONF_PATH;
@@ -533,13 +528,12 @@ public class PmsConfiguration extends RendererConfiguration {
 		}
 
 		// if customProfilePath is still blank, the default profile dir/filename is used
-		FileLocation profileLocation = FileUtil.getFileLocation(
+		CONFIGURATION_FILE = FileUtil.resolvePathWithDefaults(
 			customProfilePath,
 			SYSTEM_PROFILE_FOLDER,
-			DEFAULT_PROFILE_FILENAME
+			DEFAULT_CONFIGURATION_FILENAME
 		);
-		PROFILE_PATH = profileLocation.getFilePath();
-		PROFILE_FOLDER = profileLocation.getDirectoryPath();
+		PROFILE_FOLDER = CONFIGURATION_FILE.getParent();
 
 		// Set SKEL_PROFILE_PATH for Linux systems
 		String skelDir = PropertiesUtil.getProjectProperties().get("project.skelprofile.dir");
@@ -550,7 +544,7 @@ public class PmsConfiguration extends RendererConfiguration {
 						skelDir,
 						PROFILE_FOLDER_NAME
 					).getAbsolutePath(),
-					DEFAULT_PROFILE_FILENAME
+					DEFAULT_CONFIGURATION_FILENAME
 				).getAbsolutePath()
 			);
 		} else {
@@ -579,13 +573,11 @@ public class PmsConfiguration extends RendererConfiguration {
 		super(0);
 
 		if (loadFile) {
-			File dmsConfFile = new File(PROFILE_PATH);
-
 			try {
-				((PropertiesConfiguration)configuration).load(dmsConfFile);
+				((PropertiesConfiguration) configuration).load(CONFIGURATION_FILE.toFile());
 			} catch (ConfigurationException e) {
 				if (Platform.isLinux() && SKEL_PROFILE_PATH != null) {
-					LOGGER.debug("Failed to load {} ({}) - attempting to load skel profile", PROFILE_PATH, e.getMessage());
+					LOGGER.debug("Failed to load {} ({}) - attempting to load skel profile", CONFIGURATION_FILE, e.getMessage());
 					File skelConfigFile = new File(SKEL_PROFILE_PATH);
 
 					try {
@@ -593,15 +585,15 @@ public class PmsConfiguration extends RendererConfiguration {
 						((PropertiesConfiguration)configuration).load(skelConfigFile);
 						LOGGER.info("Default configuration loaded from {}", SKEL_PROFILE_PATH);
 					} catch (ConfigurationException ce) {
-						LOGGER.warn("Can't load neither {}: {} nor {}: {}", PROFILE_PATH, e.getMessage(), SKEL_PROFILE_PATH, ce.getMessage());
+						LOGGER.warn("Can't load neither {}: {} nor {}: {}", CONFIGURATION_FILE, e.getMessage(), SKEL_PROFILE_PATH, ce.getMessage());
 					}
 				} else {
-					LOGGER.warn("Can't load {}: {}", PROFILE_PATH, e.getMessage());
+					LOGGER.warn("Can't load {}: {}", CONFIGURATION_FILE, e.getMessage());
 				}
 			}
 		}
 
-		((PropertiesConfiguration)configuration).setPath(PROFILE_PATH);
+		((PropertiesConfiguration)configuration).setPath(CONFIGURATION_FILE.toString());
 
 		tempFolder = new TempFolder(getString(KEY_TEMP_FOLDER_PATH, null));
 		programPaths = new ConfigurableProgramPaths(configuration);
@@ -714,8 +706,7 @@ public class PmsConfiguration extends RendererConfiguration {
 
 			if (defaultLogFileFolder == null) {
 				// Log to profile directory if it is writable.
-				final File profileDirectory = new File(PROFILE_FOLDER);
-				defaultLogFileFolder = verifyLogFolder(profileDirectory, "temporary folder");
+				defaultLogFileFolder = verifyLogFolder(PROFILE_FOLDER.toFile(), "temporary folder");
 			}
 
 			if (defaultLogFileFolder == null) {
@@ -2929,7 +2920,7 @@ public class PmsConfiguration extends RendererConfiguration {
 
 	public void save() throws ConfigurationException {
 		((PropertiesConfiguration) configuration).save();
-		LOGGER.info("Configuration saved to \"{}\"", PROFILE_PATH);
+		LOGGER.info("Configuration saved to \"{}\"", CONFIGURATION_FILE);
 	}
 
 	private final Object sharedFoldersLock = new Object();
@@ -3300,34 +3291,6 @@ public class PmsConfiguration extends RendererConfiguration {
 
 	public boolean isDisableFakeSize() {
 		return getBoolean(KEY_DISABLE_FAKESIZE, false);
-	}
-
-	/**
-	 * Whether the style rules defined by styled subtitles (ASS/SSA) should
-	 * be followed (true) or overridden by our style rules (false) when
-	 * using MEncoder.
-	 *
-	 * @see #setUseEmbeddedSubtitlesStyle(boolean)
-	 * @param value whether to use the embedded styles or ours
-	 * @deprecated
-	 */
-	@Deprecated
-	public void setMencoderAssDefaultStyle(boolean value) {
-		configuration.setProperty(KEY_MENCODER_ASS_DEFAULTSTYLE, value);
-	}
-
-	/**
-	 * Whether the style rules defined by styled subtitles (ASS/SSA) should
-	 * be followed (true) or overridden by our style rules (false) when
-	 * using MEncoder.
-	 *
-	 * @see #isUseEmbeddedSubtitlesStyle()
-	 * @return whether to use the embedded styles or ours
-	 * @deprecated
-	 */
-	@Deprecated
-	public boolean isMencoderAssDefaultStyle() {
-		return getBoolean(KEY_MENCODER_ASS_DEFAULTSTYLE, true);
 	}
 
 	/**
@@ -3827,13 +3790,12 @@ public class PmsConfiguration extends RendererConfiguration {
 	}
 
 	/**
-	 * Returns true when DMS should not try to guess connecting renderers
-	 * and instead force picking the defined fallback renderer. Default
-	 * value is false, which means DMS will attempt to recognize connecting
-	 * renderers by their headers.
+	 * Gets whether or not the default {@link RendererConfiguration} should be
+	 * enforced. That means that no recognition is attempted, and a single
+	 * {@link RendererConfiguration} is applied to all detected renderers.
 	 *
-	 * @return True when the fallback renderer should always be picked.
-	 * @see #getRendererDefault()
+	 * @return {@code true} if the default {@link RendererConfiguration} should
+	 *         be enforced, {@code false} otherwise.
 	 */
 	public boolean isRendererForceDefault() {
 		return getBoolean(KEY_RENDERER_FORCE_DEFAULT, false);
@@ -3859,11 +3821,11 @@ public class PmsConfiguration extends RendererConfiguration {
 		return getString(KEY_VIRTUAL_FOLDERS_FILE, "");
 	}
 
-	public String getProfilePath() {
-		return PROFILE_PATH;
+	public Path getConfigurationFile() {
+		return CONFIGURATION_FILE;
 	}
 
-	public String getProfileFolder() {
+	public Path getProfileFolder() {
 		return PROFILE_FOLDER;
 	}
 
@@ -3884,11 +3846,11 @@ public class PmsConfiguration extends RendererConfiguration {
 		// or statically so that custom settings are logged
 		// to the logfile/Logs tab.
 		if (WEB_CONF_PATH == null) {
-			WEB_CONF_PATH = FileUtil.getFileLocation(
+			WEB_CONF_PATH = FileUtil.resolvePathWithDefaults(
 				configurationReader.getNonBlankConfigurationString(KEY_WEB_CONF_PATH, null, false),
 				PROFILE_FOLDER,
 				DEFAULT_WEB_CONF_FILENAME
-			).getFilePath();
+			).toString();
 		}
 
 		return getString(KEY_WEB_CONF_PATH, WEB_CONF_PATH);
@@ -4112,7 +4074,7 @@ public class PmsConfiguration extends RendererConfiguration {
 		if (path != null && !path.trim().isEmpty()) {
 			return new File(path);
 		}
-		return new File(getProfileFolder(), DEFAULT_CREDENTIALS_FILENAME);
+		return new File(getProfileFolder().toFile(), DEFAULT_CREDENTIALS_FILENAME);
 	}
 
 	public int getATZLimit() {

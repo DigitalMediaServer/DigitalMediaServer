@@ -19,7 +19,9 @@
 package net.pms.database;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
-import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -140,7 +142,7 @@ public class TableManager implements Service {
 			LOGGER.debug("TableManager is already started, ignoring start request");
 			return;
 		}
-		LOGGER.debug("Starting check of tables for database {}", databaseName);
+		LOGGER.debug("Starting TableManager - checking tables for database {}", databaseName);
 		lastException = null;
 		futureTables = null;
 
@@ -148,6 +150,8 @@ public class TableManager implements Service {
 			Class.forName("org.h2.Driver");
 		} catch (ClassNotFoundException e) {
 			lastException = e;
+			LOGGER.error("Failed to start TableManager: {}", e.getMessage());
+			LOGGER.trace("", e);
 			return;
 		}
 
@@ -162,6 +166,7 @@ public class TableManager implements Service {
 					table.checkTable(connection);
 				}
 				connected = true;
+				LOGGER.debug("TableManager has started");
 			} else {
 				LOGGER.debug("The database has too new database tables");
 				clearConnectionPool();
@@ -183,8 +188,10 @@ public class TableManager implements Service {
 	 */
 	@Override
 	public synchronized void stop() {
+		LOGGER.debug("Stopping TableManager");
 		clearConnectionPool();
 		connected = false;
+		LOGGER.debug("TableManager has stopped");
 	}
 
 	@Override
@@ -522,18 +529,18 @@ public class TableManager implements Service {
 	}
 
 	private static String determineDBFilename(@Nonnull String databaseName, @Nullable PmsConfiguration configuration) {
-		File databaseFile = null;
+		Path databaseFile = null;
 		if (configuration != null && configuration.getProfileFolder() != null) {
-			File folder = new File(configuration.getProfileFolder());
-			if (folder.isDirectory()) {
-				folder = new File(folder, "database");
-				databaseFile = new File(folder, databaseName);
+			Path folder = configuration.getProfileFolder();
+			if (Files.isDirectory(folder)) {
+				folder = folder.resolve("database");
+				databaseFile = folder.resolve(databaseName);
 			}
 		}
 		if (databaseFile == null) {
-			databaseFile = new File(databaseName);
+			databaseFile = Paths.get(databaseName);
 		}
-		return databaseFile.getAbsolutePath();
+		return databaseFile.toAbsolutePath().toString();
 	}
 
 	private static String buildURL(@Nonnull String databaseFilename, @Nullable PmsConfiguration configuration) {

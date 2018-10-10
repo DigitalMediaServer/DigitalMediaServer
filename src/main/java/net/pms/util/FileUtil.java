@@ -56,103 +56,238 @@ public class FileUtil {
 	private static final Map<File, File[]> subtitleCache = new HashMap<>();
 	private static final int S_ISVTX = 512; // Unix sticky bit mask
 
-	// Signal an invalid parameter in getFileLocation() without raising an exception or returning null
-	private static final String DEFAULT_BASENAME = "NO_DEFAULT_BASENAME_SUPPLIED.conf";
-
 	// This class is not instantiable
 	private FileUtil() { }
 
 	/**
-	 * A helper class used by {@link #getFileLocation(String, String, String)}
-	 * which provides access to a file's absolute path and that of its directory.
+	 * Resolves a file {@link Path} using a default folder and file name to fill
+	 * in what's missing from the specified path. The returned path is
+	 * "normalized" by the file system if possible, and is always absolute.
 	 *
-	 * @since 1.90.0
+	 * @param customPath the specified path.
+	 * @param defaultFolder the default folder Path.
+	 * @param defaultFileName the default file name.
+	 * @param options indicating how symbolic links are handled.
+	 * @return The resulting file {@link Path}.
 	 */
-	public static final class FileLocation {
-		private String directoryPath;
-		private String filePath;
-
-		FileLocation(File directory, File file) {
-			this.directoryPath = FilenameUtils.normalize(directory.getAbsolutePath());
-			this.filePath = FilenameUtils.normalize(file.getAbsolutePath());
-		}
-
-		public String getDirectoryPath() {
-			return directoryPath;
-		}
-
-		public String getFilePath() {
-			return filePath;
-		}
+	@Nonnull
+	public static Path resolvePathWithDefaults(
+		@Nullable String customPath,
+		@Nullable String defaultFolder,
+		@Nonnull String defaultFileName,
+		@Nullable LinkOption... options
+	) {
+		return resolvePathWithDefaults(
+			customPath == null ? null : Paths.get(customPath),
+			defaultFolder == null ? null : Paths.get(defaultFolder),
+			Paths.get(defaultFileName),
+			options
+		);
 	}
 
 	/**
-	 * Returns a {@link FileLocation} object which provides access to the directory
-	 * and file paths of the specified file as normalised, absolute paths.
+	 * Resolves a file {@link Path} using a default folder and file name to fill
+	 * in what's missing from the specified path. The returned path is
+	 * "normalized" by the file system if possible, and is always absolute.
 	 *
-	 * This determines the directory and file path of a file according to the rules
-	 * outlined here: http://www.ps3mediaserver.org/forum/viewtopic.php?f=6&amp;t=3507&amp;p=49895#p49895
-	 *
-	 * @param customPath an optional user-defined path for the resource
-	 * @param defaultDirectory a default directory path used if no custom path is provided
-	 * @param defaultBasename a default filename used if a) no custom path is provided
-	 *                        or b) the custom path is a directory
-	 * @return a {@link FileLocation} object providing access to the file's directory and file paths
-	 * @since 1.90.0
+	 * @param customPath the specified path.
+	 * @param defaultFolder the default folder {@link File}.
+	 * @param defaultFileName the default file name.
+	 * @param options indicating how symbolic links are handled.
+	 * @return The resulting file {@link Path}.
 	 */
-	// this is called from a static initialiser, where errors aren't clearly reported,
-	// so do everything possible to return a valid reponse, even if the parameters
-	// aren't sane
-	static public FileLocation getFileLocation(
-		String customPath,
-		String defaultDirectory,
-		String defaultBasename
+	@Nonnull
+	public static Path resolvePathWithDefaults(
+		@Nullable String customPath,
+		@Nullable File defaultFolder,
+		@Nonnull String defaultFileName,
+		@Nullable LinkOption... options
 	) {
-		File directory = null;
-		File file = null;
+		return resolvePathWithDefaults(
+			customPath == null ? null : Paths.get(customPath),
+			defaultFolder == null ? null : defaultFolder.toPath(),
+			Paths.get(defaultFileName),
+			options
+		);
+	}
 
-		if (isBlank(defaultBasename)) {
-			// shouldn't get here
-			defaultBasename = DEFAULT_BASENAME;
+	/**
+	 * Resolves a file {@link Path} using a default folder and file name to fill
+	 * in what's missing from the specified path. The returned path is
+	 * "normalized" by the file system if possible, and is always absolute.
+	 *
+	 * @param customPath the specified {@link File}.
+	 * @param defaultFolder the default folder {@link File}.
+	 * @param defaultFileName the default file name {@link File}.
+	 * @param options indicating how symbolic links are handled.
+	 * @return The resulting file {@link Path}.
+	 */
+	@Nonnull
+	public static Path resolvePathWithDefaults(
+		@Nullable File customPath,
+		@Nullable File defaultFolder,
+		@Nonnull File defaultFileName,
+		@Nullable LinkOption... options
+	) {
+		return resolvePathWithDefaults(
+			customPath == null ? null : customPath.toPath(),
+			defaultFolder == null ? null : defaultFolder.toPath(),
+			defaultFileName.toPath(),
+			options
+		);
+	}
+
+	/**
+	 * Resolves a file {@link Path} using a default folder and file name to fill
+	 * in what's missing from the specified path. The returned path is
+	 * "normalized" by the file system if possible, and is always absolute.
+	 *
+	 * @param customPath the specified path.
+	 * @param defaultFolder the default folder {@link Path}.
+	 * @param defaultFileName the default file name.
+	 * @param options indicating how symbolic links are handled.
+	 * @return The resulting file {@link Path}.
+	 */
+	@Nonnull
+	public static Path resolvePathWithDefaults(
+		@Nullable String customPath,
+		@Nullable Path defaultFolder,
+		@Nonnull String defaultFileName,
+		@Nullable LinkOption... options
+	) {
+		return resolvePathWithDefaults(
+			customPath == null ? null : Paths.get(customPath),
+			defaultFolder,
+			Paths.get(defaultFileName),
+			options
+		);
+	}
+
+	/**
+	 * Resolves a file {@link Path} using a default folder and file name to fill
+	 * in what's missing from the specified path. The returned path is
+	 * "normalized" by the file system if possible, and is always absolute.
+	 *
+	 * @param customPath the specified {@link Path}.
+	 * @param defaultFolder the default folder {@link Path}.
+	 * @param defaultFileName the default file name {@link Path}.
+	 * @param options indicating how symbolic links are handled.
+	 * @return The resulting file {@link Path}.
+	 */
+	@Nonnull
+	public static Path resolvePathWithDefaults(
+		@Nullable Path customPath,
+		@Nullable Path defaultFolder,
+		@Nonnull Path defaultFileName,
+		@Nullable LinkOption... options
+	) {
+		/*
+		 * This method is (also) called during initialization of DMS, before
+		 * the logging is up and running. Every effort is therefore made to
+		 * resolve the path.
+		 */
+		if (defaultFileName == null) {
+			throw new IllegalArgumentException("defaultFileName cannot be null");
 		}
-
-		if (defaultDirectory == null) {
-			defaultDirectory = ""; // current directory
+		if (defaultFileName.getNameCount() == 0) {
+			throw new IllegalArgumentException("defaultFileName cannot be empty");
 		}
-
-		if (isNotBlank(customPath)) {
-			File customFile = new File(customPath).getAbsoluteFile();
-			if (customFile.exists()) {
-				if (customFile.isDirectory()) {
-					directory = customFile;
-					file = new File(customFile, defaultBasename).getAbsoluteFile();
+		Path result;
+		if (customPath != null) {
+			// Try to determine whether customPath is a file or a folder
+			if (FileUtil.isFolder(customPath, options)) {
+				if (defaultFileName.isAbsolute()) {
+					result = customPath.resolve(defaultFileName.getFileName());
 				} else {
-					directory = customFile.getParentFile();
-					file = customFile;
+					result = customPath.resolve(defaultFileName);
 				}
 			} else {
-				if (customFile.getName().indexOf(".") > 0) {
-					// Probably a file
-					File parentDirectoryFile = customFile.getParentFile();
-					if (parentDirectoryFile != null && parentDirectoryFile.exists()) {
-						// parent directory exists: the file can be created
-						directory = parentDirectoryFile;
-						file = customFile;
-					}
+				result = customPath;
+			}
+		} else {
+			if (defaultFolder == null) {
+				result = defaultFileName;
+			} else {
+				if (defaultFileName.isAbsolute()) {
+					result = defaultFolder.resolve(defaultFileName.getFileName());
 				} else {
-					// Probably a folder
-					directory = customFile;
-					file = new File(customFile, defaultBasename);
+					result = defaultFolder.resolve(defaultFileName);
 				}
 			}
 		}
 
-		if (directory == null || file == null) {
-			directory = new File(defaultDirectory).getAbsoluteFile();
-			file = new File(directory, defaultBasename).getAbsoluteFile();
+		try {
+			return result.toRealPath(options);
+		} catch (IOException e) {
+			return result.toAbsolutePath();
+		}
+	}
+
+	/**
+	 * Evaluates whether the specified {@link Path} represents a folder (as opposed
+	 * to a file).
+	 * <p>
+	 * This method uses a two-fold approach: If the path exists the the answer is
+	 * acquired from the underlying file system. If the path doesn't exist, the name
+	 * of the last element in the path is used to make a "best guess".
+	 *
+	 * @param folder the {@link Path} to evaluate.
+	 * @param options specify {@link LinkOption#NOFOLLOW_LINKS} to not follow links
+	 *                while resolving {@code folder}.
+	 * @return {@code true} if {@code folder} is evaluated as being a folder,
+	 *         {@code false} otherwise.
+	 */
+	public static boolean isFolder(@Nullable Path folder, LinkOption... options) {
+		if (folder == null) {
+			return false;
+		}
+		if (Files.isDirectory(folder, options)) {
+			return true;
+		}
+		if (Files.exists(folder, options)) {
+			return false;
 		}
 
-		return new FileLocation(directory, file);
+		// Guesstimate from file/folder name
+		Path name = folder.getFileName();
+		if (name == null) {
+			// A zero-element path is neither, but for a relative path it would mean the current/working folder
+			return true;
+		}
+		return name.toString().indexOf('.') < 0;
+	}
+
+	/**
+	 * Evaluates whether the specified {@link Path} represents a file (as opposed to
+	 * a folder).
+	 * <p>
+	 * This method uses a two-fold approach: If the path exists the the answer is
+	 * acquired from the underlying file system. If the path doesn't exist, the name
+	 * of the last element in the path is used to make a "best guess".
+	 *
+	 * @param file the {@link Path} to evaluate.
+	 * @param options specify {@link LinkOption#NOFOLLOW_LINKS} to not follow links
+	 *                while resolving {@code folder}.
+	 * @return {@code true} if {@code file} is evaluated as being a file,
+	 *         {@code false} otherwise.
+	 */
+	public static boolean isFile(@Nullable Path file, LinkOption... options) {
+		if (file == null) {
+			return false;
+		}
+		if (Files.isRegularFile(file, options)) {
+			return true;
+		}
+		if (Files.exists(file, options)) {
+			return false;
+		}
+
+		// Guesstimate from file/folder name
+		Path name = file.getFileName();
+		if (name == null) {
+			return false;
+		}
+		return name.toString().indexOf('.') > -1;
 	}
 
 	/**
@@ -165,20 +300,20 @@ public class FileUtil {
 		public String folder;
 
 		@Override
-	    public boolean equals(Object obj) {
+		public boolean equals(Object obj) {
 			if (obj == null) {
 				return false;
 			}
 			if (this == obj) {
 				return true;
 			}
-	    	if (!(obj instanceof UnixMountPoint)) {
-	    		return false;
-	    	}
-	    	return
-	    		this.device.equals(((UnixMountPoint) obj).device) &&
-	    		this.folder.equals(((UnixMountPoint) obj).folder);
-	    }
+			if (!(obj instanceof UnixMountPoint)) {
+				return false;
+			}
+			return
+				this.device.equals(((UnixMountPoint) obj).device) &&
+				this.folder.equals(((UnixMountPoint) obj).folder);
+		}
 
 		@Override
 		public int hashCode() {
@@ -219,6 +354,11 @@ public class FileUtil {
 	public static String getUrlExtension(String u) {
 		// Omit the query string, if any
 		return getExtension(substringBefore(u, "?"));
+	}
+
+	public static String getUrlExtension(String u, @Nullable LetterCase convertTo, @Nullable Locale locale) {
+		// Omit the query string, if any
+		return getExtension(substringBefore(u, "?"), convertTo, locale);
 	}
 
 	/**
@@ -1959,16 +2099,16 @@ public class FileUtil {
 			synchronized (unixUIDLock) {
 				if (unixUID < 0) {
 					String response;
-				    Process id;
+					Process id;
 					id = Runtime.getRuntime().exec("id -u");
-				    try (BufferedReader reader = new BufferedReader(new InputStreamReader(id.getInputStream(), Charset.defaultCharset()))) {
-				    	response = reader.readLine();
-				    }
-				    try {
-				    	unixUID = Integer.parseInt(response);
-				    } catch (NumberFormatException e) {
-				    	throw new UnsupportedOperationException("Unexpected response from OS: " + response, e);
-				    }
+					try (BufferedReader reader = new BufferedReader(new InputStreamReader(id.getInputStream(), Charset.defaultCharset()))) {
+						response = reader.readLine();
+					}
+					try {
+						unixUID = Integer.parseInt(response);
+					} catch (NumberFormatException e) {
+						throw new UnsupportedOperationException("Unexpected response from OS: " + response, e);
+					}
 				}
 				return unixUID;
 			}
@@ -2029,7 +2169,7 @@ public class FileUtil {
 	/**
 	 * Tries to find the specified relative file or folder using the system
 	 * {@code PATH} environment variable. Returns the first match in the order
-	 * of the system {@code PATH} or {@code null} is no match was found.
+	 * of the system {@code PATH} or {@code null} if no match was found.
 	 *
 	 * @param relativePath the relative {@link Path} describing the file or
 	 *            folder to return.
