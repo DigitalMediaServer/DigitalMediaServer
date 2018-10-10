@@ -312,21 +312,21 @@ public class PMS {
 			}
 		}
 
-		String profilePath = configuration.getProfilePath();
-		String profileDirectoryPath = configuration.getProfileFolder();
+		Path configurationFile = configuration.getConfigurationFile();
+		Path profileFolder = configuration.getProfileFolder();
 
 		LOGGER.info("");
-		LOGGER.info("Profile directory: {}", profileDirectoryPath);
+		LOGGER.info("Profile directory: {}", profileFolder);
 		try {
 			// Don't use the {} syntax here as the check needs to be performed on every log level
-			LOGGER.info("Profile directory permissions: " + FileUtil.getFilePermissions(profileDirectoryPath));
+			LOGGER.info("Profile directory permissions: " + new FilePermissions(profileFolder));
 		} catch (FileNotFoundException e) {
 			LOGGER.warn("Profile directory not found: {}", e.getMessage());
 		}
-		LOGGER.info("Profile configuration file: {}", profilePath);
+		LOGGER.info("Profile configuration file: {}", configurationFile);
 		try {
 			// Don't use the {} syntax here as the check needs to be performed on every log level
-			LOGGER.info("Profile configuration file permissions: " + FileUtil.getFilePermissions(profilePath));
+			LOGGER.info("Profile configuration file permissions: " + new FilePermissions(configurationFile));
 		} catch (FileNotFoundException e) {
 			LOGGER.warn("Profile configuration file not found: {}", e.getMessage());
 		}
@@ -434,7 +434,7 @@ public class PMS {
 					@Override
 					public void run() {
 						windowConfiguration[0] = new WindowPropertiesConfiguration(
-							Paths.get(configuration.getProfileFolder()).resolve("DMS.dat")
+							configuration.getProfileFolder().resolve("DMS.dat")
 						);
 						if (initSplash) {
 							splash[0] = new Splash(configuration, windowConfiguration[0].getGraphicsConfiguration());

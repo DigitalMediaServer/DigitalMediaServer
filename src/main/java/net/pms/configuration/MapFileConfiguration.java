@@ -63,7 +63,7 @@ public class MapFileConfiguration {
 		if (isNotBlank(configuration.getVirtualFoldersFile())) {
 			// Get the virtual folder info from the user's file
 			conf = configuration.getVirtualFoldersFile().trim().replaceAll("&comma;", ",");
-			File file = new File(configuration.getProfileFolder(), conf);
+			File file = new File(configuration.getProfileFolder().toFile(), conf);
 			conf = null;
 
 			try {

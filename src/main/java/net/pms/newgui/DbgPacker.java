@@ -8,6 +8,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -128,16 +129,16 @@ public class DbgPacker implements ActionListener {
 		}
 
 		// add core items with the default logfile last (LinkedHashMap preserves insertion order)
-		String profileDirectory = configuration.getProfileFolder();
+		Path profileFolder = configuration.getProfileFolder();
 
 		// add virtual folders file if it exists
 		String vfolders = configuration.getVirtualFoldersFile();
 		if (StringUtils.isNotEmpty(vfolders)) {
-			add(new File(profileDirectory, vfolders));
+			add(profileFolder.resolve(vfolders).toFile());
 		}
 
-		add(new File(profileDirectory, "WEB.conf"));
-		add(new File(configuration.getProfilePath()));
+		add(profileFolder.resolve("WEB.conf").toFile());
+		add(configuration.getConfigurationFile().toFile());
 		if (defaultLogFile != null && !defaultLogFile.isEmpty()){
 			add(new File(defaultLogFile + ".prev"));
 			add(new File(defaultLogFile));
@@ -160,7 +161,7 @@ public class DbgPacker implements ActionListener {
 		}
 	}
 
-	private void writeToZip(ZipOutputStream out, File f) throws Exception {
+	private static void writeToZip(ZipOutputStream out, File f) throws Exception {
 		byte[] buf = new byte[1024];
 		int len;
 		if (!f.exists()) {

@@ -96,7 +96,7 @@ public class LoggingConfig {
 			fileName = fileName.trim();
 			if (fileName.length() > 0) {
 				if (fileName.matches("\\[PROFILE_DIR\\].*")) {
-					String s = PMS.getConfiguration().getProfileFolder().replace("\\", "/");
+					String s = PMS.getConfiguration().getProfileFolder().toString().replace("\\", "/");
 					fileName = fileName.replaceAll("\\[PROFILE_DIR\\]", s);
 				}
 				File file = new File(fileName.trim());

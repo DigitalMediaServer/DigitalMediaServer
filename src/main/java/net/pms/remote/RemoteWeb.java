@@ -6,6 +6,7 @@ import com.sun.net.httpserver.*;
 import java.io.*;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.nio.file.Files;
 import java.security.AccessController;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
@@ -29,7 +30,6 @@ import net.pms.image.ImageFormat;
 import net.pms.io.BasicSystemUtils;
 import net.pms.network.HTTPResource;
 import net.pms.newgui.DbgPacker;
-import net.pms.util.FileUtil;
 import net.pms.util.FullyPlayed;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.lang3.StringUtils;
@@ -129,11 +129,9 @@ public class RemoteWeb {
 		char[] password = "dmsdms".toCharArray();
 		keyStore = KeyStore.getInstance("JKS");
 		try (
-			FileInputStream fis = new FileInputStream(
-				FileUtil.appendPathSeparator(configuration.getProfileFolder()) + "DMS.jks"
-			)
+			InputStream is = Files.newInputStream(configuration.getProfileFolder().resolve("DMS.jks"))
 		) {
-			keyStore.load(fis, password);
+			keyStore.load(is, password);
 		}
 
 		// Setup the key manager factory
