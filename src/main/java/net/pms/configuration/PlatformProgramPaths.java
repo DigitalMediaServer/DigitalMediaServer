@@ -20,12 +20,10 @@
 package net.pms.configuration;
 
 import java.io.FileNotFoundException;
-import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import org.apache.commons.lang3.StringUtils;
 import com.sun.jna.Platform;
 import net.pms.util.FilePermissions;
 import net.pms.util.PropertiesUtil;
@@ -168,15 +166,12 @@ public abstract class PlatformProgramPaths {
 	 */
 	@Nonnull
 	protected static Path getBinariesFolder() {
-		String path = PropertiesUtil.getProjectProperties().get("project.binaries.dir");
-
-		try {
-			if (StringUtils.isNotBlank(path)) {
-				return Paths.get(path);
-			}
-		} catch (InvalidPathException e) {
-			System.err.println("Invalid \"project.binaries.dir\":" + e);
-		}
-		return Paths.get("");
+		return PropertiesUtil.resolvePropertiesPathEntry(
+			"project.binaries.dir",
+			null,
+			Paths.get(""),
+			null,
+			false
+		);
 	}
 }

@@ -198,7 +198,7 @@ public class LoggingTest {
 		 */
 
 		// Test for a valid configuration
-		File file = new File(LoggingConfig.getConfigFilePath());
+		File file = LoggingConfig.getConfigFilePath().toFile();
 		assertTrue("LoggingConfigIsFile", file.isFile());
 		assertFalse("LoggingConfigIsFile", file.isDirectory());
 

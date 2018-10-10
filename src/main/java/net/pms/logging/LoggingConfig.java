@@ -34,10 +34,12 @@ import ch.qos.logback.core.encoder.Encoder;
 import ch.qos.logback.core.filter.Filter;
 import ch.qos.logback.core.joran.spi.JoranException;
 import ch.qos.logback.core.util.StatusPrinter;
-import java.io.File;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -47,6 +49,7 @@ import net.pms.PMS;
 import net.pms.configuration.PmsConfiguration;
 import net.pms.util.Iterators;
 import net.pms.util.PropertiesUtil;
+import net.pms.util.FilePermissions.FileFlag;
 import org.slf4j.ILoggerFactory;
 import org.slf4j.LoggerFactory;
 
@@ -58,7 +61,7 @@ import org.slf4j.LoggerFactory;
 public class LoggingConfig {
 	private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(LoggingConfig.class);
 	private static Object filepathLock = new Object();
-	private static String filepath = null;
+	private static Path filepath;
 	private static Object logFilePathsLock = new Object();
 	private static HashMap<String, String> logFilePaths = new HashMap<>(); // key: appender name, value: log file path
 	private static LoggerContext loggerContext = null;
@@ -82,30 +85,13 @@ public class LoggingConfig {
 	 *
 	 * @return pathname or <code>null</code>
 	 */
-	public static String getConfigFilePath() {
+	public static Path getConfigFilePath() {
 		synchronized (filepathLock) {
 			if (filepath != null) {
 				return filepath;
 			}
-			return "internal defaults";
+			return Paths.get("internal defaults");
 		}
-	}
-
-	private static File getFile(String[] fileList) {
-		for (String fileName : fileList) {
-			fileName = fileName.trim();
-			if (fileName.length() > 0) {
-				if (fileName.matches("\\[PROFILE_DIR\\].*")) {
-					String s = PMS.getConfiguration().getProfileFolder().toString().replace("\\", "/");
-					fileName = fileName.replaceAll("\\[PROFILE_DIR\\]", s);
-				}
-				File file = new File(fileName.trim());
-				if (file.exists() && file.canRead()) {
-					return file;
-				}
-			}
-		}
-		return null;
 	}
 
 	private static boolean setContextAndRoot() {
@@ -142,18 +128,35 @@ public class LoggingConfig {
 	 * config file are dumped only to <code>stdout</code>.
 	 */
 	public static synchronized void loadFile() {
-		File file = null;
+		Path file = null;
 
 		if (!setContextAndRoot()) {
 			return;
 		}
 
+		HashMap<String, String> replace = new HashMap<>();
+		replace.put("\\[PROFILE_DIR\\]", Matcher.quoteReplacement(PMS.getConfiguration().getProfileFolder().toString()));
+		EnumSet<FileFlag> flags = EnumSet.of(FileFlag.FILE, FileFlag.READ);
 		if (PMS.isHeadless()) {
-			file = getFile(PropertiesUtil.getProjectProperties().get("project.logback.headless").split(","));
+			file = PropertiesUtil.resolvePropertiesPathEntry(
+				"project.logback.headless",
+				null,
+				null,
+				flags,
+				replace,
+				false
+			);
 		}
 
 		if (file == null) {
-			file = getFile(PropertiesUtil.getProjectProperties().get("project.logback").split(","));
+			file = PropertiesUtil.resolvePropertiesPathEntry(
+				"project.logback",
+				null,
+				null,
+				flags,
+				replace,
+				false
+			);
 		}
 
 		if (file == null) {
@@ -176,13 +179,13 @@ public class LoggingConfig {
 			loggerContext.reset();
 			loggerContext.getStatusManager().clear();
 			// Do not log between loggerContext.reset() and CacheLogger.initContext()
-			configurator.doConfigure(file);
+			configurator.doConfigure(file.toFile());
 			if (CacheLogger.isActive()) {
 				CacheLogger.initContext();
 			}
 			// Save the file path after loading the file
 			synchronized (filepathLock) {
-				filepath = file.getAbsolutePath();
+				filepath = file.toAbsolutePath();
 				LOGGER.debug("LogBack started with configuration file: {}", filepath);
 			}
 		} catch (JoranException je) {
