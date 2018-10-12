@@ -20,11 +20,14 @@ package net.pms.io;
 
 import com.sun.jna.Library;
 import com.sun.jna.Native;
+import com.sun.jna.Pointer;
 import com.sun.jna.WString;
 import com.sun.jna.platform.win32.Advapi32Util;
 import com.sun.jna.platform.win32.Kernel32Util;
+import com.sun.jna.platform.win32.ShlObj;
 import com.sun.jna.platform.win32.Win32Exception;
 import com.sun.jna.platform.win32.WinDef.DWORD;
+import com.sun.jna.platform.win32.WinNT.HANDLE;
 import com.sun.jna.platform.win32.WinReg;
 import com.sun.jna.ptr.LongByReference;
 import java.awt.Toolkit;
@@ -32,8 +35,15 @@ import java.io.File;
 import java.nio.CharBuffer;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import net.pms.platform.windows.CSIDL;
+import net.pms.platform.windows.GUID;
+import net.pms.platform.windows.KnownFolders;
+import net.pms.platform.windows.Shell32Util;
 import net.pms.util.FileUtil;
 import net.pms.util.Version;
 import org.slf4j.Logger;
@@ -250,7 +260,9 @@ public class WindowsSystemUtils extends BasicSystemUtils {
 		return new String(chars, 0, i);
 	}
 
-	/** Only to be instantiated by {@link BasicSystemUtils#createInstance()}. */
+	/**
+	 * Only to be instantiated by {@link BasicSystemUtils#createInstance()}.
+	 */
 	protected WindowsSystemUtils() {
 		getVLCRegistryInfo();
 		avsPluginsFolder = getAviSynthPluginsFolder();
@@ -398,6 +410,147 @@ public class WindowsSystemUtils extends BasicSystemUtils {
 			LOGGER.error("The call to Kernel32.getComputerName() failed with: {}", e.getMessage());
 			LOGGER.trace("", e);
 			return null;
+		}
+	}
+
+	@Override
+	protected void enumerateDefaultFolders(List<Path> folders) {
+		Version version = getOSVersion();
+		if (version.isGreaterThanOrEqualTo(6)) {
+			ArrayList<GUID> knownFolders = new ArrayList<>(Arrays.asList(new GUID[]{
+				KnownFolders.FOLDERID_Desktop,
+				KnownFolders.FOLDERID_Downloads,
+				KnownFolders.FOLDERID_Music,
+				KnownFolders.FOLDERID_OriginalImages,
+				KnownFolders.FOLDERID_PhotoAlbums,
+				KnownFolders.FOLDERID_Pictures,
+				KnownFolders.FOLDERID_Playlists,
+				KnownFolders.FOLDERID_PublicDesktop,
+				KnownFolders.FOLDERID_PublicDownloads,
+				KnownFolders.FOLDERID_PublicMusic,
+				KnownFolders.FOLDERID_PublicPictures,
+				KnownFolders.FOLDERID_PublicVideos,
+				KnownFolders.FOLDERID_SavedPictures,
+				KnownFolders.FOLDERID_Videos,
+			}));
+			if (version.isGreaterThanOrEqualTo(6, 2)) { // Windows 8
+				knownFolders.add(KnownFolders.FOLDERID_Screenshots);
+			}
+			for (GUID guid : knownFolders) {
+				Path folder = Shell32Util.getCurrentUserKnownFolderPath(guid);
+				if (folder != null) {
+					folders.add(folder);
+				} else {
+					LOGGER.debug("Default folder \"{}\" not found", guid);
+				}
+			}
+		} else {
+			CSIDL[] csidls = {
+				CSIDL.CSIDL_COMMON_DESKTOPDIRECTORY,
+				CSIDL.CSIDL_COMMON_MUSIC,
+				CSIDL.CSIDL_COMMON_PICTURES,
+				CSIDL.CSIDL_COMMON_VIDEO,
+				CSIDL.CSIDL_DESKTOPDIRECTORY,
+				CSIDL.CSIDL_MYMUSIC,
+				CSIDL.CSIDL_MYPICTURES,
+				CSIDL.CSIDL_MYVIDEO
+			};
+			for (CSIDL csidl : csidls) {
+				Path folder = Shell32Util.getCurrentUserFolderPath(csidl);
+				if (folder != null) {
+					folders.add(folder);
+				} else {
+					LOGGER.debug("Default folder \"{}\" not found", csidl);
+				}
+			}
+		}
+	}
+
+	/**
+	 * Retrieves {@link Path} of a known folder identified by the folder's
+	 * {@link KnownFolders} or {@link CSIDL} identifier in the context of the
+	 * <b>current user</b>. {@link KnownFolders} are used for more recent
+	 * Windows versions, while {@link CSIDL}s are used for older Windows
+	 * versions. Most commonly used identifiers have a sibling in the other
+	 * type.
+	 * <p>
+	 * This method will take the current Windows version into account and decide
+	 * which identifier to use. If the identifier appropriate for the current
+	 * system is {@code null}, {@code null} will be returned. Both should thus
+	 * normally be specified.
+	 *
+	 * @param guid the {@code KNOWNFOLDERS} {@link GUID} identifier as defined
+	 *            in {@link KnownFolders}
+	 * @param folder the {@link CSIDL} identifier.
+	 * @return The {@link Path} of the known folder or {@code null} if the
+	 *         identifier is {@code null} or references a known folder which
+	 *         does not have a path on the current system.
+	 */
+	@Nullable
+	public Path getCurrentUserKnownFolderPath(@Nullable GUID guid, @Nullable CSIDL folder) {
+		return getKnownFolderPath(guid, folder, false);
+	}
+
+	/**
+	 * Retrieves {@link Path} of a known folder identified by the folder's
+	 * {@link KnownFolders} or {@link CSIDL} identifier in the context of the
+	 * <b>default user</b>. {@link KnownFolders} are used for more recent
+	 * Windows versions, while {@link CSIDL}s are used for older Windows
+	 * versions. Most commonly used identifiers have a sibling in the other
+	 * type.
+	 * <p>
+	 * This method will take the current Windows version into account and decide
+	 * which identifier to use. If the identifier appropriate for the current
+	 * system is {@code null}, {@code null} will be returned. Both should thus
+	 * normally be specified.
+	 *
+	 * @param guid the {@code KNOWNFOLDERS} {@link GUID} identifier as defined
+	 *            in {@link KnownFolders}
+	 * @param folder the {@link CSIDL} identifier.
+	 * @return The {@link Path} of the known folder or {@code null} if the
+	 *         identifier is {@code null} or references a known folder which
+	 *         does not have a path on the current system.
+	 */
+	@Nullable
+	public Path getDefaultUserKnownFolderPath(@Nullable GUID guid, @Nullable CSIDL folder) {
+		return getKnownFolderPath(guid, folder, true);
+	}
+
+	/**
+	 * Retrieves {@link Path} of a known folder identified by the folder's
+	 * {@link KnownFolders} or {@link CSIDL} identifier. {@link KnownFolders}
+	 * are used for more recent Windows versions, while {@link CSIDL}s are used
+	 * for older Windows versions. Most commonly used identifiers have a sibling
+	 * in the other type.
+	 * <p>
+	 * This method will take the current Windows version into account and decide
+	 * which identifier to use. If the identifier appropriate for the current
+	 * system is {@code null}, {@code null} will be returned. Both should thus
+	 * normally be specified.
+	 *
+	 * @param guid the {@code KNOWNFOLDERS} {@link GUID} identifier as defined
+	 *            in {@link KnownFolders}
+	 * @param folder the {@link CSIDL} identifier.
+	 * @param defaultUser {@code true} to get the folder in the context of the
+	 *            <i>default user</i>, {@code false} to get the folder in the
+	 *            context of the <i>current user</i>.
+	 * @return The {@link Path} of the known folder or {@code null} if the
+	 *         identifier is {@code null} or references a known folder which
+	 *         does not have a path on the current system.
+	 */
+	@Nullable
+	public Path getKnownFolderPath(@Nullable GUID guid, @Nullable CSIDL folder, boolean defaultUser) {
+		HANDLE hToken = defaultUser ? new HANDLE(new Pointer(-1L)) : null;
+		if (getOSVersion().isGreaterThanOrEqualTo(6)) {
+			if (guid == null) {
+				return null;
+			}
+			return Shell32Util.getKnownFolderPath(guid, ShlObj.KNOWN_FOLDER_FLAG.NONE.getFlag(), hToken);
+		} else {
+			if (folder == null) {
+				return null;
+			}
+			return Shell32Util.getFolderPath(folder, hToken);
 		}
 	}
 }

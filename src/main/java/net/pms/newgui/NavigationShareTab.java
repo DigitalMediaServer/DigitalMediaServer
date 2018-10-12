@@ -44,8 +44,8 @@ import net.pms.Messages;
 import net.pms.PMS;
 import net.pms.configuration.PmsConfiguration;
 import net.pms.dlna.DLNAMediaDatabase;
-import net.pms.dlna.RootFolder;
 import net.pms.image.thumbnail.CoverSupplier;
+import net.pms.io.BasicSystemUtils;
 import net.pms.newgui.LooksFrame.AbstractTabListenerRegistrar;
 import net.pms.newgui.LooksFrame.LooksFrameTab;
 import net.pms.newgui.components.AnimatedIcon;
@@ -838,7 +838,10 @@ public class NavigationShareTab {
 						if (
 							JOptionPane.showConfirmDialog(
 								tmpsharedPanel,
-								String.format(Messages.getString("SharedFolders.ConfirmRemove"), rows.length),
+								String.format(
+									PMS.getLocale(),
+									Messages.getString("SharedFolders.ConfirmRemove"), rows.length
+								),
 								Messages.getString("Dialog.Confirm"),
 								JOptionPane.YES_NO_OPTION,
 								JOptionPane.WARNING_MESSAGE
@@ -1016,7 +1019,7 @@ public class NavigationShareTab {
 		if (
 			!defaultFolders &&
 			configuration.isSharedFoldersEmpty() &&
-			!RootFolder.getDefaultFolders().isEmpty()
+			!BasicSystemUtils.INSTANCE.getDefaultFolders().isEmpty()
 		) {
 			if (
 				JOptionPane.showConfirmDialog(

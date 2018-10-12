@@ -18,11 +18,7 @@
  */
 package net.pms.dlna;
 
-import static org.apache.commons.lang3.StringUtils.isBlank;
-import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import com.sun.jna.Platform;
-import com.sun.jna.platform.win32.Shell32Util;
-import com.sun.jna.platform.win32.Win32Exception;
 import java.io.*;
 import java.net.MalformedURLException;
 import java.net.URI;
@@ -30,16 +26,11 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.text.Collator;
 import java.text.Normalizer;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-import javax.annotation.concurrent.GuardedBy;
 import net.pms.Messages;
 import net.pms.PMS;
 import net.pms.configuration.MapFileConfiguration;
@@ -47,25 +38,12 @@ import net.pms.configuration.RendererConfiguration;
 import net.pms.dlna.virtual.VirtualFolder;
 import net.pms.dlna.virtual.VirtualVideoAction;
 import net.pms.formats.FormatType;
-import net.pms.io.BasicSystemUtils;
-import net.pms.io.ListProcessWrapperResult;
-import net.pms.io.SimpleProcessWrapper;
 import net.pms.io.StreamGobbler;
 import net.pms.newgui.IFrame;
-import net.pms.platform.macos.NSFoundation;
-import net.pms.platform.macos.NSFoundation.NSSearchPathDirectory;
-import net.pms.platform.macos.NSFoundation.NSSearchPathDomainMask;
-import net.pms.platform.windows.CSIDL;
-import net.pms.platform.windows.GUID;
-import net.pms.platform.windows.KnownFolders;
 import net.pms.util.CodeDb;
-import net.pms.util.FilePermissions;
-import net.pms.util.FilePermissions.FileFlag;
 import net.pms.util.FileUtil;
 import net.pms.util.FileWatcher;
 import net.pms.util.ProcessUtil;
-import net.pms.util.StringUtil;
-import net.pms.util.Version;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
@@ -77,13 +55,6 @@ import xmlwise.XmlParseException;
 
 public class RootFolder extends DLNAResource {
 	private static final Logger LOGGER = LoggerFactory.getLogger(RootFolder.class);
-	private static final Set<FileFlag> REQUIRED_SHARED_FOLDER_PERMISSIONS = new HashSet<>(
-		Arrays.asList(new FileFlag[] {
-			FileFlag.BROWSE,
-			FileFlag.FOLDER,
-			FileFlag.READ
-		})
-	);
 	private boolean running;
 	private FolderLimit lim;
 	private MediaMonitor mon;
@@ -288,219 +259,6 @@ public class RootFolder extends DLNAResource {
 			}
 		} else {
 			frame.setScanLibraryEnabled(true);
-		}
-	}
-
-	@Nullable
-	private static Path getWindowsKnownFolder(GUID guid) {
-		try {
-			String folderPath = Shell32Util.getKnownFolderPath(guid);
-			if (isNotBlank(folderPath)) {
-				return Paths.get(folderPath);
-			}
-		} catch (Win32Exception e) {
-			LOGGER.debug("Default folder \"{}\" not found: {}", guid, e.getMessage());
-		} catch (InvalidPathException e) {
-			LOGGER.error("Unexpected error while resolving default Windows folder with GUID {}: {}", guid, e.getMessage());
-			LOGGER.trace("", e);
-		}
-		return null;
-	}
-
-	@Nullable
-	private static Path getWindowsFolder(@Nullable CSIDL csidl) {
-		if (csidl == null) {
-			return null;
-		}
-		try {
-			String folderPath = Shell32Util.getFolderPath(csidl.getValue());
-			if (isNotBlank(folderPath)) {
-				return Paths.get(folderPath);
-			}
-		} catch (Win32Exception e) {
-			LOGGER.debug("Default folder \"{}\" not found: {}", csidl, e.getMessage());
-		} catch (InvalidPathException e) {
-			LOGGER.error("Unexpected error while resolving default Windows folder with id {}: {}", csidl, e.getMessage());
-			LOGGER.trace("", e);
-		}
-		return null;
-	}
-
-	@Nullable
-	private static Path getLinuxFolder(@Nullable Path xdg, @Nullable String folderName) {
-		if (xdg == null || isBlank(folderName)) {
-			return null;
-		}
-		try {
-			ListProcessWrapperResult result = SimpleProcessWrapper.runProcessListOutput(10, TimeUnit.SECONDS, 1000, xdg.toString(), folderName);
-			if (result.getError() != null) {
-				LOGGER.warn("Failed to get default folder \"{}\": {}", folderName, result.getError().getMessage());
-				LOGGER.trace("", result.getError());
-				return null;
-			}
-			if (result.getOutput().isEmpty()) {
-				LOGGER.trace("Request for default folder \"{}\" got a blank reply", folderName);
-				return null;
-			}
-			if (isBlank(result.getOutput().get(0))) {
-				LOGGER.trace("Request for default folder \"{}\" got a blank path", folderName);
-				return null;
-			}
-			try {
-				return Paths.get(result.getOutput().get(0));
-			} catch (InvalidPathException ipe) {
-				LOGGER.warn("Couldn't resolve path \"{}\" for default folder \"{}\": {}", result.getOutput().get(0), folderName, ipe.getMessage());
-				LOGGER.trace("", ipe);
-				return null;
-			}
-		} catch (InterruptedException e) {
-			LOGGER.trace("getLinuxFolder() was interrupted while retrieving default folder \"{}\"", folderName);
-			return null;
-		}
-	}
-
-	private static final Object defaultFoldersLock = new Object();
-	@GuardedBy("defaultFoldersLock")
-	private static List<Path> defaultFolders = null;
-
-	/**
-	 * Enumerates and returns the default shared folders if none is configured.
-	 *
-	 * @return The default shared folders.
-	 */
-	@Nonnull
-	public static List<Path> getDefaultFolders() {
-		synchronized (defaultFoldersLock) {
-			if (defaultFolders == null) {
-				// Lazy initialization
-				defaultFolders = new ArrayList<Path>();
-				if (Platform.isWindows()) {
-					Version version = BasicSystemUtils.INSTANCE.getOSVersion();
-					if (version != null && version.isGreaterThanOrEqualTo(6)) {
-						ArrayList<GUID> knownFolders = new ArrayList<>(Arrays.asList(new GUID[]{
-							KnownFolders.FOLDERID_Desktop,
-							KnownFolders.FOLDERID_Downloads,
-							KnownFolders.FOLDERID_Music,
-							KnownFolders.FOLDERID_OriginalImages,
-							KnownFolders.FOLDERID_PhotoAlbums,
-							KnownFolders.FOLDERID_Pictures,
-							KnownFolders.FOLDERID_Playlists,
-							KnownFolders.FOLDERID_PublicDownloads,
-							KnownFolders.FOLDERID_PublicMusic,
-							KnownFolders.FOLDERID_PublicPictures,
-							KnownFolders.FOLDERID_PublicVideos,
-							KnownFolders.FOLDERID_SavedPictures,
-							KnownFolders.FOLDERID_Videos,
-						}));
-						if (version.isGreaterThanOrEqualTo(6, 2)) { // Windows 8
-							knownFolders.add(KnownFolders.FOLDERID_Screenshots);
-						}
-						for (GUID guid : knownFolders) {
-							Path folder = getWindowsKnownFolder(guid);
-							if (folder != null) {
-								defaultFolders.add(folder);
-							}
-						}
-					} else {
-						CSIDL[] csidls = {
-							CSIDL.CSIDL_COMMON_MUSIC,
-							CSIDL.CSIDL_COMMON_PICTURES,
-							CSIDL.CSIDL_COMMON_VIDEO,
-							CSIDL.CSIDL_DESKTOP,
-							CSIDL.CSIDL_MYMUSIC,
-							CSIDL.CSIDL_MYPICTURES,
-							CSIDL.CSIDL_MYVIDEO
-						};
-						for (CSIDL csidl : csidls) {
-							Path folder = getWindowsFolder(csidl);
-							if (folder != null) {
-								defaultFolders.add(folder);
-							}
-						}
-					}
-				} else if (Platform.isMac()) {
-					defaultFolders.addAll(NSFoundation.nsSearchPathForDirectoriesInDomains(
-						NSSearchPathDirectory.NSDesktopDirectory,
-						NSSearchPathDomainMask.NSAllDomainsMask,
-						true
-					));
-					defaultFolders.addAll(NSFoundation.nsSearchPathForDirectoriesInDomains(
-						NSSearchPathDirectory.NSDownloadsDirectory,
-						NSSearchPathDomainMask.NSAllDomainsMask,
-						true
-					));
-					defaultFolders.addAll(NSFoundation.nsSearchPathForDirectoriesInDomains(
-						NSSearchPathDirectory.NSMoviesDirectory,
-						NSSearchPathDomainMask.NSAllDomainsMask,
-						true
-					));
-					defaultFolders.addAll(NSFoundation.nsSearchPathForDirectoriesInDomains(
-						NSSearchPathDirectory.NSMusicDirectory,
-						NSSearchPathDomainMask.NSAllDomainsMask,
-						true
-					));
-					defaultFolders.addAll(NSFoundation.nsSearchPathForDirectoriesInDomains(
-						NSSearchPathDirectory.NSPicturesDirectory,
-						NSSearchPathDomainMask.NSAllDomainsMask,
-						true
-					));
-					defaultFolders.addAll(NSFoundation.nsSearchPathForDirectoriesInDomains(
-						NSSearchPathDirectory.NSSharedPublicDirectory,
-						NSSearchPathDomainMask.NSAllDomainsMask,
-						true
-					));
-				} else {
-					Path xdg = FileUtil.findExecutableInOSPath(Paths.get("xdg-user-dir"));
-					if (xdg != null) {
-						String[] folderNames = {"DESKTOP", "DOWNLOAD", "PUBLICSHARE", "MUSIC", "PICTURES", "VIDEOS"};
-						for (String folderName : folderNames) {
-							Path folder = getLinuxFolder(xdg, folderName);
-							if (folder != null) {
-								defaultFolders.add(folder);
-							}
-						}
-					} else {
-						defaultFolders.add(Paths.get("").toAbsolutePath());
-						String userHome = System.getProperty("user.home");
-						if (isNotBlank(userHome)) {
-							defaultFolders.add(Paths.get(userHome));
-						}
-					}
-				}
-
-				// Remove non-existing or not readable folders
-				for (Iterator<Path> iterator = defaultFolders.iterator(); iterator.hasNext();) {
-					Path path = iterator.next();
-					try {
-						FilePermissions filePermissions = new FilePermissions(path);
-						Set<FileFlag> flags = filePermissions.getFlags(REQUIRED_SHARED_FOLDER_PERMISSIONS);
-						if (!flags.containsAll(REQUIRED_SHARED_FOLDER_PERMISSIONS)) {
-							iterator.remove();
-							HashSet<FileFlag> missingFlags = new HashSet<>(REQUIRED_SHARED_FOLDER_PERMISSIONS);
-							missingFlags.removeAll(flags);
-							if (missingFlags.contains(FileFlag.FOLDER)) {
-								LOGGER.warn(
-									"Skipping default folder \"{}\" because it's not a folder",
-									path
-								);
-							} else {
-								LOGGER.warn(
-									"Skipping default folder \"{}\" because it's missing {} permission{}",
-									path,
-									StringUtil.createReadableCombinedString(missingFlags),
-									missingFlags.size() > 1 ? "s" : ""
-								);
-							}
-						}
-					} catch (FileNotFoundException e) {
-						iterator.remove();
-						LOGGER.trace("Default folder \"{}\" not found", path.toString());
-					}
-				}
-
-				defaultFolders = Collections.unmodifiableList(defaultFolders);
-			}
-			return defaultFolders;
 		}
 	}
 

@@ -4,6 +4,7 @@ import java.io.File;
 import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.nio.file.Path;
+import java.util.List;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import net.pms.newgui.LooksFrame;
@@ -11,38 +12,38 @@ import net.pms.util.Version;
 
 public interface SystemUtils {
 
-	public abstract File getAvsPluginsDir();
+	File getAvsPluginsDir();
 
-	public abstract File getKLiteFiltersDir();
+	File getKLiteFiltersDir();
 
-	public abstract String getShortPathNameW(String longPathName);
+	String getShortPathNameW(String longPathName);
 
-	public abstract String getWindowsDirectory();
+	String getWindowsDirectory();
 
-	public abstract String getDiskLabel(File f);
+	String getDiskLabel(File f);
 
-	public abstract Path getVlcPath();
+	Path getVlcPath();
 
-	public abstract Version getVlcVersion();
+	Version getVlcVersion();
 
-	public abstract boolean isAviSynthAvailable();
+	boolean isAviSynthAvailable();
 
 	/**
 	 * Open HTTP URLs in the default browser.
 	 * @param uri URI string to open externally.
 	 */
-	public void browseURI(String uri);
+	void browseURI(String uri);
 
-	public boolean isNetworkInterfaceLoopback(NetworkInterface ni) throws SocketException;
+	boolean isNetworkInterfaceLoopback(NetworkInterface ni) throws SocketException;
 
-	public void addSystemTray(final LooksFrame frame);
+	void addSystemTray(final LooksFrame frame);
 
 	/**
 	 * Sets the enabled status of the system tray web interface menu item.
 	 *
 	 * @param value the enabled status.
 	 */
-	public void setWebInterfaceSystemTrayEnabled(boolean value);
+	void setWebInterfaceSystemTrayEnabled(boolean value);
 
 	/**
 	 * Fetch the hardware address for a network interface.
@@ -53,7 +54,7 @@ public interface SystemUtils {
 	 *             This won't happen on Mac OS, since the NetworkInterface is
 	 *             only used to get a name.
 	 */
-	public byte[] getHardwareAddress(NetworkInterface ni) throws SocketException;
+	byte[] getHardwareAddress(NetworkInterface ni) throws SocketException;
 
 	/**
 	 * Return the platform specific ping command for the given host address,
@@ -88,19 +89,27 @@ public interface SystemUtils {
 	 * @return The OS {@link Version}.
 	 */
 	@Nonnull
-	public Version getOSVersion();
+	Version getOSVersion();
 
 	/**
 	 * @return The locally resolvable name of the local computer or
 	 *         {@code "localhost"} if no resolvable name could be found.
 	 */
 	@Nonnull
-	public String getLocalHostname();
+	String getLocalHostname();
 
 	/**
 	 * @return The name of the local computer or {@code null} if it
 	 *         couldn't be resolved.
 	 */
 	@Nullable
-	public String getComputerName();
+	String getComputerName();
+
+	/**
+	 * Enumerates and returns the list of default shared folders.
+	 *
+	 * @return The {@link List} of default shared folder {@link Path}s.
+	 */
+	@Nonnull
+	List<Path> getDefaultFolders();
 }

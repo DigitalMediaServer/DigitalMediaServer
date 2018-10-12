@@ -182,7 +182,22 @@ public class GeneralTab {
 			autoStart.addItemListener(new ItemListener() {
 				@Override
 				public void itemStateChanged(ItemEvent e) {
-					configuration.setAutoStart((e.getStateChange() == ItemEvent.SELECTED));
+					try {
+						configuration.setAutoStart((e.getStateChange() == ItemEvent.SELECTED));
+					} catch (IOException e1) {
+						LOGGER.error(
+							"An error occurred while trying to change startup on user login: {}",
+							e1.getMessage()
+						);
+						LOGGER.trace("", e1);
+						JOptionPane.showMessageDialog(
+							looksFrame,
+							String.format(Messages.getString("Dialog.UnexpectedError"), e1.getMessage()),
+							Messages.getString("Dialog.Error"),
+							JOptionPane.ERROR_MESSAGE
+						);
+						autoStart.setSelected(configuration.isAutoStart());
+					}
 				}
 			});
 			builder.add(GuiUtil.getPreferredSizeComponent(autoStart), FormLayoutUtil.flip(cc.xy(xpos, ypos), colSpec, orientation));
