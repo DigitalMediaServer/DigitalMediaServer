@@ -22,7 +22,6 @@ import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import com.sun.jna.Platform;
 import java.awt.Color;
-import java.awt.Component;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -39,13 +38,10 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.GuardedBy;
-import javax.swing.JOptionPane;
-import javax.swing.SwingUtilities;
 import net.pms.Messages;
 import net.pms.PMS;
 import net.pms.dlna.CodeEnter;
 import net.pms.dlna.MediaType;
-import net.pms.dlna.RootFolder;
 import net.pms.encoders.Player;
 import net.pms.encoders.PlayerFactory;
 import net.pms.encoders.PlayerId;
@@ -53,8 +49,11 @@ import net.pms.encoders.StandardPlayerId;
 import net.pms.exception.InvalidArgumentException;
 import net.pms.image.thumbnail.CoverSupplier;
 import net.pms.io.BasicSystemUtils;
+import net.pms.io.WindowsSystemUtils;
 import net.pms.logging.LogLevel;
 import net.pms.newgui.NavigationShareTab.SharedFoldersTableModel;
+import net.pms.platform.windows.CSIDL;
+import net.pms.platform.windows.KnownFolders;
 import net.pms.service.PreventSleepMode;
 import net.pms.service.Services;
 import net.pms.util.ConversionUtil;
@@ -70,7 +69,6 @@ import net.pms.util.StringUtil;
 import net.pms.util.SubtitleColor;
 import net.pms.util.UMSUtils;
 import net.pms.util.UniqueList;
-import net.pms.util.WindowsRegistry;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.ConversionException;
 import org.apache.commons.configuration.PropertiesConfiguration;
@@ -2095,60 +2093,88 @@ public class PmsConfiguration extends RendererConfiguration {
 	}
 
 	/**
-	 * Returns true if DMS should automatically start on Windows.
+	 * Returns {@code true}e if DMS should start on user login and {@code false}
+	 * if not.
 	 *
-	 * @return True if DMS should start automatically, false otherwise.
+	 * @return {@code true} if DMS should start on user login, {@code false}
+	 *         otherwise.
 	 */
 	public boolean isAutoStart() {
 		if (Platform.isWindows()) {
-			File f = new File(WindowsRegistry.readRegistry("HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Shell Folders", "Common Startup") + "\\Digital Media Server.lnk");
-
-			if (f.exists()) {
-				return true;
+			Path startupLink = ((WindowsSystemUtils) BasicSystemUtils.INSTANCE).getCurrentUserKnownFolderPath(
+				KnownFolders.FOLDERID_Startup,
+				CSIDL.CSIDL_STARTUP
+			);
+			if (startupLink == null) {
+				return false;
 			}
+			startupLink = startupLink.resolve("Digital Media Server.lnk");
+			return Files.exists(startupLink);
 		}
 
 		return false;
 	}
 
 	/**
-	 * Set to true if DMS should automatically start on Windows.
+	 * Set to true if DMS should start on user login.
 	 *
-	 * @param value True if DMS should start automatically, false otherwise.
+	 * @param value {@code true} if DMS should start on user login,
+	 *            {@code false} otherwise.
+	 * @throws IOException If an error occurs during the operation.
 	 */
-	public void setAutoStart(boolean value) {
-		File sourceFile = new File(WindowsRegistry.readRegistry("HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Shell Folders", "Common Programs") + "\\Digital Media Server.lnk");
-		File destinationFile = new File(WindowsRegistry.readRegistry("HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Shell Folders", "Common Startup") + "\\Digital Media Server.lnk");
+	public void setAutoStart(boolean value) throws IOException {
+		Path startupLink = ((WindowsSystemUtils) BasicSystemUtils.INSTANCE).getCurrentUserKnownFolderPath(
+			KnownFolders.FOLDERID_Startup,
+			CSIDL.CSIDL_STARTUP
+		);
+
+		if (startupLink == null) {
+			throw new IOException("Couldn't resolve the startup folder for the current user");
+		}
+		startupLink = startupLink.resolve("Digital Media Server.lnk");
 
 		if (value) {
-			try {
-				FileUtils.copyFile(sourceFile, destinationFile);
-				if (destinationFile.exists()) {
-					LOGGER.info("DMS will start automatically with Windows");
-				} else {
-					LOGGER.info("An error occurred while trying to make DMS start automatically with Windows");
-				}
-			} catch (IOException e) {
-				if (!FileUtil.isAdmin()) {
-					try {
-						JOptionPane.showMessageDialog(
-							SwingUtilities.getWindowAncestor((Component) PMS.get().getFrame()),
-							Messages.getString("NetworkTab.58"),
-							Messages.getString("Dialog.PermissionsError"),
-							JOptionPane.ERROR_MESSAGE
-						);
-					} catch (NullPointerException e2) {
-						// This happens on the initial program load, ignore it
-					}
-				} else {
-					LOGGER.info("An error occurred while trying to make DMS start automatically with Windows");
-				}
+			// Enable
+			if (Files.exists(startupLink)) {
+				LOGGER.debug("Start on user login is already active");
+				return;
+			}
+
+			Path source = ((WindowsSystemUtils) BasicSystemUtils.INSTANCE).getCurrentUserKnownFolderPath(
+				KnownFolders.FOLDERID_CommonPrograms,
+				CSIDL.CSIDL_COMMON_PROGRAMS
+			);
+			if (source != null) {
+				source = source.resolve("Digital Media Server\\Digital Media Server.lnk");
+			}
+
+			if (source == null || !Files.exists(source)) {
+				throw new IOException(
+					"Can't make Digital Media Server start on user login " +
+					"because the Digital Media Server shortcut can't be found"
+				);
+			}
+
+			Files.copy(source, startupLink);
+			if (Files.exists(startupLink)) {
+				LOGGER.info("Digital Media Server will start on user login");
+			} else {
+				throw new IOException("An error occurred while trying to make Digital Media Server start on user login");
 			}
 		} else {
-			if (destinationFile.delete()) {
-				LOGGER.info("DMS will not start automatically with Windows");
+			// Disable
+			if (!Files.exists(startupLink)) {
+				LOGGER.debug("Start on user login is already inactive");
+				return;
+			}
+
+			Files.delete(startupLink);
+			if (!Files.exists(startupLink)) {
+				LOGGER.info("Digital Media Server will no longer start on user login");
 			} else {
-				LOGGER.info("An error occurred while trying to make DMS not start automatically with Windows");
+				throw new IOException(
+					"An error occurred while trying to make Digital Media Server not start on user login"
+				);
 			}
 		}
 	}
@@ -2579,7 +2605,7 @@ public class PmsConfiguration extends RendererConfiguration {
 		buildEnabledEngines();
 		enabledEnginesLock.readLock().lock();
 		try {
-			return new ArrayList<PlayerId>(enabledEngines);
+			return new ArrayList<>(enabledEngines);
 		} finally {
 			enabledEnginesLock.readLock().unlock();
 		}
@@ -2723,7 +2749,7 @@ public class PmsConfiguration extends RendererConfiguration {
 		buildEnginesPriority();
 		enginesPriorityLock.readLock().lock();
 		try {
-			return new UniqueList<PlayerId>(enginesPriority);
+			return new UniqueList<>(enginesPriority);
 		} finally {
 			enginesPriorityLock.readLock().unlock();
 		}
@@ -3030,7 +3056,7 @@ public class PmsConfiguration extends RendererConfiguration {
 	public List<Path> getSharedFolders() {
 		synchronized (sharedFoldersLock) {
 			if (isDefaultSharedFolders()) {
-				return RootFolder.getDefaultFolders();
+				return BasicSystemUtils.INSTANCE.getDefaultFolders();
 			}
 			readSharedFolders();
 			return new ArrayList<>(sharedFolders);
@@ -3044,7 +3070,7 @@ public class PmsConfiguration extends RendererConfiguration {
 	public List<Path> getMonitoredFolders() {
 		synchronized (sharedFoldersLock) {
 			if (isDefaultSharedFolders()) {
-				return RootFolder.getDefaultFolders();
+				return BasicSystemUtils.INSTANCE.getDefaultFolders();
 			}
 			if (!monitoredFoldersRead) {
 				monitoredFolders = getFolders(KEY_FOLDERS_MONITORED);
@@ -3199,10 +3225,10 @@ public class PmsConfiguration extends RendererConfiguration {
 	 */
 	public void setSharedFoldersToDefault() {
 		synchronized (sharedFoldersLock) {
-			sharedFolders = new ArrayList<>(RootFolder.getDefaultFolders());
+			sharedFolders = new ArrayList<>(BasicSystemUtils.INSTANCE.getDefaultFolders());
 			configuration.setProperty(KEY_FOLDERS, StringUtils.join(sharedFolders, LIST_SEPARATOR));
 			sharedFoldersRead = true;
-			monitoredFolders = new ArrayList<>(RootFolder.getDefaultFolders());
+			monitoredFolders = new ArrayList<>(BasicSystemUtils.INSTANCE.getDefaultFolders());
 			configuration.setProperty(KEY_FOLDERS_MONITORED, StringUtils.join(monitoredFolders, LIST_SEPARATOR));
 			monitoredFoldersRead = true;
 		}
@@ -4742,7 +4768,7 @@ public class PmsConfiguration extends RendererConfiguration {
 		return getInt(KEY_ALIVE_DELAY, 0);
 	}
 
-	public static enum GUICloseAction {
+	public enum GUICloseAction {
 
 		/** Ask the user what to do */
 		ASK,

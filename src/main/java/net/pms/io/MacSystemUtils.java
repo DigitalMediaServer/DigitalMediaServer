@@ -8,6 +8,7 @@ import java.io.InputStream;
 import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -19,6 +20,9 @@ import com.drew.lang.annotations.Nullable;
 import net.pms.newgui.LooksFrame;
 import net.pms.platform.macos.Cocoa;
 import net.pms.platform.macos.Cocoa.NSApplicationActivationOptions;
+import net.pms.platform.macos.NSFoundation;
+import net.pms.platform.macos.NSFoundation.NSSearchPathDirectory;
+import net.pms.platform.macos.NSFoundation.NSSearchPathDomainMask;
 import net.pms.platform.macos.SystemConfiguration;
 import net.pms.util.Version;
 import net.pms.util.jna.macos.corefoundation.CoreFoundation;
@@ -208,5 +212,39 @@ public class MacSystemUtils extends BasicSystemUtils {
 		}
 		// Fallback
 		return super.getComputerName();
+	}
+
+	@Override
+	protected void enumerateDefaultFolders(List<Path> folders) {
+		folders.addAll(NSFoundation.nsSearchPathForDirectoriesInDomains(
+			NSSearchPathDirectory.NSDesktopDirectory,
+			NSSearchPathDomainMask.NSAllDomainsMask,
+			true
+		));
+		folders.addAll(NSFoundation.nsSearchPathForDirectoriesInDomains(
+			NSSearchPathDirectory.NSDownloadsDirectory,
+			NSSearchPathDomainMask.NSAllDomainsMask,
+			true
+		));
+		folders.addAll(NSFoundation.nsSearchPathForDirectoriesInDomains(
+			NSSearchPathDirectory.NSMoviesDirectory,
+			NSSearchPathDomainMask.NSAllDomainsMask,
+			true
+		));
+		folders.addAll(NSFoundation.nsSearchPathForDirectoriesInDomains(
+			NSSearchPathDirectory.NSMusicDirectory,
+			NSSearchPathDomainMask.NSAllDomainsMask,
+			true
+		));
+		folders.addAll(NSFoundation.nsSearchPathForDirectoriesInDomains(
+			NSSearchPathDirectory.NSPicturesDirectory,
+			NSSearchPathDomainMask.NSAllDomainsMask,
+			true
+		));
+		folders.addAll(NSFoundation.nsSearchPathForDirectoriesInDomains(
+			NSSearchPathDirectory.NSSharedPublicDirectory,
+			NSSearchPathDomainMask.NSAllDomainsMask,
+			true
+		));
 	}
 }

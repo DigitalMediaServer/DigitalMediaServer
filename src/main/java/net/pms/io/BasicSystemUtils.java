@@ -19,7 +19,7 @@
 package net.pms.io;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
-import com.drew.lang.annotations.Nullable;
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import com.sun.jna.Native;
 import com.sun.jna.Platform;
 import java.awt.AWTException;
@@ -33,6 +33,7 @@ import java.awt.TrayIcon;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InterfaceAddress;
@@ -41,15 +42,29 @@ import java.net.SocketException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.UnknownHostException;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Enumeration;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+import javax.annotation.concurrent.GuardedBy;
 import net.pms.Messages;
 import net.pms.PMS;
 import net.pms.newgui.LooksFrame;
 import net.pms.platform.posix.NixCLibrary;
+import net.pms.util.FilePermissions;
+import net.pms.util.FilePermissions.FileFlag;
+import net.pms.util.FileUtil;
+import net.pms.util.StringUtil;
 import net.pms.util.Version;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,10 +75,21 @@ import org.slf4j.LoggerFactory;
  *
  */
 public class BasicSystemUtils implements SystemUtils {
-	private final static Logger LOGGER = LoggerFactory.getLogger(BasicSystemUtils.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(BasicSystemUtils.class);
 
 	/** The singleton platform dependent {@link SystemUtils} instance */
 	public static SystemUtils INSTANCE = BasicSystemUtils.createInstance();
+
+	private final Object defaultFoldersLock = new Object();
+	@GuardedBy("defaultFoldersLock")
+	private static List<Path> defaultFolders = null;
+	private static final Set<FileFlag> REQUIRED_SHARED_FOLDER_PERMISSIONS = new HashSet<>(
+		Arrays.asList(new FileFlag[] {
+			FileFlag.BROWSE,
+			FileFlag.FOLDER,
+			FileFlag.READ
+		})
+	);
 
 	@Nonnull
 	protected final Version osVersion;
@@ -338,5 +364,123 @@ public class BasicSystemUtils implements SystemUtils {
 	public String getComputerName() {
 		byte[] hostname = new byte[256];
 		return NixCLibrary.INSTANCE.gethostname(hostname, hostname.length) == 0 ? Native.toString(hostname) : null;
+	}
+
+	@Override
+	@Nonnull
+	public final List<Path> getDefaultFolders() {
+		synchronized (defaultFoldersLock) {
+			if (defaultFolders == null) {
+				// Lazy initialization
+				List<Path> folders = new ArrayList<>();
+				enumerateDefaultFolders(folders);
+
+				// Remove non-existing or not readable folders
+				for (Iterator<Path> iterator = folders.iterator(); iterator.hasNext();) {
+					Path path = iterator.next();
+					try {
+						Set<FileFlag> flags = new FilePermissions(path).getFlags(REQUIRED_SHARED_FOLDER_PERMISSIONS);
+						if (!flags.containsAll(REQUIRED_SHARED_FOLDER_PERMISSIONS)) {
+							iterator.remove();
+							HashSet<FileFlag> missingFlags = new HashSet<>(REQUIRED_SHARED_FOLDER_PERMISSIONS);
+							missingFlags.removeAll(flags);
+							if (missingFlags.contains(FileFlag.FOLDER)) {
+								LOGGER.warn(
+									"Skipping default folder \"{}\" because it's not a folder",
+									path
+								);
+							} else {
+								LOGGER.warn(
+									"Skipping default folder \"{}\" because it's missing {} permission{}",
+									path,
+									StringUtil.createReadableCombinedString(missingFlags),
+									missingFlags.size() > 1 ? "s" : ""
+								);
+							}
+						}
+					} catch (FileNotFoundException e) {
+						iterator.remove();
+						LOGGER.trace("Default folder \"{}\" not found", path.toString());
+					}
+				}
+
+				defaultFolders = Collections.unmodifiableList(folders);
+			}
+			return defaultFolders;
+		}
+	}
+
+	/**
+	 * Enumerates the list of folders that is considered "default folders" for
+	 * the current platform.
+	 * <p>
+	 * Subclasses should override this method. The method does not have to
+	 * handle thread synchronization, and speed isn't a factor as this is
+	 * normally only called once.
+	 *
+	 * @param folders the {@link List} of {@link Path}s to populate with
+	 *            "default folders".
+	 */
+	protected void enumerateDefaultFolders(@Nonnull List<Path> folders) {
+		Path xdg = FileUtil.findExecutableInOSPath(Paths.get("xdg-user-dir"));
+		if (xdg != null) {
+			String[] folderNames = {"DESKTOP", "DOWNLOAD", "PUBLICSHARE", "MUSIC", "PICTURES", "VIDEOS"};
+			for (String folderName : folderNames) {
+				Path folder = getLinuxFolder(xdg, folderName);
+				if (folder != null) {
+					folders.add(folder);
+				}
+			}
+		} else {
+			folders.add(Paths.get("").toAbsolutePath());
+			String userHome = System.getProperty("user.home");
+			if (isNotBlank(userHome)) {
+				folders.add(Paths.get(userHome));
+			}
+		}
+	}
+
+	@Nullable
+	private static Path getLinuxFolder(@Nullable Path xdg, @Nullable String folderName) {
+		if (xdg == null || isBlank(folderName)) {
+			return null;
+		}
+		try {
+			ListProcessWrapperResult result = SimpleProcessWrapper.runProcessListOutput(
+				10,
+				TimeUnit.SECONDS,
+				1000,
+				xdg.toString(),
+				folderName
+			);
+			if (result.getError() != null) {
+				LOGGER.warn("Failed to get default folder \"{}\": {}", folderName, result.getError().getMessage());
+				LOGGER.trace("", result.getError());
+				return null;
+			}
+			if (result.getOutput().isEmpty()) {
+				LOGGER.trace("Request for default folder \"{}\" got a blank reply", folderName);
+				return null;
+			}
+			if (isBlank(result.getOutput().get(0))) {
+				LOGGER.trace("Request for default folder \"{}\" got a blank path", folderName);
+				return null;
+			}
+			try {
+				return Paths.get(result.getOutput().get(0));
+			} catch (InvalidPathException ipe) {
+				LOGGER.warn(
+					"Couldn't resolve path \"{}\" for default folder \"{}\": {}",
+					result.getOutput().get(0),
+					folderName,
+					ipe.getMessage()
+				);
+				LOGGER.trace("", ipe);
+				return null;
+			}
+		} catch (InterruptedException e) {
+			LOGGER.trace("getLinuxFolder() was interrupted while retrieving default folder \"{}\"", folderName);
+			return null;
+		}
 	}
 }
