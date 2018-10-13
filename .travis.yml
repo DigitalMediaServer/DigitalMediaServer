@@ -11,6 +11,8 @@ addons:
 
 matrix:
   include:
+    - os: windows
+      jdk: jdk8
     - os: linux
       jdk: openjdk7
     - os: linux
