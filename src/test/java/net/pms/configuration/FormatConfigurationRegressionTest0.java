@@ -889,4 +889,12 @@ public class FormatConfigurationRegressionTest0 {
 		// Regression assertion (captures the current behavior of the code)
 		assertTrue("'" + str0 + "' != '" + "dolbye"+ "'", str0.equals("dolbye"));
 	}
+
+	@Test
+	public void testM4V() throws Throwable {
+		String str0 = net.pms.configuration.FormatConfiguration.M4V;
+
+		// Regression assertion (captures the current behavior of the code)
+		assertTrue("'" + str0 + "' != '" + "m4v"+ "'", str0.equals("m4v"));
+	}
 }

@@ -521,11 +521,12 @@ public class LibMediaInfoParser {
 			value.equals("20") ||
 			value.equals("isml") ||
 			(value.startsWith("m4a") && !value.startsWith("m4ae")) ||
-			value.startsWith("m4v") ||
 			value.equals("mpeg-4 visual") ||
 			value.equals("xavc")
 		) {
 			format = FormatConfiguration.MP4;
+		} else if (value.startsWith("m4v")) {
+			format = FormatConfiguration.M4V;
 		} else if (
 			FormatConfiguration.MP4.equals(media.getCodecV()) &&
 			value.startsWith("simple@l")

@@ -98,6 +98,7 @@ public class FormatConfiguration {
 	public static final String JPEG2000 = "jpeg2000";
 	public static final String LPCM = "lpcm";
 	public static final String M4A = "m4a";
+	public static final String M4V = "m4v";
 	/** Multimedia Container Format, a precursor to Matroska */
 	public static final String MCF = "mcf";
 	public static final String MKV = "mkv";
