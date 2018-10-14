@@ -33,6 +33,7 @@ import org.slf4j.LoggerFactory;
 public class RemoteUtil {
 	private static final Logger LOGGER = LoggerFactory.getLogger(RemoteUtil.class);
 
+	public static final String MIME_M4V = "video/x-m4v";
 	public static final String MIME_MP4 = "video/mp4";
 	public static final String MIME_OGG = "video/ogg";
 	public static final String MIME_WEBM = "video/webm";
@@ -182,6 +183,7 @@ public class RemoteUtil {
 		if (
 			mime != null &&
 			(
+				mime.equals(MIME_M4V) ||
 				mime.equals(MIME_MP4) ||
 				mime.equals(MIME_WEBM) ||
 				mime.equals(MIME_OGG) ||
