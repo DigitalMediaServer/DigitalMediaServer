@@ -412,7 +412,9 @@ public class SleepManager implements Service {
 				}
 			} catch (InterruptedException e) {
 				LOGGER.debug("Shutting down sleep worker");
-				doAllowSleep();
+				if (sleepPrevented) {
+					doAllowSleep();
+				}
 				owner.clearWorker();
 			} catch (Throwable e) {
 				LOGGER.error("Unexpected error in SleepManager worker thread, shutting down worker: {}", e.getMessage());
