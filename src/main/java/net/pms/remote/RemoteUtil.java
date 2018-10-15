@@ -34,17 +34,13 @@ public class RemoteUtil {
 	private static final Logger LOGGER = LoggerFactory.getLogger(RemoteUtil.class);
 
 	public static final String MIME_M4V = "video/x-m4v";
-	public static final String MIME_MP4 = "video/mp4";
-	public static final String MIME_OGG = "video/ogg";
-	public static final String MIME_WEBM = "video/webm";
-	//public static final String MIME_TRANS = MIME_MP4;
-	public static final String MIME_TRANS = MIME_OGG;
-	//public static final String MIME_TRANS = MIME_WEBM;
 	public static final String MIME_MP3 = "audio/mpeg";
+	public static final String MIME_MP4 = "video/mp4";
 	public static final String MIME_OGA = "audio/ogg";
+	public static final String MIME_OGG = "video/ogg";
 	public static final String MIME_WAV = "audio/wav";
-	public static final String MIME_PNG = "image/png";
-	public static final String MIME_JPG = "image/jpeg";
+	public static final String MIME_WEBM = "video/webm";
+	public static final String MIME_TRANS = MIME_MP4;
 
 	public static void respond(HttpExchange t, String response, int status, String mime) {
 		if (response != null) {
@@ -186,11 +182,9 @@ public class RemoteUtil {
 				mime.equals(MIME_M4V) ||
 				mime.equals(MIME_MP4) ||
 				mime.equals(MIME_WEBM) ||
-				mime.equals(MIME_OGG) ||
+//				mime.equals(MIME_OGG) ||
 				mime.equals(MIME_MP3) ||
-				mime.equals(MIME_OGA) ||
-				mime.equals(MIME_PNG) ||
-				mime.equals(MIME_JPG)
+//				mime.equals(MIME_OGA)
 			)
 		) {
 			return true;

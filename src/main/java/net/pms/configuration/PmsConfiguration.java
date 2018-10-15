@@ -4544,7 +4544,7 @@ public class PmsConfiguration extends RendererConfiguration {
 	}
 
 	public boolean isWebMp4Trans() {
-		return getBoolean(KEY_WEB_MP4_TRANS, false);
+		return getBoolean(KEY_WEB_MP4_TRANS, true);
 	}
 
 	public String getBumpAddress() {

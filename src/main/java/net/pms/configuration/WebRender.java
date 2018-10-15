@@ -85,7 +85,7 @@ public class WebRender extends DeviceConfiguration implements RendererConfigurat
 	protected static final int CHROME = 1;
 	protected static final int MSIE = 2;
 	protected static final int FIREFOX = 3;
-	protected static final int SAFARI = 4;
+	public static final int SAFARI = 4;
 	protected static final int PS4 = 5;
 	protected static final int XBOX1 = 6;
 	protected static final int OPERA = 7;
@@ -120,17 +120,12 @@ public class WebRender extends DeviceConfiguration implements RendererConfigurat
 		configuration.addProperty(MEDIAPARSERV2_THUMB, true);
 		configuration.addProperty(SUPPORTED, "f:flv v:h264|hls a:aac-lc m:video/flash");
 		configuration.addProperty(SUPPORTED, "f:m4v m:video/x-m4v");
-		configuration.addProperty(SUPPORTED, "f:mp4 m:video/mp4");
 		configuration.addProperty(SUPPORTED, "f:mp3 n:2 m:audio/mpeg");
-		configuration.addProperty(SUPPORTED, "f:ogg v:theora m:video/ogg");
-		configuration.addProperty(SUPPORTED, "f:oga a:vorbis|flac m:audio/ogg");
+		configuration.addProperty(SUPPORTED, "f:mp4 m:video/mp4");
+//		configuration.addProperty(SUPPORTED, "f:oga a:vorbis|flac m:audio/ogg");
+//		configuration.addProperty(SUPPORTED, "f:ogg v:theora m:video/ogg"); //Not Safari
 		configuration.addProperty(SUPPORTED, "f:wav n:2 m:audio/wav");
 		configuration.addProperty(SUPPORTED, "f:webm v:vp8|vp9 m:video/webm");
-		configuration.addProperty(SUPPORTED, "f:bmp m:image/bmp");
-		configuration.addProperty(SUPPORTED, "f:jpg m:image/jpeg");
-		configuration.addProperty(SUPPORTED, "f:png m:image/png");
-		configuration.addProperty(SUPPORTED, "f:gif m:image/gif");
-		configuration.addProperty(SUPPORTED, "f:tiff m:image/tiff");
 		configuration.addProperty(TRANSCODE_AUDIO, MP3);
 		return true;
 	}
@@ -326,6 +321,7 @@ public class WebRender extends DeviceConfiguration implements RendererConfigurat
 						case RemoteUtil.MIME_OGG:
 							ffOggCmd(cmdList);
 							break;
+						case RemoteUtil.MIME_M4V:
 						case RemoteUtil.MIME_MP4:
 							ffMp4Cmd(cmdList);
 							break;
@@ -393,39 +389,26 @@ public class WebRender extends DeviceConfiguration implements RendererConfigurat
 	}
 
 	private static void ffMp4Cmd(List<String> cmdList) {
-		// see http://stackoverflow.com/questions/8616855/how-to-output-fragmented-mp4-with-ffmpeg
 		cmdList.add(1, "-re");
-		cmdList.add("-g");
-		cmdList.add("52"); // see https://code.google.com/p/stream-m/#FRAGMENT_SIZES
-
+		cmdList.add("-dn");
 		cmdList.add("-c:v");
 		cmdList.add("libx264");
-		cmdList.add("-preset");
-		cmdList.add("ultrafast");
-		/*cmdList.add("-tune");
+		cmdList.add("-tune");
 		cmdList.add("zerolatency");
 		cmdList.add("-profile:v");
-		cmdList.add("high");
+		cmdList.add("baseline");
 		cmdList.add("-level:v");
-		cmdList.add("3.1");*/
+		cmdList.add("3.0");
+		cmdList.add("-preset");
+		cmdList.add("ultrafast");
+		cmdList.add("-pix_fmt");
+		cmdList.add("yuv420p");
 		cmdList.add("-c:a");
 		cmdList.add("aac");
-		cmdList.add("-ab");
-		cmdList.add("16k");
-//		cmdList.add("-ar");
-//		cmdList.add("44100");
-		/*cmdList.add("-pix_fmt");
-		cmdList.add("yuv420p");*/
-//		cmdList.add("-frag_duration");
-//		cmdList.add("300");
-//		cmdList.add("-frag_size");
-//		cmdList.add("100");
-//		cmdList.add("-flags");
-//		cmdList.add("+aic+mv4");
-		cmdList.add("-movflags");
-		cmdList.add("frag_keyframe+empty_moov");
 		cmdList.add("-f");
 		cmdList.add("mp4");
+		cmdList.add("-movflags");
+		cmdList.add("frag_keyframe+empty_moov+omit_tfhd_offset+default_base_moof");
 	}
 
 	private static void ffChromeCmd(List<String> cmdList) {

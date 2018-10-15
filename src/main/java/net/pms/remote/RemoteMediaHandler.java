@@ -96,7 +96,7 @@ public class RemoteMediaHandler implements HttpHandler {
 					} else if (!(resource instanceof DVDISOTitle)) {
 						resource.setPlayer(PlayerFactory.getPlayer(StandardPlayerId.FFMPEG_VIDEO, false, false));
 					}
-					if (WebRender.getBrowser() == "SAFARI") {
+					if (renderer.getBrowser() == WebRender.SAFARI) {
 						code = 206;
 					}
 				}
