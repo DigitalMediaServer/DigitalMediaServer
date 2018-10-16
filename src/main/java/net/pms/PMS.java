@@ -26,15 +26,12 @@ import com.sun.jna.Platform;
 import com.sun.net.httpserver.HttpServer;
 import java.awt.*;
 import java.io.*;
+import java.lang.reflect.InvocationTargetException;
 import java.net.BindException;
-import java.nio.charset.Charset;
-import java.nio.charset.IllegalCharsetNameException;
 import java.nio.charset.StandardCharsets;
-import java.nio.charset.UnsupportedCharsetException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.security.AccessControlException;
 import java.sql.SQLException;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -69,6 +66,7 @@ import net.pms.encoders.PlayerFactory;
 import net.pms.exception.InitializationException;
 import net.pms.formats.Format;
 import net.pms.formats.FormatFactory;
+import net.pms.formats.FormatType;
 import net.pms.io.*;
 import net.pms.logging.CacheLogger;
 import net.pms.logging.FrameAppender;
@@ -95,7 +93,6 @@ import org.slf4j.LoggerFactory;
 @SuppressWarnings("restriction")
 public class PMS {
 	private static final String SCROLLBARS = "scrollbars";
-	private static final String NATIVELOOK = "nativelook";
 	private static final String CONSOLE = "console";
 	private static final String NOCONSOLE = "noconsole";
 	public static final String CROWDIN_LINK = "http://crowdin.com/project/DigitalMediaServer";
@@ -335,15 +332,24 @@ public class PMS {
 		}
 		LOGGER.info("Profile name: {}", configuration.getProfileName());
 		LOGGER.info("");
-		if (configuration.useWebInterface()) {
-			String webConfPath = configuration.getWebConfPath();
-			LOGGER.info("Web configuration file: {}", webConfPath);
-			try {
-				// Don't use the {} syntax here as the check needs to be performed on every log level
-				LOGGER.info("Web configuration file permissions: " + FileUtil.getFilePermissions(webConfPath));
-			} catch (FileNotFoundException e) {
-				LOGGER.info("Web configuration file not found: {}", e.getMessage());
+		if (configuration.getExternalNetwork()) {
+			File webConf = new File(configuration.getWebConfPath());
+			if (webConf.exists()) {
+				LOGGER.info("Web configuration file: {}", webConf.getAbsolutePath());
+				try {
+					FilePermissions webConfPermissions= FileUtil.getFilePermissions(webConf);
+					LOGGER.info("Web configuration file permissions: {}", webConfPermissions);
+				} catch (FileNotFoundException e) {
+					// Should not happen
+					LOGGER.info("Web configuration file not found: {}", e.getMessage());
+				}
+				LOGGER.info("");
+			} else if (configuration.isWebConfPathSpecified()) {
+				LOGGER.warn("Couldn't read the specified web configuration file \"{}\"", webConf);
+				LOGGER.info("");
 			}
+		} else {
+			LOGGER.info("Internet/external network access is denied");
 			LOGGER.info("");
 		}
 
@@ -392,21 +398,56 @@ public class PMS {
 			(configuration.getLanguageRawString() == null ||
 			!Languages.isValid(configuration.getLanguageRawString()))
 		) {
-			LanguageSelection languageDialog = new LanguageSelection(null, PMS.getLocale(), false);
-			languageDialog.show();
-			if (languageDialog.isAborted()) {
+			final boolean[] aborted = new boolean[1];
+			try {
+				SwingUtilities.invokeAndWait(new Runnable() {
+					@Override
+					public void run() {
+						LanguageSelection languageDialog = new LanguageSelection(null, PMS.getLocale(), false);
+						languageDialog.show();
+						aborted[0] = languageDialog.isAborted();
+					}
+				});
+			} catch (InterruptedException e) {
+				LOGGER.info("LanguageSelection dialog was interrupted, aborting...");
+				return false;
+			} catch (InvocationTargetException e) {
+				LOGGER.error("An error occurred during the LanguageSelection dialog: {}", e);
+				return false;
+			}
+			if (aborted[0]) {
 				return false;
 			}
 		}
 
 		// Initialize splash screen
-		WindowPropertiesConfiguration windowConfiguration = null;
-		Splash splash = null;
+		final WindowPropertiesConfiguration[] windowConfiguration = new WindowPropertiesConfiguration[1];
+		final Splash[] splash = new Splash[1];
+
 		if (!isHeadless()) {
-			windowConfiguration = new WindowPropertiesConfiguration(
-				Paths.get(configuration.getProfileFolder()).resolve("DMS.dat")
-			);
-			splash = new Splash(configuration, windowConfiguration.getGraphicsConfiguration());
+			final boolean initSplash =
+				configuration.isShowSplashScreen() &&
+				!configuration.isGUIStartHidden();
+			try {
+				SwingUtilities.invokeAndWait(new Runnable() {
+
+					@Override
+					public void run() {
+						windowConfiguration[0] = new WindowPropertiesConfiguration(
+							Paths.get(configuration.getProfileFolder()).resolve("DMS.dat")
+						);
+						if (initSplash) {
+							splash[0] = new Splash(configuration, windowConfiguration[0].getGraphicsConfiguration());
+						}
+					}
+				});
+			} catch (InterruptedException e) {
+				LOGGER.info("Creation of WindowPropertiesConfiguration or Splash was interrupted, aborting...");
+				return false;
+			} catch (InvocationTargetException e) {
+				LOGGER.error("An error occurred during creation of WindowPropertiesConfiguration or Splash: {}", e);
+				return false;
+			}
 		}
 
 		// Call this as early as possible
@@ -414,17 +455,29 @@ public class PMS {
 
 		// Initialize database
 		try {
-			if (!initializeDatabase(options, splash)) {
-				if (splash != null) {
-					splash.dispose();
-					splash = null;
+			if (!initializeDatabase(options, splash[0])) {
+				if (splash[0] != null) {
+					SwingUtilities.invokeLater(new Runnable() {
+
+						@Override
+						public void run() {
+							splash[0].dispose();
+							splash[0] = null;
+						}
+					});
 				}
 				return false;
 			}
 		} catch (InitializationException e) {
-			if (splash != null) {
-				splash.dispose();
-				splash = null;
+			if (splash[0] != null) {
+				SwingUtilities.invokeLater(new Runnable() {
+
+					@Override
+					public void run() {
+						splash[0].dispose();
+						splash[0] = null;
+					}
+				});
 			}
 			throw e;
 		}
@@ -450,118 +503,7 @@ public class PMS {
 
 		// Wizard
 		if (configuration.isRunWizard() && !isHeadless()) {
-			// Hide splash screen
-			if (splash != null) {
-				splash.setVisible(false);
-			}
-			// Ask the user if they want to run the wizard
-			int whetherToRunWizard = JOptionPane.showConfirmDialog(
-				null,
-				Messages.getString("Wizard.1"),
-				Messages.getString("Dialog.Question"),
-				JOptionPane.YES_NO_OPTION
-			);
-			if (whetherToRunWizard == JOptionPane.YES_OPTION) {
-				// The user has chosen to run the wizard
-
-				// Total number of questions
-				int numberOfQuestions = 3;
-
-				// The current question number
-				int currentQuestionNumber = 1;
-
-				// Ask if they want DMS to start minimized
-				int whetherToStartMinimized = JOptionPane.showConfirmDialog(
-					null,
-					Messages.getString("Wizard.3"),
-					Messages.getString("Wizard.2") + " " + (currentQuestionNumber++) + " " + Messages.getString("Wizard.4") + " " + numberOfQuestions,
-					JOptionPane.YES_NO_OPTION
-				);
-				if (whetherToStartMinimized == JOptionPane.YES_OPTION) {
-					configuration.setMinimized(true);
-					save();
-				} else if (whetherToStartMinimized == JOptionPane.NO_OPTION) {
-					configuration.setMinimized(false);
-					save();
-				}
-
-				// Ask if their network is wired, etc.
-				Object[] wizardOptions = {
-					Messages.getString("Wizard.8"),
-					Messages.getString("Wizard.9"),
-					Messages.getString("Wizard.10")
-				};
-				int networkType = JOptionPane.showOptionDialog(
-					null,
-					Messages.getString("Wizard.7"),
-					Messages.getString("Wizard.2") + " " + (currentQuestionNumber++) + " " + Messages.getString("Wizard.4") + " " + numberOfQuestions,
-					JOptionPane.YES_NO_CANCEL_OPTION,
-					JOptionPane.QUESTION_MESSAGE,
-					null,
-					wizardOptions,
-					wizardOptions[1]
-				);
-				switch (networkType) {
-					case JOptionPane.YES_OPTION:
-						// Wired (Gigabit)
-						configuration.setMaximumBitrate("0");
-						configuration.setMPEG2MainSettings("Automatic (Wired)");
-						configuration.setx264ConstantRateFactor("Automatic (Wired)");
-						save();
-						break;
-					case JOptionPane.NO_OPTION:
-						// Wired (100 Megabit)
-						configuration.setMaximumBitrate("90");
-						configuration.setMPEG2MainSettings("Automatic (Wired)");
-						configuration.setx264ConstantRateFactor("Automatic (Wired)");
-						save();
-						break;
-					case JOptionPane.CANCEL_OPTION:
-						// Wireless
-						configuration.setMaximumBitrate("30");
-						configuration.setMPEG2MainSettings("Automatic (Wireless)");
-						configuration.setx264ConstantRateFactor("Automatic (Wireless)");
-						save();
-						break;
-					default:
-						break;
-				}
-
-				// Ask if they want to hide advanced options
-				int whetherToHideAdvancedOptions = JOptionPane.showConfirmDialog(
-					null,
-					Messages.getString("Wizard.11"),
-					Messages.getString("Wizard.2") + " " + (currentQuestionNumber++) + " " + Messages.getString("Wizard.4") + " " + numberOfQuestions,
-					JOptionPane.YES_NO_OPTION
-				);
-				if (whetherToHideAdvancedOptions == JOptionPane.YES_OPTION) {
-					configuration.setHideAdvancedOptions(true);
-					save();
-				} else if (whetherToHideAdvancedOptions == JOptionPane.NO_OPTION) {
-					configuration.setHideAdvancedOptions(false);
-					save();
-				}
-
-				JOptionPane.showMessageDialog(
-					null,
-					Messages.getString("Wizard.13"),
-					Messages.getString("Wizard.12"),
-					JOptionPane.INFORMATION_MESSAGE
-				);
-
-				configuration.setRunWizard(false);
-				save();
-			} else if (whetherToRunWizard == JOptionPane.NO_OPTION) {
-				// The user has chosen to not run the wizard
-				// Do not ask them again
-				configuration.setRunWizard(false);
-				save();
-			}
-
-			// Unhide splash screen
-			if (splash != null) {
-				splash.setVisible(true);
-			}
+			ConfigurationWizard.run(configuration, splash[0]);
 		}
 
 		fileWatcher = new FileWatcher();
@@ -569,7 +511,21 @@ public class PMS {
 		globalRepo = new GlobalIdRepo();
 
 		if (!isHeadless()) {
-			frame = new LooksFrame(configuration, windowConfiguration);
+			try {
+				SwingUtilities.invokeAndWait(new Runnable() {
+
+					@Override
+					public void run() {
+						frame = new LooksFrame(configuration, windowConfiguration[0]);
+					}
+				});
+			} catch (InterruptedException e) {
+				LOGGER.info("Creation of the main GUI window was interrupted, aborting...");
+				return false;
+			} catch (InvocationTargetException e) {
+				LOGGER.error("An error occurred during creation of the main GUI window: {}", e);
+				return false;
+			}
 		} else {
 			LOGGER.info("Graphics environment not available or headless mode is forced");
 			LOGGER.info("Switching to console mode");
@@ -577,9 +533,16 @@ public class PMS {
 		}
 
 		// Close splash screen
-		if (splash != null) {
-			splash.dispose();
-			splash = null;
+		if (splash[0] != null) {
+
+			SwingUtilities.invokeLater(new Runnable() {
+
+				@Override
+				public void run() {
+					splash[0].dispose();
+					splash[0] = null;
+				}
+			});
 		}
 
 		/*
@@ -615,9 +578,13 @@ public class PMS {
 		if (configuration.useWebInterface()) {
 			try {
 				web = new RemoteWeb(configuration.getWebPort());
-			} catch (BindException b) {
-				LOGGER.error("FATAL ERROR: Unable to bind web interface on port: " + configuration.getWebPort() + ", because: " + b.getMessage());
+				frame.webInterfaceEnabled(true);
+			} catch (FileNotFoundException e) {
+				LOGGER.error("Web interface not available: {}", e.getMessage());
+			} catch (BindException e) {
+				LOGGER.error("FATAL ERROR: Unable to bind web interface on port {}: {}", configuration.getWebPort(), e.getMessage());
 				LOGGER.info("Maybe another process is running or the hostname is wrong.");
+				LOGGER.trace("", e);
 			}
 		}
 
@@ -740,13 +707,13 @@ public class PMS {
 		}
 
 		if (web != null && web.getServer() != null) {
-			LOGGER.info("WEB interface is available at: " + web.getUrl());
+			LOGGER.info("WEB interface is available at: {}", web.getUrl());
 		}
 
 		// initialize the cache
 		if (configuration.getUseCache()) {
 			mediaLibrary = new MediaLibrary();
-			LOGGER.info("A tiny cache admin interface is available at: http://" + server.getHost() + ":" + server.getPort() + "/console/home");
+			LOGGER.info("A tiny cache admin interface is available at: http://{}:{}/console/home", server.getHost(), server.getPort());
 		}
 
 		// XXX: this must be called:
@@ -827,7 +794,7 @@ public class PMS {
 
 	private static boolean initializeDatabase(
 		@Nullable Map<Option, Object> options,
-		@Nullable Splash splash
+		@Nullable final Splash splash
 	) throws InitializationException {
 		Services services = Services.get();
 		if (Services.get() == null) {
@@ -835,7 +802,7 @@ public class PMS {
 		}
 
 		services.createTableManager();
-		TableManager tableManager = services.getTableManager();
+		final TableManager tableManager = services.getTableManager();
 		if (tableManager.isError()) {
 			if (options != null && options.containsKey(Option.DB_BACKUP_DOWNGRADE) && tableManager.hasFutureTables()) {
 				try {
@@ -990,16 +957,33 @@ public class PMS {
 			}
 
 			// Handle with GUI
-			if (splash != null) {
-				splash.setVisible(false);
+			final boolean[] aborted = new boolean[1];
+
+			try {
+				SwingUtilities.invokeAndWait(new Runnable() {
+
+					@Override
+					public void run() {
+						if (splash != null) {
+							splash.setVisible(false);
+						}
+						DatabaseProblem databaseProblem = new DatabaseProblem(null, tableManager);
+						databaseProblem.show();
+						aborted[0] = databaseProblem.isAborted();
+						if (!aborted[0] && splash != null) {
+							splash.setVisible(true);
+						}
+					}
+				});
+			} catch (InterruptedException e) {
+				LOGGER.info("DatabaseProblem dialog was interrupted, aborting...");
+				return false;
+			} catch (InvocationTargetException e) {
+				LOGGER.error("An error occurred during the DatabaseProblem dialog: {}", e);
+				return false;
 			}
-				DatabaseProblem databaseProblem = new DatabaseProblem(null, tableManager);
-				databaseProblem.show();
-				if (databaseProblem.isAborted()) {
-					return false;
-				}
-			if (splash != null) {
-				splash.setVisible(true);
+			if (aborted[0]) {
+				return false;
 			}
 		}
 
@@ -1251,11 +1235,6 @@ public class PMS {
 				case CONSOLE:
 					result.put(Option.HEADLESS, null);
 					break;
-				case "-n":
-				case "--nativelook":
-				case NATIVELOOK:
-					result.put(Option.NATIVE_LOOK, null);
-					break;
 				case "-s":
 				case "--scrollbars":
 				case SCROLLBARS:
@@ -1353,10 +1332,6 @@ public class PMS {
 		out.println("  -v, --trace                     Force logging level to TRACE.");
 		out.println("  -c, --headless                  Run without GUI.");
 		out.println("  -C, --noconsole                 Fail if a GUI can't be created.");
-		if (!Platform.isWindows() && !Platform.isMac()) {
-			out.println("  -n, --nativelook                Attempt to use the graphical environment's");
-			out.println("                                  native look.");
-		}
 		out.println("  -s, --scrollbars                Force horizontal and vertical GUI scroll bars.");
 		out.println("  -db, --database");
 		out.println("     log, trace                   Enable database logging.");
@@ -1408,9 +1383,6 @@ public class PMS {
 		// Apply options
 		if (options.containsKey(Option.HEADLESS)) {
 			forceHeadless();
-		}
-		if (options.containsKey(Option.NATIVE_LOOK)) {
-			System.setProperty(NATIVELOOK, Boolean.toString(true));
 		}
 		if (options.containsKey(Option.SCROLLBARS)) {
 			System.setProperty(SCROLLBARS, Boolean.toString(true));
@@ -1518,14 +1490,10 @@ public class PMS {
 				LOGGER.trace("", e);
 			}
 
-			if (getConfiguration().isRunSingleInstance()) {
-				killOld();
-			}
-
 			// Create the PMS instance returned by get()
 			createInstance(options); // Calls new() then init()
 		} catch (ConfigurationException | InitializationException e) {
-			StringBuilder sb = new StringBuilder();
+			final StringBuilder sb = new StringBuilder();
 			String errorMessage;
 			if (e instanceof ConfigurationException) {
 				sb.append(Messages.getString("Application.ConfigurationError")).append(".");
@@ -1539,15 +1507,27 @@ public class PMS {
 			LOGGER.debug("", e);
 
 			if (!isHeadless()) {
-				ErrorDialog errorDialog = new ErrorDialog(
-					null,
-					Messages.getString("PMS.42"),
-					sb.toString(),
-					null,
-					e,
-					LOGGER.isTraceEnabled()
-				);
-				errorDialog.show();
+				try {
+					SwingUtilities.invokeAndWait(new Runnable() {
+
+						@Override
+						public void run() {
+							ErrorDialog errorDialog = new ErrorDialog(
+								null,
+								Messages.getString("PMS.42"),
+								sb.toString(),
+								null,
+								e,
+								LOGGER.isTraceEnabled()
+							);
+							errorDialog.show();
+						}
+					});
+				} catch (InterruptedException e1) {
+					LOGGER.error("Interrupted during the error dialog");
+				} catch (InvocationTargetException e1) {
+					LOGGER.error("An error occurred during the error dialog: {}", e1);
+				}
 			}
 		}
 	}
@@ -1560,21 +1540,13 @@ public class PMS {
 		return web == null ? null : web.getServer();
 	}
 
-	public void save() {
-		try {
-			configuration.save();
-		} catch (ConfigurationException e) {
-			LOGGER.error("Could not save configuration", e);
-		}
-	}
-
 	/**
 	 * Stores the file in the cache if it doesn't already exist.
 	 *
 	 * @param file the full path to the file.
 	 * @param formatType the type constant defined in {@link Format}.
 	 */
-	public void storeFileInCache(File file, int formatType) {
+	public void storeFileInCache(File file, FormatType formatType) {
 		if (
 			getConfiguration().getUseCache() &&
 			!getDatabase().isDataExists(file.getAbsolutePath(), file.lastModified())
@@ -1778,150 +1750,6 @@ public class PMS {
 		} catch (Exception e) {
 			LOGGER.warn("Could not rename \"{}\" to \"{}\": {}", fullLogFileName, newLogFileName, e.getMessage());
 			LOGGER.trace("", e);
-		}
-	}
-
-	/**
-	 * Restart handling
-	 */
-	private static void killOld() {
-		// Note: failure here doesn't necessarily mean we need admin rights,
-		// only that we lack the required permission for these specific items.
-		try {
-			killProc();
-		} catch (AccessControlException e) {
-			LOGGER.error(
-				"Failed to check for already running instance: " + e.getMessage() +
-				(Platform.isWindows() ? "\nDMS might need to run as an administrator to access the PID file" : "")
-			);
-		} catch (FileNotFoundException e) {
-			LOGGER.debug("PID file not found, cannot check for running process");
-		} catch (IOException e) {
-			LOGGER.error("Error killing old process: " + e);
-		}
-
-		try {
-			dumpPid();
-		} catch (FileNotFoundException e) {
-			LOGGER.error(
-				"Failed to write PID file: "+ e.getMessage() +
-				(Platform.isWindows() ? "\nDMS might need to run as an administrator to enforce single instance" : "")
-			);
-		} catch (IOException e) {
-			LOGGER.error("Error dumping PID " + e);
-		}
-	}
-
-	/*
-	 * This method is only called for Windows OS'es, so specialized Windows charset handling is allowed
-	 */
-	private static boolean verifyPidName(String pid) throws IOException, IllegalAccessException {
-		if (!Platform.isWindows()) {
-			throw new IllegalAccessException("verifyPidName can only be called from Windows!");
-		}
-		ProcessBuilder pb = new ProcessBuilder("tasklist", "/FI", "\"PID eq " + pid + "\"", "/V", "/NH", "/FO", "CSV");
-		pb.redirectErrorStream(true);
-		Process p = pb.start();
-		String line;
-
-		Charset charset = null;
-		int codepage = WinUtils.getOEMCP();
-		String[] aliases = {"cp" + codepage, "MS" + codepage};
-		for (String alias : aliases) {
-			try {
-				charset = Charset.forName(alias);
-				break;
-			} catch (IllegalCharsetNameException | UnsupportedCharsetException e) {
-				charset = null;
-			}
-		}
-		if (charset == null) {
-			charset = Charset.defaultCharset();
-			LOGGER.warn("Couldn't find a supported charset for {}, using default ({})", aliases, charset);
-		}
-		try (BufferedReader in = new BufferedReader(new InputStreamReader(p.getInputStream(), charset))) {
-			try {
-				p.waitFor();
-			} catch (InterruptedException e) {
-				return false;
-			}
-			line = in.readLine();
-		}
-
-		if (line == null) {
-			return false;
-		}
-
-		// remove all " and convert to common case before splitting result on ,
-		String[] tmp = line.toLowerCase().replaceAll("\"", "").split(",");
-		// if the line is too short we don't kill the process
-		if (tmp.length < 9) {
-			return false;
-		}
-
-		// check first and last, update since taskkill changed
-		// also check 2nd last since we migh have ", POSSIBLY UNSTABLE" in there
-		boolean dms = tmp[tmp.length - 1].contains("digital media server") ||
-			  		  tmp[tmp.length - 2].contains("digital media server");
-		return tmp[0].equals("javaw.exe") && dms;
-	}
-
-	private static String pidFile() {
-		return configuration.getDataFile("dms.pid");
-	}
-
-	private static void killProc() throws AccessControlException, IOException{
-		ProcessBuilder pb = null;
-		String pid;
-		String pidFile = pidFile();
-		if (!FileUtil.getFilePermissions(pidFile).isReadable()) {
-			throw new AccessControlException("Cannot read " + pidFile);
-		}
-
-		try (BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(pidFile), StandardCharsets.US_ASCII))) {
-			pid = in.readLine();
-		}
-
-		if (pid == null) {
-			return;
-		}
-
-		if (Platform.isWindows()) {
-			try {
-				if (verifyPidName(pid)) {
-					pb = new ProcessBuilder("taskkill", "/F", "/PID", pid, "/T");
-				}
-			} catch (IllegalAccessException e) {
-				// Impossible
-			}
-		} else if (Platform.isFreeBSD() || Platform.isLinux() || Platform.isOpenBSD() || Platform.isSolaris()) {
-			pb = new ProcessBuilder("kill", "-9", pid);
-		}
-
-		if (pb == null) {
-			return;
-		}
-
-		try {
-			Process p = pb.start();
-			p.waitFor();
-		} catch (InterruptedException e) {
-			LOGGER.trace("Got interrupted while trying to kill process by PID " + e);
-		}
-	}
-
-	public static long getPID() {
-		String processName = java.lang.management.ManagementFactory.getRuntimeMXBean().getName();
-		return Long.parseLong(processName.split("@")[0]);
-	}
-
-	private static void dumpPid() throws IOException {
-		try (FileOutputStream out = new FileOutputStream(pidFile())) {
-			long pid = getPID();
-			LOGGER.debug("Writing PID: " + pid);
-			String data = String.valueOf(pid) + "\r\n";
-			out.write(data.getBytes(StandardCharsets.US_ASCII));
-			out.flush();
 		}
 	}
 
@@ -2335,9 +2163,6 @@ public class PMS {
 
 		/** Display help and exit */
 		HELP,
-
-		/** Attempt to use the graphical environment's native look under Linux */
-		NATIVE_LOOK,
 
 		/** Never use headless mode */
 		NOCONSOLE,

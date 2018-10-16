@@ -40,6 +40,8 @@ import net.pms.configuration.RendererConfiguration;
 import net.pms.dlna.DLNAMediaInfo;
 import net.pms.dlna.DLNAResource;
 import net.pms.formats.Format;
+import net.pms.formats.FormatType;
+import net.pms.formats.WEB;
 import net.pms.io.BasicSystemUtils;
 import net.pms.io.ListProcessWrapperResult;
 import net.pms.io.OutputParams;
@@ -47,7 +49,6 @@ import net.pms.io.PipeProcess;
 import net.pms.io.ProcessWrapper;
 import net.pms.io.ProcessWrapperImpl;
 import net.pms.io.SimpleProcessWrapper;
-import net.pms.util.PlayerUtil;
 import net.pms.util.Version;
 import net.pms.util.Version.WindowsVersionType;
 
@@ -98,8 +99,8 @@ public class VideoLanVideoStreaming extends Player {
 	}
 
 	@Override
-	public int type() {
-		return Format.VIDEO;
+	public FormatType type() {
+		return FormatType.VIDEO;
 	}
 
 	@Override
@@ -225,7 +226,7 @@ public class VideoLanVideoStreaming extends Player {
 
 	@Override
 	public boolean isCompatible(DLNAResource resource) {
-		return PlayerUtil.isWebVideo(resource);
+		return resource.isVideo() && resource.getFormat() instanceof WEB;
 	}
 
 	@Override

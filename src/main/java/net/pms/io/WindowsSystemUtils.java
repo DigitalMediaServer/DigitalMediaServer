@@ -23,13 +23,16 @@ import com.sun.jna.Native;
 import com.sun.jna.Platform;
 import com.sun.jna.WString;
 import com.sun.jna.platform.win32.Advapi32Util;
+import com.sun.jna.platform.win32.Kernel32Util;
 import com.sun.jna.platform.win32.Win32Exception;
 import com.sun.jna.platform.win32.WinReg;
 import com.sun.jna.ptr.LongByReference;
+import java.awt.Toolkit;
 import java.io.File;
 import java.nio.CharBuffer;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import net.pms.util.FileUtil;
 import net.pms.util.Version;
@@ -41,8 +44,8 @@ import org.slf4j.LoggerFactory;
  *
  * @author zsombor
  */
-public class WinUtils extends BasicSystemUtils {
-	private static final Logger LOGGER = LoggerFactory.getLogger(WinUtils.class);
+public class WindowsSystemUtils extends BasicSystemUtils {
+	private static final Logger LOGGER = LoggerFactory.getLogger(WindowsSystemUtils.class);
 
 	public interface Kernel32 extends Library {
 		Kernel32 INSTANCE = Native.loadLibrary("kernel32", Kernel32.class);
@@ -226,7 +229,7 @@ public class WinUtils extends BasicSystemUtils {
 	}
 
 	/** Only to be instantiated by {@link BasicSystemUtils#createInstance()}. */
-	protected WinUtils() {
+	protected WindowsSystemUtils() {
 		getVLCRegistryInfo();
 		avsPluginsFolder = getAviSynthPluginsFolder();
 		aviSynth = avsPluginsFolder != null;
@@ -356,6 +359,27 @@ public class WinUtils extends BasicSystemUtils {
 	}
 
 	@Override
+	@Nonnull
+	protected String getTrayIconName() {
+		int dpi = Toolkit.getDefaultToolkit().getScreenResolution();
+		switch (dpi) {
+			case 96:
+				return "icon-16.png";
+			case 120:
+				return "icon-20.png";
+			case 144:
+				return "icon-24.png";
+			case 168:
+				return "icon-28.png";
+			case 192:
+				return "icon-32.png";
+			default:
+				// This will be scaled, so use a large one for a better end result
+				return "icon-256.png";
+		}
+	}
+
+	@Override
 	@Nullable
 	public Double getWindowsVersion() {
 		if (!Platform.isWindows()) {
@@ -364,6 +388,18 @@ public class WinUtils extends BasicSystemUtils {
 		try {
 			return Double.valueOf(System.getProperty("os.version"));
 		} catch (NullPointerException | NumberFormatException e) {
+			return null;
+		}
+	}
+
+	@Override
+	@Nullable
+	public String getComputerName() {
+		try {
+			return Kernel32Util.getComputerName();
+		} catch (Win32Exception e) {
+			LOGGER.error("The call to Kernel32.getComputerName() failed with: {}", e.getMessage());
+			LOGGER.trace("", e);
 			return null;
 		}
 	}

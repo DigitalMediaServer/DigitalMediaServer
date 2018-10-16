@@ -18,21 +18,38 @@
  */
 package net.pms.io;
 
+import static org.apache.commons.lang3.StringUtils.isBlank;
+import com.drew.lang.annotations.Nullable;
+import com.sun.jna.Native;
 import com.sun.jna.Platform;
-import java.awt.*;
+import java.awt.AWTException;
+import java.awt.Desktop;
+import java.awt.Image;
+import java.awt.MenuItem;
+import java.awt.PopupMenu;
+import java.awt.SystemTray;
+import java.awt.Toolkit;
+import java.awt.TrayIcon;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.InterfaceAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.UnknownHostException;
 import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.Enumeration;
+import java.util.List;
+import javax.annotation.Nonnull;
 import net.pms.Messages;
 import net.pms.PMS;
 import net.pms.newgui.LooksFrame;
-import net.pms.util.PropertiesUtil;
+import net.pms.platform.posix.NixCLibrary;
 import net.pms.util.Version;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,9 +69,11 @@ public class BasicSystemUtils implements SystemUtils {
 	protected Version vlcVersion;
 	protected boolean aviSynth;
 
+	protected MenuItem webInterfaceItem;
+
 	protected static BasicSystemUtils createInstance() {
 		if (Platform.isWindows()) {
-			return new WinUtils();
+			return new WindowsSystemUtils();
 		}
 		if (Platform.isMac()) {
 			return new MacSystemUtils();
@@ -129,6 +148,13 @@ public class BasicSystemUtils implements SystemUtils {
 	}
 
 	@Override
+	public void setWebInterfaceSystemTrayEnabled(boolean value) {
+		if (webInterfaceItem != null) {
+			webInterfaceItem.setEnabled(value);
+		}
+	}
+
+	@Override
 	public void addSystemTray(final LooksFrame frame) {
 		if (SystemTray.isSupported()) {
 			SystemTray tray = SystemTray.getSystemTray();
@@ -136,25 +162,16 @@ public class BasicSystemUtils implements SystemUtils {
 			Image trayIconImage = resolveTrayIcon();
 
 			PopupMenu popup = new PopupMenu();
-			MenuItem defaultItem = new MenuItem(Messages.getString("LooksFrame.5"));
-			MenuItem traceItem = new MenuItem(Messages.getString("LooksFrame.6"));
+			MenuItem quitItem = new MenuItem(Messages.getString("LooksFrame.5"));
+			MenuItem showItem = new MenuItem(Messages.getString("LooksFrame.6"));
 
-			defaultItem.addActionListener(new ActionListener() {
-				@Override
-				public void actionPerformed(ActionEvent e) {
-					frame.quit();
-				}
-			});
-
-			traceItem.addActionListener(new ActionListener() {
-				@Override
-				public void actionPerformed(ActionEvent e) {
-					frame.setVisible(true);
-				}
-			});
+			showItem.addActionListener(buildShowItemActionListener(frame));
+			popup.add(showItem);
 
 			if (PMS.getConfiguration().useWebInterface()) {
-				MenuItem webInterfaceItem = new MenuItem(Messages.getString("LooksFrame.29"));
+				popup.addSeparator();
+				webInterfaceItem = new MenuItem(Messages.getString("LooksFrame.29"));
+				webInterfaceItem.setEnabled(false);
 				webInterfaceItem.addActionListener(new ActionListener() {
 					@Override
 					public void actionPerformed(ActionEvent e) {
@@ -163,8 +180,15 @@ public class BasicSystemUtils implements SystemUtils {
 				});
 				popup.add(webInterfaceItem);
 			}
-			popup.add(traceItem);
-			popup.add(defaultItem);
+
+			popup.addSeparator();
+			quitItem.addActionListener(new ActionListener() {
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					frame.quit();
+				}
+			});
+			popup.add(quitItem);
 
 			final TrayIcon trayIcon = new TrayIcon(trayIconImage, PMS.getName(), popup);
 
@@ -179,9 +203,19 @@ public class BasicSystemUtils implements SystemUtils {
 			try {
 				tray.add(trayIcon);
 			} catch (AWTException e) {
-				LOGGER.debug("Caught exception", e);
+				LOGGER.error("Couldn't add system tray icon: {}", e.getMessage());
+				LOGGER.trace("", e);
 			}
 		}
+	}
+
+	protected ActionListener buildShowItemActionListener(final LooksFrame frame) {
+		return new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				frame.setVisible(true);
+			}
+		};
 	}
 
 	/**
@@ -234,21 +268,62 @@ public class BasicSystemUtils implements SystemUtils {
 	}
 
 	/**
-	 * Return the proper tray icon for the operating system.
-	 *
-	 * @return The tray icon.
+	 * @return The system tray icon {@link Image} for the current platform.
 	 */
-	private Image resolveTrayIcon() {
-		String icon = "icon-16.png";
+	protected Image resolveTrayIcon() {
+		return Toolkit.getDefaultToolkit().getImage(this.getClass().getResource("/resources/images/" + getTrayIconName()));
+	}
 
-		if (Platform.isMac()) {
-			icon = "icon-22.png";
-		}
-		return Toolkit.getDefaultToolkit().getImage(this.getClass().getResource("/resources/images/" + icon));
+	/**
+	 * @return The name of the system tray icon for the current platform.
+	 */
+	@Nonnull
+	protected String getTrayIconName() {
+		return "icon-24.png";
 	}
 
 	@Override
 	public Double getWindowsVersion() {
 		return null;
+	}
+
+	@Override
+	@Nonnull
+	public String getLocalHostname() {
+		String hostname = getComputerName();
+		if (isBlank(hostname)) {
+			return "localhost";
+		}
+		try {
+			List<InetAddress> resolvedAddresses = Arrays.asList(InetAddress.getAllByName(getComputerName()));
+			if (!resolvedAddresses.isEmpty()) {
+				Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
+				if (interfaces != null) {
+					while (interfaces.hasMoreElements()) {
+						NetworkInterface networkInterface = interfaces.nextElement();
+						for (InterfaceAddress address : networkInterface.getInterfaceAddresses()) {
+							if (address.getAddress() != null && resolvedAddresses.contains(address.getAddress())) {
+								return hostname;
+							}
+						}
+					}
+				}
+			}
+		} catch (UnknownHostException | SocketException e) {
+			LOGGER.trace(
+				"Failed to resolve \"{}\" to an IP address, returning \"localhost\" as the local hostname: {}",
+				hostname,
+				e.getMessage()
+			);
+		}
+
+		return "localhost";
+	}
+
+	@Override
+	@Nullable
+	public String getComputerName() {
+		byte[] hostname = new byte[256];
+		return NixCLibrary.INSTANCE.gethostname(hostname, hostname.length) == 0 ? Native.toString(hostname) : null;
 	}
 }

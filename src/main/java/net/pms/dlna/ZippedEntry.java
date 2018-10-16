@@ -24,7 +24,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
-import net.pms.formats.Format;
+import net.pms.formats.FormatType;
 import net.pms.util.FileUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,7 +38,7 @@ public class ZippedEntry extends DLNAResource implements IPushOutput {
 
 	@Override
 	protected String getThumbnailURL(DLNAImageProfile profile) {
-		if (getType() == Format.IMAGE || getType() == Format.AUDIO) {
+		if (!isVideo()) {
 			// no thumbnail support for now for zipped videos
 			return null;
 		}
@@ -64,7 +64,7 @@ public class ZippedEntry extends DLNAResource implements IPushOutput {
 
 	@Override
 	public long length() {
-		if (getPlayer() != null && getPlayer().type() != Format.IMAGE) {
+		if (getPlayer() != null && getPlayer().type() != FormatType.IMAGE) {
 			return DLNAMediaInfo.TRANS_SIZE;
 		}
 
@@ -140,7 +140,7 @@ public class ZippedEntry extends DLNAResource implements IPushOutput {
 
 	@Override
 	protected void resolveOnce() {
-		if (getFormat() == null || !getFormat().isVideo()) {
+		if (!isVideo()) {
 			return;
 		}
 
@@ -157,7 +157,7 @@ public class ZippedEntry extends DLNAResource implements IPushOutput {
 				InputFile input = new InputFile();
 				input.setPush(this);
 				input.setSize(length());
-				getFormat().parse(getMedia(), input, getType(), null);
+				getFormat().parse(getMedia(), input, null);
 				if (getMedia() != null && getMedia().isSLS()) {
 					setFormat(getMedia().getAudioVariantFormat());
 				}
@@ -169,9 +169,8 @@ public class ZippedEntry extends DLNAResource implements IPushOutput {
 	public DLNAThumbnailInputStream getThumbnailInputStream() throws IOException {
 		if (getMedia() != null && getMedia().getThumb() != null) {
 			return getMedia().getThumbnailInputStream();
-		} else {
-			return super.getThumbnailInputStream();
 		}
+		return super.getThumbnailInputStream();
 	}
 
 	@Override

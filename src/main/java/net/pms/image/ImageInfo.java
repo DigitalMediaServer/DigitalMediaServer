@@ -29,7 +29,6 @@ import com.drew.metadata.Metadata;
 import net.pms.dlna.DLNAImage;
 import net.pms.dlna.DLNAImageInputStream;
 import net.pms.dlna.DLNAResource;
-import net.pms.dlna.DLNAThumbnail;
 import net.pms.dlna.DLNAThumbnailInputStream;
 import net.pms.exception.InvalidStateException;
 import net.pms.exception.ParseException;
@@ -121,6 +120,7 @@ public abstract class ImageInfo implements Serializable {
 	 *            applied to the {@code metadata} argument instance</b>.
 	 * @param imageIOSupport whether or not {@link ImageIO} can read/parse this
 	 *            image.
+	 * @return The new instance.
 	 * @throws ParseException if {@code format} is {@code null} and parsing the
 	 *             format from {@code metadata} fails or parsing of
 	 *             {@code metadata} fails.
@@ -350,6 +350,7 @@ public abstract class ImageInfo implements Serializable {
 	 *            applied to the {@code metadata} argument instance</b>.
 	 * @param imageIOSupport whether or not {@link ImageIO} can read/parse this
 	 *            image.
+	 * @return The new instance.
 	 * @throws ParseException if {@code format} is {@code null} and parsing the
 	 *             format from {@code metadata} fails or parsing of
 	 *             {@code metadata} fails.
@@ -587,6 +588,7 @@ public abstract class ImageInfo implements Serializable {
 	 * @param throwOnParseFailure if a {@link ParseException} should be thrown
 	 *            instead of returning an instance with invalid resolution if
 	 *            parsing of resolution fails.
+	 * @return The new instance.
 	 * @throws ParseException if {@code format} is {@code null} and parsing the
 	 *             format from {@code metadata} fails or parsing of
 	 *             {@code metadata} fails.
@@ -622,6 +624,7 @@ public abstract class ImageInfo implements Serializable {
 	 * @param throwOnParseFailure if a {@link ParseException} should be thrown
 	 *            instead of returning an instance with invalid resolution if
 	 *            parsing of resolution fails.
+	 * @return The new instance.
 	 * @throws ParseException if {@code format} is {@code null} and parsing the
 	 *             format from {@code metadata} fails or parsing of
 	 *             {@code metadata} fails.
@@ -802,7 +805,18 @@ public abstract class ImageInfo implements Serializable {
 	}
 
 	/**
-	 * Copy constructor
+	 * Copy constructor.
+	 *
+	 * @param width the image width.
+	 * @param height the image height.
+	 * @param format the {@link ImageFormat}.
+	 * @param size the image size in bytes.
+	 * @param bitDepth the bit depth.
+	 * @param numComponents the number of components.
+	 * @param colorSpace the {@link ColorSpace}.
+	 * @param colorSpaceType the {@link ColorSpaceType}.
+	 * @param imageIOSupport {@code true} if {@link ImageIO} is supported for
+	 *            this image, {@code false} otherwise.
 	 */
 	protected ImageInfo(
 		int width,
@@ -919,8 +933,7 @@ public abstract class ImageInfo implements Serializable {
 
 		return ((ExifInfo) this).exifOrientation != null ?
 			((ExifInfo) this).exifOrientation :
-			ExifOrientation.TOP_LEFT
-		;
+			ExifOrientation.TOP_LEFT;
 	}
 
 	/**
@@ -963,6 +976,10 @@ public abstract class ImageInfo implements Serializable {
 	/**
 	 * Compares the parsed and the given resolution and logs a warning if they
 	 * mismatch.
+	 *
+	 * @param width the width.
+	 * @param height the height.
+	 * @param parsedInfo the {@link ParseInfo}.
 	 */
 	protected void compareResolution(int width, int height, ParseInfo parsedInfo) {
 		if (parsedInfo == null) {
@@ -970,7 +987,7 @@ public abstract class ImageInfo implements Serializable {
 		}
 
 		int parsedWidth = parsedInfo.width != null ? parsedInfo.width.intValue() : UNKNOWN;
-		int parsedHeight = parsedInfo.height!= null ? parsedInfo.height.intValue() : UNKNOWN;
+		int parsedHeight = parsedInfo.height != null ? parsedInfo.height.intValue() : UNKNOWN;
 		if (this instanceof RAWInfo) {
 			// DCRaw decodes pixels that's normally hidden because they are too
 			// expensive to decode for CPU restrained devices, so the resolution
@@ -1001,6 +1018,9 @@ public abstract class ImageInfo implements Serializable {
 	/**
 	 * Compares the parsed and the given {@link ImageFormat} and logs a warning
 	 * if they mismatch.
+	 *
+	 * @param format the {@link ImageFormat}.
+	 * @param parsedInfo the {@link ParseInfo}.
 	 */
 	protected void compareFormat(ImageFormat format, ParseInfo parsedInfo) {
 		if (parsedInfo == null) {
@@ -1020,6 +1040,11 @@ public abstract class ImageInfo implements Serializable {
 	/**
 	 * Compares the parsed and the given color model information and logs a
 	 * warning if any information mismatch.
+	 *
+	 * @param bitDepth the bit depth.
+	 * @param numComponents the number of components.
+	 * @param colorSpaceType the {@link ColorSpaceType}.
+	 * @param parsedInfo the {@link ParseInfo}.
 	 */
 	protected void compareColorModel(int bitDepth, int numComponents, ColorSpaceType colorSpaceType, ParseInfo parsedInfo) {
 		if (parsedInfo == null) {

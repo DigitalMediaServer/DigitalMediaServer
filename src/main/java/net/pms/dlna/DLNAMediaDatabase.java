@@ -26,6 +26,7 @@ import net.pms.Messages;
 import net.pms.PMS;
 import net.pms.dlna.DLNAMediaInfo.RateMode;
 import net.pms.formats.Format;
+import net.pms.formats.FormatType;
 import net.pms.formats.v2.SubtitleType;
 import net.pms.image.ImageInfo;
 import net.pms.service.Services;
@@ -593,7 +594,7 @@ public class DLNAMediaDatabase implements Runnable {
 	 * @param media the {@link DLNAMediaInfo} row to update.
 	 * @throws SQLException if an SQL error occurs during the operation.
 	 */
-	public synchronized void insertOrUpdateData(String name, long modified, int type, DLNAMediaInfo media) throws SQLException {
+	public synchronized void insertOrUpdateData(String name, long modified, FormatType type, DLNAMediaInfo media) throws SQLException {
 		try (Connection connection = Services.tableManager().getConnection()) {
 			if (connection == null) {
 				LOGGER.error("Can't insert or update data since TableManager isn't connected");
@@ -619,7 +620,7 @@ public class DLNAMediaDatabase implements Runnable {
 					if (rs.next()) {
 						fileId = rs.getInt("ID");
 						rs.updateTimestamp("MODIFIED", new Timestamp(modified));
-						rs.updateInt("TYPE", type);
+						rs.updateInt("TYPE", type == null ? 0 : type.getValue());
 						if (media != null) {
 							if (media.getDuration() != null) {
 								rs.updateDouble("DURATION", media.getDurationInSeconds());
@@ -627,7 +628,7 @@ public class DLNAMediaDatabase implements Runnable {
 								rs.updateNull("DURATION");
 							}
 
-							rs.updateInt("BITRATE", type == Format.IMAGE ? 0 : media.getBitRate());
+							rs.updateInt("BITRATE", media.getMediaType() == MediaType.IMAGE ? 0 : media.getBitRate());
 							updateSerialized(rs, media.getBitRateMode(), "BITRATEMODE");
 							rs.updateInt("WIDTH", media.getWidth());
 							rs.updateInt("HEIGHT", media.getHeight());
@@ -674,7 +675,7 @@ public class DLNAMediaDatabase implements Runnable {
 				) {
 					ps.setString(1, name);
 					ps.setTimestamp(2, new Timestamp(modified));
-					ps.setInt(3, type);
+					ps.setInt(3, type == null ? 0 : type.getValue());
 					if (media != null) {
 						if (media.getDuration() != null) {
 							ps.setDouble(4, media.getDurationInSeconds());
@@ -682,7 +683,7 @@ public class DLNAMediaDatabase implements Runnable {
 							ps.setNull(4, Types.DOUBLE);
 						}
 
-						ps.setInt(5, type == Format.IMAGE ? 0 : media.getBitRate());
+						ps.setInt(5, media.getMediaType() == MediaType.IMAGE ? 0 : media.getBitRate());
 						insertSerialized(ps, media.getBitRateMode(), 6);
 						ps.setInt(7, media.getWidth());
 						ps.setInt(8, media.getHeight());

@@ -28,9 +28,13 @@ import java.io.Writer;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.sql.Timestamp;
+import java.util.Calendar;
 import java.util.Collection;
+import java.util.Date;
 import java.util.Formatter;
 import java.util.Locale;
+import java.util.TimeZone;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.annotation.Nonnull;
@@ -38,7 +42,6 @@ import javax.annotation.Nullable;
 import javax.swing.JEditorPane;
 import javax.swing.JTextPane;
 import javax.swing.text.html.HTMLEditorKit;
-import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.OutputKeys;
 import javax.xml.transform.Transformer;
@@ -290,6 +293,274 @@ public class StringUtil {
 			formatter.format(DLNA_DURATION_FORMAT, hours, minutes, seconds);
 		}
 		return sb.toString();
+	}
+
+	/**
+	 * Returns a formatted duration string in the form
+	 * {@code y years d days HH:mm:ss[.SSS]} where the specified {@code double}
+	 * value is interpreted as the number of seconds. If years or days are zero
+	 * they are omitted, the same applies to hours and minutes unless a larger
+	 * element is already included.
+	 *
+	 * @param duration the duration in seconds.
+	 * @param includeMilliseconds if {@code true} the number of milliseconds
+	 *            will be included, if {@code false} the second will be rounded
+	 *            to the closest integer value.
+	 * @return The formatted duration.
+	 */
+	public static String formatDuration(double duration, boolean includeMilliseconds) {
+		return formatDuration((long) (duration * 1000), includeMilliseconds);
+	}
+
+	/**
+	 * Returns a formatted duration string in the form
+	 * {@code y years d days HH:mm:ss[.SSS]} where the specified {@code long}
+	 * value is interpreted as the number of milliseconds. If years or days are
+	 * zero they are omitted, the same applies to hours and minutes unless a
+	 * larger element is already included.
+	 *
+	 * @param duration the duration in milliseconds.
+	 * @param includeMilliseconds if {@code true} the number of milliseconds
+	 *            will be included, if {@code false} the second will be rounded
+	 *            to the closest integer value.
+	 * @return The formatted duration.
+	 */
+	public static String formatDuration(long duration, boolean includeMilliseconds) {
+		long delta;
+		int hours;
+		int minutes;
+		int seconds;
+		long ms = duration < 0 ? -duration : duration;
+		StringBuilder sb = new StringBuilder();
+		delta = ms / 31536000000L; // 365 days
+		if (delta > 0) {
+			sb.append(delta).append(delta == 1 ? " year" : " years");
+			ms = ms % 31536000000L;
+		}
+		delta = ms / 86400000L; // 24 hours
+		if (delta > 0) {
+			if (sb.length() > 0) {
+				sb.append(" ");
+			}
+			sb.append(delta).append(delta == 1 ? " day" : " days");
+			ms = ms % 86400000L;
+		}
+
+		delta = ms / 1000;
+		if (delta > 0 || (includeMilliseconds && ms > 0)) {
+			if (sb.length() > 0) {
+				sb.append(" ");
+			}
+			boolean includeAll = ms < duration;
+			hours = (int) (delta / 3600);
+			minutes = ((int) (delta / 60)) % 60;
+			seconds = includeMilliseconds ? (int) (delta % 60) : (int) Math.round((ms % 60000) / 1000d);
+			ms = ms % 1000;
+			if (includeAll || hours > 0) {
+				if (includeAll && hours < 10) {
+					sb.append(String.format((Locale) null, "%02d:", hours));
+				} else {
+					sb.append(hours).append(":");
+				}
+			}
+			if (includeAll || hours > 0) {
+				sb.append(String.format((Locale) null, "%02d:", minutes));
+			} else if (minutes > 0) {
+				sb.append(minutes).append(":");
+			}
+			if (includeAll || hours > 0 || minutes > 0) {
+				sb.append(String.format((Locale) null, "%02d", seconds));
+			} else {
+				sb.append(seconds);
+			}
+			if (includeMilliseconds) {
+				sb.append(".").append(String.format((Locale) null, "%03d", ms));
+			}
+		}
+		return sb.toString();
+	}
+
+	/**
+	 * Returns an unlocalized, formatted time string in the form
+	 * {@code HH:mm:ss} for the specified {@link Calendar}.
+	 *
+	 * @param calendar the {@link Calendar}.
+	 * @return The formatted {@link String}.
+	 * @throws IllegalArgumentException If {@code calendar} is {@code null}.
+	 */
+	@Nonnull
+	public static String formatTime(@Nonnull Calendar calendar) {
+		if (calendar == null) {
+			throw new IllegalArgumentException("calendar cannot be null");
+		}
+		return formatDateTime(calendar.getTime().getTime(), false);
+	}
+
+	/**
+	 * Returns an unlocalized, formatted time string in the form
+	 * {@code HH:mm:ss} for the specified {@link Date}.
+	 *
+	 * @param date the {@link Date}.
+	 * @return The formatted {@link String}.
+	 * @throws IllegalArgumentException If {@code date} is {@code null}.
+	 */
+	@Nonnull
+	public static String formatTime(@Nonnull Date date) {
+		if (date == null) {
+			throw new IllegalArgumentException("date cannot be null");
+		}
+		return formatDateTime(date.getTime(), false);
+	}
+
+	/**
+	 * Returns an unlocalized, formatted time string in the form
+	 * {@code HH:mm:ss} for the specified {@link Timestamp}.
+	 *
+	 * @param timestamp the {@link Timestamp}.
+	 * @return The formatted {@link String}.
+	 * @throws IllegalArgumentException If {@code timestamp} is {@code null}.
+	 */
+	@Nonnull
+	public static String formatTime(@Nonnull Timestamp timestamp) {
+		if (timestamp == null) {
+			throw new IllegalArgumentException("timestamp cannot be null");
+		}
+		return formatDateTime(timestamp.getTime(), false);
+	}
+
+	/**
+	 * Returns an unlocalized, formatted time string in the form
+	 * {@code HH:mm:ss} where the specified long value is interpreted as the
+	 * number of milliseconds since January 1, 1970, 00:00:00 GMT (epoch).
+	 *
+	 * @param time the number of milliseconds since January 1, 1970, 00:00:00
+	 *            GMT.
+	 * @return The formatted {@link String}.
+	 */
+	@Nonnull
+	public static String formatTime(long time) {
+		return formatDateTime(time, false);
+	}
+
+	/**
+	 * Returns an unlocalized, formatted date and time string in the form
+	 * {@code yyyy-MM-dd HH:mm:ss} for the specified {@link Date}.
+	 *
+	 * @param date the {@link Date}.
+	 * @return The formatted {@link String}.
+	 * @throws IllegalArgumentException If {@code date} is {@code null}.
+	 */
+	@Nonnull
+	public static String formatDateTime(@Nonnull Date date) {
+		if (date == null) {
+			throw new IllegalArgumentException("date cannot be null");
+		}
+		return formatDateTime(date.getTime(), true);
+	}
+
+	/**
+	 * Returns an unlocalized, formatted date and time string in the form
+	 * {@code yyyy-MM-dd HH:mm:ss} for the specified {@link Timestamp}.
+	 *
+	 * @param timestamp the {@link Timestamp}.
+	 * @return The formatted {@link String}.
+	 * @throws IllegalArgumentException If {@code timestamp} is {@code null}.
+	 */
+	@Nonnull
+	public static String formatDateTime(@Nonnull Timestamp timestamp) {
+		if (timestamp == null) {
+			throw new IllegalArgumentException("timestamp cannot be null");
+		}
+		return formatDateTime(timestamp.getTime(), true);
+	}
+
+	/**
+	 * Returns an unlocalized, formatted date and time string in the form
+	 * {@code yyyy-MM-dd HH:mm:ss} where the specified long value is interpreted
+	 * as the number of milliseconds since January 1, 1970, 00:00:00 GMT
+	 * (epoch).
+	 *
+	 * @param time the number of milliseconds since January 1, 1970, 00:00:00
+	 *            GMT.
+	 * @return The formatted {@link String}.
+	 */
+	@Nonnull
+	public static String formatDateTime(long time) {
+		return formatDateTime(time, true);
+	}
+
+	/**
+	 * Returns an unlocalized, formatted date and time string in the form
+	 * {@code yyyy-MM-dd HH:mm:ss} for the specified {@link Calendar}.
+	 *
+	 * @param calendar the {@link Calendar}.
+	 * @return The formatted {@link String}.
+	 * @throws IllegalArgumentException If {@code calendar} is {@code null}.
+	 */
+	@Nonnull
+	public static String formatDateTime(@Nonnull Calendar calendar) {
+		if (calendar == null) {
+			throw new IllegalArgumentException("calendar cannot be null");
+		}
+		return formatDateTime(calendar, true);
+	}
+
+	/**
+	 * Returns an unlocalized, formatted date and time string in the form
+	 * {@code HH:mm:ss} or {@code yyyy-MM-dd HH:mm:ss} where the specified long
+	 * value is interpreted as the number of milliseconds since January 1, 1970,
+	 * 00:00:00 GMT (epoch). The date part is only included if the date is
+	 * different from the current date.
+	 *
+	 * @param time the number of milliseconds since January 1, 1970, 00:00:00
+	 *            GMT.
+	 * @return The formatted {@link String}.
+	 */
+	@Nonnull
+	public static String formatDateTimeAuto(long time) {
+		long now = System.currentTimeMillis();
+		TimeZone localTimeZone = TimeZone.getDefault();
+		now += localTimeZone.getOffset(now);
+		long localTime = time + localTimeZone.getOffset(time);
+		return formatDateTime(time, now / 86400000L != localTime / 86400000L);
+	}
+
+	/**
+	 * Returns an unlocalized, formatted date and time string in the form
+	 * {@code HH:mm:ss} or {@code yyyy-MM-dd HH:mm:ss} where the specified long
+	 * value is interpreted as the number of milliseconds since January 1, 1970,
+	 * 00:00:00 GMT (epoch).
+	 *
+	 * @param time the number of milliseconds since January 1, 1970, 00:00:00
+	 *            GMT.
+	 * @param includeDate {@code true} to include the date part, {@code false}
+	 *            to only show the time.
+	 * @return The formatted {@link String}.
+	 */
+	@Nonnull
+	public static String formatDateTime(long time, boolean includeDate) {
+		return time == Long.MAX_VALUE ?
+			"Never" :
+			String.format(Locale.ROOT, includeDate ? "%tY-%<tm-%<td %<tH:%<tM:%<tS" : "%tH:%<tM:%<tS", time);
+	}
+
+	/**
+	 * Returns an unlocalized, formatted date and time string in the form
+	 * {@code HH:mm:ss} or {@code yyyy-MM-dd HH:mm:ss} for the specified
+	 * {@link Calendar}.
+	 *
+	 * @param calendar the {@link Calendar}.
+	 * @param includeDate {@code true} to include the date part, {@code false}
+	 *            to only show the time.
+	 * @return The formatted {@link String}.
+	 * @throws IllegalArgumentException If {@code calendar} is {@code null}.
+	 */
+	@Nonnull
+	public static String formatDateTime(@Nonnull Calendar calendar, boolean includeDate) {
+		if (calendar == null) {
+			throw new IllegalArgumentException("calendar cannot be null");
+		}
+		return String.format(Locale.ROOT, includeDate ? "%tY-%<tm-%<td %<tH:%<tM:%<tS" : "%tH:%<tM:%<tS", calendar);
 	}
 
 	/**
@@ -738,8 +1009,9 @@ public class StringUtil {
 	}
 
 	/**
-	 * A unicode unescaper that translates unicode escapes, e.g. '\u005c', while leaving
-	 * intact any  sequences that can't be interpreted as escaped unicode.
+	 * A unicode unescaper that translates unicode escapes, e.g. {@code \u005c},
+	 * while leaving intact any sequences that can't be interpreted as escaped
+	 * unicode.
 	 */
 	public static class LaxUnicodeUnescaper extends UnicodeUnescaper {
 		@Override
@@ -973,7 +1245,7 @@ public class StringUtil {
 		try {
 			// Turn XML string into a document
 			Document xmlDocument =
-				DocumentBuilderFactory.newInstance().
+				SafeDocumentBuilderFactory.newInstance().
 				newDocumentBuilder().
 				parse(new InputSource(new ByteArrayInputStream(xml.getBytes("utf-8"))));
 

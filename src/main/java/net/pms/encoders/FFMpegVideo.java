@@ -43,6 +43,7 @@ import net.pms.configuration.ExecutableInfo.ExecutableInfoBuilder;
 import net.pms.configuration.ExternalProgramInfo;
 import net.pms.configuration.FFmpegExecutableInfo;
 import net.pms.configuration.FFmpegExecutableInfo.FFmpegExecutableInfoBuilder;
+import net.pms.configuration.FormatConfiguration;
 import net.pms.configuration.PmsConfiguration;
 import net.pms.configuration.RendererConfiguration;
 import net.pms.dlna.DLNAMediaInfo;
@@ -50,14 +51,16 @@ import net.pms.dlna.DLNAMediaSubtitle;
 import net.pms.dlna.DLNAResource;
 import net.pms.dlna.FileTranscodeVirtualFolder;
 import net.pms.dlna.InputFile;
+import net.pms.dlna.PartialSource;
 import net.pms.formats.Format;
+import net.pms.formats.FormatType;
+import net.pms.formats.PLAYLIST;
 import net.pms.formats.v2.SubtitleType;
 import net.pms.io.*;
 import net.pms.network.HTTPResource;
 import net.pms.newgui.GuiUtil;
 import net.pms.platform.windows.NTStatus;
 import net.pms.util.CodecUtil;
-import net.pms.util.PlayerUtil;
 import net.pms.util.ProcessUtil;
 import net.pms.util.StringUtil;
 import net.pms.util.SubtitleUtils;
@@ -361,7 +364,7 @@ public class FFMpegVideo extends Player {
 				if (dtsRemux) {
 					// Audio is added in a separate process later
 					transcodeOptions.add("-an");
-				} else if (type() == Format.AUDIO) {
+				} else if (type() == FormatType.AUDIO) {
 					// Skip
 				} else if (renderer.isTranscodeToAAC()) {
 					transcodeOptions.add("-c:a");
@@ -684,8 +687,8 @@ public class FFMpegVideo extends Player {
 	}
 
 	@Override
-	public int type() {
-		return Format.VIDEO;
+	public FormatType type() {
+		return FormatType.VIDEO;
 	}
 
 	// unused; return this array for backwards-compatibility
@@ -792,7 +795,7 @@ public class FFMpegVideo extends Player {
 		} else if (renderer.isTranscodeFastStart()){
 			params.manageFastStart();
 		} else {
-			params.waitbeforestart = 2500;
+			params.waitbeforestart = 1;
 		}
 
 		setAudioAndSubs(filename, media, params);
@@ -809,9 +812,32 @@ public class FFMpegVideo extends Player {
 			cmdList.add("fatal");
 		}
 
-		if (params.timeseek > 0) {
+		double start = Math.max(params.timeseek, 0.0);
+		double end = params.timeend > 0 ? params.timeend : Double.POSITIVE_INFINITY;
+		if (dlna instanceof PartialSource) {
+			PartialSource partial = (PartialSource) dlna;
+			if (partial.isPartialSource()) {
+				start += partial.getClipStart();
+				if (!Double.isInfinite(end)) {
+					end += partial.getClipStart();
+				}
+				double clipEnd = partial.getClipEnd();
+				if (clipEnd == 0.0) {
+					clipEnd = Double.POSITIVE_INFINITY;
+				}
+				end = Math.min(end, clipEnd);
+			}
+		}
+
+		if (start > 0.0) {
 			cmdList.add("-ss");
-			cmdList.add(String.valueOf(params.timeseek));
+			cmdList.add(String.valueOf(start));
+		}
+
+		if (!Double.isInfinite(end)) {
+			double duration = end - start;
+			cmdList.add("-t");
+			cmdList.add(String.valueOf(duration));
 		}
 
 		// Decoder threads
@@ -992,11 +1018,6 @@ public class FFMpegVideo extends Player {
 			cmdList.add(String.valueOf(nThreads));
 		}
 
-		if (params.timeend > 0) {
-			cmdList.add("-t");
-			cmdList.add(String.valueOf(params.timeend));
-		}
-
 		// Add the output options (-f, -c:a, -c:v, etc.)
 
 		// Now that inputs and filtering are complete, see if we should
@@ -1012,7 +1033,7 @@ public class FFMpegVideo extends Player {
 			String customFFmpegOptions = renderer.getCustomFFmpegOptions();
 
 			// Audio bitrate
-			if (!ac3Remux && !dtsRemux && !(type() == Format.AUDIO)) {
+			if (!ac3Remux && !dtsRemux && !(type() == FormatType.AUDIO)) {
 				int channels = 0;
 				if (
 					(
@@ -1379,16 +1400,30 @@ public class FFMpegVideo extends Player {
 
 	@Override
 	public boolean isCompatible(DLNAResource resource) {
-		if (
-			PlayerUtil.isVideo(resource, Format.Identifier.MKV) ||
-			PlayerUtil.isVideo(resource, Format.Identifier.MPG) ||
-			PlayerUtil.isVideo(resource, Format.Identifier.OGG) ||
-			"m3u8".equals(resource.getFormat().getMatchedExtension())
-		) {
-			return true;
-		}
+		return resource.isVideo() && isContainerCompatible(resource) || resource.getFormat() instanceof PLAYLIST;
+	}
 
-		return false;
+	/**
+	 * Checks the compatibility for FFmpeg itself. This is common for all
+	 * "FFmpeg engines" and shouldn't have restrictions that only apply to one
+	 * of them.
+	 *
+	 * @param resource the {@link DLNAResource} to check for compatibility.
+	 * @return The result.
+	 */
+	@SuppressWarnings("null")
+	protected boolean isContainerCompatible(@Nonnull DLNAResource resource) {
+		DLNAMediaInfo media = resource.getMedia();
+		String container = media == null ? null : media.getContainer();
+		if (isBlank(container)) {
+			return false;
+		}
+		switch (container) {
+			case FormatConfiguration.MCF:
+				return false;
+			default:
+				return true;
+		}
 	}
 
 	// matches 'Duration: 00:17:17.00' but not 'Duration: N/A'

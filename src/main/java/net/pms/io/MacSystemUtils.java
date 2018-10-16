@@ -1,5 +1,8 @@
 package net.pms.io;
 
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.NetworkInterface;
@@ -8,9 +11,17 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import javax.annotation.Nonnull;
 import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.drew.lang.annotations.Nullable;
+import net.pms.newgui.LooksFrame;
+import net.pms.platform.macos.Cocoa;
+import net.pms.platform.macos.Cocoa.NSApplicationActivationOptions;
+import net.pms.platform.macos.SystemConfiguration;
+import net.pms.util.jna.macos.corefoundation.CoreFoundation;
+import net.pms.util.jna.macos.corefoundation.CoreFoundation.CFStringRef;
 
 public class MacSystemUtils extends BasicSystemUtils {
 	private final static Logger LOGGER = LoggerFactory.getLogger(MacSystemUtils.class);
@@ -34,6 +45,17 @@ public class MacSystemUtils extends BasicSystemUtils {
 	@Override
 	public boolean isNetworkInterfaceLoopback(NetworkInterface ni) throws SocketException {
 		return false;
+	}
+
+	@Override
+	protected ActionListener buildShowItemActionListener(LooksFrame frame) {
+		return new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				Cocoa.unhide();
+				Cocoa.activate(NSApplicationActivationOptions.NSApplicationActivateIgnoringOtherApps);
+			}
+		};
 	}
 
 	/**
@@ -148,5 +170,34 @@ public class MacSystemUtils extends BasicSystemUtils {
 	 */
 	private static int getPingPacketDivisor(int packetSize) {
 		return (int) Math.ceil(packetSize / 8000.0);
+	}
+
+	@Override
+	@Nonnull
+	protected String getTrayIconName() {
+		return "icon-18.png";
+	}
+
+	@Override
+	@Nullable
+	public String getComputerName() {
+		try {
+		CFStringRef cfResult = SystemConfiguration.INSTANCE.SCDynamicStoreCopyComputerName(null, null);
+		if (cfResult != null) {
+			try {
+				String result = cfResult.toString();
+				if (isNotBlank(result)) {
+					return result;
+				}
+			} finally {
+				CoreFoundation.INSTANCE.CFRelease(cfResult);
+			}
+		}
+		} catch (Exception e) {
+			LOGGER.error("The call to SCDynamicStoreCopyComputerName failed with: {}", e.getMessage());
+			LOGGER.trace("", e);
+		}
+		// Fallback
+		return super.getComputerName();
 	}
 }

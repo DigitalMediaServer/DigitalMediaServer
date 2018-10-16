@@ -24,7 +24,6 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipException;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipInputStream;
-import net.pms.formats.Format;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,7 +55,7 @@ public class ZippedFile extends DLNAResource {
 
 	@Override
 	protected String getThumbnailURL(DLNAImageProfile profile) {
-		if (getType() == Format.IMAGE) {
+		if (isImage()) {
 			// no thumbnail support for now for zip files
 			return null;
 		}

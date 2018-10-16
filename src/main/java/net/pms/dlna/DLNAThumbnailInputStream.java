@@ -24,8 +24,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import javax.imageio.ImageIO;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import net.pms.dlna.DLNAThumbnail;
-import net.pms.exception.DLNAProfileException;
 import net.pms.image.ColorSpaceType;
 import net.pms.image.ImageFormat;
 import net.pms.image.ImageInfo;
@@ -33,13 +31,16 @@ import net.pms.image.ImagesUtil;
 import net.pms.image.ImagesUtil.ScaleType;
 
 /**
- * This is an {@link InputStream} implementation of {@link DLNAThumbnail}. It
+ * This is an {@link InputStream} implementation of {@link DLNABinaryThumbnail}. It
  * holds the stream's content in an internal buffer and is as such not intended
  * to hold very large streams.
  */
 public class DLNAThumbnailInputStream extends ByteArrayInputStream {
 
+	/** The {@link ImageInfo} for this {@link DLNAThumbnailInputStream} */
 	protected final ImageInfo imageInfo;
+
+	/** The {@link DLNAImageProfile} for this {@link DLNAThumbnailInputStream} */
 	protected final DLNAImageProfile profile;
 
 	/**
@@ -56,7 +57,7 @@ public class DLNAThumbnailInputStream extends ByteArrayInputStream {
 	 * @throws IOException if the operation fails.
 	 */
 	public static DLNAThumbnailInputStream toThumbnailInputStream(byte[] inputByteArray) throws IOException {
-		DLNAThumbnail thumbnail = DLNAThumbnail.toThumbnail(inputByteArray);
+		DLNAThumbnail thumbnail = DLNABinaryThumbnail.toThumbnail(inputByteArray);
 		return thumbnail != null ? new DLNAThumbnailInputStream(thumbnail) : null;
 	}
 
@@ -76,7 +77,7 @@ public class DLNAThumbnailInputStream extends ByteArrayInputStream {
 	 * @throws IOException if the operation fails.
 	 */
 	public static DLNAThumbnailInputStream toThumbnailInputStream(InputStream inputStream) throws IOException {
-		DLNAThumbnail thumbnail = DLNAThumbnail.toThumbnail(inputStream);
+		DLNAThumbnail thumbnail = DLNABinaryThumbnail.toThumbnail(inputStream);
 		return thumbnail != null ? new DLNAThumbnailInputStream(thumbnail) : null;
 	}
 
@@ -109,7 +110,7 @@ public class DLNAThumbnailInputStream extends ByteArrayInputStream {
 		ImageFormat outputFormat,
 		boolean padToSize
 	) throws IOException {
-		DLNAThumbnail thumbnail = DLNAThumbnail.toThumbnail(
+		DLNAThumbnail thumbnail = DLNABinaryThumbnail.toThumbnail(
 			inputByteArray,
 			width,
 			height,
@@ -150,7 +151,7 @@ public class DLNAThumbnailInputStream extends ByteArrayInputStream {
 		ImageFormat outputFormat,
 		boolean padToSize
 	) throws IOException {
-		DLNAThumbnail thumbnail = DLNAThumbnail.toThumbnail(
+		DLNAThumbnail thumbnail = DLNABinaryThumbnail.toThumbnail(
 			inputStream,
 			width,
 			height,
@@ -161,18 +162,17 @@ public class DLNAThumbnailInputStream extends ByteArrayInputStream {
 		return thumbnail != null ? new DLNAThumbnailInputStream(thumbnail) : null;
 	}
 
-    /**
-     * Creates a {@link DLNAThumbnailInputStream} where it uses
-     * {@code thumbnail}'s buffer as its buffer array. The buffer array is
-     * not copied.
-     *
-     * @param thumbnail the input thumbnail.
-	 * @return The populated {@link DLNAThumbnailInputStream} or {@code null}
-	 *         if the source thumbnail is {@code null}.
-     */
-
+	/**
+	 * Creates a {@link DLNAThumbnailInputStream} where it uses
+	 * {@code thumbnail}'s buffer as its buffer array. The buffer array is not
+	 * copied.
+	 *
+	 * @param thumbnail the source {@link DLNAThumbnail}.
+	 * @return The populated {@link DLNAThumbnailInputStream} or {@code null} if
+	 *         the source {@link DLNAThumbnail} is {@code null}.
+	 */
 	public static DLNAThumbnailInputStream toThumbnailInputStream(DLNAThumbnail thumbnail) {
-		return thumbnail != null ? new DLNAThumbnailInputStream(thumbnail) : null;
+		return thumbnail != null && thumbnail.getBytes(false) != null ? new DLNAThumbnailInputStream(thumbnail) : null;
 	}
 
 	/**
@@ -184,11 +184,11 @@ public class DLNAThumbnailInputStream extends ByteArrayInputStream {
 	 *
 	 * @throws NullPointerException if {@code thumbnail} is {@code null}.
 	 */
-    protected DLNAThumbnailInputStream(DLNAThumbnail thumbnail) {
-    	super(thumbnail.getBytes(false));
-    	this.imageInfo = thumbnail.getImageInfo();
-    	this.profile = thumbnail.getDLNAImageProfile();
-    }
+	protected DLNAThumbnailInputStream(DLNAThumbnail thumbnail) {
+		super(thumbnail.getBytes(false));
+		this.imageInfo = thumbnail.getImageInfo();
+		this.profile = thumbnail.getDLNAImageProfile();
+	}
 
 	/**
 	 * Converts and scales a thumbnail according to the given
@@ -216,6 +216,8 @@ public class DLNAThumbnailInputStream extends ByteArrayInputStream {
 	}
 
 	/**
+	 * @param copy {@code true} to return a new array, {@code false} to return
+	 *            the internal array.
 	 * @return The bytes of this thumbnail.
 	 */
 	@SuppressFBWarnings("EI_EXPOSE_REP")
@@ -228,14 +230,6 @@ public class DLNAThumbnailInputStream extends ByteArrayInputStream {
 		return buf;
 	}
 
-
-	/**
-	 * @return A {@link DLNAThumbnail} sharing the the underlying buffer.
-	 * @throws DLNAProfileException
-	 */
-	public DLNAThumbnail getThumbnail() throws DLNAProfileException {
-		return new DLNAThumbnail(buf, imageInfo, profile, false);
-	}
 
 	/**
 	 * @return The {@link ImageInfo} for this thumbnail.
@@ -343,10 +337,10 @@ public class DLNAThumbnailInputStream extends ByteArrayInputStream {
 	}
 
 	/**
-     * Resets the buffer to the start position and clears any marks.
-     */
-    public synchronized void fullReset() {
-        pos = 0;
-        mark = 0;
-    }
+	 * Resets the buffer to the start position and clears any marks.
+	 */
+	public synchronized void fullReset() {
+		pos = 0;
+		mark = 0;
+	}
 }

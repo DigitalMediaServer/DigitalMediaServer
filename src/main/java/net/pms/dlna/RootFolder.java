@@ -46,7 +46,7 @@ import net.pms.configuration.MapFileConfiguration;
 import net.pms.configuration.RendererConfiguration;
 import net.pms.dlna.virtual.VirtualFolder;
 import net.pms.dlna.virtual.VirtualVideoAction;
-import net.pms.formats.Format;
+import net.pms.formats.FormatType;
 import net.pms.io.BasicSystemUtils;
 import net.pms.io.ListProcessWrapperResult;
 import net.pms.io.SimpleProcessWrapper;
@@ -560,6 +560,7 @@ public class RootFolder extends DLNAResource {
 	private void addWebFolder(File webConf) {
 		try {
 			try (LineNumberReader br = new LineNumberReader(new InputStreamReader(new FileInputStream(webConf), StandardCharsets.UTF_8))) {
+				LOGGER.trace("Reading web configuration from \"{}\"", webConf);
 				String line;
 				while ((line = br.readLine()) != null) {
 					line = line.trim();
@@ -605,7 +606,7 @@ public class RootFolder extends DLNAResource {
 									parent = this;
 								}
 								if (keys[0].endsWith("stream")) {
-									int type = keys[0].startsWith("audio") ? Format.AUDIO : Format.VIDEO;
+									FormatType type = keys[0].startsWith("audio") ? FormatType.AUDIO : FormatType.CONTAINER;
 									DLNAResource playlist = PlaylistFolder.getPlaylist(values[0], values[1], type);
 									if (playlist != null) {
 										parent.addChild(playlist);
@@ -634,16 +635,16 @@ public class RootFolder extends DLNAResource {
 							}
 						} catch (ArrayIndexOutOfBoundsException e) {
 							// catch exception here and go with parsing
-							LOGGER.info("Error at line " + br.getLineNumber() + " of WEB.conf: " + e.getMessage());
-							LOGGER.debug(null, e);
+							LOGGER.info("Error at line {} in WEB.conf: {}", br.getLineNumber(), e.getMessage());
+							LOGGER.trace("", e);
 						}
 					}
 				}
 			}
 		} catch (FileNotFoundException e) {
-			LOGGER.debug("Can't read web configuration file {}", e.getMessage());
+			LOGGER.trace("Web configuration \"{}\" not found: {}", webConf, e.getMessage());
 		} catch (IOException e) {
-			LOGGER.warn("Unexpected error in WEB.conf: " + e.getMessage());
+			LOGGER.warn("Unexpected error in WEB.conf: {}", e.getMessage());
 			LOGGER.debug("", e);
 		}
 	}

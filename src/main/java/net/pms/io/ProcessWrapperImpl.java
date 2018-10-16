@@ -402,8 +402,8 @@ public class ProcessWrapperImpl extends Thread implements ProcessWrapper {
 
 	@Override
 	public void setReadyToStop(boolean nullable) {
-		if (nullable != this.nullable) {
-			LOGGER.trace("Ready to Stop: " + nullable);
+		if (nullable != this.nullable && LOGGER.isTraceEnabled()) {
+			LOGGER.trace("Ready to Stop: {}", nullable);
 		}
 		this.nullable = nullable;
 	}

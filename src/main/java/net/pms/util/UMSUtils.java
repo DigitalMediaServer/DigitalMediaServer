@@ -31,7 +31,6 @@ import net.pms.dlna.*;
 import net.pms.encoders.Player;
 import net.pms.encoders.PlayerFactory;
 import net.pms.external.ExternalListener;
-import net.pms.formats.Format;
 import net.pms.formats.v2.SubtitleType;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -282,9 +281,9 @@ public class UMSUtils {
 			}
 		}
 
-		public static void write(List<DLNAResource> playlist, File f) throws IOException {
+		public static void write(List<DLNAResource> playlist, File file) throws IOException {
 			Date now = new Date();
-			try (FileWriter out = new FileWriter(f)) {
+			try (FileWriter out = new FileWriter(file)) {
 				StringBuilder sb = new StringBuilder();
 				sb.append("######\n");
 				sb.append("## __UPS__\n");
@@ -294,22 +293,22 @@ public class UMSUtils {
 				sb.append("## Generated: ");
 				sb.append(now.toString());
 				sb.append("\n");
-				for (DLNAResource r : playlist) {
-					String data = r.write();
+				for (DLNAResource resource : playlist) {
+					String data = resource.write();
 					if (!StringUtils.isEmpty(data) && sb.indexOf(data) == -1) {
-						String id = "internal:" + r.getClass().getName();
+						String id = "internal:" + resource.getClass().getName();
 
 						sb.append("master:").append(id).append(';');
-						if (r.getPlayer() != null) {
-							sb.append("player:").append(r.getPlayer().toString()).append(';');
+						if (resource.getPlayer() != null) {
+							sb.append("player:").append(resource.getPlayer().toString()).append(';');
 						}
-						if (r.isResume()) {
+						if (resource.isResume()) {
 							sb.append("resume");
-							sb.append(r.getResume().getResumeFile().getAbsolutePath());
+							sb.append(resource.getResume().getResumeFile().getAbsolutePath());
 							sb.append(';');
 						}
-						if (r.getMediaSubtitle() != null) {
-							DLNAMediaSubtitle sub = r.getMediaSubtitle();
+						if (resource.getMediaSubtitle() != null) {
+							DLNAMediaSubtitle sub = resource.getMediaSubtitle();
 							if (sub.getLang() != null && sub.getId() != -1) {
 								sb.append("sub");
 								sb.append(sub.getLang());
@@ -350,41 +349,38 @@ public class UMSUtils {
 					return new RealFile(new File(tmp[1]), tmp[0]);
 				}
 				error = true;
-			}
-			if (clazz.contains("SevenZipEntry")) {
+			} else if (clazz.contains("SevenZipEntry")) {
 				if (data.contains(">")) {
 					String[] tmp = data.split(">");
 					long len = Long.parseLong(tmp[2]);
 					return new SevenZipEntry(new File(tmp[1]), tmp[0], len);
 				}
 				error = true;
-			}
-			if (clazz.contains("ZippedEntry")) {
+			} else if (clazz.contains("ZippedEntry")) {
 				if (data.contains(">")) {
 					String[] tmp = data.split(">");
 					long len = Long.parseLong(tmp[2]);
 					return new ZippedEntry(new File(tmp[1]), tmp[0], len);
 				}
 				error = true;
-			}
-			if (clazz.contains("WebStream")) {
+			} else if (clazz.contains("WebStream")) {
 				if (data.contains(">")) {
 					String[] tmp = data.split(">");
-					int type;
-					try {
-						type = Integer.parseInt(tmp[3]);
-					} catch (NumberFormatException e) {
-						type = Format.UNKNOWN;
-					}
-					return new WebStream(tmp[0], tmp[1], tmp[2], type);
+					return new WebStream(tmp[0], tmp[1], tmp[2], MediaType.typeOf(tmp[3]));
+				}
+				error = true;
+			} else if (clazz.contains("CueSheetEntry")) {
+				CueSheetEntry cueSheetEntry = CueSheetEntry.read(data);
+				if (cueSheetEntry != null) {
+					return cueSheetEntry;
 				}
 				error = true;
 			}
 
 			if (error) {
-				LOGGER.debug("Error parsing playlist resource:");
-				LOGGER.debug("clazz: " + clazz);
-				LOGGER.debug("data:" + data);
+				LOGGER.warn("Error parsing {} playlist resource: {}", clazz, data);
+			} else {
+				LOGGER.debug("Ignored unimplemented {} playlist resource: {}",clazz, data);
 			}
 
 			return null;

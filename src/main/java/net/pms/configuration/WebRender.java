@@ -39,6 +39,7 @@ import net.pms.encoders.Player;
 import net.pms.external.StartStopListenerDelegate;
 import net.pms.formats.*;
 import net.pms.formats.audio.MP3;
+import net.pms.formats.audio.OGA;
 import net.pms.formats.image.BMP;
 import net.pms.formats.image.GIF;
 import net.pms.formats.image.JPG;
@@ -74,6 +75,7 @@ public class WebRender extends DeviceConfiguration implements RendererConfigurat
 		new GIF(),
 		new JPG(),
 		new MP3(),
+		new OGA(),
 		new PNG(),
 		new BMP()
 	};
@@ -312,7 +314,7 @@ public class WebRender extends DeviceConfiguration implements RendererConfigurat
 	@Override
 	public boolean getOutputOptions(List<String> cmdList, DLNAResource resource, Player player, OutputParams params) {
 		if (player instanceof FFMpegVideo) {
-			if (resource.getFormat().isVideo()) {
+			if (resource.isVideo()) {
 				DLNAMediaInfo media = resource.getMedia();
 				boolean flash = media != null && "video/flash".equals(media.getMimeType());
 				if (flash) {

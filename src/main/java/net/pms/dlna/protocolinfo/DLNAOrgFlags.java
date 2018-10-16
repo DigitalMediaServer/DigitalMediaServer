@@ -20,6 +20,8 @@ package net.pms.dlna.protocolinfo;
 
 import java.util.ArrayList;
 import java.util.List;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import org.apache.commons.lang3.StringUtils;
 import net.pms.dlna.MediaType;
 import net.pms.dlna.protocolinfo.ProtocolInfoAttributeName.KnownProtocolInfoAttributeName;
@@ -61,7 +63,8 @@ public class DLNAOrgFlags implements ProtocolInfoAttribute {
 	 * @return A new {@link DLNAOrgFlags} instance where illegal combinations
 	 *         have been corrected.
 	 */
-	public static DLNAOrgFlags getEffectiveFlags(DLNAOrgFlags flags, MediaType mediaType) {
+	@Nonnull
+	public static DLNAOrgFlags getEffectiveFlags(@Nullable DLNAOrgFlags flags, @Nullable MediaType mediaType) {
 		long high = flags == null ? 0 : flags.high;
 
 		if (flags == null || !flags.isDLNA15()) {
@@ -312,6 +315,7 @@ public class DLNAOrgFlags implements ProtocolInfoAttribute {
 	 * @return The new {@link DLNAOrgFlags} instance where illegal combinations
 	 *         have been corrected.
 	 */
+	@Nonnull
 	public DLNAOrgFlags getEffectiveFlags(MediaType mediaType) {
 		return DLNAOrgFlags.getEffectiveFlags(this, mediaType);
 	}
@@ -327,8 +331,9 @@ public class DLNAOrgFlags implements ProtocolInfoAttribute {
 	}
 
 	@Override
+	@Nonnull
 	public String getValue() {
-		DLNAOrgFlags flags = DLNAOrgFlags.getEffectiveFlags(this, MediaType.UNKNOWN);
+		DLNAOrgFlags flags = DLNAOrgFlags.getEffectiveFlags(this, null);
 		return String.format("%016x", flags.high) + String.format("%016x", flags.low);
 	}
 
@@ -343,8 +348,9 @@ public class DLNAOrgFlags implements ProtocolInfoAttribute {
 	 *         {@link String}.
 	 */
 	@Override
+	@Nonnull
 	public String getAttributeString() {
-		DLNAOrgFlags flags = DLNAOrgFlags.getEffectiveFlags(this, MediaType.UNKNOWN);
+		DLNAOrgFlags flags = DLNAOrgFlags.getEffectiveFlags(this, null);
 		if (flags.high == 0 || (flags.high & ~(3L << 55)) == 0) {
 			return "";
 		}

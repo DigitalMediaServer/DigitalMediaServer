@@ -1,8 +1,8 @@
 package net.pms.network;
 
 import com.sun.net.httpserver.*;
-import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -18,7 +18,7 @@ import net.pms.remote.RemoteUtil;
 import net.pms.remote.RemoteWeb;
 import net.pms.util.BasicPlayer.Logical;
 import net.pms.util.StringUtil;
-import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,8 +36,6 @@ public class PlayerControlHandler implements HttpHandler {
 	private String bumpAddress;
 	private RendererConfiguration defaultRenderer;
 	private String jsonState = "\"state\":{\"playback\":%d,\"mute\":\"%s\",\"volume\":%d,\"position\":\"%s\",\"duration\":\"%s\",\"uri\":\"%s\"}";
-	@SuppressWarnings("unused")
-	private File bumpjs, skindir;
 
 	public PlayerControlHandler(RemoteWeb web) {
 		this(web.getServer());
@@ -53,9 +51,6 @@ public class PlayerControlHandler implements HttpHandler {
 		protocol = server instanceof HttpsServer ? "https://" : "http://";
 		players = new HashMap<>();
 		selectedPlayers = new HashMap<>();
-		String basepath = configuration.getWebPath().getPath();
-		bumpjs = new File(FilenameUtils.concat(basepath, configuration.getBumpJS("bump/bump.js")));
-		skindir = new File(FilenameUtils.concat(basepath, configuration.getBumpSkinDir("bump/skin")));
 		bumpAddress = configuration.getBumpAddress();
 		defaultRenderer = null;
 	}
@@ -135,7 +130,16 @@ public class PlayerControlHandler implements HttpHandler {
 		} else if (p[2].equals("renderers")) {
 			json.add(getRenderers(httpExchange.getRemoteAddress().getAddress()));
 		} else if (p[2].startsWith("skin.")) {
-			RemoteUtil.dumpFile(new File(skindir, p[2].substring(5)), httpExchange);
+			InputStream is = parent.getResources().getInputStream("bump/skin/" +  p[2].substring(5));
+			if (is == null) {
+				httpExchange.sendResponseHeaders(404, 0);
+				return;
+			}
+			byte[] bytes = IOUtils.toByteArray(is);
+			httpExchange.sendResponseHeaders(200, bytes.length);
+			try (OutputStream os = httpExchange.getResponseBody()) {
+				os.write(bytes);
+			}
 			return;
 		}
 

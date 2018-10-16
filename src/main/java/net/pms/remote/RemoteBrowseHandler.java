@@ -17,7 +17,6 @@ import net.pms.dlna.DLNAResource;
 import net.pms.dlna.Playlist;
 import net.pms.dlna.RootFolder;
 import net.pms.dlna.virtual.VirtualVideoAction;
-import net.pms.formats.Format;
 import net.pms.util.UMSUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.text.StringEscapeUtils;
@@ -127,10 +126,10 @@ public class RemoteBrowseHandler implements HttpHandler {
 					// Yes doing getClass.getname is REALLY BAD, but this
 					// is to make legacy plugins utilize this function as well
 					sb.append("<a href=\"javascript:void(0);\" onclick=\"searchFun('").append(p).append("','")
-					   .append(txt).append("');\" title=\"").append(name).append("\">");
+						.append(txt).append("');\" title=\"").append(name).append("\">");
 				} else {
 					sb.append("<a href=\"").append(p).append("\" oncontextmenu=\"searchFun('").append(p)
-					  .append("','").append(txt).append("');\" title=\"").append(name).append("\">");
+						.append("','").append(txt).append("');\" title=\"").append(name).append("\">");
 				}
 				sb.append("<span>").append(name).append("</span>");
 				sb.append("</a>");
@@ -147,17 +146,17 @@ public class RemoteBrowseHandler implements HttpHandler {
 							.append(RemoteUtil.getMsgString("Web.1", t)).append("\"></a>");
 					} else {
 						sb.append("<a class=\"bumpIcon icondisabled\" href=\"javascript:notify('warn','")
-						   .append(RemoteUtil.getMsgString("Web.2", t))
-						   .append("')\" title=\"").append(RemoteUtil.getMsgString("Web.3", t)).append("\"></a>");
+							.append(RemoteUtil.getMsgString("Web.2", t))
+							.append("')\" title=\"").append(RemoteUtil.getMsgString("Web.3", t)).append("\"></a>");
 					}
 					if (resource.getParent() instanceof Playlist) {
 						sb.append("\n<a class=\"playlist_del\" href=\"#\" onclick=\"dmsAjax('/playlist/del/")
 							.append(idForWeb).append("', true);return false;\" title=\"")
-						    .append(RemoteUtil.getMsgString("Web.4", t)).append("\"></a>");
+							.append(RemoteUtil.getMsgString("Web.4", t)).append("\"></a>");
 					} else {
 						sb.append("\n<a class=\"playlist_add\" href=\"#\" onclick=\"dmsAjax('/playlist/add/")
 							.append(idForWeb).append("', false);return false;\" title=\"")
-						    .append(RemoteUtil.getMsgString("Web.5", t)).append("\"></a>");
+							.append(RemoteUtil.getMsgString("Web.5", t)).append("\"></a>");
 					}
 				} else {
 					// ensure that we got a string
@@ -167,7 +166,7 @@ public class RemoteBrowseHandler implements HttpHandler {
 				item.put("bump", sb.toString());
 				sb.setLength(0);
 
-				if (WebRender.supports(resource) || resource.isResume() || resource.getType() == Format.IMAGE) {
+				if (WebRender.supports(resource) || resource.isResume() || resource.isImage()) {
 					sb.append("<a href=\"/play/").append(idForWeb)
 						.append("\" title=\"").append(name).append("\">")
 						.append("<img class=\"thumb\" src=\"").append(thumb).append("\" alt=\"").append(name).append("\">")

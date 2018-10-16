@@ -29,6 +29,10 @@ import com.sun.jna.Platform;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.ItemEvent;
+import java.awt.event.ItemListener;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -41,14 +45,14 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
+import javax.swing.border.EtchedBorder;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
-import javax.swing.plaf.metal.DefaultMetalTheme;
-import javax.swing.plaf.metal.MetalLookAndFeel;
 import net.pms.Messages;
 import net.pms.PMS;
 import net.pms.configuration.PmsConfiguration;
 import net.pms.configuration.RendererConfiguration;
+import net.pms.configuration.PmsConfiguration.GUICloseAction;
 import net.pms.io.BasicSystemUtils;
 import net.pms.io.WindowsNamedPipe;
 import net.pms.newgui.StatusTab.ConnectionState;
@@ -64,7 +68,10 @@ import net.pms.newgui.components.AnimatedIconListener.WindowIconifyListener;
 import net.pms.newgui.components.ImageButton;
 import net.pms.newgui.components.AnimatedIconListenerAction;
 import net.pms.newgui.components.WindowProperties;
-import net.pms.util.PropertiesUtil;
+import net.pms.platform.macos.Cocoa;
+import net.pms.platform.macos.Cocoa.NSApplicationActivationOptions;
+import net.pms.remote.RemoteWeb;
+import net.pms.util.KeyedComboBoxModel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -72,11 +79,12 @@ public class LooksFrame extends JFrame implements IFrame {
 	private static final Logger LOGGER = LoggerFactory.getLogger(LooksFrame.class);
 
 	private final PmsConfiguration configuration;
-	public static final String START_SERVICE = "start.service";
 	private final WindowProperties windowProperties;
 	private static final long serialVersionUID = 8723727186288427690L;
 	protected static final Dimension STANDARD_SIZE = new Dimension(1000, 750);
 	protected static final Dimension MINIMUM_SIZE = new Dimension(640, 480);
+	public static final String GTK_LAF = "com.sun.java.swing.plaf.gtk.GTKLookAndFeel";
+	public static final String METAL_LAF = "javax.swing.plaf.metal.MetalLookAndFeel";
 
 	/**
 	 * List of context sensitive help pages URLs. These URLs should be
@@ -102,14 +110,14 @@ public class LooksFrame extends JFrame implements IFrame {
 	private GeneralTab gt;
 	private HelpTab ht;
 	private final JTabbedPane mainTabbedPane = new JTabbedPane(SwingConstants.TOP);
-	private final AnimatedButton reload = createAnimatedToolBarButton(Messages.getString("LooksFrame.12"), "button-restart.png");;
+	private final AnimatedButton reload = createAnimatedToolBarButton(null, "button-restart.png");;
 	private final AnimatedIcon restartRequredIcon = new AnimatedIcon(
 		reload,
 		true,
 		AnimatedIcon.buildAnimation("button-restart-requiredF%d.png", 0, 24, true, 800, 300, 15)
 	);
 	private AnimatedIcon restartIcon;
-	private AbstractButton webinterface;
+	private ImageButton webinterface;
 	private JLabel status;
 	private final static Object lookAndFeelInitializedLock = new Object();
 	private volatile static boolean lookAndFeelInitialized = false;
@@ -157,61 +165,49 @@ public class LooksFrame extends JFrame implements IFrame {
 				return;
 			}
 
-			LookAndFeel selectedLaf = null;
-			if (Platform.isWindows()) {
-				selectedLaf = new WindowsLookAndFeel();
-			} else if (System.getProperty("nativelook") == null && !Platform.isMac()) {
-				selectedLaf = new PlasticLookAndFeel();
-			} else {
-				try {
-					String systemClassName = UIManager.getSystemLookAndFeelClassName();
-					// Workaround for Gnome
-					try {
-						String gtkLAF = "com.sun.java.swing.plaf.gtk.GTKLookAndFeel";
-						Class.forName(gtkLAF);
-
-						if (systemClassName.equals("javax.swing.plaf.metal.MetalLookAndFeel")) {
-							systemClassName = gtkLAF;
-						}
-					} catch (ClassNotFoundException ce) {
-						LOGGER.error("Error loading GTK look and feel: ", ce);
-					}
-
-					LOGGER.trace("Choosing Java look and feel: " + systemClassName);
-					UIManager.setLookAndFeel(systemClassName);
-				} catch (ClassNotFoundException | InstantiationException | IllegalAccessException | UnsupportedLookAndFeelException e1) {
-					selectedLaf = new PlasticLookAndFeel();
-					LOGGER.error("Error while setting native look and feel: ", e1);
-				}
-			}
-
-			if (selectedLaf instanceof PlasticLookAndFeel) {
-				PlasticLookAndFeel.setPlasticTheme(PlasticLookAndFeel.createMyDefaultTheme());
-				PlasticLookAndFeel.setTabStyle(PlasticLookAndFeel.TAB_STYLE_DEFAULT_VALUE);
-				PlasticLookAndFeel.setHighContrastFocusColorsEnabled(false);
-			} else if (selectedLaf != null && selectedLaf.getClass() == MetalLookAndFeel.class) {
-				MetalLookAndFeel.setCurrentTheme(new DefaultMetalTheme());
-			}
-
-			// Work around caching in MetalRadioButtonUI
-			JRadioButton radio = new JRadioButton();
-			radio.getUI().uninstallUI(radio);
-			JCheckBox checkBox = new JCheckBox();
-			checkBox.getUI().uninstallUI(checkBox);
-
-			if (selectedLaf != null) {
-				try {
-					UIManager.setLookAndFeel(selectedLaf);
-					// Workaround for JDK-8179014: JFileChooser with Windows look and feel crashes on win 10
+			try {
+				if (Platform.isWindows()) {
+					UIManager.setLookAndFeel(new WindowsLookAndFeel());
+					// Workaround for JDK-8179014: JFileChooser with Windows look and feel crashes on Windows 10
 					// https://bugs.openjdk.java.net/browse/JDK-8179014
-					if (selectedLaf instanceof WindowsLookAndFeel) {
-						UIManager.put("FileChooser.useSystemExtensionHiding", false);
+					UIManager.put("FileChooser.useSystemExtensionHiding", false);
+				} else {
+					String systemLAF = UIManager.getSystemLookAndFeelClassName();
+					if (METAL_LAF.equals(systemLAF)) {
+						if (Platform.isLinux()) {
+							// Try to set GTK instead of Metal
+							try {
+								Class.forName(GTK_LAF);
+								systemLAF = GTK_LAF;
+							} catch (ClassNotFoundException e) {
+								LOGGER.debug("GTKLookAndFeel not available: {}", e.getMessage());
+								systemLAF = null;
+							}
+						} else {
+							systemLAF = null;
+						}
 					}
-				} catch (UnsupportedLookAndFeelException e) {
-					LOGGER.warn("Can't change look and feel", e);
-				}
-			}
 
+					if (systemLAF == null || isBlank(systemLAF)) {
+						// Use PlasticLookAndFeel instead of MetalLookAndFeel
+						PlasticLookAndFeel.setPlasticTheme(PlasticLookAndFeel.createMyDefaultTheme());
+						PlasticLookAndFeel.setTabStyle(PlasticLookAndFeel.TAB_STYLE_DEFAULT_VALUE);
+						PlasticLookAndFeel.setHighContrastFocusColorsEnabled(false);
+						UIManager.setLookAndFeel(new PlasticLookAndFeel());
+
+						// Work around caching in MetalRadioButtonUI
+						JRadioButton radio = new JRadioButton();
+						radio.getUI().uninstallUI(radio);
+						JCheckBox checkBox = new JCheckBox();
+						checkBox.getUI().uninstallUI(checkBox);
+					} else {
+						UIManager.setLookAndFeel(systemLAF);
+					}
+				}
+			} catch (UnsupportedLookAndFeelException | ClassNotFoundException | InstantiationException | IllegalAccessException e) {
+				LOGGER.warn("Failed to change look and feel: {}", e.getMessage());
+				LOGGER.trace("", e);
+			}
 			JLabel tempLabel = new JLabel();
 			dlu100x = Sizes.getUnitConverter().dialogUnitXAsPixel(100, tempLabel);
 			dlu100y = Sizes.getUnitConverter().dialogUnitYAsPixel(100, tempLabel);
@@ -250,12 +246,71 @@ public class LooksFrame extends JFrame implements IFrame {
 		if (configuration == null) {
 			throw new IllegalArgumentException("configuration can't be null");
 		}
+		setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
 		setResizable(true);
 		windowProperties = new WindowProperties(this, STANDARD_SIZE, MINIMUM_SIZE, windowConfiguration);
 		this.configuration = configuration;
 		minimizeListenerRegistrar.register(restartRequredIcon);
 		Options.setDefaultIconSize(new Dimension(18, 18));
 		Options.setUseNarrowButtons(true);
+
+		addWindowListener(new WindowAdapter() {
+			@SuppressWarnings("unchecked")
+			@Override
+			public void windowClosing(WindowEvent e) {
+				if (SystemTray.isSupported()) {
+					GUICloseAction closeAction = PMS.getConfiguration().getGUICloseAction();
+					boolean withDialog = false;
+					if (closeAction == GUICloseAction.ASK) {
+						if (Platform.isMac()) {
+							// Bring the application to the front so that the dialog is visible
+							Cocoa.activate(NSApplicationActivationOptions.NSApplicationActivateIgnoringOtherApps);
+						}
+						Boolean[] remember = {Boolean.FALSE};
+						String hideOption = Messages.getString("GeneralTab.HideWindowOption");
+						int result = JOptionPane.showOptionDialog(
+							e.getComponent(),
+							buildCloseDialog(remember),
+							Messages.getString("CloseDialog.Title"),
+							JOptionPane.DEFAULT_OPTION,
+							JOptionPane.QUESTION_MESSAGE,
+							null,
+							new String[] {Messages.getString("LooksFrame.5"), hideOption},
+							hideOption
+						);
+						if (result == JOptionPane.CLOSED_OPTION) {
+							return;
+						}
+						closeAction = result == 1 ? GUICloseAction.HIDE : GUICloseAction.QUIT;
+						if (remember[0].booleanValue()) {
+							PMS.getConfiguration().setGUICloseAction(closeAction);
+							if (gt != null) {
+								((KeyedComboBoxModel<GUICloseAction, String>) gt.closeAction.getModel()).setSelectedKey(closeAction);
+							}
+						}
+						withDialog = true;
+					}
+					if (closeAction == GUICloseAction.HIDE) {
+						if (Platform.isMac()) {
+							if (withDialog) {
+								try {
+									// Sleep for a little while to give macOS the time to dispose of the dialog,
+									// otherwise the dialog and not the main window might be hidden
+									Thread.sleep(100);
+								} catch (InterruptedException e1) {
+									// Oh well... no time to wait it seems.
+								}
+							}
+							Cocoa.hide();
+						} else {
+							e.getWindow().setVisible(false);
+						}
+						return;
+					}
+				}
+				quit();
+			}
+		});
 
 		// Set view level, can be omitted if ViewLevel is implemented in configuration
 		// by setting the view level as variable initialization
@@ -322,8 +377,6 @@ public class LooksFrame extends JFrame implements IFrame {
 		setTitle("Test");
 		setIconImage(readImageIcon("icon-32.png").getImage());
 
-		setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
-
 		JComponent jp = buildContent();
 		String showScrollbars = System.getProperty("scrollbars", "").toLowerCase();
 
@@ -373,14 +426,16 @@ public class LooksFrame extends JFrame implements IFrame {
 		}
 
 		setTitle(title);
-		setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
 
 		// Display tooltips immediately and for a long time
 		ToolTipManager.sharedInstance().setInitialDelay(400);
 		ToolTipManager.sharedInstance().setDismissDelay(60000);
 		ToolTipManager.sharedInstance().setReshowDelay(400);
 
-		if (!configuration.isMinimized() && System.getProperty(START_SERVICE) == null) {
+		if (configuration.isGUIStartHidden() && Platform.isMac()) {
+			setVisible(true);
+			Cocoa.hide();
+		} else if (!configuration.isGUIStartHidden() || !SystemTray.isSupported()) {
 			setVisible(true);
 		}
 		BasicSystemUtils.INSTANCE.addSystemTray(this);
@@ -392,52 +447,53 @@ public class LooksFrame extends JFrame implements IFrame {
 	}
 
 	public JComponent buildContent() {
-		JPanel panel = new JPanel(new BorderLayout());
-		JToolBar toolBar = new JToolBar();
-		toolBar.setFloatable(false);
-		toolBar.setRollover(true);
+		JPanel outerPanel = new JPanel(new BorderLayout());
+		JPanel topPanel = new JPanel(new GridBagLayout());
+		GridBagConstraints constraints = new GridBagConstraints();
+		constraints.gridx = 0;
+		constraints.gridy = 0;
+		constraints.weightx = 0;
+		constraints.insets = new Insets(0, 50, 0, 50);
 
-		toolBar.add(new JPanel());
-
-		if (PMS.getConfiguration().useWebInterface()) {
-			webinterface = createToolBarButton(Messages.getString("LooksFrame.29"), "button-wif.png");
-			webinterface.addActionListener(new ActionListener() {
-				@Override
-				public void actionPerformed(ActionEvent e) {
-					String error = null;
-					if (PMS.get().getWebInterface() != null && isNotBlank(PMS.get().getWebInterface().getUrl())) {
+		webinterface = createToolBarButton(null, "button-wif.png");
+		webinterface.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				String error = null;
+				RemoteWeb webInterface = PMS.get().getWebInterface();
+				String url = webInterface == null ? null : webInterface.getUrl();
+				if (isNotBlank(url)) {
+					try {
+						URI uri = new URI(url);
 						try {
-							URI uri = new URI(PMS.get().getWebInterface().getUrl());
-							try {
-								Desktop.getDesktop().browse(uri);
-							} catch (RuntimeException | IOException be) {
-								LOGGER.error("Cound not open the default web browser: {}", be.getMessage());
-								LOGGER.trace("", be);
-								error = Messages.getString("LooksFrame.BrowserError") + "\n" + be.getMessage();
-							}
-						} catch (URISyntaxException se) {
-							LOGGER.error(
-								"Could not form a valid web interface URI from \"{}\": {}",
-								PMS.get().getWebInterface().getUrl(),
-								se.getMessage()
-							);
-							LOGGER.trace("", se);
-							error = Messages.getString("LooksFrame.URIError");
+							Desktop.getDesktop().browse(uri);
+						} catch (RuntimeException | IOException be) {
+							LOGGER.error("Couldn't open the default web browser: {}", be.getMessage());
+							LOGGER.trace("", be);
+							error = Messages.getString("LooksFrame.BrowserError") + "\n" + be.getMessage();
 						}
-					}
-					else {
+					} catch (URISyntaxException se) {
+						LOGGER.error(
+							"Could not form a valid web interface URI from \"{}\": {}",
+							PMS.get().getWebInterface().getUrl(),
+							se.getMessage()
+						);
+						LOGGER.trace("", se);
 						error = Messages.getString("LooksFrame.URIError");
 					}
-					if (error != null) {
-						JOptionPane.showMessageDialog(null, error, Messages.getString("Dialog.Error"), JOptionPane.ERROR_MESSAGE);
-					}
 				}
-			});
-			webinterface.setToolTipText(Messages.getString("LooksFrame.30"));
-			webinterface.setEnabled(configuration.useWebInterface());
-			toolBar.add(webinterface);
-			toolBar.addSeparator(new Dimension(20, 1));
-		}
+				else {
+					error = Messages.getString("LooksFrame.URIError");
+				}
+				if (error != null) {
+					JOptionPane.showMessageDialog(null, error, Messages.getString("Dialog.Error"), JOptionPane.ERROR_MESSAGE);
+				}
+			}
+		});
+		webinterface.setToolTipText(Messages.getString("LooksFrame.30"));
+		webinterface.setEnabled(false);
+		topPanel.add(webinterface, constraints);
+		constraints.gridx++;
 
 		restartIcon = (AnimatedIcon) reload.getIcon();
 		restartRequredIcon.startArm();
@@ -449,30 +505,27 @@ public class LooksFrame extends JFrame implements IFrame {
 				PMS.get().reset();
 			}
 		});
-		reload.setToolTipText(Messages.getString("LooksFrame.28"));
-		toolBar.add(reload);
+		reload.setToolTipText(Messages.getString("LooksFrame.Restart"));
+		topPanel.add(reload, constraints);
+		constraints.gridx++;
 
-		toolBar.addSeparator(new Dimension(20, 1));
-		AbstractButton quit = createToolBarButton(Messages.getString("LooksFrame.5"), "button-quit.png");
+		AbstractButton quit = createToolBarButton(null, "button-quit.png");
+		quit.setToolTipText(Messages.getString("LooksFrame.QuitToolTip"));
 		quit.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				quit();
 			}
 		});
-		toolBar.add(quit);
-		if (System.getProperty(START_SERVICE) != null) {
-			quit.setEnabled(false);
-		}
-		toolBar.add(new JPanel());
+		topPanel.add(quit, constraints);
 
-		// Apply the orientation to the toolbar and all components in it
+		// Apply the orientation to the top panel and all components in it
 		ComponentOrientation orientation = ComponentOrientation.getOrientation(PMS.getLocale());
-		toolBar.applyComponentOrientation(orientation);
-		toolBar.setBorder(new EmptyBorder(new Insets(8,0,0,0)));
+		topPanel.applyComponentOrientation(orientation);
+		topPanel.setBorder(new EtchedBorder(EtchedBorder.LOWERED));
 
-		panel.add(toolBar, BorderLayout.NORTH);
-		panel.add(buildMain(), BorderLayout.CENTER);
+		outerPanel.add(topPanel, BorderLayout.NORTH);
+		outerPanel.add(buildMain(), BorderLayout.CENTER);
 		status = new JLabel("");
 		status.setBorder(BorderFactory.createEmptyBorder());
 		status.setComponentOrientation(orientation);
@@ -480,9 +533,9 @@ public class LooksFrame extends JFrame implements IFrame {
 		// Calling applyComponentOrientation() here would be ideal.
 		// Alas it horribly mutilates the layout of several tabs.
 		//panel.applyComponentOrientation(orientation);
-		panel.add(status, BorderLayout.SOUTH);
+		outerPanel.add(status, BorderLayout.SOUTH);
 
-		return panel;
+		return outerPanel;
 	}
 
 	public JComponent buildMain() {
@@ -535,15 +588,40 @@ public class LooksFrame extends JFrame implements IFrame {
 		return mainTabbedPane;
 	}
 
+	private static JComponent buildCloseDialog(final Boolean[] remember) {
+		JPanel top = new JPanel(new GridBagLayout());
+		GridBagConstraints constraints = new GridBagConstraints();
+		constraints.fill = GridBagConstraints.BOTH;
+		constraints.gridx = 0;
+		constraints.gridy = 0;
+		constraints.insets = new Insets(5, 5, 5, 5);
+		constraints.gridwidth = 2;
+		top.add(new JLabel(Messages.getString("CloseDialog.Message")), constraints);
+		constraints.gridy++;
+		JCheckBox rememberCheckBox = new JCheckBox(Messages.getString("Generic.Remember"));
+		rememberCheckBox.addItemListener(new ItemListener() {
+			@Override
+			public void itemStateChanged(ItemEvent e) {
+				remember[0] = Boolean.valueOf(e.getStateChange() == ItemEvent.SELECTED);
+			}
+		});
+		top.add(rememberCheckBox, constraints);
+		return top;
+	}
+
 	protected ImageButton createToolBarButton(String text, String iconName) {
 		ImageButton button = new ImageButton(text, iconName);
 		button.setFocusable(false);
+		button.setHorizontalTextPosition(SwingConstants.CENTER);
+		button.setVerticalTextPosition(SwingConstants.TOP);
 		return button;
 	}
 
 	protected AnimatedButton createAnimatedToolBarButton(String text, String iconName) {
 		AnimatedButton button = new AnimatedButton(text, iconName);
 		button.setFocusable(false);
+		button.setHorizontalTextPosition(SwingConstants.CENTER);
+		button.setVerticalTextPosition(SwingConstants.BOTTOM);
 		return button;
 	}
 
@@ -606,6 +684,24 @@ public class LooksFrame extends JFrame implements IFrame {
 	}
 
 	/**
+	 * Sets the enabled status of the web interface button.
+	 *
+	 * @param value {@code true} if the button should be enabled, {@code false}
+	 *            otherwise.
+	 */
+	@Override
+	public void webInterfaceEnabled(final boolean value) {
+		SwingUtilities.invokeLater(new Runnable() {
+
+			@Override
+			public void run() {
+				webinterface.setEnabled(value);
+				BasicSystemUtils.INSTANCE.setWebInterfaceSystemTrayEnabled(value);
+			}
+		});
+	}
+
+	/**
 	 * This method is being called when a configuration change requiring
 	 * a restart of the HTTP server has been done by the user. It should notify the user
 	 * to restart the server.<br>
@@ -624,13 +720,14 @@ public class LooksFrame extends JFrame implements IFrame {
 				if (required) {
 					if (reload.getIcon() == restartIcon) {
 						restartIcon.setNextStage(new AnimatedIconStage(AnimatedIconType.DEFAULTICON, restartRequredIcon, false));
-						reload.setToolTipText(Messages.getString("LooksFrame.13"));
+						reload.setToolTipText(Messages.getString("LooksFrame.RestartRequired"));
 					}
 				} else {
 					reload.setEnabled(true);
 					if (restartRequredIcon == reload.getIcon()) {
-						reload.setToolTipText(Messages.getString("LooksFrame.28"));
-						restartRequredIcon.setNextStage(new AnimatedIconStage(AnimatedIconType.DEFAULTICON, restartIcon, false));
+						reload.setToolTipText(Messages.getString("LooksFrame.Restart"));
+						reload.setNextIcon(new AnimatedIconStage(AnimatedIconType.DEFAULTICON, restartIcon, false));
+						restartRequredIcon.restartArm();
 					}
 				}
 			}

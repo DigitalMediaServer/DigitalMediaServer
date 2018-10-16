@@ -23,9 +23,6 @@ import net.pms.dlna.DLNAMediaInfo;
 
 public class PLAYLIST extends Format {
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public Identifier getIdentifier() {
 		return Identifier.PLAYLIST;
@@ -37,21 +34,15 @@ public class PLAYLIST extends Format {
 	}
 
 	public PLAYLIST() {
-		type = PLAYLIST;
+		super(FormatType.PLAYLIST);
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public boolean isCompatible(DLNAMediaInfo media, RendererConfiguration renderer) {
 		// TODO: manage via renderer conf setting
 		return false;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public String[] getSupportedExtensions() {
 		return new String[] {

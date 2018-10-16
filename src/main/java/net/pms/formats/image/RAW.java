@@ -9,7 +9,7 @@ import net.pms.configuration.FormatConfiguration;
 import net.pms.configuration.PmsConfiguration;
 import net.pms.configuration.RendererConfiguration;
 import net.pms.dlna.DLNAMediaInfo;
-import net.pms.dlna.DLNAThumbnail;
+import net.pms.dlna.DLNABinaryThumbnail;
 import net.pms.dlna.InputFile;
 import net.pms.encoders.PlayerFactory;
 import net.pms.encoders.DCRaw;
@@ -28,17 +28,11 @@ import com.drew.metadata.Metadata;
 public class RAW extends ImageBase {
 	private static final Logger LOGGER = LoggerFactory.getLogger(RAW.class);
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public Identifier getIdentifier() {
 		return Identifier.RAW;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public String[] getSupportedExtensions() {
 		return new String[] {
@@ -89,7 +83,7 @@ public class RAW extends ImageBase {
 	}
 
 	@Override
-	public void parse(DLNAMediaInfo media, InputFile file, int type, RendererConfiguration renderer) {
+	public void parse(DLNAMediaInfo media, InputFile file, RendererConfiguration renderer) {
 		boolean trace = LOGGER.isTraceEnabled();
 		if (media == null || file == null || file.getFile() == null) {
 			// Parsing is impossible
@@ -168,7 +162,7 @@ public class RAW extends ImageBase {
 
 				if (media.getWidth() > 0 && media.getHeight() > 0 && configuration.getImageThumbnailsEnabled()) {
 					byte[] image = dcraw.getThumbnail(null, file.getFile().getAbsolutePath(), imageInfo);
-					media.setThumb(DLNAThumbnail.toThumbnail(image, 320, 320, ScaleType.MAX, ImageFormat.JPEG, false));
+					media.setThumb(DLNABinaryThumbnail.toThumbnail(image, 320, 320, ScaleType.MAX, ImageFormat.JPEG, false));
 				}
 			} else {
 				if (trace) {
@@ -181,7 +175,7 @@ public class RAW extends ImageBase {
 			}
 			media.setSize(file.getSize());
 			media.setImageCount(1);
-			media.postParse(type, file);
+			media.postParse(file);
 			media.setMediaparsed(true);
 
 		} catch (IOException e) {

@@ -33,13 +33,14 @@ import net.pms.configuration.DeviceConfiguration;
 import net.pms.configuration.PmsConfiguration;
 import net.pms.dlna.DLNAMediaInfo;
 import net.pms.dlna.DLNAResource;
-import net.pms.formats.Format;
+import net.pms.dlna.PartialSource;
+import net.pms.formats.FormatType;
+import net.pms.formats.WEB;
 import net.pms.io.OutputParams;
 import net.pms.io.ProcessWrapper;
 import net.pms.io.ProcessWrapperImpl;
 import net.pms.network.HTTPResource;
 import net.pms.newgui.GuiUtil;
-import net.pms.util.PlayerUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -97,7 +98,7 @@ public class FFmpegAudio extends FFMpegVideo {
 
 	@Override
 	public boolean isTimeSeekable() {
-		return false;
+		return true;
 	}
 
 	@Override
@@ -111,8 +112,8 @@ public class FFmpegAudio extends FFMpegVideo {
 	}
 
 	@Override
-	public int type() {
-		return Format.AUDIO;
+	public FormatType type() {
+		return FormatType.AUDIO;
 	}
 
 	@Override
@@ -168,9 +169,32 @@ public class FFmpegAudio extends FFMpegVideo {
 			cmdList.add("warning");
 		}
 
-		if (params.timeseek > 0) {
+		double start = Math.max(params.timeseek, 0.0);
+		double end = params.timeend > 0 ? params.timeend : Double.POSITIVE_INFINITY;
+		if (dlna instanceof PartialSource) {
+			PartialSource partial = (PartialSource) dlna;
+			if (partial.isPartialSource()) {
+				start += partial.getClipStart();
+				if (!Double.isInfinite(end)) {
+					end += partial.getClipStart();
+				}
+				double clipEnd = partial.getClipEnd();
+				if (clipEnd == 0.0) {
+					clipEnd = Double.POSITIVE_INFINITY;
+				}
+				end = Math.min(end, clipEnd);
+			}
+		}
+
+		if (start > 0.0) {
 			cmdList.add("-ss");
-			cmdList.add("" + params.timeseek);
+			cmdList.add(String.valueOf(start));
+		}
+
+		if (!Double.isInfinite(end)) {
+			double duration = end - start;
+			cmdList.add("-t");
+			cmdList.add(String.valueOf(duration));
 		}
 
 		// Decoder threads
@@ -189,11 +213,6 @@ public class FFmpegAudio extends FFMpegVideo {
 		if (nThreads > 0) {
 			cmdList.add("-threads");
 			cmdList.add("" + nThreads);
-		}
-
-		if (params.timeend > 0) {
-			cmdList.add("-t");
-			cmdList.add("" + params.timeend);
 		}
 
 		if (params.mediaRenderer.isTranscodeToMP3()) {
@@ -237,41 +256,9 @@ public class FFmpegAudio extends FFMpegVideo {
 
 	@Override
 	public boolean isCompatible(DLNAResource resource) {
-		// XXX Matching on file format isn't really enough, codec should also be evaluated
-		if (
-			PlayerUtil.isAudio(resource, Format.Identifier.AC3) ||
-			PlayerUtil.isAudio(resource, Format.Identifier.ADPCM) ||
-			PlayerUtil.isAudio(resource, Format.Identifier.ADTS) ||
-			PlayerUtil.isAudio(resource, Format.Identifier.AIFF) ||
-			PlayerUtil.isAudio(resource, Format.Identifier.APE) ||
-			PlayerUtil.isAudio(resource, Format.Identifier.ATRAC) ||
-			PlayerUtil.isAudio(resource, Format.Identifier.AU) ||
-			PlayerUtil.isAudio(resource, Format.Identifier.DFF) ||
-			PlayerUtil.isAudio(resource, Format.Identifier.DSF) ||
-			PlayerUtil.isAudio(resource, Format.Identifier.DTS) ||
-			PlayerUtil.isAudio(resource, Format.Identifier.EAC3) ||
-			PlayerUtil.isAudio(resource, Format.Identifier.FLAC) ||
-			PlayerUtil.isAudio(resource, Format.Identifier.M4A) ||
-			PlayerUtil.isAudio(resource, Format.Identifier.MKA) ||
-			PlayerUtil.isAudio(resource, Format.Identifier.MLP) ||
-			PlayerUtil.isAudio(resource, Format.Identifier.MP3) ||
-			PlayerUtil.isAudio(resource, Format.Identifier.MPA) ||
-			PlayerUtil.isAudio(resource, Format.Identifier.MPC) ||
-			PlayerUtil.isAudio(resource, Format.Identifier.OGA) ||
-			PlayerUtil.isAudio(resource, Format.Identifier.RA) ||
-			PlayerUtil.isAudio(resource, Format.Identifier.SHN) ||
-			PlayerUtil.isAudio(resource, Format.Identifier.THREEGA) ||
-			PlayerUtil.isAudio(resource, Format.Identifier.THREEG2A) ||
-			PlayerUtil.isAudio(resource, Format.Identifier.THD) ||
-			PlayerUtil.isAudio(resource, Format.Identifier.TTA) ||
-			PlayerUtil.isAudio(resource, Format.Identifier.WAV) ||
-			PlayerUtil.isAudio(resource, Format.Identifier.WMA) ||
-			PlayerUtil.isAudio(resource, Format.Identifier.WV) ||
-			PlayerUtil.isWebAudio(resource)
-		) {
-			return true;
+		if (resource == null) {
+			return false;
 		}
-
-		return false;
+		return resource.isAudio() && (isContainerCompatible(resource) || resource.getFormat() instanceof WEB);
 	}
 }

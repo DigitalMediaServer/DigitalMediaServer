@@ -25,8 +25,8 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import net.pms.PMS;
-import net.pms.formats.Format;
 import net.pms.formats.FormatFactory;
+import net.pms.formats.FormatType;
 import net.pms.io.BasicSystemUtils;
 import net.pms.util.FileUtil;
 import net.pms.util.ProcessUtil;
@@ -59,12 +59,9 @@ public class RealFile extends MapFile {
 			resolveFormat();
 		}
 
-		if (getType() == Format.SUBTITLE) {
+		if (getFormat() != null && getFormat().getType() == FormatType.SUBTITLES) {
 			// Don't add subtitles as separate resources
 			return false;
-		}
-		if (getType() == Format.VIDEO && file.exists() && configuration.isAutoloadExternalSubtitles() && file.getName().length() > 4) {
-			setHasExternalSubtitles(FileUtil.isSubtitlesExists(file, null));
 		}
 
 		boolean valid = file.exists() && (getFormat() != null || file.isDirectory());
@@ -72,10 +69,15 @@ public class RealFile extends MapFile {
 			// we need to resolve the DLNA resource now
 			run();
 
+			MediaType mediaType = getMediaType();
+			if (mediaType == MediaType.VIDEO && configuration.isAutoloadExternalSubtitles() && file.getName().length() > 4) {
+				setHasExternalSubtitles(FileUtil.isSubtitlesExists(file, null));
+			}
+
 			// Given that here getFormat() has already matched some (possibly plugin-defined) format:
 			//    Format.UNKNOWN + bad parse = inconclusive
 			//    known types    + bad parse = bad/encrypted file
-			if (getType() != Format.UNKNOWN && getMedia() != null && (getMedia().isEncrypted() || getMedia().getContainer() == null || getMedia().getContainer().equals(DLNAMediaLang.UND))) {
+			if (mediaType != null && getMedia() != null && (getMedia().isEncrypted() || getMedia().getContainer() == null || getMedia().getContainer().equals(DLNAMediaLang.UND))) {
 				valid = false;
 				if (getMedia().isEncrypted()) {
 					LOGGER.info("The file {} is encrypted. It will be hidden", file.getAbsolutePath());
@@ -106,7 +108,7 @@ public class RealFile extends MapFile {
 
 	@Override
 	public long length() {
-		if (getPlayer() != null && getPlayer().type() != Format.IMAGE) {
+		if (getPlayer() != null && getPlayer().type() != FormatType.IMAGE) {
 			return DLNAMediaInfo.TRANS_SIZE;
 		} else if (getMedia() != null && getMedia().isMediaparsed()) {
 			return getMedia().getSize();
@@ -146,12 +148,14 @@ public class RealFile extends MapFile {
 	}
 
 	@Override
-	protected void resolveFormat() {
+	protected synchronized void resolveFormat() {
 		if (getFormat() == null) {
 			setFormat(FormatFactory.getAssociatedFormat(getFile().getAbsolutePath()));
 		}
 
-		super.resolveFormat();
+		if (getFormat() == null) {
+			super.resolveFormat();
+		}
 	}
 
 	@Override
@@ -159,6 +163,7 @@ public class RealFile extends MapFile {
 		return ProcessUtil.getShortFileNameIfWideChars(getFile().getAbsolutePath());
 	}
 
+	@SuppressWarnings("deprecation")
 	@Override
 	public synchronized void resolve() {
 		File file = getFile();
@@ -181,7 +186,7 @@ public class RealFile extends MapFile {
 
 						if (medias.size() == 1) {
 							setMedia(medias.get(0));
-							getMedia().postParse(getType(), input);
+							getMedia().postParse(input);
 							found = true;
 						} else if (medias.size() > 1) {
 							LOGGER.warn(
@@ -191,10 +196,15 @@ public class RealFile extends MapFile {
 							);
 						}
 					} catch (InvalidClassException e) {
-						LOGGER.debug("Cached information about {} seems to be from a previous version, reparsing information", getName());
-						LOGGER.trace("", e);
+						LOGGER.debug(
+							"Cached information about \"{}\" seems to be from a previous version, reparsing information: {}",
+							getName(),
+							e.getMessage()
+						);
 					} catch (IOException | SQLException e) {
-						LOGGER.debug("Error while getting cached information about {}, reparsing information: {}", getName(), e.getMessage());
+						LOGGER.warn(
+							"Error getting cached information about \"{}\", reparsing information: {}", getName(), e.getMessage()
+						);
 						LOGGER.trace("", e);
 					}
 
@@ -207,13 +217,13 @@ public class RealFile extends MapFile {
 				}
 
 				if (getFormat() != null) {
-					getFormat().parse(getMedia(), input, getType(), getParent().getDefaultRenderer());
+					getFormat().parse(getMedia(), input, parent == null ? null : parent.getDefaultRenderer());
 					if (getMedia() != null && getMedia().isSLS()) {
 						setFormat(getMedia().getAudioVariantFormat());
 					}
 				} else {
 					// Don't think that will ever happen
-					getMedia().parse(input, getFormat(), getType(), false, isResume(), getParent().getDefaultRenderer());
+					getMedia().parse(input, getFormat(), false, isResume(), parent == null ? null : parent.getDefaultRenderer());
 				}
 
 				if (configuration.getUseCache() && getMedia().isMediaparsed() && !getMedia().isParsing()) {
@@ -221,7 +231,7 @@ public class RealFile extends MapFile {
 
 					if (database != null) {
 						try {
-							database.insertOrUpdateData(fileName, file.lastModified(), getType(), getMedia());
+							database.insertOrUpdateData(fileName, file.lastModified(), getFormat() == null ? null : getFormat().getType(), getMedia());
 						} catch (SQLException e) {
 							LOGGER.error(
 								"Database error while trying to add parsed information for \"{}\" to the cache: {}",
@@ -252,7 +262,7 @@ public class RealFile extends MapFile {
 
 		File file = getFile();
 		File cachedThumbnail = null;
-		MediaType mediaType = getMedia() != null ? getMedia().getMediaType() : MediaType.UNKNOWN;
+		MediaType mediaType = getMediaType();
 
 		if (mediaType == MediaType.AUDIO || mediaType == MediaType.VIDEO) {
 			String alternativeFolder = configuration.getAlternateThumbFolder();
@@ -285,7 +295,7 @@ public class RealFile extends MapFile {
 			cachedThumbnail = MapFile.getFolderThumbnail(file);
 		}
 
-		boolean hasAlreadyEmbeddedCoverArt = getType() == Format.AUDIO && getMedia() != null && getMedia().getThumb() != null;
+		boolean hasAlreadyEmbeddedCoverArt = mediaType == MediaType.AUDIO && getMedia() != null && getMedia().getThumb() != null;
 
 		DLNAThumbnailInputStream result = null;
 		try {
@@ -310,7 +320,7 @@ public class RealFile extends MapFile {
 
 	@Override
 	protected String getThumbnailURL(DLNAImageProfile profile) {
-		if (getType() == Format.IMAGE && !configuration.getImageThumbnailsEnabled()) {
+		if (isImage() && !configuration.getImageThumbnailsEnabled()) {
 			return null;
 		}
 		return super.getThumbnailURL(profile);

@@ -24,7 +24,7 @@ import net.pms.dlna.DLNAImage;
 import net.pms.dlna.DLNAImageProfile;
 import net.pms.dlna.DLNAImageProfile.DLNAComplianceResult;
 import net.pms.dlna.DLNAMediaInfo;
-import net.pms.dlna.DLNAThumbnail;
+import net.pms.dlna.DLNABinaryThumbnail;
 import net.pms.exception.InvalidStateException;
 import net.pms.exception.ParseException;
 import net.pms.exception.UnknownFormatException;
@@ -1424,8 +1424,8 @@ public class ImagesUtil {
 				Image result;
 				if (dlnaThumbnail) {
 					result = metadata == null ?
-						new DLNAThumbnail(inputImage, outputProfile, false) :
-						new DLNAThumbnail(inputByteArray, outputFormat, bufferedImage, metadata, outputProfile, false);
+						new DLNABinaryThumbnail(inputImage, outputProfile, false) :
+						new DLNABinaryThumbnail(inputByteArray, outputFormat, bufferedImage, metadata, outputProfile, false);
 				} else if (dlnaCompliant) {
 					result = metadata == null ?
 						new DLNAImage(inputImage, outputProfile, false) :
@@ -1486,7 +1486,7 @@ public class ImagesUtil {
 
 		Image result;
 		if (dlnaThumbnail) {
-			result = new DLNAThumbnail(outputByteArray, bufferedImage.getWidth(), bufferedImage.getHeight(), outputFormat, null, null, outputProfile, false);
+			result = new DLNABinaryThumbnail(outputByteArray, bufferedImage.getWidth(), bufferedImage.getHeight(), outputFormat, null, null, outputProfile, false);
 		} else if (dlnaCompliant) {
 			result = new DLNAImage(outputByteArray, bufferedImage.getWidth(), bufferedImage.getHeight(), outputFormat, null, null, outputProfile, false);
 		} else {

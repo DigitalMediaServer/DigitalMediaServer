@@ -4,6 +4,7 @@ import java.io.File;
 import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.nio.file.Path;
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import net.pms.newgui.LooksFrame;
 import net.pms.util.Version;
@@ -37,6 +38,13 @@ public interface SystemUtils {
 	public boolean isNetworkInterfaceLoopback(NetworkInterface ni) throws SocketException;
 
 	public void addSystemTray(final LooksFrame frame);
+
+	/**
+	 * Sets the enabled status of the system tray web interface menu item.
+	 *
+	 * @param value the enabled status.
+	 */
+	public void setWebInterfaceSystemTrayEnabled(boolean value);
 
 	/**
 	 * Fetch the hardware address for a network interface.
@@ -76,4 +84,18 @@ public interface SystemUtils {
 	 */
 	@Nullable
 	public Double getWindowsVersion();
+
+	/**
+	 * @return The locally resolvable name of the local computer or
+	 *         {@code "localhost"} if no resolvable name could be found.
+	 */
+	@Nonnull
+	public String getLocalHostname();
+
+	/**
+	 * @return The name of the local computer or {@code null} if it
+	 *         couldn't be resolved.
+	 */
+	@Nullable
+	public String getComputerName();
 }

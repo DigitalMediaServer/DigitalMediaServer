@@ -31,8 +31,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.math.RoundingMode;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -47,18 +45,19 @@ import javax.swing.SwingUtilities;
 import net.pms.Messages;
 import net.pms.PMS;
 import net.pms.dlna.CodeEnter;
+import net.pms.dlna.MediaType;
 import net.pms.dlna.RootFolder;
 import net.pms.encoders.Player;
 import net.pms.encoders.PlayerFactory;
 import net.pms.encoders.PlayerId;
 import net.pms.encoders.StandardPlayerId;
 import net.pms.exception.InvalidArgumentException;
-import net.pms.formats.Format;
+import net.pms.image.thumbnail.CoverSupplier;
+import net.pms.io.BasicSystemUtils;
 import net.pms.newgui.NavigationShareTab.SharedFoldersTableModel;
 import net.pms.service.PreventSleepMode;
 import net.pms.service.Services;
 import net.pms.util.ConversionUtil;
-import net.pms.util.CoverSupplier;
 import net.pms.util.FilePermissions;
 import net.pms.util.FileUtil;
 import net.pms.util.ConversionUtil.UnitPrefix;
@@ -188,6 +187,7 @@ public class PmsConfiguration extends RendererConfiguration {
 	protected static final String KEY_FORCED_SUBTITLE_LANGUAGE = "forced_subtitle_language";
 	protected static final String KEY_FORCED_SUBTITLE_TAGS = "forced_subtitle_tags";
 	public    static final String KEY_GPU_ACCELERATION = "gpu_acceleration";
+	protected static final String KEY_GUI_CLOSE_ACTION = "gui_close_action";
 	protected static final String KEY_GUI_LOG_SEARCH_CASE_SENSITIVE = "gui_log_search_case_sensitive";
 	protected static final String KEY_GUI_LOG_SEARCH_MULTILINE = "gui_log_search_multiline";
 	protected static final String KEY_GUI_LOG_SEARCH_USE_REGEX = "gui_log_search_use_regex";
@@ -258,7 +258,7 @@ public class PmsConfiguration extends RendererConfiguration {
 	protected static final String KEY_MIN_PLAY_TIME_FILE = "min_playtime_file";
 	protected static final String KEY_MIN_PLAY_TIME_WEB = "min_playtime_web";
 	protected static final String KEY_MIN_STREAM_BUFFER = "minimum_web_buffer_size";
-	protected static final String KEY_MINIMIZED = "minimized";
+	protected static final String KEY_GUI_START_HIDDEN = "gui_start_hidden";
 	protected static final String KEY_MPEG2_MAIN_SETTINGS = "mpeg2_main_settings";
 	protected static final String KEY_MUX_ALLAUDIOTRACKS = "tsmuxer_mux_all_audiotracks";
 	protected static final String KEY_NETWORK_INTERFACE = "network_interface";
@@ -304,7 +304,6 @@ public class PmsConfiguration extends RendererConfiguration {
 	protected static final String KEY_SHOW_IPHOTO_LIBRARY = "show_iphoto_library";
 	protected static final String KEY_SHOW_ITUNES_LIBRARY = "show_itunes_library";
 	protected static final String KEY_SHOW_SPLASH_SCREEN = "show_splash_screen";
-	protected static final String KEY_SINGLE = "single_instance";
 	protected static final String KEY_SKIP_LOOP_FILTER_ENABLED = "mencoder_skip_loop_filter";
 	protected static final String KEY_SKIP_NETWORK_INTERFACES = "skip_network_interfaces";
 	protected static final String KEY_SORT_METHOD = "sort_method";
@@ -376,7 +375,7 @@ public class PmsConfiguration extends RendererConfiguration {
 	protected static final String PROFILE_FOLDER_NAME = Build.getProfileFolderName();
 
 	// The default profile name displayed on the renderer
-	protected static String HOSTNAME;
+	protected static final String COMPUTER_NAME = BasicSystemUtils.INSTANCE.getComputerName();
 
 	protected static String DEFAULT_AVI_SYNTH_SCRIPT;
 	protected static final int MAX_MAX_MEMORY_DEFAULT_SIZE = 400;
@@ -1132,7 +1131,8 @@ public class PmsConfiguration extends RendererConfiguration {
 	}
 
 	public String getServerDisplayName() {
-		if (isAppendProfileName()) {
+		String profileName = isAppendProfileName() ? getProfileName() : null;
+		if (profileName != null) {
 			return String.format("%s [%s]", getString(KEY_SERVER_NAME, PMS.getName()), getProfileName());
 		}
 		return getString(KEY_SERVER_NAME, PMS.getName());
@@ -2084,23 +2084,23 @@ public class PmsConfiguration extends RendererConfiguration {
 	}
 
 	/**
-	 * Returns true if DMS should start minimized, i.e. without its window
-	 * opened. Default value false: to start with a window.
+	 * Returns {@code true} if DMS should start hidden, i.e. without the GUI
+	 * visible.
 	 *
-	 * @return True if DMS should start minimized, false otherwise.
+	 * @return {@code true} if DMS should start hidden, {@code false} otherwise.
 	 */
-	public boolean isMinimized() {
-		return getBoolean(KEY_MINIMIZED, false);
+	public boolean isGUIStartHidden() {
+		return getBoolean(KEY_GUI_START_HIDDEN, false);
 	}
 
 	/**
-	 * Set to true if DMS should start minimized, i.e. without its window
-	 * opened.
+	 * Sets whether DMS should start with the GUI hidden or not.
 	 *
-	 * @param value True if DMS should start minimized, false otherwise.
+	 * @param value {@code true} if DMS should start hidden, {@code false}
+	 *            otherwise.
 	 */
-	public void setMinimized(boolean value) {
-		configuration.setProperty(KEY_MINIMIZED, value);
+	public void setGUIStartHidden(boolean value) {
+		configuration.setProperty(KEY_GUI_START_HIDDEN, value);
 	}
 
 	/**
@@ -3432,12 +3432,13 @@ public class PmsConfiguration extends RendererConfiguration {
 		configuration.setProperty(KEY_SORT_METHOD, value);
 	}
 
+	@Nonnull
 	public CoverSupplier getAudioThumbnailMethod() {
-		return CoverSupplier.toCoverSupplier(getInt(KEY_AUDIO_THUMBNAILS_METHOD, 1));
+		return CoverSupplier.typeOf(getInt(KEY_AUDIO_THUMBNAILS_METHOD, -1), CoverSupplier.COVER_ART_ARCHIVE);
 	}
 
-	public void setAudioThumbnailMethod(CoverSupplier value) {
-		configuration.setProperty(KEY_AUDIO_THUMBNAILS_METHOD, value.toInt());
+	public void setAudioThumbnailMethod(@Nullable CoverSupplier value) {
+		configuration.setProperty(KEY_AUDIO_THUMBNAILS_METHOD, value == null ? "" : value.ordinal());
 	}
 
 	public String getAlternateThumbFolder() {
@@ -3866,6 +3867,10 @@ public class PmsConfiguration extends RendererConfiguration {
 		return PROFILE_FOLDER;
 	}
 
+	public boolean isWebConfPathSpecified() {
+		return isNotBlank(configuration.getString(KEY_WEB_CONF_PATH));
+	}
+
 	/**
 	 * Returns the absolute path to the WEB.conf file. By default
 	 * this is <pre>PROFILE_DIRECTORY + File.pathSeparator + WEB.conf</pre>,
@@ -3880,7 +3885,7 @@ public class PmsConfiguration extends RendererConfiguration {
 		// to the logfile/Logs tab.
 		if (WEB_CONF_PATH == null) {
 			WEB_CONF_PATH = FileUtil.getFileLocation(
-				getString(KEY_WEB_CONF_PATH, null),
+				configurationReader.getNonBlankConfigurationString(KEY_WEB_CONF_PATH, null, false),
 				PROFILE_FOLDER,
 				DEFAULT_WEB_CONF_FILENAME
 			).getFilePath();
@@ -3898,16 +3903,7 @@ public class PmsConfiguration extends RendererConfiguration {
 	}
 
 	public String getProfileName() {
-		if (HOSTNAME == null) { // Initialise this lazily
-			try {
-				HOSTNAME = InetAddress.getLocalHost().getHostName();
-			} catch (UnknownHostException e) {
-				LOGGER.info("Can't determine hostname");
-				HOSTNAME = "unknown host";
-			}
-		}
-
-		return getString(KEY_PROFILE_NAME, HOSTNAME);
+		return getString(KEY_PROFILE_NAME, COMPUTER_NAME);
 	}
 
 	public int getUpnpPort() {
@@ -3994,6 +3990,26 @@ public class PmsConfiguration extends RendererConfiguration {
 	 */
 	public void setGPUAcceleration(boolean value) {
 		configuration.setProperty(KEY_GPU_ACCELERATION, value);
+	}
+
+	/**
+	 * @return the {@link GUICloseAction} to use.
+	 */
+	public GUICloseAction getGUICloseAction() {
+		return GUICloseAction.typeOf(getString(KEY_GUI_CLOSE_ACTION, GUICloseAction.ASK.getValue()));
+	}
+
+	/**
+	 * Sets what action should be taken when the GUI window is closed.
+	 *
+	 * @param value the {@link GUICloseAction} to use.
+	 */
+	public void setGUICloseAction(GUICloseAction value) {
+		if (value == null) {
+			configuration.setProperty(KEY_GUI_CLOSE_ACTION, "");
+		} else {
+			configuration.setProperty(KEY_GUI_CLOSE_ACTION, value.getValue());
+		}
 	}
 
 	/**
@@ -4172,7 +4188,7 @@ public class PmsConfiguration extends RendererConfiguration {
 	}
 
 	public Level getLoggingFilterConsole() {
-		return Level.toLevel(getString(KEY_LOGGING_FILTER_CONSOLE, "INFO"),Level.INFO);
+		return Level.toLevel(getString(KEY_LOGGING_FILTER_CONSOLE, "TRACE"), Level.INFO);
 	}
 
 	public void setLoggingFilterConsole(Level value) {
@@ -4180,7 +4196,7 @@ public class PmsConfiguration extends RendererConfiguration {
 	}
 
 	public Level getLoggingFilterLogsTab() {
-		return Level.toLevel(getString(KEY_LOGGING_FILTER_LOGS_TAB, "INFO"),Level.INFO);
+		return Level.toLevel(getString(KEY_LOGGING_FILTER_LOGS_TAB, "INFO"), Level.INFO);
 	}
 
 	public void setLoggingFilterLogsTab(Level value) {
@@ -4486,44 +4502,6 @@ public class PmsConfiguration extends RendererConfiguration {
 	}
 
 	/**
-	 * @deprecated
-	 * @see #setRunSingleInstance(boolean)
-	 */
-	@Deprecated
-	public void setSingle(boolean value) {
-		setRunSingleInstance(value);
-	}
-
-	/**
-	 * Set whether DMS should allow only one instance by shutting down
-	 * the first one when a second one is launched.
-	 *
-	 * @param value whether to kill the old DMS instance
-	 */
-	public void setRunSingleInstance(boolean value) {
-		configuration.setProperty(KEY_SINGLE, value);
-	}
-
-	/**
-	 * @deprecated
-	 * @see #isRunSingleInstance()
-	 */
-	@Deprecated
-	public boolean getSingle() {
-		return isRunSingleInstance();
-	}
-
-	/**
-	 * Whether DMS should allow only one instance by shutting down
-	 * the first one when a second one is launched.
-	 *
-	 * @return value whether to kill the old DMS instance
-	 */
-	public boolean isRunSingleInstance() {
-		return getBoolean(KEY_SINGLE, true);
-	}
-
-	/**
 	 * Web stuff
 	 */
 	protected static final String KEY_NO_FOLDERS = "no_shared";
@@ -4543,6 +4521,7 @@ public class PmsConfiguration extends RendererConfiguration {
 		return getBoolean(KEY_WEB_HTTPS, false);
 	}
 
+	@Nonnull
 	public File getWebPath() {
 		File path = new File(getString(KEY_WEB_PATH, "web"));
 		if (!path.exists()) {
@@ -4551,16 +4530,8 @@ public class PmsConfiguration extends RendererConfiguration {
 			if (debugPath.exists()) {
 				return debugPath;
 			}
-
-			if (!path.mkdirs()) {
-				path = null;
-			}
 		}
 		return path;
-	}
-
-	public File getWebFile(String file) {
-		return new File(getWebPath().getAbsolutePath() + File.separator + file);
 	}
 
 	public boolean isWebAuthenticate() {
@@ -4627,26 +4598,25 @@ public class PmsConfiguration extends RendererConfiguration {
 		return getInt(KEY_MEDIA_LIB_SORT, UMSUtils.SORT_NO_SORT);
 	}
 
-	public boolean getWebAutoCont(Format f) {
+	public boolean getWebAutoCont(MediaType mediaType) {
 		String key = KEY_WEB_CONT_VIDEO;
 		boolean def = false;
-		if (f.isAudio()) {
+		if (mediaType == MediaType.AUDIO) {
 			key = KEY_WEB_CONT_AUDIO;
 			def = true;
-		}
-		if (f.isImage()) {
+		} else if (mediaType == MediaType.IMAGE) {
 			key = KEY_WEB_CONT_IMAGE;
 			def = false;
 		}
 		return getBoolean(key, def);
 	}
 
-	public boolean getWebAutoLoop(Format f) {
+	public boolean getWebAutoLoop(MediaType mediaType) {
 		String key = KEY_WEB_LOOP_VIDEO;
-		if (f.isAudio()) {
+		if (mediaType == MediaType.AUDIO) {
 			key = KEY_WEB_LOOP_AUDIO;
 		}
-		if (f.isImage()) {
+		if (mediaType == MediaType.IMAGE) {
 			key = KEY_WEB_LOOP_IMAGE;
 		}
 		return getBoolean(key, false);
@@ -4768,7 +4738,7 @@ public class PmsConfiguration extends RendererConfiguration {
 	}
 
 	public boolean useChromecastExt() {
-		return getBoolean(KEY_CHROMECAST_EXT, true);
+		return getBoolean(KEY_CHROMECAST_EXT, false);
 	}
 
 	public boolean isChromecastDbg() {
@@ -4787,8 +4757,8 @@ public class PmsConfiguration extends RendererConfiguration {
 	}
 
 	public String getRootLogLevel() {
-		String level = getString(KEY_ROOT_LOG_LEVEL, "DEBUG").toUpperCase();
-		return "ALL TRACE DEBUG INFO WARN ERROR OFF".contains(level) ? level : "DEBUG";
+		String level = getString(KEY_ROOT_LOG_LEVEL, "INFO").toUpperCase();
+		return "ALL TRACE DEBUG INFO WARN ERROR OFF".contains(level) ? level : "INFO";
 	}
 
 	public void setRootLogLevel(ch.qos.logback.classic.Level level) {
@@ -4809,5 +4779,52 @@ public class PmsConfiguration extends RendererConfiguration {
 
 	public int getAliveDelay() {
 		return getInt(KEY_ALIVE_DELAY, 0);
+	}
+
+	public static enum GUICloseAction {
+
+		/** Ask the user what to do */
+		ASK,
+
+		/** Hide the GUI */
+		HIDE,
+
+		/** Quit */
+		QUIT;
+
+		public String getValue() {
+			return name().toLowerCase(Locale.ROOT);
+		}
+		@Override
+		public String toString() {
+			switch (this) {
+				case ASK:
+					return Messages.getString("Generic.Ask");
+				case HIDE:
+					return Messages.getString("GeneralTab.HideWindowOption");
+				case QUIT:
+					return Messages.getString("LooksFrame.5");
+				default:
+					throw new IllegalStateException("Unimplemented enum value: " + name());
+			}
+		}
+
+		public static GUICloseAction typeOf(String value) {
+			if (value == null) {
+				return ASK;
+			}
+			value = value.trim().toLowerCase(Locale.ROOT);
+			switch (value) {
+				case "hide":
+				case "minimize":
+					return HIDE;
+				case "exit":
+				case "quit":
+				case "stop":
+					return QUIT;
+				default:
+					return ASK;
+			}
+		}
 	}
 }

@@ -57,6 +57,8 @@ import net.pms.configuration.PmsConfiguration;
 import net.pms.configuration.RendererConfiguration;
 import net.pms.dlna.*;
 import net.pms.formats.Format;
+import net.pms.formats.FormatType;
+import net.pms.formats.ISOVOB;
 import net.pms.formats.v2.SubtitleType;
 import net.pms.io.*;
 import net.pms.network.HTTPResource;
@@ -2508,8 +2510,8 @@ public class MEncoderVideo extends Player {
 	}
 
 	@Override
-	public int type() {
-		return Format.VIDEO;
+	public FormatType type() {
+		return FormatType.VIDEO;
 	}
 
 	private static String[] getSpecificCodecOptions(
@@ -2652,16 +2654,7 @@ public class MEncoderVideo extends Player {
 
 	@Override
 	public boolean isCompatible(DLNAResource resource) {
-		if (
-			PlayerUtil.isVideo(resource, Format.Identifier.ISOVOB) ||
-			PlayerUtil.isVideo(resource, Format.Identifier.MKV) ||
-			PlayerUtil.isVideo(resource, Format.Identifier.MPG) ||
-			PlayerUtil.isVideo(resource, Format.Identifier.OGG)
-		) {
-			return true;
-		}
-
-		return false;
+		return resource.isVideo() || resource.getFormat() instanceof ISOVOB;
 	}
 
 	@Override

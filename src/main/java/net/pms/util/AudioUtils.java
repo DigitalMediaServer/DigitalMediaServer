@@ -26,17 +26,17 @@ import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Locale;
-import net.pms.PMS;
+import javax.annotation.Nullable;
 import net.pms.configuration.FormatConfiguration;
 import net.pms.dlna.DLNAMediaAudio;
 import net.pms.dlna.DLNAMediaInfo;
-import net.pms.dlna.DLNAThumbnail;
-import net.pms.image.ImageFormat;
-import net.pms.image.ImagesUtil.ScaleType;
+import net.pms.image.thumbnail.CoverUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.jaudiotagger.tag.FieldKey;
 import org.jaudiotagger.tag.Tag;
+import org.jaudiotagger.tag.TagField;
 import org.jaudiotagger.tag.id3.ID3v1Tag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,19 +54,45 @@ public final class AudioUtils {
 	}
 
 	/**
-	 * Checks if a given {@link Tag} supports a given {@link FieldKey}.
+	 * Returns the value of the first key with the specified {@link FieldKey}
+	 * from the specified {@link Tag} if it exists. In any other case,
+	 * {@code null} is returned.
 	 *
-	 * @param tag the {@link Tag} to check for support
-	 * @param key the {@link FieldKey} to check for support for
-	 *
-	 * @return The result
+	 * @param tag the {@link Tag};
+	 * @param key the {@link FieldKey}
+	 * @return The value of the first key with the specified {@link FieldKey} or
+	 *         {@code null}.
 	 */
-	public static boolean tagSupportsFieldKey(Tag tag, FieldKey key) {
+	@Nullable
+	public static String tagGetFieldSafe(@Nullable Tag tag, @Nullable FieldKey key) {
+		if (tag == null || key == null) {
+			return null;
+		}
 		try {
-			tag.getFirst(key);
-			return true;
-		} catch (UnsupportedOperationException e) {
-			return false;
+			return tag.getFirst(key);
+		} catch (RuntimeException e) {
+			return null;
+		}
+	}
+
+	/**
+	 * Returns a {@link List} of {@link TagField}s matching the specified
+	 * {@link FieldKey} from the specified {@link Tag}. The {@link List} might
+	 * be empty. In any other case, {@code null} is returned.
+	 *
+	 * @param tag the {@link Tag};
+	 * @param key the {@link FieldKey}
+	 * @return The {@link List} of {@link TagField}s or {@code null}.
+	 */
+	@Nullable
+	public static List<TagField> tagGetFieldsSafe(@Nullable Tag tag, @Nullable FieldKey key) {
+		if (tag == null || key == null) {
+			return null;
+		}
+		try {
+			return tag.getFields(key);
+		} catch (RuntimeException e) {
+			return null;
 		}
 	}
 
@@ -314,9 +340,9 @@ public final class AudioUtils {
 			LOGGER.trace("", e);
 			return false;
 		}
+		CoverUtil coverUtil = CoverUtil.get();
 		if (
-			PMS.getConfiguration() != null &&
-			!PMS.getConfiguration().getAudioThumbnailMethod().equals(CoverSupplier.NONE) &&
+			coverUtil != null &&
 			(
 				StringUtils.isNotBlank(media.getFirstAudioTrack().getSongname()) ||
 				StringUtils.isNotBlank(media.getFirstAudioTrack().getArtist())
@@ -329,22 +355,7 @@ public final class AudioUtils {
 			if (StringUtils.isNotBlank(media.getFirstAudioTrack().getArtist())) {
 				tag.setArtist(media.getFirstAudioTrack().getArtist());
 			}
-			try {
-				media.setThumb(DLNAThumbnail.toThumbnail(
-					CoverUtil.get().getThumbnail(tag),
-					640,
-					480,
-					ScaleType.MAX,
-					ImageFormat.SOURCE,
-					false
-				));
-			} catch (IOException e) {
-				LOGGER.error(
-					"An error occurred while generating thumbnail for RealAudio source: [\"{}\", \"{}\"]",
-					tag.getFirstTitle(),
-					tag.getFirstArtist()
-				);
-			}
+			media.setThumb(CoverUtil.get().getThumbnail(coverUtil.createAudioTagInfo(tag)));
 		}
 		media.setThumbready(true);
 		media.setMediaparsed(true);

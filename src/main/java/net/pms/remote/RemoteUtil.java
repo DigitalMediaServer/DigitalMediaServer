@@ -12,6 +12,7 @@ import java.net.URLClassLoader;
 import java.net.URLConnection;
 import java.nio.charset.Charset;
 import java.util.*;
+import javax.annotation.Nullable;
 import net.pms.Messages;
 import net.pms.PMS;
 import net.pms.configuration.IpFilter;
@@ -39,6 +40,7 @@ public class RemoteUtil {
 	public static final String MIME_TRANS = MIME_OGG;
 	//public static final String MIME_TRANS = MIME_WEBM;
 	public static final String MIME_MP3 = "audio/mpeg";
+	public static final String MIME_OGA = "audio/ogg";
 	public static final String MIME_WAV = "audio/wav";
 	public static final String MIME_PNG = "image/png";
 	public static final String MIME_JPG = "image/jpeg";
@@ -184,6 +186,7 @@ public class RemoteUtil {
 				mime.equals(MIME_WEBM) ||
 				mime.equals(MIME_OGG) ||
 				mime.equals(MIME_MP3) ||
+				mime.equals(MIME_OGA) ||
 				mime.equals(MIME_PNG) ||
 				mime.equals(MIME_JPG)
 			)
@@ -374,7 +377,8 @@ public class RemoteUtil {
 						searchPathsList.add(tmpUrl.getPath());
 					}
 				} catch (MalformedURLException e) {
-					LOGGER.debug("Error adding resource url: " + e);
+					LOGGER.debug("Error adding resource url: {}", e.getMessage());
+					LOGGER.trace("", e);
 				}
 			}
 			searchPaths = searchPathsList.toArray(new String[searchPathsList.size()]);
@@ -382,6 +386,7 @@ public class RemoteUtil {
 			templates = new HashMap<>();
 		}
 
+		@Nullable
 		public InputStream getInputStream(String filename) {
 			InputStream stream = getResourceAsStream(filename);
 			if (stream == null) {
@@ -390,7 +395,8 @@ public class RemoteUtil {
 					try {
 						stream = new FileInputStream(file);
 					} catch (Exception e) {
-						LOGGER.debug("Error opening stream: " + e);
+						LOGGER.debug("Error opening stream: {}", e.getMessage());
+						LOGGER.trace("", e);
 					}
 				}
 			}
