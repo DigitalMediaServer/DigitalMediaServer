@@ -18,15 +18,36 @@
  */
 package net.pms.newgui;
 
+import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.FontMetrics;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.Insets;
 import java.lang.reflect.InvocationTargetException;
+import java.nio.file.Path;
+import java.util.List;
+import java.util.Vector;
 import javax.annotation.Nullable;
+import javax.swing.JComponent;
+import javax.swing.JList;
 import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JTable;
+import javax.swing.JTextArea;
 import javax.swing.SwingUtilities;
+import javax.swing.border.BevelBorder;
+import javax.swing.border.EmptyBorder;
+import javax.swing.border.EtchedBorder;
+import javax.swing.table.DefaultTableCellRenderer;
+import javax.swing.table.DefaultTableModel;
 import org.apache.commons.configuration.ConfigurationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import net.pms.Messages;
 import net.pms.configuration.PmsConfiguration;
+import net.pms.dlna.RootFolder;
+import net.pms.util.SwingUtils;
 
 
 /**
@@ -124,7 +145,7 @@ public class ConfigurationWizard {
 								break;
 						}
 
-						// Ask if they want to hide advanced options
+						// Ask if they want to show advanced options
 						int showAdvancedOptions = JOptionPane.showConfirmDialog(
 							null,
 							Messages.getString("Wizard.AdvancedOptions"),
@@ -142,7 +163,7 @@ public class ConfigurationWizard {
 
 						JOptionPane.showMessageDialog(
 							null,
-							Messages.getString("Wizard.13"),
+							buildDefaultFoldersDialog(), // Messages.getString("Wizard.13"),
 							Messages.getString("Wizard.12"),
 							JOptionPane.INFORMATION_MESSAGE
 						);
@@ -169,6 +190,91 @@ public class ConfigurationWizard {
 		}
 	}
 
+	private static JComponent buildDefaultFoldersDialog() {
+		JPanel panel = new JPanel(new GridBagLayout());
+		GridBagConstraints constraints = new GridBagConstraints();
+		constraints.anchor = GridBagConstraints.LINE_START;
+		constraints.gridx = 1;
+		constraints.gridy = 1;
+		JTextArea text = new JTextArea("Text to measure");
+		double avgCharWidth = SwingUtils.getComponentAverageCharacterWidth(text);
+		int textWidth = (int) Math.round(avgCharWidth * 80);
+		constraints.insets = new Insets((int) avgCharWidth, 0, (int) avgCharWidth, 0);
+		text.setText("Digital Media Server defines some default folders that are likely to contain media files that you want to share. Using the default folders will make it easier to get started, but experienced users will probably want to configure the shared folders manually. The default folders are:");
+		text.setPreferredSize(SwingUtils.getWordWrappedTextDimension(text, textWidth));
+		text.setEditable(false);
+		text.setLineWrap(true);
+		text.setWrapStyleWord(true);
+		text.setBackground(panel.getBackground());
+		text.setPreferredSize(text.getPreferredSize());
+		panel.add(text, constraints);
+
+		constraints.gridy++;
+		constraints.fill = GridBagConstraints.HORIZONTAL;
+		Vector<String> columns = new Vector<>();
+		columns.add("Folder");
+		Vector<Vector<?>> newDataVector = new Vector<>();
+		for (Path folder : RootFolder.getDefaultFolders()) {
+			Vector<String> rowVector = new Vector<>();
+			rowVector.add(folder.toString());
+			newDataVector.add(rowVector);
+		}
+
+		NonEditableTableModel model = new NonEditableTableModel(newDataVector, columns);
+
+		JTable table = new JTable(model);
+		table.setBorder(new EmptyBorder(50, 100, 50, 100));
+		table.setFont(new Font(Font.MONOSPACED, Font.PLAIN, table.getFont().getSize()));
+		DefaultTableCellRenderer cellRenderer = (DefaultTableCellRenderer) table.getCellRenderer(0, 0);
+		FontMetrics metrics = cellRenderer.getFontMetrics(cellRenderer.getFont());
+		table.setRowHeight(metrics.getLeading() + metrics.getMaxAscent() + metrics.getMaxDescent() + 4);
+		table.setIntercellSpacing(new Dimension(8, 2));
+		table.setRowSelectionAllowed(false);
+		table.setCellSelectionEnabled(false);
+		panel.add(table, constraints);
+
+
+//		DefaultTableCellRenderer cellRenderer = (DefaultTableCellRenderer) sharedFolders.getCellRenderer(0,0);
+//		FontMetrics metrics = cellRenderer.getFontMetrics(cellRenderer.getFont());
+//		sharedFolders.setRowHeight(metrics.getLeading() + metrics.getMaxAscent() + metrics.getMaxDescent() + 4);
+//		sharedFolders.setIntercellSpacing(new Dimension(8, 2));
+//		sharedFolders.setEnabled(!defaultSharedFolders);
+//
+//		Vector<Vector<?>> newDataVector = new Vector<>();
+//		if (!folders.isEmpty()) {
+//			List<Path> foldersMonitored = configuration.getMonitoredFolders();
+//			for (Path folder : folders) {
+//				Vector rowVector = new Vector();
+//				rowVector.add(folder.toString());
+//				rowVector.add(Boolean.valueOf(foldersMonitored.contains(folder)));
+//				newDataVector.add(rowVector);
+//			}
+//		}
+//		folderTableModel.setDataVector(newDataVector, FOLDERS_COLUMN_NAMES);
+//		TableColumn column = sharedFolders.getColumnModel().getColumn(0);
+//		column.setMinWidth(600);
+//
+//
+//		List<Path> folders = RootFolder.getDefaultFolders();
+//		JList<Path> list = new JList<Path>(folders.toArray(new Path[folders.size()]));
+////		list.setEnabled(false);
+//		list.setFont(new Font(Font.MONOSPACED, Font.PLAIN, list.getFont().getSize()));
+//		list.setBorder(new BevelBorder(BevelBorder.LOWERED));
+//		list.setBackground(panel.getBackground());
+//		panel.add(list, constraints);
+
+		constraints.gridy++;
+		JTextArea confirmText = new JTextArea("Do you want to share the default folders? Please make sure that there's no sensitive files in any of the folders.");
+		confirmText.setEditable(false);
+		confirmText.setPreferredSize(SwingUtils.getWordWrappedTextDimension(confirmText, textWidth));
+		confirmText.setLineWrap(true);
+		confirmText.setWrapStyleWord(true);
+		confirmText.setBackground(panel.getBackground());
+		panel.add(confirmText, constraints);
+
+		return panel;
+	}
+
 	/**
 	 * Force saves the specified {@link PmsConfiguration}.
 	 *
@@ -179,6 +285,20 @@ public class ConfigurationWizard {
 			configuration.save();
 		} catch (ConfigurationException e) {
 			LOGGER.error("Failed to save the configuration: {}", e);
+		}
+	}
+
+	public static class NonEditableTableModel extends DefaultTableModel {
+
+		private static final long serialVersionUID = 1L;
+
+		public NonEditableTableModel(Vector<?> data, Vector<String> columnNames) {
+			super(data, columnNames);
+		}
+
+		@Override
+		public boolean isCellEditable(int row, int column) {
+			return false;
 		}
 	}
 }
