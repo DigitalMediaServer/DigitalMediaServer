@@ -26,7 +26,7 @@ import org.slf4j.LoggerFactory;
 import com.sun.jna.Platform;
 import net.pms.configuration.PmsConfiguration;
 import net.pms.database.TableManager;
-import net.pms.io.WinUtils;
+import net.pms.io.WindowsSystemUtils;
 
 /**
  * This class creates and destroys global services ands offers a static way of
@@ -61,7 +61,7 @@ public class Services {
 		if (Platform.isWindows()) {
 			Charset windowsConsole = null;
 			try {
-				windowsConsole = Charset.forName("cp" + WinUtils.getOEMCP());
+				windowsConsole = Charset.forName("cp" + WindowsSystemUtils.getOEMCP());
 			} catch (Exception e) {
 				windowsConsole = Charset.defaultCharset();
 			}

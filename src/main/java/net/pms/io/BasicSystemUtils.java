@@ -73,7 +73,7 @@ public class BasicSystemUtils implements SystemUtils {
 
 	protected static BasicSystemUtils createInstance() {
 		if (Platform.isWindows()) {
-			return new WinUtils();
+			return new WindowsSystemUtils();
 		}
 		if (Platform.isMac()) {
 			return new MacSystemUtils();
@@ -268,17 +268,18 @@ public class BasicSystemUtils implements SystemUtils {
 	}
 
 	/**
-	 * Return the proper tray icon for the operating system.
-	 *
-	 * @return The tray icon.
+	 * @return The system tray icon {@link Image} for the current platform.
 	 */
-	private Image resolveTrayIcon() {
-		String icon = "icon-16.png";
+	protected Image resolveTrayIcon() {
+		return Toolkit.getDefaultToolkit().getImage(this.getClass().getResource("/resources/images/" + getTrayIconName()));
+	}
 
-		if (Platform.isMac()) {
-			icon = "icon-22.png";
-		}
-		return Toolkit.getDefaultToolkit().getImage(this.getClass().getResource("/resources/images/" + icon));
+	/**
+	 * @return The name of the system tray icon for the current platform.
+	 */
+	@Nonnull
+	protected String getTrayIconName() {
+		return "icon-24.png";
 	}
 
 	@Override

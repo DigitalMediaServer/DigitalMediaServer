@@ -27,7 +27,7 @@ import net.pms.Messages;
 import net.pms.PMS;
 import net.pms.configuration.PmsConfiguration;
 import net.pms.exception.IOKitException;
-import net.pms.io.WinUtils.Kernel32;
+import net.pms.io.WindowsSystemUtils.Kernel32;
 import net.pms.util.jna.macos.iokit.IOKitUtils;
 
 /**
@@ -412,7 +412,9 @@ public class SleepManager implements Service {
 				}
 			} catch (InterruptedException e) {
 				LOGGER.debug("Shutting down sleep worker");
-				doAllowSleep();
+				if (sleepPrevented) {
+					doAllowSleep();
+				}
 				owner.clearWorker();
 			} catch (Throwable e) {
 				LOGGER.error("Unexpected error in SleepManager worker thread, shutting down worker: {}", e.getMessage());
