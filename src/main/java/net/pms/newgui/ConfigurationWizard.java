@@ -18,26 +18,24 @@
  */
 package net.pms.newgui;
 
+import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
-import java.awt.FontMetrics;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Path;
-import java.util.List;
 import java.util.Vector;
 import javax.annotation.Nullable;
 import javax.swing.JComponent;
-import javax.swing.JList;
+import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextArea;
 import javax.swing.SwingUtilities;
-import javax.swing.border.BevelBorder;
-import javax.swing.border.EmptyBorder;
 import javax.swing.border.EtchedBorder;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
@@ -87,12 +85,12 @@ public class ConfigurationWizard {
 						splash.setVisible(false);
 					}
 					// Ask the user if they want to run the wizard
-					int whetherToRunWizard = JOptionPane.showConfirmDialog(
-						null,
-						Messages.getString("Wizard.1"),
-						Messages.getString("Dialog.Question"),
-						JOptionPane.YES_NO_OPTION
-					);
+					int whetherToRunWizard = JOptionPane.YES_OPTION; //JOptionPane.showConfirmDialog( //TODO: (Nad) Temp
+//						null,
+//						Messages.getString("Wizard.1"),
+//						Messages.getString("Dialog.Question"),
+//						JOptionPane.YES_NO_OPTION
+//					);
 					if (whetherToRunWizard == JOptionPane.YES_OPTION) {
 						// The user has chosen to run the wizard
 
@@ -108,72 +106,73 @@ public class ConfigurationWizard {
 							Messages.getString("Wizard.9"),
 							Messages.getString("Wizard.10")
 						};
-						int networkType = JOptionPane.showOptionDialog(
-							null,
-							Messages.getString("Wizard.7"),
-							Messages.getString("Wizard.2") + " " + (currentQuestionNumber++) + " " +
-							Messages.getString("Wizard.4") + " " + numberOfQuestions,
-							JOptionPane.YES_NO_CANCEL_OPTION,
-							JOptionPane.QUESTION_MESSAGE,
-							null,
-							wizardOptions,
-							wizardOptions[1]
-						);
-						switch (networkType) {
-							case JOptionPane.YES_OPTION:
-								// Wired (Gigabit)
-								configuration.setMaximumBitrate("0");
-								configuration.setMPEG2MainSettings("Automatic (Wired)");
-								configuration.setx264ConstantRateFactor("Automatic (Wired)");
-								save(configuration);
-								break;
-							case JOptionPane.NO_OPTION:
-								// Wired (100 Megabit)
-								configuration.setMaximumBitrate("90");
-								configuration.setMPEG2MainSettings("Automatic (Wired)");
-								configuration.setx264ConstantRateFactor("Automatic (Wired)");
-								save(configuration);
-								break;
-							case JOptionPane.CANCEL_OPTION:
-								// Wireless
-								configuration.setMaximumBitrate("30");
-								configuration.setMPEG2MainSettings("Automatic (Wireless)");
-								configuration.setx264ConstantRateFactor("Automatic (Wireless)");
-								save(configuration);
-								break;
-							default:
-								break;
-						}
+//						int networkType = JOptionPane.showOptionDialog(
+//							null,
+//							Messages.getString("Wizard.7"),
+//							Messages.getString("Wizard.2") + " " + (currentQuestionNumber++) + " " +
+//							Messages.getString("Wizard.4") + " " + numberOfQuestions,
+//							JOptionPane.YES_NO_CANCEL_OPTION,
+//							JOptionPane.QUESTION_MESSAGE,
+//							null,
+//							wizardOptions,
+//							wizardOptions[1]
+//						);
+//						switch (networkType) {
+//							case JOptionPane.YES_OPTION:
+//								// Wired (Gigabit)
+//								configuration.setMaximumBitrate("0");
+//								configuration.setMPEG2MainSettings("Automatic (Wired)");
+//								configuration.setx264ConstantRateFactor("Automatic (Wired)");
+//								save(configuration);
+//								break;
+//							case JOptionPane.NO_OPTION:
+//								// Wired (100 Megabit)
+//								configuration.setMaximumBitrate("90");
+//								configuration.setMPEG2MainSettings("Automatic (Wired)");
+//								configuration.setx264ConstantRateFactor("Automatic (Wired)");
+//								save(configuration);
+//								break;
+//							case JOptionPane.CANCEL_OPTION:
+//								// Wireless
+//								configuration.setMaximumBitrate("30");
+//								configuration.setMPEG2MainSettings("Automatic (Wireless)");
+//								configuration.setx264ConstantRateFactor("Automatic (Wireless)");
+//								save(configuration);
+//								break;
+//							default:
+//								break;
+//						}
 
 						// Ask if they want to show advanced options
-						int showAdvancedOptions = JOptionPane.showConfirmDialog(
-							null,
-							Messages.getString("Wizard.AdvancedOptions"),
-							Messages.getString("Wizard.2") + " " + (currentQuestionNumber++) + " " +
-							Messages.getString("Wizard.4") + " " + numberOfQuestions,
-							JOptionPane.YES_NO_OPTION
-						);
-						if (showAdvancedOptions == JOptionPane.YES_OPTION) {
-							configuration.setHideAdvancedOptions(false);
-							save(configuration);
-						} else if (showAdvancedOptions == JOptionPane.NO_OPTION) {
-							configuration.setHideAdvancedOptions(true);
-							save(configuration);
-						}
+//						int showAdvancedOptions = JOptionPane.showConfirmDialog(
+//							null,
+//							Messages.getString("Wizard.AdvancedOptions"),
+//							Messages.getString("Wizard.2") + " " + (currentQuestionNumber++) + " " +
+//							Messages.getString("Wizard.4") + " " + numberOfQuestions,
+//							JOptionPane.YES_NO_OPTION
+//						);
+//						if (showAdvancedOptions == JOptionPane.YES_OPTION) {
+//							configuration.setHideAdvancedOptions(false);
+//							save(configuration);
+//						} else if (showAdvancedOptions == JOptionPane.NO_OPTION) {
+//							configuration.setHideAdvancedOptions(true);
+//							save(configuration);
+//						}
 
-						JOptionPane.showMessageDialog(
+						JOptionPane.showConfirmDialog(
 							null,
 							buildDefaultFoldersDialog(), // Messages.getString("Wizard.13"),
 							Messages.getString("Wizard.12"),
+							JOptionPane.YES_NO_OPTION,
 							JOptionPane.INFORMATION_MESSAGE
 						);
 
-						configuration.setRunWizard(false);
+//						configuration.setRunWizard(false); //TODO: (Nad) Temp
 						save(configuration);
 					} else if (whetherToRunWizard == JOptionPane.NO_OPTION) {
 						// The user has chosen to not run the wizard
 						// Do not ask them again
-						configuration.setRunWizard(false);
+//						configuration.setRunWizard(false); //TODO: (Nad) Temp
 						save(configuration);
 					}
 
@@ -192,6 +191,7 @@ public class ConfigurationWizard {
 
 	private static JComponent buildDefaultFoldersDialog() {
 		JPanel panel = new JPanel(new GridBagLayout());
+		Color bgColor = new JLabel().getBackground();
 		GridBagConstraints constraints = new GridBagConstraints();
 		constraints.anchor = GridBagConstraints.LINE_START;
 		constraints.gridx = 1;
@@ -205,7 +205,7 @@ public class ConfigurationWizard {
 		text.setEditable(false);
 		text.setLineWrap(true);
 		text.setWrapStyleWord(true);
-		text.setBackground(panel.getBackground());
+		text.setBackground(bgColor);
 		text.setPreferredSize(text.getPreferredSize());
 		panel.add(text, constraints);
 
@@ -223,15 +223,21 @@ public class ConfigurationWizard {
 		NonEditableTableModel model = new NonEditableTableModel(newDataVector, columns);
 
 		JTable table = new JTable(model);
-		table.setBorder(new EmptyBorder(50, 100, 50, 100));
 		table.setFont(new Font(Font.MONOSPACED, Font.PLAIN, table.getFont().getSize()));
 		DefaultTableCellRenderer cellRenderer = (DefaultTableCellRenderer) table.getCellRenderer(0, 0);
-		FontMetrics metrics = cellRenderer.getFontMetrics(cellRenderer.getFont());
-		table.setRowHeight(metrics.getLeading() + metrics.getMaxAscent() + metrics.getMaxDescent() + 4);
+		table.setRowHeight((int) (cellRenderer.getFontMetrics(cellRenderer.getFont()).getHeight() * 1.7));
 		table.setIntercellSpacing(new Dimension(8, 2));
 		table.setRowSelectionAllowed(false);
 		table.setCellSelectionEnabled(false);
-		panel.add(table, constraints);
+		JScrollPane scrollPane = new JScrollPane(table, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+		scrollPane.setBorder(new EtchedBorder(EtchedBorder.LOWERED));
+		Dimension tablePreferredSize = table.getPreferredSize();
+		int tableHeaderHeight = table.getTableHeader().getPreferredSize().height;
+		scrollPane.setPreferredSize(new Dimension(
+			tablePreferredSize.width,
+			Math.min(tableHeaderHeight + tablePreferredSize.height + 4, tableHeaderHeight + table.getRowHeight() * 5)
+		));
+		panel.add(scrollPane, constraints);
 
 
 //		DefaultTableCellRenderer cellRenderer = (DefaultTableCellRenderer) sharedFolders.getCellRenderer(0,0);
@@ -264,12 +270,12 @@ public class ConfigurationWizard {
 //		panel.add(list, constraints);
 
 		constraints.gridy++;
-		JTextArea confirmText = new JTextArea("Do you want to share the default folders? Please make sure that there's no sensitive files in any of the folders.");
+		JTextArea confirmText = new JTextArea("Please make sure that there are no sensitive files in any of the folders before sharing them. Do you want to share these folders?");
 		confirmText.setEditable(false);
 		confirmText.setPreferredSize(SwingUtils.getWordWrappedTextDimension(confirmText, textWidth));
 		confirmText.setLineWrap(true);
 		confirmText.setWrapStyleWord(true);
-		confirmText.setBackground(panel.getBackground());
+		confirmText.setBackground(bgColor);
 		panel.add(confirmText, constraints);
 
 		return panel;
