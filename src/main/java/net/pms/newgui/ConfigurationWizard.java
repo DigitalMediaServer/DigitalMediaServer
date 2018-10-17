@@ -164,7 +164,7 @@ public class ConfigurationWizard {
 							buildDefaultFoldersDialog(), // Messages.getString("Wizard.13"),
 							Messages.getString("Wizard.12"),
 							JOptionPane.YES_NO_OPTION,
-							JOptionPane.INFORMATION_MESSAGE
+							JOptionPane.QUESTION_MESSAGE
 						);
 
 //						configuration.setRunWizard(false); //TODO: (Nad) Temp
@@ -200,19 +200,20 @@ public class ConfigurationWizard {
 		double avgCharWidth = SwingUtils.getComponentAverageCharacterWidth(text);
 		int textWidth = (int) Math.round(avgCharWidth * 80);
 		constraints.insets = new Insets((int) avgCharWidth, 0, (int) avgCharWidth, 0);
-		text.setText("Digital Media Server defines some default folders that are likely to contain media files that you want to share. Using the default folders will make it easier to get started, but experienced users will probably want to configure the shared folders manually. The default folders are:");
+		text.setText("Digital Media Server defines some default folders that are likely to contain media files that you want to share. Using the default folders will make it easier to get started, but experienced users will probably want to configure the shared folders manually.");
 		text.setPreferredSize(SwingUtils.getWordWrappedTextDimension(text, textWidth));
 		text.setEditable(false);
 		text.setLineWrap(true);
 		text.setWrapStyleWord(true);
 		text.setBackground(bgColor);
 		text.setPreferredSize(text.getPreferredSize());
+		text.setOpaque(false);
 		panel.add(text, constraints);
 
 		constraints.gridy++;
 		constraints.fill = GridBagConstraints.HORIZONTAL;
 		Vector<String> columns = new Vector<>();
-		columns.add("Folder");
+		columns.add("Default folders");
 		Vector<Vector<?>> newDataVector = new Vector<>();
 		for (Path folder : RootFolder.getDefaultFolders()) {
 			Vector<String> rowVector = new Vector<>();
@@ -276,6 +277,7 @@ public class ConfigurationWizard {
 		confirmText.setLineWrap(true);
 		confirmText.setWrapStyleWord(true);
 		confirmText.setBackground(bgColor);
+		confirmText.setOpaque(false);
 		panel.add(confirmText, constraints);
 
 		return panel;
