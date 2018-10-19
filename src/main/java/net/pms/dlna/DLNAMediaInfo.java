@@ -1492,6 +1492,9 @@ public class DLNAMediaInfo implements Cloneable {
 				case FormatConfiguration.FLV:
 					mimeType = HTTPResource.FLV_TYPEMIME;
 					break;
+				case FormatConfiguration.MJP2:
+					mimeType = HTTPResource.MJP2_TYPEMIME;
+					break;
 				case FormatConfiguration.MKV:
 					mimeType = HTTPResource.MATROSKA_TYPEMIME;
 					break;

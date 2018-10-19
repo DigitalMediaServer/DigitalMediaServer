@@ -57,13 +57,13 @@ public class FormatsRegressionTest0 {
 	}
 
 	@Test
-	public void test08() throws Throwable {
+	public void testADPCM() throws Throwable {
 		// Regression assertion (captures the current behavior of the code)
 		assertTrue(new ADPCM().transcodable());
 	}
 
 	@Test
-	public void test09() throws Throwable {
+	public void testList_Format() throws Throwable {
 		List<Format> list_format0 = FormatFactory.getSupportedFormats();
 
 		// Regression assertion (captures the current behavior of the code)
@@ -99,7 +99,7 @@ public class FormatsRegressionTest0 {
 	}
 
 	@Test
-	public void test12() throws Throwable {
+	public void testATRAC() throws Throwable {
 		ATRAC aTRAC0 = new ATRAC();
 		String[] str_array1 = aTRAC0.getSupportedExtensions();
 
@@ -108,7 +108,7 @@ public class FormatsRegressionTest0 {
 	}
 
 	@Test
-	public void test13() throws Throwable {
+	public void testWavPack() throws Throwable {
 		WavPack wavPack0 = new WavPack();
 	}
 
@@ -127,7 +127,7 @@ public class FormatsRegressionTest0 {
 	}
 
 	@Test
-	public void test15() throws Throwable {
+	public void testSUBTITLES() throws Throwable {
 		// Regression assertion (captures the current behavior of the code)
 		assertTrue(FormatType.SUBTITLES.getValue() == 64);
 	}
@@ -142,7 +142,7 @@ public class FormatsRegressionTest0 {
 	}
 
 	@Test
-	public void test17() throws Throwable {
+	public void testFormat() throws Throwable {
 		Format format0 = null;
 		// The following exception was thrown during execution in test
 		// generation
@@ -155,7 +155,7 @@ public class FormatsRegressionTest0 {
 	}
 
 	@Test
-	public void test18() throws Throwable {
+	public void testASS() throws Throwable {
 		ASS aSS0 = new ASS();
 		String[] str_array1 = aSS0.getSupportedExtensions();
 
@@ -164,7 +164,7 @@ public class FormatsRegressionTest0 {
 	}
 
 	@Test
-	public void test20() throws Throwable {
+	public void testMPG() throws Throwable {
 		MPG mPG0 = new MPG();
 		Format.Identifier identifier1 = mPG0.getIdentifier();
 		assertTrue("'" + identifier1 + "' != '" + Format.Identifier.MPG + "'",
@@ -188,13 +188,13 @@ public class FormatsRegressionTest0 {
 	}
 
 	@Test
-	public void test23() throws Throwable {
+	public void testAUDIO() throws Throwable {
 		// Regression assertion (captures the current behavior of the code)
 		assertTrue(FormatType.AUDIO.getValue() == 1);
 	}
 
 	@Test
-	public void test24() throws Throwable {
+	public void testMKA() throws Throwable {
 		MKA mKA0 = new MKA();
 	}
 
@@ -207,7 +207,7 @@ public class FormatsRegressionTest0 {
 	}
 
 	@Test
-	public void test26() throws Throwable {
+	public void testTHREEG2A() throws Throwable {
 		THREEG2A tHREEG2A0 = new THREEG2A();
 	}
 
@@ -245,7 +245,7 @@ public class FormatsRegressionTest0 {
 	}
 
 	@Test
-	public void test31() throws Throwable {
+	public void testTHREEGA() throws Throwable {
 		THREEGA tHREEGA0 = new THREEGA();
 		Format.Identifier identifier1 = tHREEGA0.getIdentifier();
 		assertTrue("'" + identifier1 + "' != '" + Format.Identifier.THREEGA + "'",
@@ -291,7 +291,7 @@ public class FormatsRegressionTest0 {
 	}
 
 	@Test
-	public void test35() throws Throwable {
+	public void testOGG() throws Throwable {
 		OGG oGG0 = new OGG();
 	}
 
@@ -307,7 +307,7 @@ public class FormatsRegressionTest0 {
 	}
 
 	@Test
-	public void test37() throws Throwable {
+	public void testSUP() throws Throwable {
 		SUP sUP0 = new SUP();
 		boolean b1 = FormatFactory.addFormat(sUP0);
 
@@ -316,7 +316,7 @@ public class FormatsRegressionTest0 {
 	}
 
 	@Test
-	public void test38() throws Throwable {
+	public void testWebVTT() throws Throwable {
 		WebVTT webVTT0 = new WebVTT();
 		Format.Identifier identifier1 = webVTT0.getIdentifier();
 		assertTrue("'" + identifier1 + "' != '" + Format.Identifier.WEBVTT + "'",
@@ -324,7 +324,7 @@ public class FormatsRegressionTest0 {
 	}
 
 	@Test
-	public void test39() throws Throwable {
+	public void testMPC() throws Throwable {
 		MPC mPC0 = new MPC();
 		String[] str_array1 = mPC0.getSupportedExtensions();
 		boolean b3 = mPC0.match("");
@@ -371,18 +371,18 @@ public class FormatsRegressionTest0 {
 	}
 
 	@Test
-	public void test43() throws Throwable {
+	public void testAIFF() throws Throwable {
 		AIFF aIFF0 = new AIFF();
 	}
 
 	@Test
-	public void test44() throws Throwable {
+	public void testIMAGE() throws Throwable {
 		// Regression assertion (captures the current behavior of the code)
 		assertTrue(FormatType.IMAGE.getValue() == 2);
 	}
 
 	@Test
-	public void test45() throws Throwable {
+	public void testMLP() throws Throwable {
 		MLP mLP0 = new MLP();
 		Format.Identifier identifier1 = mLP0.getIdentifier();
 		boolean b2 = mLP0.getType() == FormatType.AUDIO;
@@ -400,7 +400,7 @@ public class FormatsRegressionTest0 {
 	}
 
 	@Test
-	public void test47() throws Throwable {
+	public void testTest() throws Throwable {
 		Format format1 = FormatFactory.getAssociatedFormat("hi!");
 
 		// Regression assertion (captures the current behavior of the code)
@@ -408,12 +408,12 @@ public class FormatsRegressionTest0 {
 	}
 
 	@Test
-	public void test48() throws Throwable {
+	public void testPNG() throws Throwable {
 		PNG pNG0 = new PNG();
 	}
 
 	@Test
-	public void test49() throws Throwable {
+	public void testMonkeysAudio() throws Throwable {
 		MonkeysAudio monkeysAudio0 = new MonkeysAudio();
 		String[] str_array1 = monkeysAudio0.getSupportedExtensions();
 
@@ -431,7 +431,7 @@ public class FormatsRegressionTest0 {
 	}
 
 	@Test
-	public void test51() throws Throwable {
+	public void testISO() throws Throwable {
 		ISO iSO0 = new ISO();
 		boolean b1 = iSO0.transcodable();
 
@@ -440,7 +440,7 @@ public class FormatsRegressionTest0 {
 	}
 
 	@Test
-	public void test52() throws Throwable {
+	public void testMKV() throws Throwable {
 		MKV mKV0 = new MKV();
 		String str1 = mKV0.toString();
 		String[] str_array2 = mKV0.getSupportedExtensions();
@@ -457,12 +457,12 @@ public class FormatsRegressionTest0 {
 	}
 
 	@Test
-	public void test53() throws Throwable {
+	public void testSAMI() throws Throwable {
 		SAMI sAMI0 = new SAMI();
 	}
 
 	@Test
-	public void test54() throws Throwable {
+	public void testAU() throws Throwable {
 		AU aU0 = new AU();
 		String[] str_array1 = aU0.getSupportedExtensions();
 
@@ -492,7 +492,7 @@ public class FormatsRegressionTest0 {
 	}
 
 	@Test
-	public void test57() throws Throwable {
+	public void testMP3() throws Throwable {
 		MP3 mP30 = new MP3();
 		String[] str_array1 = mP30.getSupportedExtensions();
 
@@ -501,7 +501,7 @@ public class FormatsRegressionTest0 {
 	}
 
 	@Test
-	public void test58() throws Throwable {
+	public void testAudioAsVideo() throws Throwable {
 		AudioAsVideo audioAsVideo0 = new AudioAsVideo();
 		String[] str_array1 = audioAsVideo0.getSupportedExtensions();
 
@@ -510,7 +510,7 @@ public class FormatsRegressionTest0 {
 	}
 
 	@Test
-	public void test59() throws Throwable {
+	public void testWEB() throws Throwable {
 		WEB wEB0 = new WEB();
 		Format.Identifier identifier1 = wEB0.getIdentifier();
 		boolean b2 = wEB0.transcodable();
@@ -522,7 +522,7 @@ public class FormatsRegressionTest0 {
 	}
 
 	@Test
-	public void test60() throws Throwable {
+	public void testSubRip() throws Throwable {
 		SubRip subRip0 = new SubRip();
 		boolean b1 = subRip0.transcodable();
 
@@ -531,13 +531,13 @@ public class FormatsRegressionTest0 {
 	}
 
 	@Test
-	public void test61() throws Throwable {
+	public void testPLAYLIST() throws Throwable {
 		// Regression assertion (captures the current behavior of the code)
 		assertTrue(FormatType.PLAYLIST.getValue() == 16);
 	}
 
 	@Test
-	public void test62() throws Throwable {
+	public void testFLAC() throws Throwable {
 		FLAC fLAC0 = new FLAC();
 		String[] str_array1 = fLAC0.getSupportedExtensions();
 
@@ -546,7 +546,7 @@ public class FormatsRegressionTest0 {
 	}
 
 	@Test
-	public void test63() throws Throwable {
+	public void testDTS() throws Throwable {
 		DTS dTS0 = new DTS();
 		String[] str_array2 = dTS0.getSupportedExtensions();
 
@@ -555,7 +555,7 @@ public class FormatsRegressionTest0 {
 	}
 
 	@Test
-	public void test64() throws Throwable {
+	public void testSUBRIP() throws Throwable {
 		SubRip subRip0 = new SubRip();
 		Format.Identifier identifier1 = subRip0.getIdentifier();
 		assertTrue("'" + identifier1 + "' != '" + Format.Identifier.SUBRIP + "'",
@@ -563,7 +563,7 @@ public class FormatsRegressionTest0 {
 	}
 
 	@Test
-	public void test65() throws Throwable {
+	public void testRA() throws Throwable {
 		RA rA0 = new RA();
 		Format.Identifier identifier1 = rA0.getIdentifier();
 		boolean b2 = rA0.transcodable();
@@ -575,11 +575,10 @@ public class FormatsRegressionTest0 {
 	}
 
 	@Test
-	public void test67() throws Throwable {
+	public void testJPG() throws Throwable {
 		JPG jPG0 = new JPG();
 		Format.Identifier identifier1 = jPG0.getIdentifier();
 		assertTrue("'" + identifier1 + "' != '" + Format.Identifier.JPG + "'",
 			identifier1.equals(Format.Identifier.JPG));
 	}
-
 }

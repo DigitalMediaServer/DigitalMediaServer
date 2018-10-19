@@ -109,6 +109,7 @@ public class FormatConfiguration {
 	public static final String MI_QPEL = "qpel";
 	public static final String MACE3 = "mace3";
 	public static final String MACE6 = "mace6";
+	public static final String MJP2 = "mjp2";
 	public static final String MJPEG = "mjpeg";
 	public static final String MKA = "mka";
 	public static final String MLP = "mlp";
