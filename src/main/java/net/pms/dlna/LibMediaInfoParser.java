@@ -542,6 +542,8 @@ public class LibMediaInfoParser {
 			format = FormatConfiguration.MPEGPS;
 		} else if (value.contains("mpeg-ts") || value.equals("bdav")) {
 			format = FormatConfiguration.MPEGTS;
+		} else if (value.equals("mjp2")) {
+			format = FormatConfiguration.MJP2;
 		} else if (value.equals("caf")) {
 			format = FormatConfiguration.CAF;
 		} else if (value.contains("aiff")) {
