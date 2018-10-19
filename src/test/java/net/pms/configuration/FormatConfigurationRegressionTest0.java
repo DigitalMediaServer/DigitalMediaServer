@@ -913,4 +913,12 @@ public class FormatConfigurationRegressionTest0 {
 		// Regression assertion (captures the current behavior of the code)
 		assertTrue("'" + str0 + "' != '" + "prores"+ "'", str0.equals("prores"));
 	}
+
+	@Test
+	public void testMJP2() throws Throwable {
+		String str0 = net.pms.configuration.FormatConfiguration.MJP2;
+
+		// Regression assertion (captures the current behavior of the code)
+		assertTrue("'" + str0 + "' != '" + "mjp2"+ "'", str0.equals("mjp2"));
+	}
 }

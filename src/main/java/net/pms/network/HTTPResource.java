@@ -90,6 +90,7 @@ public class HTTPResource {
 	public static final String GIF_TYPEMIME = "image/gif";
 	public static final String JPEG_TYPEMIME = "image/jpeg";
 	public static final String MATROSKA_TYPEMIME = "video/x-matroska";
+	public static final String MJP2_TYPEMIME = "video/mj2";
 	public static final String MOV_TYPEMIME = "video/quicktime";
 	public static final String MP4_TYPEMIME = "video/mp4";
 	public static final String MPEG_TYPEMIME = "video/mpeg";
