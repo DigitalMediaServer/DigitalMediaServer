@@ -25,6 +25,7 @@ import net.pms.dlna.DLNAMediaInfo;
 import net.pms.dlna.Range;
 import net.pms.media.H264Level;
 import net.pms.newgui.LooksFrame;
+import net.pms.util.ConversionUtil;
 import net.pms.util.FileWatcher;
 import net.pms.util.Languages;
 import net.pms.util.StringUtil;
@@ -107,7 +108,12 @@ public class RemoteUtil {
 						os.flush();
 					}
 				} catch (IOException e) {
-					LOGGER.trace("Sending stream with premature end: " + sendBytes + " bytes. Reason: " + e.getMessage());
+					LOGGER.debug(
+						"Sending stream with premature end: {} bytes. Reason: {}",
+						ConversionUtil.formatBytes(sendBytes, true),
+						e.getMessage()
+					);
+					LOGGER.trace("", e);
 				} finally {
 					try {
 						in.close();
@@ -494,7 +500,7 @@ public class RemoteUtil {
 				if (url != null) {
 					t = compile(getInputStream(filename));
 					templates.put(filename, t);
-					PMS.getFileWatcher().add(new FileWatcher.Watch(url.getFile(), recompiler));
+					FileWatcher.add(new FileWatcher.Watch(url.getFile(), recompiler));
 				} else {
 					LOGGER.warn("Couldn't find web template \"{}\"", filename);
 				}

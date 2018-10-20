@@ -24,13 +24,15 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.text.NumberFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Locale;
 import java.util.Timer;
 import java.util.TimerTask;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import net.pms.PMS;
 import net.pms.configuration.PmsConfiguration;
 import net.pms.configuration.RendererConfiguration;
+import net.pms.util.ConversionUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -65,12 +67,12 @@ public class BufferedOutputFileImpl extends OutputStream implements BufferedOutp
 	private static final int MARGIN_SMALL = 600000;
 	private static final int CHECK_INTERVAL = 500;
 	private static final int CHECK_END_OF_PROCESS = 2500; // must be superior to CHECK_INTERVAL
-	private int minMemorySize;
-	private int maxMemorySize;
-	private int bufferOverflowWarning;
-	private boolean eof;
+	private final int minMemorySize;
+	private final int maxMemorySize;
+	private volatile int bufferOverflowWarning;
+	private volatile boolean eof;
 	private long writeCount;
-	private byte buffer[];
+	private byte[] buffer;
 	private boolean forcefirst;
 	private ArrayList<WaitBufferedInputStream> inputStreams;
 	private ProcessWrapper attachedThread;
@@ -102,15 +104,11 @@ public class BufferedOutputFileImpl extends OutputStream implements BufferedOutp
 	 * original size or the original buffer will be returned.
 	 * @return The resized byte array.
 	 */
-	private byte[] growBuffer(byte[] buffer, int newSize) {
+	@Nonnull
+	private static byte[] growBuffer(@Nullable byte[] buffer, int newSize) {
 		byte[] copy;
 
-		if (buffer == null) {
-			// Temporary empty array to avoid null tests in the code below
-			buffer = new byte[0];
-		}
-
-		if (newSize <= buffer.length) {
+		if (buffer != null && newSize <= buffer.length) {
 			// Cannot shrink the original
 			return buffer;
 		}
@@ -119,13 +117,20 @@ public class BufferedOutputFileImpl extends OutputStream implements BufferedOutp
 			// Try to allocate the requested new size
 			copy = new byte[newSize];
 		} catch (OutOfMemoryError e) {
-			if (buffer.length == 0) {
-				LOGGER.trace("Cannot initialize buffer to " + formatter.format(newSize) + " bytes.");
+			if (buffer == null || buffer.length == 0) {
+				LOGGER.warn(
+					"Can't initialize buffer to {}: {}",
+					ConversionUtil.formatBytes(newSize, true),
+					e.getMessage()
+				);
 			} else {
-				LOGGER.debug("Cannot grow buffer size from " + formatter.format(buffer.length) + " bytes to " + formatter.format(newSize) + " bytes.");
-				LOGGER.debug("Error given: " + e);
-
+				LOGGER.warn(
+					"Can't grow buffer size from {} to {}: {}",
+					ConversionUtil.formatBytes(buffer.length, true),
+					ConversionUtil.formatBytes(newSize, true), e.getMessage()
+				);
 			}
+			LOGGER.trace("", e);
 
 			// Could not allocate the requested new size, use 30% of free memory instead.
 			// Rationale behind using 30%: multiple threads are running at the same time,
@@ -135,35 +140,46 @@ public class BufferedOutputFileImpl extends OutputStream implements BufferedOutp
 			// See http://javarevisited.blogspot.com/2011/05/java-heap-space-memory-size-jvm.html
 			long realisticSize = Runtime.getRuntime().maxMemory() * 3 / 10;
 
-			if (realisticSize < buffer.length) {
+			if (buffer != null && realisticSize < buffer.length) {
 				// A copy would be smaller in size, shrinking instead of growing the buffer.
 				// Better to return the original and retain its size.
 				return buffer;
-			} else {
-				try {
-					// Try to allocate the realistic alternative size
-					copy = new byte[(int) realisticSize];
-				} catch (OutOfMemoryError e2) {
-					LOGGER.debug("Cannot grow buffer size from " + formatter.format(buffer.length) + " bytes to " + formatter.format(realisticSize) + " bytes either.");
-					LOGGER.trace("freeMemory: " + formatter.format(Runtime.getRuntime().freeMemory()));
-					LOGGER.trace("totalMemory: " + formatter.format(Runtime.getRuntime().totalMemory()));
-					LOGGER.trace("maxMemory: " + formatter.format(Runtime.getRuntime().maxMemory()));
-					LOGGER.debug("Error given: " + e2);
-
-					// Cannot allocate memory, no other option than to return the original.
-					return buffer;
+			}
+			try {
+				// Try to allocate the realistic alternative size
+				copy = new byte[(int) realisticSize];
+			} catch (OutOfMemoryError e2) {
+				LOGGER.error(
+					"Can't grow buffer size from {} to {} either: {}",
+					ConversionUtil.formatBytes(buffer == null ? 0 : buffer.length, true),
+					ConversionUtil.formatBytes(realisticSize, true),
+					e2.getMessage()
+				);
+				if (LOGGER.isDebugEnabled()) {
+					Runtime runtime = Runtime.getRuntime();
+					LOGGER.debug("freeMemory: {}", ConversionUtil.formatBytes(runtime.freeMemory(), true));
+					LOGGER.debug("totalMemory: {}", ConversionUtil.formatBytes(runtime.totalMemory(), true));
+					LOGGER.debug("maxMemory: {}", ConversionUtil.formatBytes(runtime.maxMemory(), true));
 				}
+				LOGGER.trace("", e2);
+
+				// Cannot allocate memory, no other option than to return the original.
+				return buffer == null ? new byte[0] : buffer;
 			}
 		}
 
-		if (buffer.length == 0) {
-			LOGGER.trace("Successfully initialized buffer to " + formatter.format(copy.length) + " bytes.");
+		if (buffer == null || buffer.length == 0) {
+			LOGGER.debug("Successfully initialized buffer to {}", ConversionUtil.formatBytes(copy.length, true));
 		} else {
 			try {
 				System.arraycopy(buffer, 0, copy, 0, buffer.length);
-				LOGGER.trace("Successfully grown buffer from " + formatter.format(buffer.length) + " bytes to " + formatter.format(copy.length) + " bytes.");
+				LOGGER.debug(
+					"Successfully grew buffer from {} to {}",
+					ConversionUtil.formatBytes(buffer.length, true),
+					ConversionUtil.formatBytes(copy.length, true)
+				);
 			} catch (NullPointerException npe) {
-				LOGGER.trace("Cannot grow buffer size, error copying buffer contents.");
+				LOGGER.warn("Cannot grow buffer size, error copying buffer contents: {}", npe);
 			}
 		}
 
@@ -214,11 +230,11 @@ public class BufferedOutputFileImpl extends OutputStream implements BufferedOutp
 
 		if (buffer.length == 0) {
 			// Cannot transcode without a buffer
-			LOGGER.info("FATAL ERROR: OutOfMemory / dumping stats");
-			LOGGER.trace("freeMemory: " + Runtime.getRuntime().freeMemory());
-			LOGGER.trace("totalMemory: " + Runtime.getRuntime().totalMemory());
-			LOGGER.trace("maxMemory: " + Runtime.getRuntime().maxMemory());
-			System.exit(1);
+			Runtime runtime = Runtime.getRuntime();
+			LOGGER.info("freeMemory: {}", ConversionUtil.formatBytes(runtime.freeMemory(), true));
+			LOGGER.info("totalMemory: {}", ConversionUtil.formatBytes(runtime.totalMemory(), true));
+			LOGGER.info("maxMemory: {}", ConversionUtil.formatBytes(runtime.maxMemory(), true));
+			throw new Error("Out of memory in BufferedOutputFileImpl");
 		}
 
 		inputStreams = new ArrayList<>();
@@ -263,7 +279,7 @@ public class BufferedOutputFileImpl extends OutputStream implements BufferedOutp
 			inputStreams.add(atominputStream);
 		} else {
 			if (configuration.getTrancodeKeepFirstConnections()) {
-				LOGGER.debug("BufferedOutputFile is already attached to an InputStream: " + getCurrentInputStream());
+				LOGGER.debug("BufferedOutputFile is already attached to an InputStream: {}", getCurrentInputStream());
 			} else {
 				// Ditlew - fixes the above (the above iterator breaks on items getting close, cause they will remove them self from the arraylist)
 				while (inputStreams.size() > 0) {
@@ -277,14 +293,14 @@ public class BufferedOutputFileImpl extends OutputStream implements BufferedOutp
 				inputStreams.clear();
 				atominputStream = new WaitBufferedInputStream(this);
 				inputStreams.add(atominputStream);
-				LOGGER.debug("Reassign inputstream: " + getCurrentInputStream());
+				LOGGER.debug("Reassign inputstream: {}", getCurrentInputStream());
 			}
 
 			return null;
 		}
 
 		if (newReadPosition > 0) {
-			LOGGER.debug("Setting InputStream new position to: " + formatter.format(newReadPosition));
+			LOGGER.debug("Setting InputStream new position to: {}", formatter.format(newReadPosition));
 			atominputStream.setReadCount(newReadPosition);
 		}
 
@@ -392,7 +408,7 @@ public class BufferedOutputFileImpl extends OutputStream implements BufferedOutp
 	 * @param divisor Number that is used to divide
 	 * @return The rest value of the division.
 	 */
-	private int modulo(int number, int divisor) {
+	private static int modulo(int number, int divisor) {
 		if (number >= 0) {
 			return number % divisor;
 		}
@@ -662,10 +678,9 @@ public class BufferedOutputFileImpl extends OutputStream implements BufferedOutp
 		if (readCount > INITIAL_BUFFER_SIZE && readCount < maxMemorySize) {
 			int newMargin = maxMemorySize - MARGIN_MEDIUM;
 			if (bufferOverflowWarning != newMargin) {
+				bufferOverflowWarning = newMargin ;
 				LOGGER.debug("Setting margin to 2Mb");
 			}
-
-			this.bufferOverflowWarning = newMargin;
 		}
 
 		if (eof && readCount >= writeCount) {
@@ -674,9 +689,14 @@ public class BufferedOutputFileImpl extends OutputStream implements BufferedOutp
 
 		int c = 0;
 		int minBufferS = firstRead ? minMemorySize : secondread_minsize;
+
 		while (writeCount - readCount <= minBufferS && !eof && c < 15) {
 			if (c == 0) {
-				LOGGER.trace("Suspend Read: readCount=" + readCount + " / writeCount=" + writeCount);
+				LOGGER.trace(
+					"Suspend Read: readCount={} / writeCount={}",
+					ConversionUtil.formatBytes(readCount, true),
+					ConversionUtil.formatBytes(writeCount, true)
+				);
 			}
 
 			c++;
@@ -692,7 +712,11 @@ public class BufferedOutputFileImpl extends OutputStream implements BufferedOutp
 		}
 
 		if (c > 0) {
-			LOGGER.trace("Resume Read: readCount=" + readCount + " / writeCount=" + writeCount);
+			LOGGER.trace(
+				"Resume Read: readCount={} / writeCount={}",
+				ConversionUtil.formatBytes(readCount, true),
+				ConversionUtil.formatBytes(writeCount, true)
+			);
 		}
 
 		if (buffer == null || !buffered) {
@@ -700,44 +724,29 @@ public class BufferedOutputFileImpl extends OutputStream implements BufferedOutp
 		}
 
 		int mb = (int) (readCount % maxMemorySize);
-		int endOF = buffer.length;
+		int bufferLength = buffer.length;
 		int cut = 0;
 
 		if (eof && (writeCount - readCount) < len) {
-			cut = (int) (len - (writeCount - readCount));
-			if (cut < 0) {
-				cut = 0;
-			}
+			cut = Math.max(0, (int) (len - writeCount + readCount));
 		}
 
-		if (mb >= endOF - len) {
-			try {
-				System.arraycopy(buffer, mb, buf, off, endOF - mb - cut);
-			} catch (ArrayIndexOutOfBoundsException e) {
-				LOGGER.trace("Something went wrong with the buffer, error: " + e);
-				LOGGER.trace("buffer: " + Arrays.toString(buffer));
-				LOGGER.trace("mb: " + mb);
-				LOGGER.trace("buf: " + Arrays.toString(buf));
-				LOGGER.trace("off: " + off);
-				LOGGER.trace("endOF - mb - cut: " + (endOF - mb - cut));
-			}
-			return endOF - mb;
-		} else {
-			System.arraycopy(buffer, mb, buf, off, len - cut);
-			return len;
+		if (mb >= bufferLength - len) {
+			System.arraycopy(buffer, mb, buf, off, bufferLength - mb - cut);
+			return bufferLength - mb - cut;
 		}
+		System.arraycopy(buffer, mb, buf, off, len - cut);
+		return len - cut;
 	}
 
 	@Override
 	public int read(boolean firstRead, long readCount) {
 		if (readCount > INITIAL_BUFFER_SIZE && readCount < maxMemorySize) {
 			int newMargin = maxMemorySize - MARGIN_MEDIUM;
-
 			if (bufferOverflowWarning != newMargin) {
+				bufferOverflowWarning = newMargin;
 				LOGGER.debug("Setting margin to 2Mb");
 			}
-
-			this.bufferOverflowWarning = newMargin;
 		}
 
 		if (eof && readCount >= writeCount) {
@@ -749,7 +758,11 @@ public class BufferedOutputFileImpl extends OutputStream implements BufferedOutp
 
 		while (writeCount - readCount <= minBufferS && !eof && c < 15) {
 			if (c == 0) {
-				LOGGER.trace("Suspend Read: readCount=" + readCount + " / writeCount=" + writeCount);
+				LOGGER.trace(
+					"Suspend Read: readCount={} / writeCount={}",
+					ConversionUtil.formatBytes(readCount, true),
+					ConversionUtil.formatBytes(writeCount, true)
+				);
 			}
 
 			c++;
@@ -765,21 +778,18 @@ public class BufferedOutputFileImpl extends OutputStream implements BufferedOutp
 		}
 
 		if (c > 0) {
-			LOGGER.trace("Resume Read: readCount=" + readCount + " / writeCount=" + writeCount);
+			LOGGER.trace(
+				"Resume Read: readCount={} / writeCount={}",
+				ConversionUtil.formatBytes(readCount, true),
+				ConversionUtil.formatBytes(writeCount, true)
+			);
 		}
 
 		if (buffer == null || !buffered) {
 			return -1;
 		}
 
-		try {
-			return 0xff & buffer[(int) (readCount % maxMemorySize)];
-		} catch (ArrayIndexOutOfBoundsException e) {
-			LOGGER.info("Buffer read ArrayIndexOutOfBoundsException error:");
-			LOGGER.info("readCount: \"" + readCount + "\"");
-			LOGGER.info("maxMemorySize: \"" + maxMemorySize + "\"");
-			return -1;
-		}
+		return 0xff & buffer[(int) (readCount % maxMemorySize)];
 	}
 
 	@Override
