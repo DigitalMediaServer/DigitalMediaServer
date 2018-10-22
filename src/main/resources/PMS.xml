@@ -15,7 +15,7 @@
 		<manufacturerURL>http://www.digitalmediaserver.org</manufacturerURL>
 		<modelDescription>DLNA and UPnP AV 1.0 Media Server</modelDescription>
 		<modelName>Digital Media Server</modelName>
-		<modelNumber>1</modelNumber>
+		<modelNumber>[version]</modelNumber>
 		<modelURL>http://www.digitalmediaserver.org</modelURL>
 		<serialNumber/>
 		<UPC/>

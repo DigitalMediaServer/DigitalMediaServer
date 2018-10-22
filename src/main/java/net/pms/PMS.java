@@ -1109,9 +1109,9 @@ public class PMS {
 				} catch (ConfigurationException e) {
 					LOGGER.error("Failed to save configuration with new UUID", e);
 				}
+			} else {
+				LOGGER.info("Using configured UUID: {}", uuid);
 			}
-
-			LOGGER.info("Using the following UUID configured in DMS.conf: {}", uuid);
 		}
 
 		return "uuid:" + uuid;

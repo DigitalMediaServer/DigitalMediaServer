@@ -1133,7 +1133,7 @@ public class PmsConfiguration extends RendererConfiguration {
 	public String getServerDisplayName() {
 		String profileName = isAppendProfileName() ? getProfileName() : null;
 		if (profileName != null) {
-			return String.format("%s [%s]", getString(KEY_SERVER_NAME, PMS.getName()), getProfileName());
+			return String.format("%s [%s]", getString(KEY_SERVER_NAME, PMS.getName()), profileName);
 		}
 		return getString(KEY_SERVER_NAME, PMS.getName());
 	}
@@ -4480,7 +4480,7 @@ public class PmsConfiguration extends RendererConfiguration {
 	 * @return True if the profile name should be appended.
 	 */
 	public boolean isAppendProfileName() {
-		return getBoolean(KEY_APPEND_PROFILE_NAME, false);
+		return getBoolean(KEY_APPEND_PROFILE_NAME, true);
 	}
 
 	/**
