@@ -186,7 +186,6 @@ public class RendererConfiguration extends UPNPHelper.Renderer {
 	protected static final String RENDERER_ICON = "RendererIcon";
 	protected static final String RENDERER_NAME = "RendererName";
 	protected static final String RESCALE_BY_RENDERER = "RescaleByRenderer";
-	protected static final String SEEK_BY_TIME = "SeekByTime";
 	protected static final String SEND_DATE_METADATA = "SendDateMetadata";
 	protected static final String SEND_FOLDER_THUMBNAILS = "SendFolderThumbnails";
 	protected static final String SHOW_AUDIO_METADATA = "ShowAudioMetadata";
@@ -1732,27 +1731,6 @@ public class RendererConfiguration extends UPNPHelper.Renderer {
 		}
 
 		return file;
-	}
-
-	/**
-	 * Returns true if SeekByTime is set to "true" or "exclusive", false otherwise.
-	 * Default value is false.
-	 *
-	 * @return true if the renderer supports seek-by-time, false otherwise.
-	 */
-	public boolean isSeekByTime() {
-		return isSeekByTimeExclusive() || getString(SEEK_BY_TIME, "false").equalsIgnoreCase("true");
-	}
-
-	/**
-	 * Returns true if SeekByTime is set to "exclusive", false otherwise.
-	 * Default value is false.
-	 *
-	 * @return true if the renderer supports seek-by-time exclusively
-	 * (i.e. not in conjunction with seek-by-byte), false otherwise.
-	 */
-	public boolean isSeekByTimeExclusive() {
-		return getString(SEEK_BY_TIME, "false").equalsIgnoreCase("exclusive");
 	}
 
 	public boolean isMuxH264MpegTS() {

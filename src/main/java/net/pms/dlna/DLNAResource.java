@@ -29,6 +29,7 @@ import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import net.pms.Messages;
 import net.pms.PMS;
@@ -435,8 +436,13 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 	public String getDlnaContentFeatures(RendererConfiguration mediaRenderer) {
 		// TODO: Determine renderer's correct localization value
 		int localizationValue = 1;
-		String dlnaOrgPnFlags = getDlnaOrgPnFlags(mediaRenderer, localizationValue, null);
-		return (dlnaOrgPnFlags != null ? (dlnaOrgPnFlags + ";") : "") + getDlnaOrgOpFlags(mediaRenderer) + ";DLNA.ORG_CI=0;DLNA.ORG_FLAGS=01700000000000000000000000000000";
+		return StringUtil.join(
+			true,
+			';',
+			getDlnaOrgPnFlags(mediaRenderer, localizationValue, null),
+			getDlnaOrgOpFlags(mediaRenderer),
+			"DLNA.ORG_CI=0;DLNA.ORG_FLAGS=01700000000000000000000000000000"
+		);
 	}
 
 	public String getDlnaContentFeatures(DLNAImageProfile profile, boolean thumbnailRequest) {
@@ -1879,46 +1885,61 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 	/**
 	 * DLNA.ORG_OP flags
 	 *
-	 * Two booleans (binary digits) which determine what transport operations the renderer is allowed to
-	 * perform (in the form of HTTP request headers): the first digit allows the renderer to send
-	 * TimeSeekRange.DLNA.ORG (seek by time) headers; the second allows it to send RANGE (seek by byte)
+	 * Two booleans (binary digits) which determine what transport operations
+	 * the renderer is allowed to perform (in the form of HTTP request headers):
+	 * the first digit allows the renderer to send TimeSeekRange.DLNA.ORG (seek
+	 * by time) headers; the second allows it to send RANGE (seek by byte)
 	 * headers.
-	 *
+	 * <pre>
 	 *    00 - no seeking (or even pausing) allowed
 	 *    01 - seek by byte
 	 *    10 - seek by time
 	 *    11 - seek by both
+	 * </pre>
+	 * See here for an example of how these options can be mapped to keys on the
+	 * renderer's controller:
+	 * <p>
+	 * Note that seek-by-byte is the preferred option for streamed files [1] and
+	 * seek-by-time is the preferred option for transcoded files.
+	 * <p>
+	 * seek-by-time requires a) support by the renderer (via the SeekByTime
+	 * renderer conf option) and b) support by the transcode engine.
+	 * <p>
+	 * The seek-by-byte fallback doesn't work well with transcoded files [2],
+	 * and has been disabled.
 	 *
-	 * See here for an example of how these options can be mapped to keys on the renderer's controller:
-	 *
-	 * Note that seek-by-byte is the preferred option for streamed files [1] and seek-by-time is the
-	 * preferred option for transcoded files.
-	 *
-	 * seek-by-time requires a) support by the renderer (via the SeekByTime renderer conf option)
-	 * and b) support by the transcode engine.
-	 *
-	 * The seek-by-byte fallback doesn't work well with transcoded files [2], but it's better than
-	 * disabling seeking (and pausing) altogether.
-	 *
-	 * @param mediaRenderer
-	 * 			Media Renderer for which to represent this information.
+	 * @param mediaRenderer Media Renderer for which to represent this
+	 *            information.
 	 * @return String representation of the DLNA.ORG_OP flags
 	 */
-	private String getDlnaOrgOpFlags(RendererConfiguration mediaRenderer) {
-		if (player != null && player.isTimeSeekable()) {
-			return "DLNA.ORG_OP=10";
+	private String getDlnaOrgOpFlags(@Nonnull RendererConfiguration mediaRenderer) {
+		boolean timeSeekRange;
+		boolean byteRange;
+		if (player != null) {
+			timeSeekRange = player.isTimeSeekable();
+			// Byte to time conversion is only implemented for MEncoderVideo when transcoding to
+			// MPEG-TS using a fixed, renderer-configured CBRVideoBitrate.
+			byteRange = player instanceof MEncoderVideo && mediaRenderer.getCBRVideoBitrate() > 0;
+		} else {
+			// Time to byte conversion is only implemented for MPEG-TS source files.
+			timeSeekRange = media != null && FormatConfiguration.MPEGTS.equals(media.getContainer());
+			byteRange = true;
 		}
 
-		return mediaRenderer == null || !mediaRenderer.isSeekByTime()?
-			"DLNA.ORG_OP=01" :
-			mediaRenderer.isSeekByTimeExclusive() ? "DLNA.ORG_OP=10" : "DLNA.ORG_OP=11";
+		if (!timeSeekRange && !byteRange) {
+			return "";
+		}
+		return new StringBuilder(14)
+			.append("DLNA.ORG_OP=")
+			.append(timeSeekRange ? "1" : "0")
+			.append(byteRange ? "1" : "0")
+			.toString();
 
 		/*
-		 * 01 - seek by byte only
-		 * 10 - seek by time only
-		 * 11 - seek by both
+		 * Seek-by-byte has been disabled for transcoding for now, since there's no
+		 * proper way to implement it.
 		 *
-		 * Included is the old explanation of this mess:
+		 * Included is the old explanation of this mess (which doesn't apply anymore):
 		 *
 		 * Some renderers - e.g. the PS3 and Panasonic TVs - behave erratically when
 		 * transcoding if we keep the default seek-by-byte permission on when permitting
@@ -1932,17 +1953,6 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 		 *
 		 * works around it.
 		 */
-
-		/*
-		 * TODO (e.g. in a beta release): set seek-by-time (exclusive) here for *all* renderers:
-		 * seek-by-byte isn't needed here (both the renderer and the engine support seek-by-time)
-		 * and may be buggy on other renderers than the ones we currently handle.
-		 *
-		 * In the unlikely event that a renderer *requires* seek-by-both here, it can
-		 * opt in with (e.g.):
-		 *
-		 *    SeekByTime = both
-		 */
 	}
 
 	/**
@@ -1955,7 +1965,7 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 	 * @param mediaRenderer
 	 * 			Media Renderer for which to represent this information.
 	 * @param localizationValue
-	 * @param mime hack to avoid constatly looking it up
+	 * @param mime hack to avoid constantly looking it up
 	 * @return String representation of the DLNA.ORG_PN flags
 	 */
 	private String getDlnaOrgPnFlags(RendererConfiguration mediaRenderer, int localizationValue, String mime) {
@@ -2277,8 +2287,12 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 			for (int c = 0; c < indexCount; c++) {
 				openTag(sb, "res");
 				addAttribute(sb, "xmlns:dlna", "urn:schemas-dlna-org:metadata-1-0/");
-				String dlnaOrgPnFlags = getDlnaOrgPnFlags(mediaRenderer, c, mime);
-				String tempString = "http-get:*:" + mime + ":" + (dlnaOrgPnFlags != null ? (dlnaOrgPnFlags + ";") : "") + getDlnaOrgOpFlags(mediaRenderer);
+				String tempString = "http-get:*:" + mime + ":" + StringUtil.join(
+					true,
+					';',
+					getDlnaOrgPnFlags(mediaRenderer, c, mime),
+					getDlnaOrgOpFlags(mediaRenderer)
+				);
 				addAttribute(sb, "protocolInfo", tempString);
 				if (subsAreValidForStreaming && mediaRenderer.offerSubtitlesByProtocolInfo() && !mediaRenderer.useClosedCaption()) {
 					addAttribute(sb, "pv:subtitleFileType", media_subtitle.getType().getExtension().toUpperCase());
@@ -3080,7 +3094,10 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 		long low = range.isByteRange() && range.isStartOffsetAvailable() ? range.asByteRange().getStart() : 0;
 		long high = range.isByteRange() && range.isEndLimitAvailable() ? range.asByteRange().getEnd() : -1;
 		Range.Time timeRange = range.createTimeRange();
-		if (player != null && low > 0 && cbr_video_bitrate > 0) {
+		if (player instanceof MEncoderVideo && low > 0 && cbr_video_bitrate > 0) {
+
+			// This hacks is only implemented for MEncoder and probably doesn't work to well there either.
+			// It assumes that the output is MPEG-TS.
 			int used_bit_rated = (int) ((cbr_video_bitrate + 256) * 1024 / (double) 8 * 1.04); // 1.04 = container overhead
 			if (low > used_bit_rated) {
 				timeRange.setStart(low / (double) (used_bit_rated));
@@ -3129,7 +3146,7 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 				return wrap(fis, high, low);
 			}
 
-			 InputStream fis = getInputStream();
+			InputStream fis = getInputStream();
 
 			if (fis != null) {
 				if (low > 0) {
@@ -3242,6 +3259,7 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 				try {
 					Thread.sleep(500);
 				} catch (InterruptedException e) {
+					break;
 				}
 			}
 		}

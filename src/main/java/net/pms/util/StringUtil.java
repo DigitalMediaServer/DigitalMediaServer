@@ -1500,6 +1500,350 @@ public class StringUtil {
 	}
 
 	/**
+	 * Joins zero or more elements into a {@link String} using the specified
+	 * separator. {@code null} elements will be represented as empty strings,
+	 * and no elements will return an empty string.
+	 * <p>
+	 * If {@code elements} are {@link CharSequence}s they will be used as is.
+	 * Otherwise, their {@code toString()} output will be used.
+	 *
+	 * @param separator the separator to use.
+	 * @param elements the {@link Object}s to combine.
+	 * @return The combined {@link String}.
+	 */
+	@Nonnull
+	public static String join(
+		char separator,
+		@Nullable Object... elements
+	) {
+		return doJoin(elements, null, separator, false);
+	}
+
+	/**
+	 * Joins zero or more elements into a {@link String} using the specified
+	 * separator. {@code null} elements will be represented as empty strings,
+	 * and no elements will return an empty string.
+	 * <p>
+	 * If {@code elements} are {@link CharSequence}s they will be used as is.
+	 * Otherwise, their {@code toString()} output will be used.
+	 *
+	 * @param elements the {@link Object}s to combine.
+	 * @param separator the separator to use.
+	 * @return The combined {@link String}.
+	 */
+	@Nonnull
+	public static String join(
+		@Nullable Collection<?> elements,
+		char separator
+	) {
+		if (elements == null || elements.isEmpty()) {
+			return "";
+		}
+		return doJoin(new Object[] {elements}, null, separator, false);
+	}
+
+	/**
+	 * Joins zero or more elements into a {@link String} using the specified
+	 * separator. {@code null} elements will be represented as empty strings,
+	 * and no elements will return an empty string.
+	 * <p>
+	 * If {@code elements} are {@link CharSequence}s they will be used as is.
+	 * Otherwise, their {@code toString()} output will be used.
+	 *
+	 * @param elements the {@link Object}s to combine.
+	 * @param separator the separator to use.
+	 * @return The combined {@link String}.
+	 */
+	@Nonnull
+	public static String join(
+		@Nullable Object[] elements,
+		char separator
+	) {
+		return doJoin(elements, null, separator, false);
+	}
+
+	/**
+	 * Joins zero or more elements into a {@link String} using the specified
+	 * separator. {@code null} elements will be represented as empty strings,
+	 * and no elements will return an empty string.
+	 * <p>
+	 * If {@code elements} are {@link CharSequence}s they will be used as is.
+	 * Otherwise, their {@code toString()} output will be used.
+	 *
+	 * @param skipEmpty if {@code true}, empty ({@code null} or {@code ""})
+	 *            elements will be skipped so that no separator is added for
+	 *            them.
+	 * @param separator the separator to use.
+	 * @param elements the {@link Object}s to combine.
+	 * @return The combined {@link String}.
+	 */
+	@Nonnull
+	public static String join(
+		boolean skipEmpty,
+		char separator,
+		@Nullable Object... elements
+	) {
+		return doJoin(elements, null, separator, skipEmpty);
+	}
+
+	/**
+	 * Joins zero or more elements into a {@link String} using the specified
+	 * separator. {@code null} elements will be represented as empty strings,
+	 * and no elements will return an empty string.
+	 * <p>
+	 * If {@code elements} are {@link CharSequence}s they will be used as is.
+	 * Otherwise, their {@code toString()} output will be used.
+	 *
+	 * @param elements the {@link Object}s to combine.
+	 * @param separator the separator to use.
+	 * @param skipEmpty if {@code true}, empty ({@code null} or {@code ""})
+	 *            elements will be skipped so that no separator is added for
+	 *            them.
+	 * @return The combined {@link String}.
+	 */
+	@Nonnull
+	public static String join(
+		@Nullable Collection<?> elements,
+		char separator,
+		boolean skipEmpty
+	) {
+		if (elements == null || elements.isEmpty()) {
+			return "";
+		}
+		return doJoin(new Object[] {elements}, null, separator, skipEmpty);
+	}
+
+	/**
+	 * Joins zero or more elements into a {@link String} using the specified
+	 * separator. {@code null} elements will be represented as empty strings,
+	 * and no elements will return an empty string.
+	 * <p>
+	 * If {@code elements} are {@link CharSequence}s they will be used as is.
+	 * Otherwise, their {@code toString()} output will be used.
+	 *
+	 * @param elements the {@link Object}s to combine.
+	 * @param separator the separator to use.
+	 * @param skipEmpty if {@code true}, empty ({@code null} or {@code ""})
+	 *            elements will be skipped so that no separator is added for
+	 *            them.
+	 * @return The combined {@link String}.
+	 */
+	@Nonnull
+	public static String join(
+		@Nullable Object[] elements,
+		char separator,
+		boolean skipEmpty
+	) {
+		return doJoin(elements, null, separator, skipEmpty);
+	}
+
+	/**
+	 * Joins zero or more elements into a {@link String} using the specified
+	 * separator. {@code null} elements and separators will be represented as
+	 * empty strings, and no elements will return an empty string.
+	 * <p>
+	 * If {@code elements} are {@link CharSequence}s they will be used as is.
+	 * Otherwise, their {@code toString()} output will be used.
+	 *
+	 * @param separator the separator to use.
+	 * @param elements the {@link Object}s to combine.
+	 * @return The combined {@link String}.
+	 */
+	@Nonnull
+	public static String join(
+		@Nullable String separator,
+		@Nullable Object... elements
+	) {
+		return doJoin(elements, separator, '\0', false);
+	}
+
+	/**
+	 * Joins zero or more elements into a {@link String} using the specified
+	 * separator. {@code null} elements and separators will be represented as
+	 * empty strings, and no elements will return an empty string.
+	 * <p>
+	 * If {@code elements} are {@link CharSequence}s they will be used as is.
+	 * Otherwise, their {@code toString()} output will be used.
+	 *
+	 * @param elements the {@link Object}s to combine.
+	 * @param separator the separator to use.
+	 * @return The combined {@link String}.
+	 */
+	@Nonnull
+	public static String join(
+		@Nullable Collection<?> elements,
+		@Nullable String separator
+	) {
+		if (elements == null || elements.isEmpty()) {
+			return "";
+		}
+		return doJoin(new Object[] {elements}, separator, '\0', false);
+	}
+
+	/**
+	 * Joins zero or more elements into a {@link String} using the specified
+	 * separator. {@code null} elements and separators will be represented as
+	 * empty strings, and no elements will return an empty string.
+	 * <p>
+	 * If {@code elements} are {@link CharSequence}s they will be used as is.
+	 * Otherwise, their {@code toString()} output will be used.
+	 *
+	 * @param elements the {@link Object}s to combine.
+	 * @param separator the separator to use.
+	 * @return The combined {@link String}.
+	 */
+	@Nonnull
+	public static String join(
+		@Nullable Object[] elements,
+		@Nullable String separator
+	) {
+		return doJoin(elements, separator, '\0', false);
+	}
+
+	/**
+	 * Joins zero or more elements into a {@link String} using the specified
+	 * separator. {@code null} elements and separators will be represented as
+	 * empty strings, and no elements will return an empty string.
+	 * <p>
+	 * If {@code elements} are {@link CharSequence}s they will be used as is.
+	 * Otherwise, their {@code toString()} output will be used.
+	 *
+	 * @param skipEmpty if {@code true}, empty ({@code null} or {@code ""})
+	 *            elements will be skipped so that no separator is added for
+	 *            them.
+	 * @param separator the separator to use.
+	 * @param elements the {@link Object}s to combine.
+	 * @return The combined {@link String}.
+	 */
+	@Nonnull
+	public static String join(
+		boolean skipEmpty,
+		@Nullable String separator,
+		@Nullable Object... elements
+	) {
+		return doJoin(elements, separator, '\0', skipEmpty);
+	}
+
+	/**
+	 * Joins zero or more elements into a {@link String} using the specified
+	 * separator. {@code null} elements and separators will be represented as
+	 * empty strings, and no elements will return an empty string.
+	 * <p>
+	 * If {@code elements} are {@link CharSequence}s they will be used as is.
+	 * Otherwise, their {@code toString()} output will be used.
+	 *
+	 * @param elements the {@link Object}s to combine.
+	 * @param separator the separator to use.
+	 * @param skipEmpty if {@code true}, empty ({@code null} or {@code ""})
+	 *            elements will be skipped so that no separator is added for
+	 *            them.
+	 * @return The combined {@link String}.
+	 */
+	@Nonnull
+	public static String join(
+		@Nullable Collection<?> elements,
+		@Nullable String separator,
+		boolean skipEmpty
+	) {
+		if (elements == null || elements.isEmpty()) {
+			return "";
+		}
+		return doJoin(new Object[] {elements}, separator, '\0', skipEmpty);
+	}
+
+	/**
+	 * Joins zero or more elements into a {@link String} using the specified
+	 * separator. {@code null} elements and separators will be represented as
+	 * empty strings, and no elements will return an empty string.
+	 * <p>
+	 * If {@code elements} are {@link CharSequence}s they will be used as is.
+	 * Otherwise, their {@code toString()} output will be used.
+	 *
+	 * @param elements the {@link Object}s to combine.
+	 * @param separator the separator to use.
+	 * @param skipEmpty if {@code true}, empty ({@code null} or {@code ""})
+	 *            elements will be skipped so that no separator is added for
+	 *            them.
+	 * @return The combined {@link String}.
+	 */
+	@Nonnull
+	public static String join(
+		@Nullable Object[] elements,
+		@Nullable String separator,
+		boolean skipEmpty
+	) {
+		return doJoin(elements, separator, '\0', skipEmpty);
+	}
+
+	/**
+	 * Joins zero or more elements into a {@link String} using the specified
+	 * separator. {@code null} elements and separators will be represented as
+	 * empty strings, and no elements will return an empty string.
+	 * <p>
+	 * If {@code elements} are {@link CharSequence}s they will be used as is.
+	 * Otherwise, their {@code toString()} output will be used.
+	 * <p>
+	 * <b>Note:</b> This method is protected to avoid confusion, since only
+	 * {@code separator} or {@code charSeparator} can be used in a single call.
+	 * Use {@link #join(Object[], char, boolean)} or
+	 * {@link #join(Object[], String, boolean)} instead.
+	 *
+	 * @param elements the {@link Object}s to combine.
+	 * @param separator the separator to use.
+	 * @param charSeparator the separator to use.
+	 * @param skipEmpty if {@code true}, empty ({@code null} or {@code ""})
+	 *            elements will be skipped so that no separator is added for
+	 *            them.
+	 * @return The combined {@link String}.
+	 */
+	@Nonnull
+	protected static String doJoin(
+		@Nullable Object[] elements,
+		@Nullable String separator,
+		char charSeparator,
+		boolean skipEmpty
+	) {
+		if (elements == null || elements.length == 0) {
+			return "";
+		}
+		if (elements.length == 1 && elements[0] instanceof Collection<?>) {
+			// This method will catch a Collection<?> argument as well, convert it to an array
+			elements = ((Collection<?>) elements[0]).toArray();
+		}
+		if (elements.length == 0) {
+			return "";
+		}
+
+		boolean first = true;
+		StringBuilder sb = new StringBuilder(elements.length * 10);
+		for (Object element : elements) {
+			CharSequence elementString;
+			if (element == null) {
+				if (skipEmpty) {
+					continue;
+				}
+				elementString = "";
+			} else {
+				elementString = element instanceof CharSequence ? (CharSequence) element : element.toString();
+			}
+			if (skipEmpty && elementString.length() == 0) {
+				continue;
+			}
+			if (!first && (charSeparator != '\0' || separator != null && separator.length() > 0)) {
+				if (charSeparator != '\0') {
+					sb.append(charSeparator);
+				} else {
+					sb.append(separator);
+				}
+			} else {
+				first = false;
+			}
+			sb.append(elementString);
+		}
+		return sb.toString();
+	}
+
+	/**
 	 * An {@code enum} representing letter cases.
 	 */
 	public static enum LetterCase {
