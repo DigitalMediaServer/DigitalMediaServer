@@ -468,24 +468,10 @@ public class RequestV2 extends HTTPResource {
 						range.setEnd(splitRange.getEnd());
 					}
 
-					long totalsize = dlna.length(mediaRenderer);
-					boolean ignoreTranscodeByteRangeRequests = mediaRenderer.ignoreTranscodeByteRangeRequests();
-
-					// Ignore ByteRangeRequests while media is transcoded
-					if (
-						!ignoreTranscodeByteRangeRequests ||
-						totalsize != DLNAMediaInfo.TRANS_SIZE ||
-						(
-							ignoreTranscodeByteRangeRequests &&
-							lowRange == 0 &&
-							totalsize == DLNAMediaInfo.TRANS_SIZE
-						)
-					) {
-						inputStream = dlna.getInputStream(Range.create(lowRange, highRange, range.getStart(), range.getEnd()), mediaRenderer);
-						if (dlna.isResume()) {
-							// Update range to possibly adjusted resume time
-							range.setStart(dlna.getResume().getTimeOffset() / (double) 1000);
-						}
+					inputStream = dlna.getInputStream(Range.create(lowRange, highRange, range.getStart(), range.getEnd()), mediaRenderer);
+					if (dlna.isResume()) {
+						// Update range to possibly adjusted resume time
+						range.setStart(dlna.getResume().getTimeOffset() / (double) 1000);
 					}
 
 					if (dlna.isVideo()) {
@@ -539,10 +525,8 @@ public class RequestV2 extends HTTPResource {
 					}
 
 					if (inputStream == null) {
-						if (!ignoreTranscodeByteRangeRequests) {
-							// No inputStream indicates that transcoding / remuxing probably crashed.
-							LOGGER.error("There is no inputstream to return for " + name);
-						}
+						// No inputStream indicates that transcoding / remuxing probably crashed.
+						LOGGER.error("There is no inputstream to return for {}", name);
 					} else {
 						// Notify plugins that the DLNAresource is about to start playing
 						startStopListenerDelegate.start(dlna);
@@ -561,6 +545,9 @@ public class RequestV2 extends HTTPResource {
 
 						// Determine the total size. Note: when transcoding the length is
 						// not known in advance, so DLNAMediaInfo.TRANS_SIZE will be returned instead.
+
+						long totalsize = dlna.length(mediaRenderer);
+
 						if (chunked && totalsize == DLNAMediaInfo.TRANS_SIZE) {
 							// In chunked mode we try to avoid arbitrary values.
 							totalsize = -1;

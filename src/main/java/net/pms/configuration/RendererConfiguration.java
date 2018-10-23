@@ -158,7 +158,6 @@ public class RendererConfiguration extends UPNPHelper.Renderer {
 	protected static final String DLNA_TREE_HACK = "CreateDLNATreeFaster";
 	protected static final String EMBEDDED_SUBS_SUPPORTED = "InternalSubtitlesSupported";
 	protected static final String HALVE_BITRATE = "HalveBitrate";
-	protected static final String IGNORE_TRANSCODE_BYTE_RANGE_REQUEST = "IgnoreTranscodeByteRangeRequests";
 	protected static final String IMAGE = "Image";
 	protected static final String KEEP_ASPECT_RATIO = "KeepAspectRatio";
 	protected static final String KEEP_ASPECT_RATIO_TRANSCODING = "KeepAspectRatioTranscoding";
@@ -2573,10 +2572,6 @@ public class RendererConfiguration extends UPNPHelper.Renderer {
 		}
 
 		return "";
-	}
-
-	public boolean ignoreTranscodeByteRangeRequests() {
-		return getBoolean(IGNORE_TRANSCODE_BYTE_RANGE_REQUEST, false);
 	}
 
 	public String calculatedSpeed() throws InterruptedException, ExecutionException {
