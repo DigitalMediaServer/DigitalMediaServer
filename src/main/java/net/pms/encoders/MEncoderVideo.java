@@ -2191,7 +2191,11 @@ public class MEncoderVideo extends Player {
 		}
 
 		// Force srate because MEncoder doesn't like anything other than 48khz for AC-3
-		String rate = "" + params.mediaRenderer.getTranscodedVideoAudioSampleRate();
+		String rate = "48000";
+		if (params.mediaRenderer.isTranscodeAudioTo441()) {
+			rate = "44100";
+		}
+
 		if (!pcm && !dtsRemux && !ac3Remux && !encodedAudioPassthrough) {
 			cmdList.add("-af");
 			String af = "lavcresample=" + rate;
