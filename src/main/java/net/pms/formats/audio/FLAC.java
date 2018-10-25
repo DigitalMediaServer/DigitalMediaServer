@@ -35,7 +35,7 @@ public class FLAC extends AudioBase {
 	public String[] getSupportedExtensions() {
 		return new String[] {
 			"fla",
-			"flac",
+			"flac"
 		};
 	}
 }
