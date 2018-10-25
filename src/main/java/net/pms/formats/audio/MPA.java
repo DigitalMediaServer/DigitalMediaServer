@@ -18,7 +18,7 @@
  */
 package net.pms.formats.audio;
 
-public class MPGAudio extends AudioBase {
+public class MPA extends AudioBase {
 
 	@Override
 	public Identifier getIdentifier() {
@@ -27,6 +27,9 @@ public class MPGAudio extends AudioBase {
 
 	@Override
 	public String[] getSupportedExtensions() {
-		return new String[] { "mpa", "mp2" };
+		return new String[] {
+			"mpa",
+			"mp2"
+		};
 	}
 }

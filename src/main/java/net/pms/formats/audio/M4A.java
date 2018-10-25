@@ -27,6 +27,11 @@ public class M4A extends AudioBase {
 	 */
 	@Override
 	public String[] getSupportedExtensions() {
-		return new String[] { "m4a" };
+		return new String[] {
+			"m4a",
+			"m4b",
+			"m4p",
+			"m4r"
+		};
 	}
 }
