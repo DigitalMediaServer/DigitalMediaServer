@@ -108,10 +108,9 @@ public class FormatRecognitionTest {
 		assertEquals("PS3 is compatible with MP3", true,
 				conf.isCompatible(info, format, configuration));
 
-		// Construct five channel MP3 that the PS3 does not support natively
-		audio.setNumberOfChannels(5);
-		assertEquals("PS3 is incompatible with five channel MP3", false,
-				conf.isCompatible(info, format, configuration));
+		// Fake a six channel MP3 that the PS3 supports natively
+		audio.setNumberOfChannels(6);
+		assertEquals("PS3 is compatible with five channel MP3", true, conf.isCompatible(info, format, configuration));
 	}
 
 	/**
