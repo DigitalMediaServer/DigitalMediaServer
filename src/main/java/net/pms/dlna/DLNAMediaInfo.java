@@ -47,7 +47,8 @@ import net.pms.image.ImagesUtil.ScaleType;
 import net.pms.image.thumbnail.CoverUtil;
 import net.pms.io.OutputParams;
 import net.pms.io.ProcessWrapperImpl;
-import net.pms.media.parsing.AVCUtil;
+import net.pms.media.VideoCodec;
+import net.pms.media.VideoLevel;
 import net.pms.network.HTTPResource;
 import net.pms.util.FileUtil;
 import net.pms.util.MpegUtil;
@@ -124,8 +125,6 @@ public class DLNAMediaInfo implements Cloneable {
 		audioOrVideoContainers = Collections.unmodifiableMap(mutableAudioOrVideoContainers);
 	}
 
-	private Boolean videoWithinH264LevelLimits = null;
-
 	// Stored in database
 	@Nullable
 	private Double durationSec;
@@ -198,10 +197,8 @@ public class DLNAMediaInfo implements Cloneable {
 
 	private int referenceFrameCount = -1;
 
-	private String avcLevel = null;
-
-	private final Object h264ProfileLock = new Object();
-	private String h264Profile = null;
+	private VideoLevel videoLevel;
+	private String videoProfile;
 
 	private List<DLNAMediaAudio> audioTracks = new ArrayList<>();
 	private List<DLNAMediaSubtitle> subtitleTracks = new ArrayList<>();
@@ -281,7 +278,6 @@ public class DLNAMediaInfo implements Cloneable {
 	private final Object ffmpeg_failureLock = new Object();
 	private boolean ffmpeg_failure = false;
 
-	private boolean muxable;
 	private Map<String, String> extras;
 
 	/**
@@ -426,8 +422,8 @@ public class DLNAMediaInfo implements Cloneable {
 	 */
 	public boolean isMuxable(RendererConfiguration mediaRenderer) {
 		// Make sure the file is H.264 video
-		if (isH264()) {
-			muxable = true;
+		if (!isH264()) {
+			return false;
 		}
 
 		// Check if the renderer supports the resolution of the video
@@ -444,17 +440,17 @@ public class DLNAMediaInfo implements Cloneable {
 				!isMod4()
 			)
 		) {
-			muxable = false;
+			return false;
 		}
 
 		// Temporary fix: MediaInfo support will take care of this in the future
 		// For now, http://ps3mediaserver.org/forum/viewtopic.php?f=11&t=6361&start=0
 		// Bravia does not support AVC video at less than 288px high
 		if (mediaRenderer.isBRAVIA() && height < 288) {
-			muxable = false;
+			return false;
 		}
 
-		return muxable;
+		return true;
 	}
 
 	/**
@@ -1375,18 +1371,30 @@ public class DLNAMediaInfo implements Cloneable {
 	}
 
 	/**
-	 * Whether the file contains H.264 (AVC) video.
+	 * Returns whether this media contains a H.264 (AVC) video.
 	 *
-	 * @return {boolean}
+	 * @return {@code true} if this media contains a H.264 video stream,
+	 *         {@code false} otherwise.
 	 */
 	public boolean isH264() {
-		return codecV != null && codecV.equals("h264");
+		return FormatConfiguration.H264.equals(codecV);
 	}
 
 	/**
-	 * Whether the file contains MPEG-4 video.
+	 * Returns whether this media contains a H.265 (HEVC) video.
 	 *
-	 * @return {boolean}
+	 * @return {@code true} if this media contains a H.265 video stream,
+	 *         {@code false} otherwise.
+	 */
+	public boolean isH265() {
+		return FormatConfiguration.H265.equals(codecV) || codecV != null && codecV.startsWith("hevc");
+	}
+
+	/**
+	 * Returns whether this media contains a MPEG-4 Visual video.
+	 *
+	 * @return {@code true} if this media contains a MPEG-4 Visual video stream,
+	 *         {@code false} otherwise.
 	 */
 	public boolean isMPEG4() {
 		return FormatConfiguration.MPEG4ASP.equals(codecV) || FormatConfiguration.MPEG4SP.equals(codecV);
@@ -1663,109 +1671,6 @@ public class DLNAMediaInfo implements Cloneable {
 		}
 	}
 
-	/**
-	 * Checks whether the video has too many reference frames per pixels for the
-	 * renderer.
-	 *
-	 * TODO move to PlayerUtil
-	 */
-	public boolean isVideoWithinH264LevelLimits(InputFile f, RendererConfiguration mediaRenderer) {
-		if (videoWithinH264LevelLimits == null) {
-			if (isH264()) {
-				videoWithinH264LevelLimits = true;
-				if (
-					container != null &&
-					(
-						container.equals("matroska") ||
-						container.equals("mkv") ||
-						container.equals("mov") ||
-						container.equals("mp4")
-					)
-				) { // Containers without h264_annexB
-					byte headers[][] = AVCUtil.getAnnexBFrameHeader(f);
-					if (headers == null) {
-						LOGGER.info("Error parsing information from the file: " + f.getFilename());
-					}
-
-					if (headers != null) {
-						synchronized (h264_annexBLock) {
-							h264_annexB = headers[1];
-							if (h264_annexB != null) {
-								int skip = 5;
-								if (h264_annexB[2] == 1) {
-									skip = 4;
-								}
-								byte header[] = new byte[h264_annexB.length - skip];
-								System.arraycopy(h264_annexB, skip, header, 0, header.length);
-
-								if (
-									referenceFrameCount > -1 &&
-									(
-										"4.1".equals(avcLevel) ||
-										"4.2".equals(avcLevel) ||
-										"5".equals(avcLevel) ||
-										"5.0".equals(avcLevel) ||
-										"5.1".equals(avcLevel) ||
-										"5.2".equals(avcLevel)
-									) &&
-									width > 0 &&
-									height > 0
-								) {
-									int maxref;
-									if (mediaRenderer == null || mediaRenderer.isPS3()) {
-										/**
-										 * 2013-01-25: Confirmed maximum reference frames on PS3:
-										 *    - 4 for 1920x1080
-										 *    - 11 for 1280x720
-										 * Meaning this math is correct
-										 */
-										maxref = (int) Math.floor(10252743 / (double) (width * height));
-									} else {
-										/**
-										 * This is the math for level 4.1, which results in:
-										 *    - 4 for 1920x1080
-										 *    - 9 for 1280x720
-										 */
-										maxref = (int) Math.floor(8388608 / (double) (width * height));
-									}
-
-									if (referenceFrameCount > maxref) {
-										LOGGER.debug(
-											"The file \"{}\" is not compatible with this renderer because it " +
-											"can only take {} reference frames at this resolution while this " +
-											"file has {} reference frames",
-											f.getFilename(),
-											maxref, referenceFrameCount
-										);
-										videoWithinH264LevelLimits = false;
-									} else if (referenceFrameCount == -1) {
-										LOGGER.debug(
-											"The file \"{}\" may not be compatible with this renderer because " +
-											"we can't get its number of reference frames",
-											f.getFilename()
-										);
-										videoWithinH264LevelLimits = false;
-									}
-								}
-							} else {
-								LOGGER.debug(
-									"The H.264 stream inside the file \"{}\" is not compatible with this renderer",
-									f.getFilename()
-								);
-								videoWithinH264LevelLimits = false;
-							}
-						}
-					} else {
-						videoWithinH264LevelLimits = false;
-					}
-				}
-			} else {
-				videoWithinH264LevelLimits = false;
-			}
-		}
-		return videoWithinH264LevelLimits;
-	}
-
 	public boolean isLossless(String codecA) {
 		return
 			codecA != null && (
@@ -1793,7 +1698,14 @@ public class DLNAMediaInfo implements Cloneable {
 				result.append(", Video Bitrate Mode: ").append(bitRateMode);
 			}
 			result.append(", Video Tracks: ").append(getVideoTrackCount());
-			result.append(", Video Codec: ").append(getCodecV());
+			result.append(", codecV: ").append(getCodecV());
+			result.append(", Video Codec: ").append(getVideoCodec());
+			if (isNotBlank(videoProfile)) {
+				result.append(", Video Format Profile: ").append(videoProfile);
+			}
+			if (videoLevel != null) {
+				result.append(", Video Level: ").append(videoLevel.toString(false));
+			}
 			result.append(", Duration: ").append(getDurationString());
 			result.append(", Video Resolution: ").append(getWidth()).append(" x ").append(getHeight());
 			if (aspectRatioContainer != null) {
@@ -1834,12 +1746,6 @@ public class DLNAMediaInfo implements Cloneable {
 			if (isNotBlank(getMatrixCoefficients())) {
 				result.append(", Matrix Coefficients: ").append(getMatrixCoefficients());
 			}
-			if (isNotBlank(avcLevel)) {
-				result.append(", AVC Level: ").append(getAvcLevel());
-			}
-//			if (isNotBlank(getHevcLevel())) {
-//				result.append(", HEVC Level: ");
-//				result.append(getHevcLevel());
 			if (getVideoBitDepth() != 8) {
 				result.append(", Video Bit Depth: ").append(getVideoBitDepth());
 			}
@@ -2128,6 +2034,21 @@ public class DLNAMediaInfo implements Cloneable {
 	 */
 	public String getCodecV() {
 		return codecV;
+	}
+
+	/**
+	 * Gets the {@link VideoCodec} for this media.
+	 * <p>
+	 * <b>Note:</b> This is currently a "transitional method" which parses the
+	 * {@link VideoCodec} based on the old {@link String}-based video codec
+	 * value. If the parsing fails, {@code null} will be returned. That doesn't
+	 * necessarily mean that no {@code codecV} is set.
+	 *
+	 * @return The {@link VideoCodec} or {@code null}.
+	 */
+	@Nullable
+	public VideoCodec getVideoCodec() {
+		return codecV == null ? null : VideoCodec.typeOf(codecV);
 	}
 
 	/**
@@ -2565,43 +2486,48 @@ public class DLNAMediaInfo implements Cloneable {
 	 * @param referenceFrameCount the reference frame count.
 	 */
 	public void setReferenceFrameCount(int referenceFrameCount) {
-		this.referenceFrameCount = referenceFrameCount;
+		this.referenceFrameCount = referenceFrameCount < -1 ? -1 : referenceFrameCount;
 	}
 
 	/**
-	 * @return AVC level for video stream or {@code null} if not parsed.
+	 * @return The video level for the video stream or {@code null} if not
+	 *         parsed, known or relevant.
 	 */
-	public String getAvcLevel() {
-		return avcLevel;
+	@Nullable
+	public VideoLevel getVideoLevel() {
+		return videoLevel;
 	}
 
 	/**
-	 * Sets AVC level for video stream or {@code null} if not parsed.
+	 * Sets the {@link VideoLevel} for the current video codec. Make sure that
+	 * the correct {@link VideoLevel} type/implementation for the
+	 * {@link VideoCodec} is used.
 	 *
-	 * @param avcLevel AVC level.
+	 * @param videoLevel the {@link VideoLevel} to set or {@code null} if
+	 *            unknown.
 	 */
-	public void setAvcLevel(String avcLevel) {
-		this.avcLevel = avcLevel;
+	public void setVideoLevel(@Nullable VideoLevel videoLevel) {
+		this.videoLevel = videoLevel;
 	}
 
-	public int getAvcAsInt() {
-		try {
-			return Integer.parseInt(getAvcLevel().replaceAll("\\.", ""));
-		} catch (Exception e) {
-			return 0;
-		}
+	/**
+	 * Gets the video profile for the video stream or {@code null} if not
+	 * parsed/relevant.
+	 *
+	 * @return The video profile {@link String}.
+	 */
+	@Nullable
+	public String getVideoProfile() {
+		return videoProfile;
 	}
 
-	public String getH264Profile() {
-		synchronized (h264ProfileLock) {
-			return h264Profile;
-		}
-	}
-
-	public void setH264Profile(String s) {
-		synchronized (h264ProfileLock) {
-			h264Profile = s;
-		}
+	/**
+	 * Sets video profile for the video stream.
+	 *
+	 * @param videoProfile the video profile.
+	 */
+	public void setVideoProfile(@Nullable String videoProfile) {
+		this.videoProfile = videoProfile == null ? null : videoProfile.trim();
 	}
 
 	/**

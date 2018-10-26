@@ -56,6 +56,7 @@ import net.pms.dlna.*;
 import net.pms.formats.Format;
 import net.pms.formats.FormatType;
 import net.pms.io.*;
+import net.pms.media.VideoLevel;
 import net.pms.newgui.GuiUtil;
 import net.pms.platform.windows.NTStatus;
 import net.pms.util.CodecUtil;
@@ -272,14 +273,23 @@ public class TsMuxeRVideo extends Player {
 			newInput.setFilename(filename);
 			newInput.setPush(params.stdin);
 
-			/**
-			 * Note: This logic is weird; on one hand we check if the renderer requires videos to be Level 4.1 or below, but then
-			 * the other function allows the video to exceed those limits.
-			 * In reality this won't cause problems since renderers typically don't support above 4.1 anyway - nor are many
-			 * videos encoded higher than that either - but it's worth acknowledging the logic discrepancy.
-			 */
-			if (!media.isVideoWithinH264LevelLimits(newInput, params.mediaRenderer) && params.mediaRenderer.isH264Level41Limited()) {
-				LOGGER.info("The video will not play or will show a black screen");
+			VideoLevel videoLevelLimit = params.mediaRenderer.getVideoLevelLimit(media.getVideoCodec());
+			VideoLevel videoLevel = media.getVideoLevel();
+			if (
+				videoLevelLimit != null &&
+				!videoLevelLimit.isGreaterThanOrEqualTo(videoLevel)
+			) {
+				if (videoLevel == null) {
+					LOGGER.warn("This video might not play properly because the {} level is unknown", media.getVideoCodec());
+				} else {
+					LOGGER.warn(
+						"The video probably won't play properly because the {} level ({}) " +
+						"is above the limit ({}) for this renderer",
+						media.getVideoCodec(),
+						videoLevel.toString(false),
+						videoLevelLimit.toString(false)
+					);
+				}
 			}
 
 			// The code below is commented out until it can be fully understood what it's intended to do.

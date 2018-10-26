@@ -61,6 +61,9 @@ import net.pms.formats.FormatType;
 import net.pms.formats.ISOVOB;
 import net.pms.formats.v2.SubtitleType;
 import net.pms.io.*;
+import net.pms.media.H264Level;
+import net.pms.media.VideoCodec;
+import net.pms.media.VideoLevel;
 import net.pms.network.HTTPResource;
 import net.pms.newgui.GuiUtil;
 import net.pms.newgui.components.CustomJButton;
@@ -742,7 +745,7 @@ public class MEncoderVideo extends Player {
 			 */
 			if ((mediaRenderer.isTranscodeToH264() || mediaRenderer.isTranscodeToH265()) && !isXboxOneWebVideo) {
 				if (
-					mediaRenderer.isH264Level41Limited() &&
+					mediaRenderer.getVideoLevelLimit(VideoCodec.H264) == H264Level.L4_1 &&
 					defaultMaxBitrates[0] > 31250
 				) {
 					defaultMaxBitrates[0] = 31250;
@@ -881,6 +884,7 @@ public class MEncoderVideo extends Player {
 
 		// Decide whether to defer to tsMuxeR or continue to use MEncoder
 		boolean deferToTsmuxer = true;
+		VideoLevel videoLevelLimit = params.mediaRenderer.getVideoLevelLimit(media.getVideoCodec());
 		String prependTraceReason = "Not muxing the video stream with tsMuxeR via MEncoder because ";
 		if (!configuration.isMencoderMuxWhenCompatible()) {
 			deferToTsmuxer = false;
@@ -906,9 +910,25 @@ public class MEncoderVideo extends Player {
 			deferToTsmuxer = false;
 			LOGGER.trace(prependTraceReason + "we are using AviSynth.");
 		}
-		if (deferToTsmuxer == true && params.mediaRenderer.isH264Level41Limited() && !media.isVideoWithinH264LevelLimits(newInput, params.mediaRenderer)) {
+		if (
+			deferToTsmuxer == true &&
+			videoLevelLimit != null &&
+			!videoLevelLimit.isGreaterThanOrEqualTo(media.getVideoLevel())
+		) {
 			deferToTsmuxer = false;
-			LOGGER.trace(prependTraceReason + "the video stream is not within H.264 level limits for this renderer.");
+			if (LOGGER.isTraceEnabled()) {
+				VideoLevel level = media.getVideoLevel();
+				if (level == null) {
+					LOGGER.trace(prependTraceReason + "the {} level is unknown", media.getVideoCodec());
+				} else {
+					LOGGER.trace(
+						prependTraceReason + "the {} level ({}) is above the limit ({}) for this renderer",
+						media.getVideoCodec(),
+						level.toString(false),
+						videoLevelLimit.toString(false)
+					);
+				}
+			}
 		}
 		if (deferToTsmuxer == true && !media.isMuxable(params.mediaRenderer)) {
 			deferToTsmuxer = false;
