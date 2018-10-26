@@ -281,7 +281,7 @@ public class TsMuxeRVideo extends Player {
 			 */
 			if (
 				params.mediaRenderer.getH264LevelLimit() == H264Level.L4_1 &&
-				!media.isVideoWithinH264Level41Limits(newInput, params.mediaRenderer)
+				!media.isVideoWithinLevelLimit(newInput, params.mediaRenderer)
 			) {
 				LOGGER.info("The video will not play or will show a black screen");
 			}

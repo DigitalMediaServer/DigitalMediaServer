@@ -945,7 +945,7 @@ public class FFMpegVideo extends Player {
 			if (
 				deferToTsmuxer == true &&
 				params.mediaRenderer.getH264LevelLimit() == H264Level.L4_1 &&
-				!media.isVideoWithinH264Level41Limits(newInput, params.mediaRenderer)
+				!media.isVideoWithinLevelLimit(newInput, params.mediaRenderer)
 			) {
 				deferToTsmuxer = false;
 				LOGGER.trace(prependTraceReason + "the video stream is not within H.264 level limits for this renderer.");

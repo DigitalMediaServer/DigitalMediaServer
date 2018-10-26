@@ -1684,102 +1684,92 @@ public class DLNAMediaInfo implements Cloneable {
 	 * Checks whether the video has too many reference frames per pixels for the
 	 * renderer.
 	 */
-	public boolean isVideoWithinH264Level41Limits(InputFile f, RendererConfiguration mediaRenderer) {
-		// First check if videoWithinH264Level41Limits has already been set with a read lock
-		videoWithinH264Level41LimitsLock.readLock().lock();
-		try {
-			if (videoWithinH264Level41Limits != null) {
-				return videoWithinH264Level41Limits;
-			}
-		} finally {
-			videoWithinH264Level41LimitsLock.readLock().unlock();
-		}
-		// Acquire a write lock and set videoWithinH264Level41Limits
-		videoWithinH264Level41LimitsLock.writeLock().lock();
-		try {
-			// Whether it's already set must be re-checked here because if can
-			// already have been set by another thread after releasing the read
-			// lock but before acquiring the write lock
-			if (videoWithinH264Level41Limits == null) {
-				if (isH264()) {
-					videoWithinH264Level41Limits = true;
-					if (
-						container != null &&
-						(
-							container.equals("matroska") ||
-							container.equals("mkv") ||
-							container.equals("mov") ||
-							container.equals("mp4")
-						)
-					) { // Containers without h264_annexB
-						byte headers[][] = getAnnexBFrameHeader(f);
-						synchronized (ffmpeg_annexb_failureLock) {
-							if (ffmpeg_annexb_failure) {
-								LOGGER.info("Error parsing information from the file: " + f.getFilename());
+	public boolean isVideoWithinLevelLimit(InputFile file, RendererConfiguration mediaRenderer) {
+
+		if (isH264()) {
+			videoWithinH264Level41Limits = true;
+			if (
+				container != null &&
+				(
+					container.equals("matroska") ||
+					container.equals("mkv") ||
+					container.equals("mov") ||
+					container.equals("mp4")
+				)
+			) { // Containers without h264_annexB
+				byte headers[][] = getAnnexBFrameHeader(file);
+				synchronized (ffmpeg_annexb_failureLock) {
+					if (ffmpeg_annexb_failure) {
+						LOGGER.info("Error parsing information from the file: " + file.getFilename());
+					}
+				}
+
+				if (headers != null) {
+					synchronized (h264_annexBLock) {
+						h264_annexB = headers[1];
+						if (h264_annexB != null) {
+							// TODO: (Nad) Inserted section !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+							int skip = 5;
+							if (h264_annexB[2] == 1) {
+								skip = 4;
 							}
-						}
+							byte header[] = new byte[h264_annexB.length - skip];
+							System.arraycopy(h264_annexB, skip, header, 0, header.length);
+							// TODO: (Nad) Inserted section !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-						if (headers != null) {
-							synchronized (h264_annexBLock) {
-								h264_annexB = headers[1];
-								if (h264_annexB != null) {
-									referenceFrameCountLock.readLock().lock();
-									try {
-										if (
-											referenceFrameCount > -1 &&
-											getH264Level().isGreaterOrEqual(H264Level.L4_1) &&
-											width > 0 &&
-											height > 0
-										) {
-											int maxref;
-											if (mediaRenderer == null || mediaRenderer.isPS3()) {
-												/**
-												 * 2013-01-25: Confirmed maximum reference frames on PS3:
-												 *    - 4 for 1920x1080
-												 *    - 11 for 1280x720
-												 * Meaning this math is correct
-												 */
-												maxref = (int) Math.floor(10252743 / (double) (width * height));
-											} else {
-												/**
-												 * This is the math for level 4.1, which results in:
-												 *    - 4 for 1920x1080
-												 *    - 9 for 1280x720
-												 */
-												maxref = (int) Math.floor(8388608 / (double) (width * height));
-											}
-
-											if (referenceFrameCount > maxref) {
-												LOGGER.debug(
-													"The file \"{}\" is not compatible with this renderer because it " +
-													"can only take {} reference frames at this resolution while this " +
-													"file has {} reference frames",
-													f.getFilename(),
-													maxref, referenceFrameCount
-												);
-												videoWithinH264Level41Limits = false;
-											}
-										} else if (referenceFrameCount == -1) {
-											LOGGER.debug(
-												"The file \"{}\" may not be compatible with this renderer because " +
-												"we can't get its number of reference frames",
-												f.getFilename()
-											);
-											videoWithinH264Level41Limits = false;
-										}
-
-									} finally {
-										referenceFrameCountLock.readLock().unlock();
+							referenceFrameCountLock.readLock().lock();
+							try {
+								if (
+									referenceFrameCount > -1 &&
+									getH264Level().isGreaterOrEqual(H264Level.L4_1) &&
+									width > 0 &&
+									height > 0
+								) {
+									int maxref;
+									if (mediaRenderer == null || mediaRenderer.isPS3()) {
+										/*
+										 * 2013-01-25: Confirmed maximum reference frames on PS3:
+										 *    - 4 for 1920x1080
+										 *    - 11 for 1280x720
+										 * Meaning this math is correct
+										 */
+										maxref = (int) Math.floor(10252743 / (double) (width * height));
+									} else {
+										/*
+										 * This is the math for level 4.1, which results in:
+										 *    - 4 for 1920x1080
+										 *    - 9 for 1280x720
+										 */
+										maxref = (int) Math.floor(8388608 / (double) (width * height));
 									}
-								} else {
+
+									if (referenceFrameCount > maxref) {
+										LOGGER.debug(
+											"The file \"{}\" is not compatible with this renderer because it " +
+											"can only take {} reference frames at this resolution while this " +
+											"file has {} reference frames",
+											file.getFilename(),
+											maxref, referenceFrameCount
+										);
+										videoWithinH264Level41Limits = false;
+									}
+								} else if (referenceFrameCount == -1) {
 									LOGGER.debug(
-										"The H.264 stream inside the file \"{}\" is not compatible with this renderer",
-										f.getFilename()
+										"The file \"{}\" may not be compatible with this renderer because " +
+										"we can't get its number of reference frames",
+										file.getFilename()
 									);
 									videoWithinH264Level41Limits = false;
 								}
+
+							} finally {
+								referenceFrameCountLock.readLock().unlock();
 							}
 						} else {
+							LOGGER.debug(
+								"The H.264 stream inside the file \"{}\" is not compatible with this renderer",
+								file.getFilename()
+							);
 							videoWithinH264Level41Limits = false;
 						}
 					}
@@ -1787,10 +1777,10 @@ public class DLNAMediaInfo implements Cloneable {
 					videoWithinH264Level41Limits = false;
 				}
 			}
-			return videoWithinH264Level41Limits;
-		} finally {
-			videoWithinH264Level41LimitsLock.writeLock().unlock();
+		} else {
+			videoWithinH264Level41Limits = false;
 		}
+		return videoWithinH264Level41Limits;
 	}
 
 	public boolean isLossless(String codecA) {
@@ -2047,11 +2037,11 @@ public class DLNAMediaInfo implements Cloneable {
 		return container != null && container.equals("mpegts");
 	}
 
-	public byte[][] getAnnexBFrameHeader(InputFile f) {
+	public byte[][] getAnnexBFrameHeader(InputFile f) { //TODO: (Nad) Clean up
 		String[] cmdArray = new String[14];
 		cmdArray[0] = PlayerFactory.getPlayerExecutable(StandardPlayerId.FFMPEG_VIDEO);
 		if (cmdArray[0] == null) {
-			LOGGER.warn("Cannot process Annex B Frame Header is FFmpeg executable is undefined");
+			LOGGER.warn("Cannot process Annex B Frame Header if FFmpeg executable is undefined");
 			return null;
 		}
 		cmdArray[1] = "-i";
