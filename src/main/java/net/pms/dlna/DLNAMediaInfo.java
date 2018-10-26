@@ -24,7 +24,6 @@ import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.*;
 import java.util.Map.Entry;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 import javax.annotation.Nullable;
 import net.pms.PMS;
 import net.pms.configuration.FormatConfiguration;
@@ -48,6 +47,7 @@ import net.pms.image.ImagesUtil.ScaleType;
 import net.pms.image.thumbnail.CoverUtil;
 import net.pms.io.OutputParams;
 import net.pms.io.ProcessWrapperImpl;
+import net.pms.media.parsing.AVCUtil;
 import net.pms.network.HTTPResource;
 import net.pms.util.FileUtil;
 import net.pms.util.MpegUtil;
@@ -124,7 +124,6 @@ public class DLNAMediaInfo implements Cloneable {
 		audioOrVideoContainers = Collections.unmodifiableMap(mutableAudioOrVideoContainers);
 	}
 
-	private final Object videoWithinH264LevelLimitsLock = new Object();
 	private Boolean videoWithinH264LevelLimits = null;
 
 	// Stored in database
@@ -197,10 +196,8 @@ public class DLNAMediaInfo implements Cloneable {
 	@Deprecated
 	public int bitsPerPixel;
 
-	private final ReentrantReadWriteLock referenceFrameCountLock = new ReentrantReadWriteLock();
 	private int referenceFrameCount = -1;
 
-	private final ReentrantReadWriteLock avcLevelLock = new ReentrantReadWriteLock();
 	private String avcLevel = null;
 
 	private final Object h264ProfileLock = new Object();
@@ -284,8 +281,6 @@ public class DLNAMediaInfo implements Cloneable {
 	private final Object ffmpeg_failureLock = new Object();
 	private boolean ffmpeg_failure = false;
 
-	private final Object ffmpeg_annexb_failureLock = new Object();
-	private boolean ffmpeg_annexb_failure;
 	private boolean muxable;
 	private Map<String, String> extras;
 
@@ -422,11 +417,6 @@ public class DLNAMediaInfo implements Cloneable {
 	 * Also used by DLNAResource to help determine the DLNA.ORG_PN (file type)
 	 * value to send to the renderer.
 	 *
-	 * Some of this code is repeated in isVideoWithinH264LevelLimits(), and since
-	 * both functions are sometimes (but not always) used together, this is
-	 * not an efficient use of code.
-	 *
-	 * TODO: Fix the above situation.
 	 * TODO: Now that FFmpeg is muxing without tsMuxeR, we should make a separate
 	 *       function for that, or even better, re-think this whole approach.
 	 *
@@ -1680,111 +1670,100 @@ public class DLNAMediaInfo implements Cloneable {
 	 * TODO move to PlayerUtil
 	 */
 	public boolean isVideoWithinH264LevelLimits(InputFile f, RendererConfiguration mediaRenderer) {
-		synchronized (videoWithinH264LevelLimitsLock) {
-			if (videoWithinH264LevelLimits == null) {
-				if (isH264()) {
-					videoWithinH264LevelLimits = true;
-					if (
-						container != null &&
-						(
-							container.equals("matroska") ||
-							container.equals("mkv") ||
-							container.equals("mov") ||
-							container.equals("mp4")
-						)
-					) { // Containers without h264_annexB
-						byte headers[][] = getAnnexBFrameHeader(f);
-						synchronized (ffmpeg_annexb_failureLock) {
-							if (ffmpeg_annexb_failure) {
-								LOGGER.info("Error parsing information from the file: " + f.getFilename());
-							}
-						}
-
-						if (headers != null) {
-							synchronized (h264_annexBLock) {
-								h264_annexB = headers[1];
-								if (h264_annexB != null) {
-									int skip = 5;
-									if (h264_annexB[2] == 1) {
-										skip = 4;
-									}
-									byte header[] = new byte[h264_annexB.length - skip];
-									System.arraycopy(h264_annexB, skip, header, 0, header.length);
-
-									avcLevelLock.readLock().lock();
-									referenceFrameCountLock.readLock().lock();
-									try {
-										if (
-											referenceFrameCount > -1 &&
-											(
-												"4.1".equals(avcLevel) ||
-												"4.2".equals(avcLevel) ||
-												"5".equals(avcLevel) ||
-												"5.0".equals(avcLevel) ||
-												"5.1".equals(avcLevel) ||
-												"5.2".equals(avcLevel)
-											) &&
-											width > 0 &&
-											height > 0
-										) {
-											int maxref;
-											if (mediaRenderer == null || mediaRenderer.isPS3()) {
-												/**
-												 * 2013-01-25: Confirmed maximum reference frames on PS3:
-												 *    - 4 for 1920x1080
-												 *    - 11 for 1280x720
-												 * Meaning this math is correct
-												 */
-												maxref = (int) Math.floor(10252743 / (double) (width * height));
-											} else {
-												/**
-												 * This is the math for level 4.1, which results in:
-												 *    - 4 for 1920x1080
-												 *    - 9 for 1280x720
-												 */
-												maxref = (int) Math.floor(8388608 / (double) (width * height));
-											}
-
-											if (referenceFrameCount > maxref) {
-												LOGGER.debug(
-													"The file \"{}\" is not compatible with this renderer because it " +
-													"can only take {} reference frames at this resolution while this " +
-													"file has {} reference frames",
-													f.getFilename(),
-													maxref, referenceFrameCount
-												);
-												videoWithinH264LevelLimits = false;
-											} else if (referenceFrameCount == -1) {
-												LOGGER.debug(
-													"The file \"{}\" may not be compatible with this renderer because " +
-													"we can't get its number of reference frames",
-													f.getFilename()
-												);
-												videoWithinH264LevelLimits = false;
-											}
-										}
-									} finally {
-										referenceFrameCountLock.readLock().unlock();
-										avcLevelLock.readLock().unlock();
-									}
-								} else {
-									LOGGER.debug(
-										"The H.264 stream inside the file \"{}\" is not compatible with this renderer",
-										f.getFilename()
-									);
-									videoWithinH264LevelLimits = false;
-								}
-							}
-						} else {
-							videoWithinH264LevelLimits = false;
-						}
+		if (videoWithinH264LevelLimits == null) {
+			if (isH264()) {
+				videoWithinH264LevelLimits = true;
+				if (
+					container != null &&
+					(
+						container.equals("matroska") ||
+						container.equals("mkv") ||
+						container.equals("mov") ||
+						container.equals("mp4")
+					)
+				) { // Containers without h264_annexB
+					byte headers[][] = AVCUtil.getAnnexBFrameHeader(f);
+					if (headers == null) {
+						LOGGER.info("Error parsing information from the file: " + f.getFilename());
 					}
-				} else {
-					videoWithinH264LevelLimits = false;
+
+					if (headers != null) {
+						synchronized (h264_annexBLock) {
+							h264_annexB = headers[1];
+							if (h264_annexB != null) {
+								int skip = 5;
+								if (h264_annexB[2] == 1) {
+									skip = 4;
+								}
+								byte header[] = new byte[h264_annexB.length - skip];
+								System.arraycopy(h264_annexB, skip, header, 0, header.length);
+
+								if (
+									referenceFrameCount > -1 &&
+									(
+										"4.1".equals(avcLevel) ||
+										"4.2".equals(avcLevel) ||
+										"5".equals(avcLevel) ||
+										"5.0".equals(avcLevel) ||
+										"5.1".equals(avcLevel) ||
+										"5.2".equals(avcLevel)
+									) &&
+									width > 0 &&
+									height > 0
+								) {
+									int maxref;
+									if (mediaRenderer == null || mediaRenderer.isPS3()) {
+										/**
+										 * 2013-01-25: Confirmed maximum reference frames on PS3:
+										 *    - 4 for 1920x1080
+										 *    - 11 for 1280x720
+										 * Meaning this math is correct
+										 */
+										maxref = (int) Math.floor(10252743 / (double) (width * height));
+									} else {
+										/**
+										 * This is the math for level 4.1, which results in:
+										 *    - 4 for 1920x1080
+										 *    - 9 for 1280x720
+										 */
+										maxref = (int) Math.floor(8388608 / (double) (width * height));
+									}
+
+									if (referenceFrameCount > maxref) {
+										LOGGER.debug(
+											"The file \"{}\" is not compatible with this renderer because it " +
+											"can only take {} reference frames at this resolution while this " +
+											"file has {} reference frames",
+											f.getFilename(),
+											maxref, referenceFrameCount
+										);
+										videoWithinH264LevelLimits = false;
+									} else if (referenceFrameCount == -1) {
+										LOGGER.debug(
+											"The file \"{}\" may not be compatible with this renderer because " +
+											"we can't get its number of reference frames",
+											f.getFilename()
+										);
+										videoWithinH264LevelLimits = false;
+									}
+								}
+							} else {
+								LOGGER.debug(
+									"The H.264 stream inside the file \"{}\" is not compatible with this renderer",
+									f.getFilename()
+								);
+								videoWithinH264LevelLimits = false;
+							}
+						}
+					} else {
+						videoWithinH264LevelLimits = false;
+					}
 				}
+			} else {
+				videoWithinH264LevelLimits = false;
 			}
-			return videoWithinH264LevelLimits;
 		}
+		return videoWithinH264LevelLimits;
 	}
 
 	public boolean isLossless(String codecA) {
@@ -2042,96 +2021,6 @@ public class DLNAMediaInfo implements Cloneable {
 
 	public boolean isMpegTS() {
 		return container != null && container.equals("mpegts");
-	}
-
-	public byte[][] getAnnexBFrameHeader(InputFile f) {
-		String[] cmdArray = new String[14];
-		cmdArray[0] = PlayerFactory.getPlayerExecutable(StandardPlayerId.FFMPEG_VIDEO);
-		if (cmdArray[0] == null) {
-			LOGGER.warn("Cannot process Annex B Frame Header is FFmpeg executable is undefined");
-			return null;
-		}
-		cmdArray[1] = "-i";
-
-		if (f.getPush() == null && f.getFilename() != null) {
-			cmdArray[2] = f.getFilename();
-		} else {
-			cmdArray[2] = "-";
-		}
-
-		cmdArray[3] = "-vframes";
-		cmdArray[4] = "1";
-		cmdArray[5] = "-c:v";
-		cmdArray[6] = "copy";
-		cmdArray[7] = "-f";
-		cmdArray[8] = "h264";
-		cmdArray[9] = "-bsf";
-		cmdArray[10] = "h264_mp4toannexb";
-		cmdArray[11] = "-an";
-		cmdArray[12] = "-y";
-		cmdArray[13] = "pipe:";
-
-		byte[][] returnData = new byte[2][];
-		OutputParams params = new OutputParams(configuration);
-		params.maxBufferSize = 1;
-		params.stdin = f.getPush();
-
-		final ProcessWrapperImpl pw = new ProcessWrapperImpl(cmdArray, true, params);
-
-		Runnable r = new Runnable() {
-			@Override
-			public void run() {
-				try {
-					Thread.sleep(3000);
-					synchronized (ffmpeg_annexb_failureLock) {
-						ffmpeg_annexb_failure = true;
-					}
-				} catch (InterruptedException e) { }
-				pw.stopProcess();
-			}
-		};
-
-		Thread failsafe = new Thread(r, "FFMpeg AnnexB Frame Header Failsafe");
-		failsafe.start();
-		pw.runInSameThread();
-
-		synchronized (ffmpeg_annexb_failureLock) {
-			if (ffmpeg_annexb_failure) {
-				return null;
-			}
-		}
-
-		byte data[] = pw.getOutputByteArray().toByteArray();
-		returnData[0] = data;
-		int kf = 0;
-
-		for (int i = 3; i < data.length; i++) {
-			if (data[i - 3] == 1 && (data[i - 2] & 37) == 37 && (data[i - 1] & -120) == -120) {
-				kf = i - 2;
-				break;
-			}
-		}
-
-		int st = 0;
-		boolean found = false;
-
-		if (kf > 0) {
-			for (int i = kf; i >= 5; i--) {
-				if (data[i - 5] == 0 && data[i - 4] == 0 && data[i - 3] == 0 && (data[i - 2] & 1) == 1 && (data[i - 1] & 39) == 39) {
-					st = i - 5;
-					found = true;
-					break;
-				}
-			}
-		}
-
-		if (found) {
-			byte header[] = new byte[kf - st];
-			System.arraycopy(data, st, header, 0, kf - st);
-			returnData[1] = header;
-		}
-
-		return returnData;
 	}
 
 	@Override
@@ -2667,12 +2556,7 @@ public class DLNAMediaInfo implements Cloneable {
 	 * @return The reference frame count for the video stream or {@code -1}.
 	 */
 	public int getReferenceFrameCount() {
-		referenceFrameCountLock.readLock().lock();
-		try {
-			return referenceFrameCount;
-		} finally {
-			referenceFrameCountLock.readLock().unlock();
-		}
+		return referenceFrameCount;
 	}
 
 	/**
@@ -2681,27 +2565,14 @@ public class DLNAMediaInfo implements Cloneable {
 	 * @param referenceFrameCount the reference frame count.
 	 */
 	public void setReferenceFrameCount(int referenceFrameCount) {
-		if (referenceFrameCount < -1) {
-			throw new IllegalArgumentException("referenceFrameCount must be >= -1.");
-		}
-		referenceFrameCountLock.writeLock().lock();
-		try {
-			this.referenceFrameCount = referenceFrameCount;
-		} finally {
-			referenceFrameCountLock.writeLock().unlock();
-		}
+		this.referenceFrameCount = referenceFrameCount;
 	}
 
 	/**
 	 * @return AVC level for video stream or {@code null} if not parsed.
 	 */
 	public String getAvcLevel() {
-		avcLevelLock.readLock().lock();
-		try {
-			return avcLevel;
-		} finally {
-			avcLevelLock.readLock().unlock();
-		}
+		return avcLevel;
 	}
 
 	/**
@@ -2710,12 +2581,7 @@ public class DLNAMediaInfo implements Cloneable {
 	 * @param avcLevel AVC level.
 	 */
 	public void setAvcLevel(String avcLevel) {
-		avcLevelLock.writeLock().lock();
-		try {
-			this.avcLevel = avcLevel;
-		} finally {
-			avcLevelLock.writeLock().unlock();
-		}
+		this.avcLevel = avcLevel;
 	}
 
 	public int getAvcAsInt() {

@@ -282,12 +282,15 @@ public class TsMuxeRVideo extends Player {
 				LOGGER.info("The video will not play or will show a black screen");
 			}
 
-			if (media.getH264AnnexB() != null && media.getH264AnnexB().length > 0) {
-				StreamModifier sm = new StreamModifier();
-				sm.setHeader(media.getH264AnnexB());
-				sm.setH264AnnexB(true);
-				ffVideoPipe.setModifier(sm);
-			}
+			// The code below is commented out until it can be fully understood what it's intended to do.
+			// It seems to cause broken pipes as it is, and the Annex B header isn't usually parsed.
+
+//			if (media.getH264AnnexB() != null && media.getH264AnnexB().length > 0) {
+//				StreamModifier sm = new StreamModifier();
+//				sm.setHeader(media.getH264AnnexB());
+//				sm.setH264AnnexB(true);
+//				ffVideoPipe.setModifier(sm);
+//			}
 
 			OutputParams ffparams = new OutputParams(configuration);
 			ffparams.maxBufferSize = 1;
