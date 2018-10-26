@@ -71,7 +71,7 @@ public class AVCUtil {
 	 *         it's not or it can't be determined.
 	 */
 	public static boolean isWithinPS3Limits(@Nonnull DLNAMediaInfo media, @Nullable InputFile file) {
-		VideoLevel level = H264Level.typeOf(media.getAvcAsInt());
+		VideoLevel level = media.getVideoLevel();
 		int referenceFrames = media.getReferenceFrameCount();
 
 		if ((
