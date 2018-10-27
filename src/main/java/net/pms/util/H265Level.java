@@ -84,8 +84,12 @@ public enum H265Level {
 	 *   High@L6.2@High
 	 */
 
-	protected static final Pattern pattern = Pattern.compile(
-		"^\\s*(?:\\w[^@]*@)?(?:L|LEVEL)?\\s*(\\d+(?:\\.\\d+|,\\d+)?)(?:@\\S.*\\S)?\\s*(?:/|$)",
+	/**
+	 * The {@link Pattern} used to extract the H.265 level from a
+	 * {@code profile@level@sub-profile} notation.
+	 */
+	private static final Pattern PATTERN = Pattern.compile(
+		"^\\s*(?:[^@]*@)?(?:L|LEVEL)?\\s*(\\d+(?:\\.\\d+|,\\d+)?)(?:@\\S.*\\S)?\\s*(?:/|$)",
 		Pattern.CASE_INSENSITIVE
 	);
 
@@ -152,7 +156,7 @@ public enum H265Level {
 			return defaultValue;
 		}
 
-		Matcher matcher = pattern.matcher(value);
+		Matcher matcher = PATTERN.matcher(value);
 		if (matcher.find()) {
 			String level = matcher.group(1).replaceAll(",", "\\.").toLowerCase(Locale.ROOT);
 			switch (level) {
@@ -192,6 +196,55 @@ public enum H265Level {
 		}
 
 		return defaultValue;
+	}
+
+	/**
+	 * Tries to convert {@code value} into a {@link H265Level}. Returns
+	 * {@code null} if the conversion fails.
+	 *
+	 * @param value the {@code int} describing a H.265 level in either one or
+	 *            two digit notation.
+	 * @return The {@link H265Level} corresponding to {@code value} or
+	 *         {@code null}.
+	 */
+	@Nullable
+	public static H265Level typeOf(int value) {
+		switch (value) {
+			case 1:
+			case 10:
+				return L1;
+			case 2:
+			case 20:
+				return L2;
+			case 21:
+				return L2_1;
+			case 3:
+			case 30:
+				return L3;
+			case 31:
+				return L3_1;
+			case 4:
+			case 40:
+				return L4;
+			case 41:
+				return L4_1;
+			case 5:
+			case 50:
+				return L5;
+			case 51:
+				return L5_1;
+			case 52:
+				return L5_2;
+			case 6:
+			case 60:
+				return L6;
+			case 61:
+				return L6_1;
+			case 62:
+				return L6_2;
+			default:
+				return null;
+		}
 	}
 
 	@Override

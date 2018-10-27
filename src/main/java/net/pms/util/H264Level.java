@@ -90,11 +90,11 @@ public enum H264Level {
 	 */
 
 	/**
-	 * The {@link Pattern} used to extract the level from a
+	 * The {@link Pattern} used to extract the H.264 level from a
 	 * {@code profile@level} notation.
 	 */
-	protected static final Pattern PATTERN = Pattern.compile(
-		"^\\s*(?:\\w[^@]*@)?(?:L|LEVEL)?\\s*([\\db]+(?:\\.\\d+|,\\d+)?)(?:@\\S.*\\S)?\\s*(?:/|$)", Pattern.CASE_INSENSITIVE);
+	private static final Pattern PATTERN = Pattern.compile(
+		"^\\s*(?:[^@]*@)?(?:L|LEVEL)?\\s*([\\db]+(?:\\.\\d+|,\\d+)?)(?:@\\S.*\\S)?\\s*(?:/|$)", Pattern.CASE_INSENSITIVE);
 
 	/**
 	 * @param other the {@link H264Level} to compare to.
@@ -214,8 +214,8 @@ public enum H264Level {
 	 * Tries to convert {@code value} into a {@link H264Level}. Returns
 	 * {@code null} if the conversion fails.
 	 *
-	 * @param value the {@code int} describing a H264 level in either one or two
-	 *            digit notation.
+	 * @param value the {@code int} describing a H.264 level in either one or
+	 *            two digit notation.
 	 * @return The {@link H264Level} corresponding to {@code value} or
 	 *         {@code null}.
 	 */

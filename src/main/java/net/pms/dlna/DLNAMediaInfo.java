@@ -58,8 +58,6 @@ import net.pms.util.StringUtil;
 import static net.pms.util.StringUtil.*;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
-import static org.apache.commons.lang3.StringUtils.lowerCase;
-import static org.apache.commons.lang3.StringUtils.substringBefore;
 import org.apache.commons.lang3.StringUtils;
 import org.jaudiotagger.audio.AudioFile;
 import org.jaudiotagger.audio.AudioFileIO;
@@ -2495,6 +2493,7 @@ public class DLNAMediaInfo implements Cloneable {
 	 *
 	 * @return The video format profile {@link String}.
 	 */
+	@Nullable
 	public String getVideoFormatProfile() {
 		return videoFormatProfile;
 	}
@@ -2504,7 +2503,7 @@ public class DLNAMediaInfo implements Cloneable {
 	 *
 	 * @param formatProfile the video format profile.
 	 */
-	public void setVideoFormatProfile(String formatProfile) {
+	public void setVideoFormatProfile(@Nullable String formatProfile) {
 		this.videoFormatProfile = formatProfile == null ? null : formatProfile.trim();
 	}
 
@@ -2512,26 +2511,36 @@ public class DLNAMediaInfo implements Cloneable {
 	 * @return The AVC/H.264 profile for video stream or {@code null} if not
 	 *         parsed/relevant.
 	 */
+	@Nullable
 	public String getH264Profile() {
-		String profile = substringBefore(lowerCase(getVideoFormatProfile(), Locale.ROOT), "@l");
-		if (isNotBlank(profile)) {
-			return profile;
+		if (isBlank(videoFormatProfile)) {
+			return null;
 		}
-		LOGGER.warn("Could not parse H264 profile value {}." , getVideoFormatProfile());
-		return null;
+		int at = videoFormatProfile.indexOf('@');
+		if (at < 0) {
+			return videoFormatProfile.toLowerCase(Locale.ROOT);
+		}
+
+		String result = videoFormatProfile.substring(0, at);
+		return isBlank(result) ? null : result.toLowerCase(Locale.ROOT);
 	}
 
 	/**
 	 * @return The HEVC/H.265 profile for video stream or {@code null} if not
 	 *         parsed/relevant.
 	 */
-	public String getH265Profile() { //TODO: (Nad) Check
-		String profile = substringBefore(lowerCase(getVideoFormatProfile(), Locale.ROOT), "@l");
-		if (isNotBlank(profile)) {
-			return profile;
+	@Nullable
+	public String getH265Profile() {
+		if (isBlank(videoFormatProfile)) {
+			return null;
 		}
-		LOGGER.warn("Could not parse H265 profile value {}." , getVideoFormatProfile());
-		return null;
+		int at = videoFormatProfile.indexOf('@');
+		if (at < 0) {
+			return videoFormatProfile.toLowerCase(Locale.ROOT);
+		}
+
+		String result = videoFormatProfile.substring(0, at);
+		return isBlank(result) ? null : result.toLowerCase(Locale.ROOT);
 	}
 
 	/**

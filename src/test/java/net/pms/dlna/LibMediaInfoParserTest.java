@@ -55,31 +55,6 @@ public class LibMediaInfoParserTest {
 	}
 
 	@Test
-	public void testGetAvcLevel() throws Exception {
-		assertThat(LibMediaInfoParser.getAvcLevel("Main@L2.0")).isEqualTo("2.0");
-		assertThat(LibMediaInfoParser.getAvcLevel("High@L3.0")).isEqualTo("3.0");
-		assertThat(LibMediaInfoParser.getAvcLevel("high@l4.0")).isEqualTo("4.0");
-		assertThat(LibMediaInfoParser.getAvcLevel("hIgH@L4.1")).isEqualTo("4.1");
-		assertThat(LibMediaInfoParser.getAvcLevel("5.1")).isNull();
-		assertThat(LibMediaInfoParser.getAvcLevel("level5")).isNull();
-	}
-
-	@Test
-	public void testGetAvcProfile() throws Exception {
-		assertThat(LibMediaInfoParser.getAvcProfile("Main@L2.0")).isEqualTo("main"); //TODO: (Nad) Figure out
-		assertThat(LibMediaInfoParser.getAvcProfile("High@L3.0")).isEqualTo("high");
-		assertThat(LibMediaInfoParser.getAvcProfile("high@l4.0")).isEqualTo("high");
-		assertThat(LibMediaInfoParser.getAvcProfile("hIgH@L4.1")).isEqualTo("high");
-		assertThat(LibMediaInfoParser.getAvcProfile("LOW@L4.1")).isEqualTo("low");
-	}
-
-	@Test
-	public void testGetAvcProfileInvalidInput() throws Exception {
-		assertThat(LibMediaInfoParser.getAvcProfile("@L2.0")).isNull();
-		assertThat(LibMediaInfoParser.getAvcProfile("@l2.0")).isNull();
-	}
-
-	@Test
 	public void testGetBitrate() throws Exception {
 		assertThat(LibMediaInfoParser.parseBitRate("256", false)).isEqualTo(256);
 		assertThat(LibMediaInfoParser.parseBitRate("128/192", false)).isEqualTo(128);
