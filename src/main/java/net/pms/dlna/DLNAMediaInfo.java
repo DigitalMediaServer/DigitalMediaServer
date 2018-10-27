@@ -24,7 +24,6 @@ import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.*;
 import java.util.Map.Entry;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 import javax.annotation.Nullable;
 import net.pms.PMS;
 import net.pms.configuration.FormatConfiguration;
@@ -198,10 +197,8 @@ public class DLNAMediaInfo implements Cloneable {
 	@Deprecated
 	public int bitsPerPixel;
 
-	private final ReentrantReadWriteLock referenceFrameCountLock = new ReentrantReadWriteLock();
 	private int referenceFrameCount = -1;
 
-	private final ReentrantReadWriteLock videoFormatProfileLock = new ReentrantReadWriteLock(); //TODO: (Nad) Change locking
 	private String videoFormatProfile;
 
 	private List<DLNAMediaAudio> audioTracks = new ArrayList<>();
@@ -282,9 +279,6 @@ public class DLNAMediaInfo implements Cloneable {
 	private final Object ffmpeg_failureLock = new Object();
 	private boolean ffmpeg_failure = false;
 
-	private final Object ffmpeg_annexb_failureLock = new Object();
-	private boolean ffmpeg_annexb_failure;
-	private boolean muxable;
 	private Map<String, String> extras;
 
 	/**
@@ -434,8 +428,8 @@ public class DLNAMediaInfo implements Cloneable {
 	 */
 	public boolean isMuxable(RendererConfiguration mediaRenderer) {
 		// Make sure the file is H.264 video
-		if (isH264()) {
-			muxable = true;
+		if (!isH264()) {
+			return false;
 		}
 
 		// Check if the renderer supports the resolution of the video
@@ -452,17 +446,17 @@ public class DLNAMediaInfo implements Cloneable {
 				!isMod4()
 			)
 		) {
-			muxable = false;
+			return false;
 		}
 
 		// Temporary fix: MediaInfo support will take care of this in the future
 		// For now, http://ps3mediaserver.org/forum/viewtopic.php?f=11&t=6361&start=0
 		// Bravia does not support AVC video at less than 288px high
 		if (mediaRenderer.isBRAVIA() && height < 288) {
-			muxable = false;
+			return false;
 		}
 
-		return muxable;
+		return true;
 	}
 
 	/**
@@ -1383,21 +1377,21 @@ public class DLNAMediaInfo implements Cloneable {
 	}
 
 	/**
-	 * Whether the file contains H.264 (AVC) video.
+	 * Whether the file contains a H.264 (AVC) video.
 	 *
 	 * @return {boolean}
 	 */
 	public boolean isH264() {
-		return codecV != null && codecV.equals("h264");
+		return FormatConfiguration.H264.equals(codecV);
 	}
 
 	/**
-	 * Whether the file contains H.265 (HEVC) video.
+	 * Whether the file contains a H.265 (HEVC) video.
 	 *
 	 * @return {boolean}
 	 */
 	public boolean isH265() {
-		return codecV != null && codecV.startsWith("hevc");
+		return FormatConfiguration.H265.equals(codecV) || codecV != null && codecV.startsWith("hevc");
 	}
 
 	/**
@@ -1678,109 +1672,6 @@ public class DLNAMediaInfo implements Cloneable {
 		if (f.getFile() != null && mediaType == MediaType.VIDEO && configuration.isAutoloadExternalSubtitles()) {
 			FileUtil.isSubtitlesExists(f.getFile(), this);
 		}
-	}
-
-	/**
-	 * Checks whether the video has too many reference frames per pixels for the
-	 * renderer.
-	 */
-	public boolean isVideoWithinLevelLimit(InputFile file, RendererConfiguration mediaRenderer) {
-
-		if (isH264()) {
-			videoWithinH264Level41Limits = true;
-			if (
-				container != null &&
-				(
-					container.equals("matroska") ||
-					container.equals("mkv") ||
-					container.equals("mov") ||
-					container.equals("mp4")
-				)
-			) { // Containers without h264_annexB
-				byte headers[][] = getAnnexBFrameHeader(file);
-				synchronized (ffmpeg_annexb_failureLock) {
-					if (ffmpeg_annexb_failure) {
-						LOGGER.info("Error parsing information from the file: " + file.getFilename());
-					}
-				}
-
-				if (headers != null) {
-					synchronized (h264_annexBLock) {
-						h264_annexB = headers[1];
-						if (h264_annexB != null) {
-							// TODO: (Nad) Inserted section !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-							int skip = 5;
-							if (h264_annexB[2] == 1) {
-								skip = 4;
-							}
-							byte header[] = new byte[h264_annexB.length - skip];
-							System.arraycopy(h264_annexB, skip, header, 0, header.length);
-							// TODO: (Nad) Inserted section !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-							referenceFrameCountLock.readLock().lock();
-							try {
-								if (
-									referenceFrameCount > -1 &&
-									getH264Level().isGreaterOrEqual(H264Level.L4_1) &&
-									width > 0 &&
-									height > 0
-								) {
-									int maxref;
-									if (mediaRenderer == null || mediaRenderer.isPS3()) {
-										/*
-										 * 2013-01-25: Confirmed maximum reference frames on PS3:
-										 *    - 4 for 1920x1080
-										 *    - 11 for 1280x720
-										 * Meaning this math is correct
-										 */
-										maxref = (int) Math.floor(10252743 / (double) (width * height));
-									} else {
-										/*
-										 * This is the math for level 4.1, which results in:
-										 *    - 4 for 1920x1080
-										 *    - 9 for 1280x720
-										 */
-										maxref = (int) Math.floor(8388608 / (double) (width * height));
-									}
-
-									if (referenceFrameCount > maxref) {
-										LOGGER.debug(
-											"The file \"{}\" is not compatible with this renderer because it " +
-											"can only take {} reference frames at this resolution while this " +
-											"file has {} reference frames",
-											file.getFilename(),
-											maxref, referenceFrameCount
-										);
-										videoWithinH264Level41Limits = false;
-									}
-								} else if (referenceFrameCount == -1) {
-									LOGGER.debug(
-										"The file \"{}\" may not be compatible with this renderer because " +
-										"we can't get its number of reference frames",
-										file.getFilename()
-									);
-									videoWithinH264Level41Limits = false;
-								}
-
-							} finally {
-								referenceFrameCountLock.readLock().unlock();
-							}
-						} else {
-							LOGGER.debug(
-								"The H.264 stream inside the file \"{}\" is not compatible with this renderer",
-								file.getFilename()
-							);
-							videoWithinH264Level41Limits = false;
-						}
-					}
-				} else {
-					videoWithinH264Level41Limits = false;
-				}
-			}
-		} else {
-			videoWithinH264Level41Limits = false;
-		}
-		return videoWithinH264Level41Limits;
 	}
 
 	public boolean isLossless(String codecA) {
@@ -2570,12 +2461,7 @@ public class DLNAMediaInfo implements Cloneable {
 	 * @return The reference frame count for the video stream or {@code -1}.
 	 */
 	public int getReferenceFrameCount() {
-		referenceFrameCountLock.readLock().lock();
-		try {
-			return referenceFrameCount;
-		} finally {
-			referenceFrameCountLock.readLock().unlock();
-		}
+		return referenceFrameCount;
 	}
 
 	/**
@@ -2584,15 +2470,7 @@ public class DLNAMediaInfo implements Cloneable {
 	 * @param referenceFrameCount the reference frame count.
 	 */
 	public void setReferenceFrameCount(int referenceFrameCount) {
-		if (referenceFrameCount < -1) {
-			throw new IllegalArgumentException("referenceFrameCount must be >= -1.");
-		}
-		referenceFrameCountLock.writeLock().lock();
-		try {
-			this.referenceFrameCount = referenceFrameCount;
-		} finally {
-			referenceFrameCountLock.writeLock().unlock();
-		}
+		this.referenceFrameCount = referenceFrameCount < -1 ? -1 : referenceFrameCount;
 	}
 
 	/**
@@ -2612,31 +2490,22 @@ public class DLNAMediaInfo implements Cloneable {
 	}
 
 	/**
-	 * Gets the video format profile for the video stream or {@code null} if not parsed/relevant.
+	 * Gets the video format profile for the video stream or {@code null} if not
+	 * parsed/relevant.
 	 *
-	 * @return the video format profile {@link String}.
+	 * @return The video format profile {@link String}.
 	 */
 	public String getVideoFormatProfile() {
-		videoFormatProfileLock.readLock().lock();
-		try {
-			return videoFormatProfile;
-		} finally {
-			videoFormatProfileLock.readLock().unlock();
-		}
+		return videoFormatProfile;
 	}
 
 	/**
 	 * Sets video format profile for the video stream.
 	 *
-	 * @param formatProfile AVC level.
+	 * @param formatProfile the video format profile.
 	 */
 	public void setVideoFormatProfile(String formatProfile) {
-		videoFormatProfileLock.writeLock().lock();
-		try {
-			this.videoFormatProfile = formatProfile == null ? null : formatProfile.trim();
-		} finally {
-			videoFormatProfileLock.writeLock().unlock();
-		}
+		this.videoFormatProfile = formatProfile == null ? null : formatProfile.trim();
 	}
 
 	/**

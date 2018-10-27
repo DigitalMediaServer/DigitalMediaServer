@@ -25,6 +25,7 @@ import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import net.pms.PMS;
+import net.pms.configuration.FormatConfiguration;
 import net.pms.dlna.DLNAMediaInfo;
 import net.pms.dlna.InputFile;
 import net.pms.encoders.PlayerFactory;
@@ -47,17 +48,46 @@ public class AVCUtil {
 	private AVCUtil() {
 	}
 
+	/**
+	 * Checks if a video is within the PS3 reference frame count limit by either
+	 * using parsed information from the specified {@link DLNAMediaInfo}
+	 * instance or by parsing the specified {@link InputFile}.
+	 * <p>
+	 * <b>Note:</b> This method is not tested and has some questionable holes in
+	 * its logic. It cannot handle all file formats, and if the profile level
+	 * and reference frames is already provided in the {@link DLNAMediaInfo}
+	 * instance, this information will be used even though it might have been
+	 * parsed only from a file header instead of from an actual check of the
+	 * H.264 stream.
+	 * <p>
+	 * The main purpose of this method is to preserve logic that has been
+	 * removed from {@link DLNAMediaInfo} and which might be useful to build on
+	 * in the future.
+	 *
+	 * @param media the {@link DLNAMediaInfo}.
+	 * @param file the {@link InputFile} or {@code null}.
+	 * @return {@code true} if the video is within the limits, {@code false} if
+	 *         it's not or it can't be determined.
+	 */
 	public static boolean isWithinPS3Limits(@Nonnull DLNAMediaInfo media, @Nullable InputFile file) {
 		H264Level level = media.getH264Level();
 		int referenceFrames = media.getReferenceFrameCount();
 
-		if (level == null || referenceFrames < 1) { //TODO: File type/container check
+		if ((
+				level == null ||
+				referenceFrames < 1
+			) && (
+				FormatConfiguration.MKV.equals(media.getContainer()) ||
+				FormatConfiguration.MOV.equals(media.getContainer()) ||
+				FormatConfiguration.MP4.equals(media.getContainer())
+			)
+		) {
 			byte[][] headers = getAnnexBFrameHeader(file);
 			if (headers != null && headers[1].length > 0) {
 				AVCHeader avcHeader = new AVCHeader(cleanAVCHeader(headers[1]));
 				avcHeader.parse();
 				if (level == null) {
-					level = H264Level.typeOf(avcHeader.getLevel()) // Make parser from 2 digit int
+					level = H264Level.typeOf(avcHeader.getLevel());
 				}
 				if (referenceFrames < 1) {
 					referenceFrames = avcHeader.getRef_frames();
@@ -65,22 +95,47 @@ public class AVCUtil {
 			}
 		}
 
+		if (level != null && level.isSmallerOrEqual(H264Level.L4)) {
+			return true;
+		}
+
 		if (level == null || referenceFrames < 1) {
-			//TODO Error
+			LOGGER.warn("Failed to determine PS3 compatibility because of missing media information");
+			LOGGER.debug("Level: {}, Reference Frame Count: {}", level, referenceFrames);
 			return false;
 		}
 
-
-		if (mediaRenderer == null || mediaRenderer.isPS3()) {
-			/**
-			 * 2013-01-25: Confirmed maximum reference frames on PS3:
-			 *    - 4 for 1920x1080
-			 *    - 11 for 1280x720
-			 * Meaning this math is correct
-			 */
-			maxref = (int) Math.floor(10252743 / (getWidth() * getHeight()));
-		} else {
-
+		/*
+		 * 2013-01-25: Confirmed maximum reference frames on PS3:
+		 *    - 4 for 1920x1080
+		 *    - 11 for 1280x720
+		 */
+		int maxref = (int) Math.floor(10252743 / (double) (media.getWidth() * media.getHeight()));
+		if (referenceFrames > maxref) {
+			if (file != null) {
+				LOGGER.debug(
+					"The file \"{}\" isn't compatible with this the PS3 because it can only handle {} " +
+					"reference frames at this resolution while this file has {} reference frames",
+					file.getFilename(),
+					maxref,
+					referenceFrames
+				);
+			} else {
+				LOGGER.debug(
+					"PS3 reference frames check failed because it can only handle {} " +
+					"reference frames at this resolution while this media has {} reference frames",
+					maxref,
+					referenceFrames
+				);
+			}
+			return false;
+		}
+		LOGGER.trace(
+			"PS3 reference frames check passed with {} reference frames and a reference frame limit of {}",
+			referenceFrames,
+			maxref
+		);
+		return true;
 	}
 
 	/**
@@ -197,7 +252,7 @@ public class AVCUtil {
 			return null;
 		}
 
-		byte data[] = pw.getOutputByteArray().toByteArray();
+		byte[] data = pw.getOutputByteArray().toByteArray();
 		returnData[0] = data;
 		int kf = 0;
 
@@ -222,7 +277,7 @@ public class AVCUtil {
 		}
 
 		if (found) {
-			byte header[] = new byte[kf - st];
+			byte[] header = new byte[kf - st];
 			System.arraycopy(data, st, header, 0, kf - st);
 			returnData[1] = header;
 		}

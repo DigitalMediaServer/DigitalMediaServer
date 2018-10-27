@@ -60,7 +60,6 @@ import net.pms.newgui.GuiUtil;
 import net.pms.platform.windows.NTStatus;
 import net.pms.util.CodecUtil;
 import net.pms.util.FormLayoutUtil;
-import net.pms.util.H264Level;
 import net.pms.util.Version;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -279,19 +278,41 @@ public class TsMuxeRVideo extends Player {
 			 * In reality this won't cause problems since renderers typically don't support above 4.1 anyway - nor are many
 			 * videos encoded higher than that either - but it's worth acknowledging the logic discrepancy.
 			 */
-			if (
-				params.mediaRenderer.getH264LevelLimit() == H264Level.L4_1 && //TODO: (Nad) Fix
-				!media.isVideoWithinLevelLimit(newInput, params.mediaRenderer)
-			) {
-				LOGGER.info("The video will not play or will show a black screen");
+			if (media.isH264() && params.mediaRenderer.getH264LevelLimit() != null) {
+				if (media.getH264Level() == null) {
+					LOGGER.warn("This video might not play properly because the H.264 level is unknown");
+				} else if (params.mediaRenderer.getH264LevelLimit().isSmaller(media.getH264Level())) {
+					LOGGER.warn(
+						"The video probably won't play properly because the H.264 level ({}) " +
+						"is above the limit for this renderer ({})",
+						media.getH264Level(),
+						params.mediaRenderer.getH264LevelLimit()
+					);
+				}
 			}
 
-			if (media.getH264AnnexB() != null && media.getH264AnnexB().length > 0) {
-				StreamModifier sm = new StreamModifier();
-				sm.setHeader(media.getH264AnnexB());
-				sm.setH264AnnexB(true);
-				ffVideoPipe.setModifier(sm);
+			if (media.isH265() && params.mediaRenderer.getH265LevelLimit() != null) {
+				if (media.getH265Level() == null) {
+					LOGGER.warn("This video might not play properly because the H.265 level is unknown");
+				} else if (params.mediaRenderer.getH265LevelLimit().isSmaller(media.getH265Level())) {
+					LOGGER.warn(
+						"The video probably won't play properly because the H.265 level ({}) " +
+						"is above the limit for this renderer ({})",
+						media.getH265Level(),
+						params.mediaRenderer.getH265LevelLimit()
+					);
+				}
 			}
+
+			// The code below is commented out until it can be fully understood what it's intended to do.
+			// It seems to cause broken pipes as it is, and the Annex B header isn't usually parsed.
+
+//			if (media.getH264AnnexB() != null && media.getH264AnnexB().length > 0) {
+//				StreamModifier sm = new StreamModifier();
+//				sm.setHeader(media.getH264AnnexB());
+//				sm.setH264AnnexB(true);
+//				ffVideoPipe.setModifier(sm);
+//			}
 
 			OutputParams ffparams = new OutputParams(configuration);
 			ffparams.maxBufferSize = 1;

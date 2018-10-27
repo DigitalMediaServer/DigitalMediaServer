@@ -21,8 +21,8 @@ package net.pms.util;
 import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import javax.annotation.Nullable;
 import org.apache.commons.lang3.StringUtils;
-
 
 /**
  * This represent the predefined H264 levels. Add further levels if more are
@@ -86,24 +86,32 @@ public enum H264Level {
 	/*
 	 * Example values:
 	 *
-	 * High@L3.0
-	 * High@L4.0
-	 * High@L4.1
-	 * Stereo High@L4.1 / High@L4.1
+	 * High@L3.0 High@L4.0 High@L4.1 Stereo High@L4.1 / High@L4.1
 	 */
 
-	protected static final Pattern pattern = Pattern.compile(
-		"^\\s*(?:\\w[^@]*@)?(?:L|LEVEL)?\\s*([\\db]+(?:\\.\\d+|,\\d+)?)(?:@\\S.*\\S)?\\s*(?:/|$)",
-		Pattern.CASE_INSENSITIVE
-	);
+	/**
+	 * The {@link Pattern} used to extract the level from a
+	 * {@code profile@level} notation.
+	 */
+	protected static final Pattern PATTERN = Pattern.compile(
+		"^\\s*(?:\\w[^@]*@)?(?:L|LEVEL)?\\s*([\\db]+(?:\\.\\d+|,\\d+)?)(?:@\\S.*\\S)?\\s*(?:/|$)", Pattern.CASE_INSENSITIVE);
 
 	/**
 	 * @param other the {@link H264Level} to compare to.
 	 * @return {@code true} if this has a H264 level equal to or greater (
 	 *         {@code >=}) than {@code other}, {@code false} otherwise.
 	 */
-	public boolean isGreaterOrEqual(H264Level other) {
-		return compareTo(other) >= 0;
+	public boolean isGreaterOrEqual(@Nullable H264Level other) {
+		return other == null ? false : compareTo(other) >= 0;
+	}
+
+	/**
+	 * @param other the {@link H264Level} to compare to.
+	 * @return {@code true} if this has a H264 level greater ({@code >}) than
+	 *         {@code other}, {@code false} otherwise.
+	 */
+	public boolean isGreater(@Nullable H264Level other) {
+		return other == null ? false : compareTo(other) > 0;
 	}
 
 	/**
@@ -111,8 +119,17 @@ public enum H264Level {
 	 * @return {@code true} if this has a H264 level equal to or smaller (
 	 *         {@code <=}) than {@code other}, {@code false} otherwise.
 	 */
-	public boolean isSmallerOrEqual(H264Level other) {
-		return compareTo(other) <= 0;
+	public boolean isSmallerOrEqual(@Nullable H264Level other) {
+		return other == null ? false : compareTo(other) <= 0;
+	}
+
+	/**
+	 * @param other the {@link H264Level} to compare to.
+	 * @return {@code true} if this has a H264 level smaller ({@code <}) than
+	 *         {@code other}, {@code false} otherwise.
+	 */
+	public boolean isSmaller(@Nullable H264Level other) { //TODO: (Nad) Sync comparison method names with Rational
+		return other == null ? false : compareTo(other) < 0;
 	}
 
 	/**
@@ -123,7 +140,8 @@ public enum H264Level {
 	 * @return The {@link H264Level} corresponding to {@code value} or
 	 *         {@code null}.
 	 */
-	public static H264Level typeOf(String value) {
+	@Nullable
+	public static H264Level typeOf(@Nullable String value) {
 		return typeOf(value, null);
 	}
 
@@ -137,12 +155,13 @@ public enum H264Level {
 	 * @return The {@link H264Level} corresponding to {@code value} or
 	 *         {@code defaultValue}.
 	 */
-	public static H264Level typeOf(String value, H264Level defaultValue) {
+	@Nullable
+	public static H264Level typeOf(@Nullable String value, @Nullable H264Level defaultValue) {
 		if (StringUtils.isBlank(value)) {
 			return defaultValue;
 		}
 
-		Matcher matcher = pattern.matcher(value);
+		Matcher matcher = PATTERN.matcher(value);
 		if (matcher.find()) {
 			String level = matcher.group(1).replaceAll(",", "\\.").toLowerCase(Locale.ROOT);
 			switch (level) {
@@ -189,6 +208,60 @@ public enum H264Level {
 		}
 
 		return defaultValue;
+	}
+
+	/**
+	 * Tries to convert {@code value} into a {@link H264Level}. Returns
+	 * {@code null} if the conversion fails.
+	 *
+	 * @param value the {@code int} describing a H264 level in either one or two
+	 *            digit notation.
+	 * @return The {@link H264Level} corresponding to {@code value} or
+	 *         {@code null}.
+	 */
+	@Nullable
+	public static H264Level typeOf(int value) {
+		switch (value) {
+			case 1:
+			case 10:
+				return L1;
+			case 11:
+				return L1_1;
+			case 12:
+				return L1_2;
+			case 13:
+				return L1_3;
+			case 2:
+			case 20:
+				return L2;
+			case 21:
+				return L2_1;
+			case 22:
+				return L2_2;
+			case 3:
+			case 30:
+				return L3;
+			case 31:
+				return L3_1;
+			case 32:
+				return L3_2;
+			case 4:
+			case 40:
+				return L4;
+			case 41:
+				return L4_1;
+			case 42:
+				return L4_2;
+			case 5:
+			case 50:
+				return L5;
+			case 51:
+				return L5_1;
+			case 52:
+				return L5_2;
+			default:
+				return null;
+		}
 	}
 
 	@Override

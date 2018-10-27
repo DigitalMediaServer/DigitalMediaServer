@@ -942,13 +942,33 @@ public class FFMpegVideo extends Player {
 				deferToTsmuxer = false;
 				LOGGER.trace(prependTraceReason + "we are using AviSynth.");
 			}
-			if (
-				deferToTsmuxer == true &&
-				params.mediaRenderer.getH264LevelLimit() == H264Level.L4_1 &&
-				!media.isVideoWithinLevelLimit(newInput, params.mediaRenderer)
-			) {
-				deferToTsmuxer = false;
-				LOGGER.trace(prependTraceReason + "the video stream is not within H.264 level limits for this renderer.");
+			if (deferToTsmuxer == true && media.isH264() && params.mediaRenderer.getH264LevelLimit() != null) {
+				if (media.getH264Level() == null) {
+					deferToTsmuxer = false;
+					LOGGER.trace(prependTraceReason + "the H.264 level of the video stream is unknown.");
+				} else if (params.mediaRenderer.getH264LevelLimit().isSmaller(media.getH264Level())) {
+					deferToTsmuxer = false;
+					LOGGER.trace(prependTraceReason +
+						"{} the video stream ({}) isn't within H.264 level limit ({}) for this renderer.",
+						prependTraceReason,
+						media.getH264Level(),
+						params.mediaRenderer.getH264LevelLimit()
+					);
+				}
+			}
+			if (deferToTsmuxer == true && media.isH265() && params.mediaRenderer.getH265LevelLimit() != null) {
+				if (media.getH265Level() == null) {
+					deferToTsmuxer = false;
+					LOGGER.trace(prependTraceReason + "the H.265 level of the video stream is unknown.");
+				} else if (params.mediaRenderer.getH265LevelLimit().isSmaller(media.getH265Level())) {
+					deferToTsmuxer = false;
+					LOGGER.trace(prependTraceReason +
+						"{} the video stream ({}) isn't within H.265 level limit ({}) for this renderer.",
+						prependTraceReason,
+						media.getH265Level(),
+						params.mediaRenderer.getH265LevelLimit()
+					);
+				}
 			}
 			if (deferToTsmuxer == true && !media.isMuxable(params.mediaRenderer)) {
 				deferToTsmuxer = false;

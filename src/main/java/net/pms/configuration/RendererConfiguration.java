@@ -1244,6 +1244,7 @@ public class RendererConfiguration extends UPNPHelper.Renderer {
 	/**
 	 * @return The H.264 level limit, if any, or {@code null}.
 	 */
+	@Nullable
 	public H264Level getH264LevelLimit() {
 		return H264Level.typeOf(getString(H264_LEVEL_LIMIT, null));
 	}
@@ -1251,6 +1252,7 @@ public class RendererConfiguration extends UPNPHelper.Renderer {
 	/**
 	 * @return The H.265 level limit, if any, or {@code null}.
 	 */
+	@Nullable
 	public H265Level getH265LevelLimit() {
 		return H265Level.typeOf(getString(H265_LEVEL_LIMIT, null));
 	}

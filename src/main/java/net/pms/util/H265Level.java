@@ -21,6 +21,7 @@ package net.pms.util;
 import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import javax.annotation.Nullable;
 import org.apache.commons.lang3.StringUtils;
 
 
@@ -93,8 +94,17 @@ public enum H265Level {
 	 * @return {@code true} if this has a H265 level equal to or greater (
 	 *         {@code >=}) than {@code other}, {@code false} otherwise.
 	 */
-	public boolean isGreaterOrEqual(H265Level other) {
-		return compareTo(other) >= 0;
+	public boolean isGreaterOrEqual(@Nullable H265Level other) {
+		return other == null ? false : compareTo(other) >= 0;
+	}
+
+	/**
+	 * @param other the {@link H265Level} to compare to.
+	 * @return {@code true} if this has a H265 level greater ({@code >}) than
+	 *         {@code other}, {@code false} otherwise.
+	 */
+	public boolean isGreater(@Nullable H265Level other) {
+		return other == null ? false : compareTo(other) > 0;
 	}
 
 	/**
@@ -102,8 +112,17 @@ public enum H265Level {
 	 * @return {@code true} if this has a H265 level equal to or smaller (
 	 *         {@code <=}) than {@code other}, {@code false} otherwise.
 	 */
-	public boolean isSmallerOrEqual(H265Level other) {
-		return compareTo(other) <= 0;
+	public boolean isSmallerOrEqual(@Nullable H265Level other) {
+		return other == null ? false : compareTo(other) <= 0;
+	}
+
+	/**
+	 * @param other the {@link H265Level} to compare to.
+	 * @return {@code true} if this has a H265 level smaller ({@code <=}) than
+	 *         {@code other}, {@code false} otherwise.
+	 */
+	public boolean isSmaller(@Nullable H265Level other) {
+		return other == null ? false : compareTo(other) < 0;
 	}
 
 	/**
@@ -117,7 +136,6 @@ public enum H265Level {
 	public static H265Level typeOf(String value) {
 		return typeOf(value, null);
 	}
-
 
 	/**
 	 * Tries to convert {@code value} into a {@link H265Level}. Returns
