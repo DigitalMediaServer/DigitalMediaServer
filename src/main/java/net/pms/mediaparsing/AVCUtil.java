@@ -95,7 +95,7 @@ public class AVCUtil {
 			}
 		}
 
-		if (level != null && level.isSmallerOrEqual(H264Level.L4)) {
+		if (level != null && level.isLessThanOrEqualTo(H264Level.L4)) {
 			return true;
 		}
 

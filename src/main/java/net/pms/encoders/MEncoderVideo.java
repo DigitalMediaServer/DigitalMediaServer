@@ -910,7 +910,7 @@ public class MEncoderVideo extends Player {
 			if (media.getH264Level() == null) {
 				deferToTsmuxer = false;
 				LOGGER.trace(prependTraceReason + "the H.264 level of the video stream is unknown.");
-			} else if (params.mediaRenderer.getH264LevelLimit().isSmaller(media.getH264Level())) {
+			} else if (params.mediaRenderer.getH264LevelLimit().isLessThan(media.getH264Level())) {
 				deferToTsmuxer = false;
 				LOGGER.trace(prependTraceReason +
 					"{} the video stream ({}) isn't within H.264 level limit ({}) for this renderer.",
@@ -924,7 +924,7 @@ public class MEncoderVideo extends Player {
 			if (media.getH265Level() == null) {
 				deferToTsmuxer = false;
 				LOGGER.trace(prependTraceReason + "the H.265 level of the video stream is unknown.");
-			} else if (params.mediaRenderer.getH265LevelLimit().isSmaller(media.getH265Level())) {
+			} else if (params.mediaRenderer.getH265LevelLimit().isLessThan(media.getH265Level())) {
 				deferToTsmuxer = false;
 				LOGGER.trace(prependTraceReason +
 					"{} the video stream ({}) isn't within H.265 level limit ({}) for this renderer.",

@@ -90,45 +90,45 @@ public enum H264Level {
 	 */
 
 	/**
-	 * The {@link Pattern} used to extract the level from a
+	 * The {@link Pattern} used to extract the H.264 level from a
 	 * {@code profile@level} notation.
 	 */
-	protected static final Pattern PATTERN = Pattern.compile(
-		"^\\s*(?:\\w[^@]*@)?(?:L|LEVEL)?\\s*([\\db]+(?:\\.\\d+|,\\d+)?)(?:@\\S.*\\S)?\\s*(?:/|$)", Pattern.CASE_INSENSITIVE);
+	private static final Pattern PATTERN = Pattern.compile(
+		"^\\s*(?:[^@]*@)?(?:L|LEVEL)?\\s*([\\db]+(?:\\.\\d+|,\\d+)?)(?:@\\S.*\\S)?\\s*(?:/|$)", Pattern.CASE_INSENSITIVE);
 
 	/**
 	 * @param other the {@link H264Level} to compare to.
-	 * @return {@code true} if this has a H264 level equal to or greater (
-	 *         {@code >=}) than {@code other}, {@code false} otherwise.
+	 * @return {@code true} if this has a H264 level equal to or greater than (
+	 *         {@code >=}) {@code other}, {@code false} otherwise.
 	 */
-	public boolean isGreaterOrEqual(@Nullable H264Level other) {
+	public boolean isGreaterThanOrEqualTo(@Nullable H264Level other) {
 		return other == null ? false : compareTo(other) >= 0;
 	}
 
 	/**
 	 * @param other the {@link H264Level} to compare to.
-	 * @return {@code true} if this has a H264 level greater ({@code >}) than
+	 * @return {@code true} if this has a H264 level greater than ({@code >})
 	 *         {@code other}, {@code false} otherwise.
 	 */
-	public boolean isGreater(@Nullable H264Level other) {
+	public boolean isGreaterThan(@Nullable H264Level other) {
 		return other == null ? false : compareTo(other) > 0;
 	}
 
 	/**
 	 * @param other the {@link H264Level} to compare to.
-	 * @return {@code true} if this has a H264 level equal to or smaller (
-	 *         {@code <=}) than {@code other}, {@code false} otherwise.
+	 * @return {@code true} if this has a H264 level equal to or less than (
+	 *         {@code <=}) {@code other}, {@code false} otherwise.
 	 */
-	public boolean isSmallerOrEqual(@Nullable H264Level other) {
+	public boolean isLessThanOrEqualTo(@Nullable H264Level other) {
 		return other == null ? false : compareTo(other) <= 0;
 	}
 
 	/**
 	 * @param other the {@link H264Level} to compare to.
-	 * @return {@code true} if this has a H264 level smaller ({@code <}) than
+	 * @return {@code true} if this has a H264 level less than ({@code <})
 	 *         {@code other}, {@code false} otherwise.
 	 */
-	public boolean isSmaller(@Nullable H264Level other) { //TODO: (Nad) Sync comparison method names with Rational
+	public boolean isLessThan(@Nullable H264Level other) {
 		return other == null ? false : compareTo(other) < 0;
 	}
 
@@ -214,8 +214,8 @@ public enum H264Level {
 	 * Tries to convert {@code value} into a {@link H264Level}. Returns
 	 * {@code null} if the conversion fails.
 	 *
-	 * @param value the {@code int} describing a H264 level in either one or two
-	 *            digit notation.
+	 * @param value the {@code int} describing a H.264 level in either one or
+	 *            two digit notation.
 	 * @return The {@link H264Level} corresponding to {@code value} or
 	 *         {@code null}.
 	 */

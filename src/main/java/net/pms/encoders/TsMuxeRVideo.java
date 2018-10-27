@@ -281,7 +281,7 @@ public class TsMuxeRVideo extends Player {
 			if (media.isH264() && params.mediaRenderer.getH264LevelLimit() != null) {
 				if (media.getH264Level() == null) {
 					LOGGER.warn("This video might not play properly because the H.264 level is unknown");
-				} else if (params.mediaRenderer.getH264LevelLimit().isSmaller(media.getH264Level())) {
+				} else if (params.mediaRenderer.getH264LevelLimit().isLessThan(media.getH264Level())) {
 					LOGGER.warn(
 						"The video probably won't play properly because the H.264 level ({}) " +
 						"is above the limit for this renderer ({})",
@@ -294,7 +294,7 @@ public class TsMuxeRVideo extends Player {
 			if (media.isH265() && params.mediaRenderer.getH265LevelLimit() != null) {
 				if (media.getH265Level() == null) {
 					LOGGER.warn("This video might not play properly because the H.265 level is unknown");
-				} else if (params.mediaRenderer.getH265LevelLimit().isSmaller(media.getH265Level())) {
+				} else if (params.mediaRenderer.getH265LevelLimit().isLessThan(media.getH265Level())) {
 					LOGGER.warn(
 						"The video probably won't play properly because the H.265 level ({}) " +
 						"is above the limit for this renderer ({})",
