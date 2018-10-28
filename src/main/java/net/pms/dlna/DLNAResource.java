@@ -978,7 +978,7 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 				} else if (media.isH264() && renderer.getH264LevelLimit() != null) {
 					H264Level h264Level = media.getH264Level();
 					if (h264Level != null) {
-						if (!h264Level.isLessThanOrEqualTo(renderer.getH264LevelLimit())) {
+						if (h264Level.isGreaterThan(renderer.getH264LevelLimit())) {
 							isIncompatible = true;
 							LOGGER.trace(prependTraceReason + "the H.264 level ({}) is not supported.", getName(), h264Level);
 						}

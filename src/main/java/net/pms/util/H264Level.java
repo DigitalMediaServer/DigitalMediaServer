@@ -30,7 +30,7 @@ import org.apache.commons.lang3.StringUtils;
  *
  * @author Nadahar
  */
-public enum H264Level {
+public enum H264Level { //TODO: (Nad) Implement agnostic limit logic
 
 	/** Level 1 */
 	L1,
