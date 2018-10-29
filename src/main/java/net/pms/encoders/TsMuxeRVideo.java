@@ -281,7 +281,7 @@ public class TsMuxeRVideo extends Player {
 			if (media.isH264() && params.mediaRenderer.getH264LevelLimit() != null) {
 				if (media.getH264Level() == null) {
 					LOGGER.warn("This video might not play properly because the H.264 level is unknown");
-				} else if (params.mediaRenderer.getH264LevelLimit().isLessThan(media.getH264Level())) {
+				} else if (params.mediaRenderer.getH264LevelLimit().isLessThan(media.getH264Level())) { //TODO: (Nad) Here
 					LOGGER.warn(
 						"The video probably won't play properly because the H.264 level ({}) " +
 						"is above the limit for this renderer ({})",

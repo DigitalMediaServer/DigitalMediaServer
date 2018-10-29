@@ -282,13 +282,13 @@ public class RemoteUtil {
 	}
 
 	public static boolean transMp4(String mime, DLNAMediaInfo media) {
-		LOGGER.debug("mp4 profile " + media.getH264Profile());
+		LOGGER.debug("MP4 profile {}", media.getH264Profile());
 		return
 			mime.equals(MIME_MP4) &&
 			(
 				PMS.getConfiguration().isWebMp4Trans() ||
 				media.getH264Level() == null ||
-				media.getH264Level().isGreaterThanOrEqualTo(H264Level.L4)
+				media.getH264Level().isGreaterThanOrEqualTo(H264Level.L4) //TODO: (Nad) Here too
 			);
 	}
 

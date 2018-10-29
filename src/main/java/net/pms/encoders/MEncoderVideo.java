@@ -911,7 +911,7 @@ public class MEncoderVideo extends Player {
 			if (media.getH264Level() == null) {
 				deferToTsmuxer = false;
 				LOGGER.trace(prependTraceReason + "the H.264 level of the video stream is unknown.");
-			} else if (params.mediaRenderer.getH264LevelLimit().isLessThan(media.getH264Level())) {
+			} else if (params.mediaRenderer.getH264LevelLimit().isLessThan(media.getH264Level())) { //TODO: (Nad) Here
 				deferToTsmuxer = false;
 				LOGGER.trace(prependTraceReason +
 					"{} the video stream ({}) isn't within H.264 level limit ({}) for this renderer.",

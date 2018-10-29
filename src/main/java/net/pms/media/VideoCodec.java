@@ -151,17 +151,22 @@ public enum VideoCodec implements Codec {
 
 	@Nullable
 	public String getLevelLimitKey() {
-		StringBuilder sb = new StringBuilder();
+		StringBuilder sb;
 		switch (this) {
-			case CINEPAK:
-				sb.append("CVID");
+			case MPEG4ASP:
+				sb = new StringBuilder().append("MPEG4-Visual");
 				break;
-			case DIVX:
-				sb.append("DivX");
+			case AV1:
+			case H262:
+			case H263:
+			case H264:
+			case H265:
+			case VC1:
+			case VP9:
+				sb = new StringBuilder().append(name());
 				break;
 			default:
-				sb.append(name());
-				break;
+				return null;
 		}
 
 		sb.append("LevelLimit");

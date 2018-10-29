@@ -47,8 +47,7 @@ import net.pms.image.ImageInfo;
 import net.pms.io.OutputParams;
 import net.pms.io.ProcessWrapper;
 import net.pms.io.SizeLimitInputStream;
-import net.pms.media.H264Level;
-import net.pms.media.H265Level;
+import net.pms.media.VideoLevel;
 import net.pms.network.HTTPResource;
 import net.pms.network.UPNPControl.Renderer;
 import net.pms.util.*;
@@ -962,6 +961,7 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 			if (!isIncompatible && isVideo() && parserV2 && renderer != null) {
 				int maxBandwidth = renderer.getMaxBandwidth();
 
+				VideoLevel videoLevelLimit = renderer.getVideoLevelLimit(media.getVideoCodec());
 				if (
 					renderer.isKeepAspectRatio() &&
 					!AR_16_9.equals(media.getAspectRatioContainer())
@@ -977,31 +977,24 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 				} else if (!renderer.isVideoBitDepthSupported(media.getVideoBitDepth())) {
 					isIncompatible = true;
 					LOGGER.trace(prependTraceReason + "the video bit depth ({}) is not supported.", getName(), media.getVideoBitDepth());
-				} else if (media.isH264() && renderer.getH264LevelLimit() != null) {
-					H264Level h264Level = media.getH264Level();
-					if (h264Level != null) {
-						if (h264Level.isGreaterThan(renderer.getH264LevelLimit())) {
-							isIncompatible = true;
-							LOGGER.trace(prependTraceReason + "the H.264 level ({}) is not supported.", getName(), h264Level);
+				} else if (videoLevelLimit != null && !videoLevelLimit.isGreaterThanOrEqualTo(media.getVideoLevel())) { //TODO: (Nad) Done here
+					isIncompatible = true;
+					if (LOGGER.isTraceEnabled()) {
+						VideoLevel level = media.getVideoLevel();
+						if (level == null) {
+							LOGGER.trace(prependTraceReason + "the {} level is unknown", media.getVideoCodec());
+						} else {
+							LOGGER.trace(
+								prependTraceReason + "the {} level ({}) is above the limit ({})",
+								media.getVideoCodec(),
+								level,
+								videoLevelLimit
+							);
 						}
-					} else {
-						isIncompatible = true;
-						LOGGER.trace(prependTraceReason + "the H.264 level is unknown.", getName());
 					}
 				} else if (media.is3d() && StringUtils.isNotBlank(renderer.getOutput3DFormat()) && (!media.get3DLayout().toString().toLowerCase(Locale.ROOT).equals(renderer.getOutput3DFormat()))) {
 					forceTranscode = true;
 					LOGGER.trace("Video \"{}\" is 3D and is forced to transcode to the format \"{}\"", getName(), renderer.getOutput3DFormat());
-				} else if (media.isH265() && renderer.getH265LevelLimit() != null) {
-					H265Level h265Level = media.getH265Level();
-					if (h265Level != null) {
-						if (!h265Level.isLessThanOrEqualTo(renderer.getH265LevelLimit())) {
-							isIncompatible = true;
-							LOGGER.trace(prependTraceReason + "the H.265 level ({}) is not supported.", getName(), h265Level);
-						}
-					} else {
-						isIncompatible = true;
-						LOGGER.trace(prependTraceReason + "the H.265 level is unknown.", getName());
-					}
 				}
 			}
 
