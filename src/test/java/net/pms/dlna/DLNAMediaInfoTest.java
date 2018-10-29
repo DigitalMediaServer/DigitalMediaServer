@@ -20,8 +20,8 @@ package net.pms.dlna;
 
 import static org.junit.Assert.*;
 import org.junit.Test;
-import net.pms.util.H264Level;
-import net.pms.util.H265Level;
+import net.pms.media.H264Level;
+import net.pms.media.H265Level;
 
 public class DLNAMediaInfoTest {
 

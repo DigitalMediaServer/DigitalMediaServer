@@ -61,6 +61,7 @@ import net.pms.formats.FormatType;
 import net.pms.formats.ISOVOB;
 import net.pms.formats.v2.SubtitleType;
 import net.pms.io.*;
+import net.pms.media.H264Level;
 import net.pms.network.HTTPResource;
 import net.pms.newgui.GuiUtil;
 import net.pms.newgui.components.CustomJButton;

@@ -47,10 +47,10 @@ import net.pms.image.ImagesUtil.ScaleType;
 import net.pms.image.thumbnail.CoverUtil;
 import net.pms.io.OutputParams;
 import net.pms.io.ProcessWrapperImpl;
+import net.pms.media.H264Level;
+import net.pms.media.H265Level;
 import net.pms.network.HTTPResource;
 import net.pms.util.FileUtil;
-import net.pms.util.H264Level;
-import net.pms.util.H265Level;
 import net.pms.util.MpegUtil;
 import net.pms.util.ProcessUtil;
 import net.pms.util.Rational;
@@ -412,11 +412,6 @@ public class DLNAMediaInfo implements Cloneable {
 	 * Also used by DLNAResource to help determine the DLNA.ORG_PN (file type)
 	 * value to send to the renderer.
 	 *
-	 * Some of this code is repeated in isVideoWithinH264LevelLimits(), and since
-	 * both functions are sometimes (but not always) used together, this is
-	 * not an efficient use of code.
-	 *
-	 * TODO: Fix the above situation.
 	 * TODO: Now that FFmpeg is muxing without tsMuxeR, we should make a separate
 	 *       function for that, or even better, re-think this whole approach.
 	 *

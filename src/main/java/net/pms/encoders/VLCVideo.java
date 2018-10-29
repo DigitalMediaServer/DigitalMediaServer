@@ -47,6 +47,7 @@ import net.pms.dlna.DLNAResource;
 import net.pms.formats.Format;
 import net.pms.formats.FormatType;
 import net.pms.io.*;
+import net.pms.media.H264Level;
 import net.pms.network.HTTPResource;
 import net.pms.newgui.GuiUtil;
 import net.pms.util.*;

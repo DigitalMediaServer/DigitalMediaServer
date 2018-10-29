@@ -16,21 +16,20 @@
  * this program; if not, write to the Free Software Foundation, Inc., 51
  * Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
-package net.pms.util;
+package net.pms.media;
 
+import static org.apache.commons.lang3.StringUtils.isBlank;
 import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.annotation.Nullable;
-import org.apache.commons.lang3.StringUtils;
 
 /**
- * This represent the predefined H264 levels. Add further levels if more are
- * defined.
+ * This represent the predefined H.264 levels.
  *
  * @author Nadahar
  */
-public enum H264Level { //TODO: (Nad) Implement agnostic limit logic
+public enum H264Level implements VideoLevel { //TODO: (Nad) Implement agnostic limit logic
 
 	/** Level 1 */
 	L1,
@@ -93,72 +92,41 @@ public enum H264Level { //TODO: (Nad) Implement agnostic limit logic
 	 * The {@link Pattern} used to extract the H.264 level from a
 	 * {@code profile@level} notation.
 	 */
-	private static final Pattern PATTERN = Pattern.compile(
+	private static final Pattern PATTERN = Pattern.compile( //TODO: (Nad) Move to LibMediaInfo
 		"^\\s*(?:[^@]*@)?(?:L|LEVEL)?\\s*([\\db]+(?:\\.\\d+|,\\d+)?)(?:@\\S.*\\S)?\\s*(?:/|$)", Pattern.CASE_INSENSITIVE);
 
-	/**
-	 * @param other the {@link H264Level} to compare to.
-	 * @return {@code true} if this has a H264 level equal to or greater than (
-	 *         {@code >=}) {@code other}, {@code false} otherwise.
-	 */
-	public boolean isGreaterThanOrEqualTo(@Nullable H264Level other) {
-		return other == null ? false : compareTo(other) >= 0;
+	@Override
+	public boolean isGreaterThanOrEqualTo(@Nullable VideoLevel other) {
+		return other instanceof H264Level ? compareTo((H264Level) other) >= 0 : false;
 	}
 
-	/**
-	 * @param other the {@link H264Level} to compare to.
-	 * @return {@code true} if this has a H264 level greater than ({@code >})
-	 *         {@code other}, {@code false} otherwise.
-	 */
-	public boolean isGreaterThan(@Nullable H264Level other) {
-		return other == null ? false : compareTo(other) > 0;
+	@Override
+	public boolean isGreaterThan(@Nullable VideoLevel other) {
+		return other instanceof H264Level ? compareTo((H264Level) other) > 0 : false;
 	}
 
-	/**
-	 * @param other the {@link H264Level} to compare to.
-	 * @return {@code true} if this has a H264 level equal to or less than (
-	 *         {@code <=}) {@code other}, {@code false} otherwise.
-	 */
-	public boolean isLessThanOrEqualTo(@Nullable H264Level other) {
-		return other == null ? false : compareTo(other) <= 0;
+	@Override
+	public boolean isLessThanOrEqualTo(@Nullable VideoLevel other) {
+		return other instanceof H264Level ? compareTo((H264Level) other) <= 0 : false;
 	}
 
-	/**
-	 * @param other the {@link H264Level} to compare to.
-	 * @return {@code true} if this has a H264 level less than ({@code <})
-	 *         {@code other}, {@code false} otherwise.
-	 */
-	public boolean isLessThan(@Nullable H264Level other) {
-		return other == null ? false : compareTo(other) < 0;
+	@Override
+	public boolean isLessThan(@Nullable VideoLevel other) {
+		return other instanceof H264Level ? compareTo((H264Level) other) < 0 : false;
 	}
 
 	/**
 	 * Tries to convert {@code value} into a {@link H264Level}. Returns
 	 * {@code null} if the conversion fails.
 	 *
-	 * @param value the {@link String} describing a H264 level.
+	 * @param value the {@link String} describing a H.264 level.
 	 * @return The {@link H264Level} corresponding to {@code value} or
 	 *         {@code null}.
 	 */
 	@Nullable
 	public static H264Level typeOf(@Nullable String value) {
-		return typeOf(value, null);
-	}
-
-	/**
-	 * Tries to convert {@code value} into a {@link H264Level}. Returns
-	 * {@code defaultValue} if the conversion fails.
-	 *
-	 * @param value the {@link String} describing a H264 level.
-	 * @param defaultValue the default {@link H264Level} to return if the
-	 *            conversion fails.
-	 * @return The {@link H264Level} corresponding to {@code value} or
-	 *         {@code defaultValue}.
-	 */
-	@Nullable
-	public static H264Level typeOf(@Nullable String value, @Nullable H264Level defaultValue) {
-		if (StringUtils.isBlank(value)) {
-			return defaultValue;
+		if (isBlank(value)) {
+			return null;
 		}
 
 		Matcher matcher = PATTERN.matcher(value);
@@ -207,7 +175,7 @@ public enum H264Level { //TODO: (Nad) Implement agnostic limit logic
 			}
 		}
 
-		return defaultValue;
+		return null;
 	}
 
 	/**

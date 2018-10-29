@@ -47,6 +47,8 @@ import net.pms.image.ImageInfo;
 import net.pms.io.OutputParams;
 import net.pms.io.ProcessWrapper;
 import net.pms.io.SizeLimitInputStream;
+import net.pms.media.H264Level;
+import net.pms.media.H265Level;
 import net.pms.network.HTTPResource;
 import net.pms.network.UPNPControl.Renderer;
 import net.pms.util.*;

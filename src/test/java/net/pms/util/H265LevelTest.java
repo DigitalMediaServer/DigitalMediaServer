@@ -20,6 +20,7 @@ package net.pms.util;
 
 import static org.junit.Assert.assertEquals;
 import org.junit.Test;
+import net.pms.media.H265Level;
 
 public class H265LevelTest {
 

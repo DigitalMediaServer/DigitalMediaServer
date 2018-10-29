@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package net.pms.mediaparsing;
+package net.pms.media.parsing;
 
 import java.util.Vector;
 import javax.annotation.Nonnull;
@@ -32,7 +32,7 @@ import net.pms.encoders.PlayerFactory;
 import net.pms.encoders.StandardPlayerId;
 import net.pms.io.OutputParams;
 import net.pms.io.ProcessWrapperImpl;
-import net.pms.util.H264Level;
+import net.pms.media.H264Level;
 
 
 /**
