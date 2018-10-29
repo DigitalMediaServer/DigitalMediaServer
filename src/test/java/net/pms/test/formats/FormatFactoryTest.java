@@ -114,6 +114,8 @@ public class FormatFactoryTest {
 		testSingleFormat("test.jpg", "JPG", FormatType.IMAGE);
 		testSingleFormat("test.mpo", "JPG", FormatType.IMAGE);
 		testSingleFormat("test.m4a", "M4A", FormatType.AUDIO);
+		testSingleFormat("test.264", "MKV", FormatType.CONTAINER);
+		testSingleFormat("test.265", "MKV", FormatType.CONTAINER);
 		testSingleFormat("test.m4b", "M4A", FormatType.AUDIO);
 		testSingleFormat("test.m4r", "M4A", FormatType.AUDIO);
 		testSingleFormat("test.3g2", "MKV", FormatType.CONTAINER);
@@ -124,6 +126,8 @@ public class FormatFactoryTest {
 		testSingleFormat("test.dv", "MKV", FormatType.CONTAINER);
 		testSingleFormat("test.evo", "MKV", FormatType.CONTAINER);
 		testSingleFormat("test.flv", "MKV", FormatType.CONTAINER);
+		testSingleFormat("test.h264", "MKV", FormatType.CONTAINER);
+		testSingleFormat("test.h265", "MKV", FormatType.CONTAINER);
 		testSingleFormat("test.hdmov", "MKV", FormatType.CONTAINER);
 		testSingleFormat("test.hdm", "MKV", FormatType.CONTAINER);
 		testSingleFormat("test.m2v", "MKV", FormatType.CONTAINER);
@@ -178,6 +182,7 @@ public class FormatFactoryTest {
 		testSingleFormat("test.m2a", "MPA", FormatType.AUDIO);
 		testSingleFormat("test.mp1", "MPA", FormatType.AUDIO);
 		testSingleFormat("test.mp2", "MPA", FormatType.AUDIO);
+		testSingleFormat("test.y4m", "MKV", FormatType.CONTAINER);
 		testSingleFormat("test.sub", "MicroDVD", FormatType.SUBTITLES);
 		testSingleFormat("test.ape", "MonkeysAudio", FormatType.AUDIO);
 		testSingleFormat("test.oga", "OGA", FormatType.AUDIO);

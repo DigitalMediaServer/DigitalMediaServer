@@ -42,6 +42,7 @@ import net.pms.configuration.ExecutableInfo;
 import net.pms.configuration.ExecutableInfo.ExecutableInfoBuilder;
 import net.pms.configuration.ExternalProgramInfo;
 import net.pms.configuration.FFmpegExecutableInfo;
+import net.pms.configuration.FFmpegExecutableInfo.Codec;
 import net.pms.configuration.FFmpegExecutableInfo.FFmpegExecutableInfoBuilder;
 import net.pms.configuration.FFmpegProgramInfo;
 import net.pms.configuration.FormatConfiguration;
@@ -326,6 +327,13 @@ public class FFMpegVideo extends Player {
 		final String filename = dlna.getFileName();
 		final RendererConfiguration renderer = params.mediaRenderer;
 		String customFFmpegOptions = renderer.getCustomFFmpegOptions();
+		ExecutableInfo executableInfo = getExecutableInfo();
+		Codec aacAt = ((FFmpegExecutableInfo) executableInfo).getCodecs().get("aac_at");
+		Codec aacLibfdk = ((FFmpegExecutableInfo) executableInfo).getCodecs().get("libfdk_aac");
+		Codec ac3At = ((FFmpegExecutableInfo) executableInfo).getCodecs().get("ac3_at");
+		Codec h264Videotoolbox = ((FFmpegExecutableInfo) executableInfo).getCodecs().get("h264_videotoolbox");
+		Codec hevcVideotoolbox = ((FFmpegExecutableInfo) executableInfo).getCodecs().get("hevc_videotoolbox");
+		Codec mpeg2Videotoolbox = ((FFmpegExecutableInfo) executableInfo).getCodecs().get("mpeg2_videotoolbox");
 
 		if (
 			(
@@ -350,7 +358,18 @@ public class FFMpegVideo extends Player {
 		} else { // MPEGPSMPEG2AC3, MPEGTSMPEG2AC3, MPEGTSH264AC3 or MPEGTSH264AAC
 			final boolean isTsMuxeRVideoEngineActive = PlayerFactory.isPlayerActive(TsMuxeRVideo.ID);
 
+			boolean isSubtitlesAndTimeseek = !isDisableSubtitles(params) && params.timeseek > 0;
+			boolean isXboxOneWebVideo = params.mediaRenderer.isXboxOne() && purpose() == VIDEO_WEBSTREAM_PLAYER;
+
 			// Output audio codec
+			ac3Remux = configuration.isAudioRemuxAC3() &&
+				params.aid != null &&
+				params.aid.isAC3() &&
+				!avisynth() &&
+				renderer.isTranscodeToAC3() &&
+				params.aid.getNumberOfChannels() <= configuration.getAudioChannelCount() &&
+				!isXboxOneWebVideo &&
+				!isSubtitlesAndTimeseek;
 			dtsRemux = isTsMuxeRVideoEngineActive &&
 				configuration.isAudioEmbedDtsInPcm() &&
 				params.aid != null &&
@@ -358,9 +377,7 @@ public class FFMpegVideo extends Player {
 				!avisynth() &&
 				renderer.isDTSPlayable();
 
-			boolean isSubtitlesAndTimeseek = !isDisableSubtitles(params) && params.timeseek > 0;
-
-			if (configuration.isAudioRemuxAC3() && params.aid != null && params.aid.isAC3() && !avisynth() && renderer.isTranscodeToAC3() && !isSubtitlesAndTimeseek) {
+			if (ac3Remux) {
 				// AC-3 remux
 				if (!Pattern.compile("-(?:c:a|codec:a|acodec)\\b").matcher(customFFmpegOptions).find()) {
 					transcodeOptions.add("-c:a");
@@ -374,11 +391,25 @@ public class FFMpegVideo extends Player {
 					// Skip
 				} else if (!Pattern.compile("-(?:c:a|codec:a|acodec)\\b").matcher(customFFmpegOptions).find()) {
 					if (renderer.isTranscodeToAAC()) {
-						transcodeOptions.add("-c:a");
-						transcodeOptions.add("aac");
+						if (executableInfo instanceof FFmpegExecutableInfo) {
+							transcodeOptions.add("-c:a");
+							if (aacAt != null) {
+								transcodeOptions.add("aac_at");
+							} else if (aacLibfdk != null) {
+								transcodeOptions.add("libfdk_aac");
+							} else {
+								transcodeOptions.add("aac");
+							}
+						}
 					} else {
-						transcodeOptions.add("-c:a");
-						transcodeOptions.add("ac3");
+						if (executableInfo instanceof FFmpegExecutableInfo) {
+							transcodeOptions.add("-c:a");
+							if (ac3At != null) {
+								transcodeOptions.add("ac3_at");
+							} else {
+								transcodeOptions.add("ac3");
+							}
+						}
 					}
 				}
 			}
@@ -395,17 +426,21 @@ public class FFMpegVideo extends Player {
 				if (!Pattern.compile("-(?:c:v|codec:v|vcodec)\\b").matcher(customFFmpegOptions).find()) {
 					transcodeOptions.add("-c:v");
 					if (renderer.isTranscodeToH264()) {
-						transcodeOptions.add("libx264");
+						if (executableInfo instanceof FFmpegExecutableInfo) {
+							if (h264Videotoolbox != null) {
+								transcodeOptions.add("h264_videotoolbox");
+							} else {
+								transcodeOptions.add("libx264");
+							}
+						}
 					} else {
-						transcodeOptions.add("libx265");
-					}
-					if (!customFFmpegOptions.contains("-tune")) {
-						transcodeOptions.add("-tune");
-						transcodeOptions.add("zerolatency");
-					}
-					if (!Pattern.compile("(?:\\bpreset(?!:a)|-vpre)\\b").matcher(customFFmpegOptions).find()) {
-						transcodeOptions.add("-preset");
-						transcodeOptions.add("ultrafast");
+						if (executableInfo instanceof FFmpegExecutableInfo) {
+							if (hevcVideotoolbox != null) {
+								transcodeOptions.add("hevc_videotoolbox");
+							} else {
+								transcodeOptions.add("libx265");
+							}
+						}
 					}
 				}
 				if (!Pattern.compile("\\blevel(?!:a)\\b").matcher(customFFmpegOptions).find()) {
@@ -416,6 +451,15 @@ public class FFMpegVideo extends Player {
 						transcodeOptions.add("-level");
 						transcodeOptions.add(level.toString(false));
 					}
+				if (hevcVideotoolbox == null && h264Videotoolbox == null) {
+					if (!customFFmpegOptions.contains("-tune")) {
+						transcodeOptions.add("-tune");
+						transcodeOptions.add("zerolatency");
+					}
+					if (!Pattern.compile("(?:\\bpreset(?!:a)|-vpre)\\b").matcher(customFFmpegOptions).find()) {
+						transcodeOptions.add("-preset");
+						transcodeOptions.add("ultrafast");
+					}
 				}
 				if (!Pattern.compile("-pix_fmt\\b|\\bformat=").matcher(customFFmpegOptions).find()) {
 					transcodeOptions.add("-pix_fmt");
@@ -423,9 +467,28 @@ public class FFMpegVideo extends Player {
 				}
 			} else if (!dtsRemux) {
 				if (!Pattern.compile("-(?:c:v|codec:v|vcodec)\\b").matcher(customFFmpegOptions).find()) {
-					transcodeOptions.add("-c:v");
-					transcodeOptions.add("mpeg2video");
+					if (executableInfo instanceof FFmpegExecutableInfo) {
+						transcodeOptions.add("-c:v");
+						if (mpeg2Videotoolbox != null) {
+							transcodeOptions.add("mpeg2_videotoolbox");
+						} else {
+							transcodeOptions.add("mpeg2video");
+						}
+					}
 				}
+			}
+
+			if (params.aid == null && !filename.toLowerCase().endsWith(".wtv")) {
+				transcodeOptions.add("-shortest");
+			}
+
+			if (
+				!ac3Remux &&
+				!dtsRemux &&
+				!Pattern.compile("(-af|-filter:a|aresample)\\b").matcher(customFFmpegOptions).find()
+			) {
+				transcodeOptions.add("-af");
+				transcodeOptions.add("aresample=resampler=soxr:precision=32:cheby=1:dither_method=shibata");
 			}
 
 			if (!Pattern.compile("-f\\b").matcher(customFFmpegOptions).find()) {
@@ -816,6 +879,22 @@ public class FFMpegVideo extends Player {
 		cmdList.add("-loglevel");
 		cmdList.add(FFmpegProgramInfo.getFFmpegLogLevel());
 
+		cmdList.add("-fflags");
+		cmdList.add("+genpts");
+
+		// Avoid H.264 transcoding fail, at least when generating a MP4 file with FFmpeg  and make the media DLNA compatible
+		if (params.aid == null && !filename.toLowerCase().endsWith(".wtv")) {
+			cmdList.add("-f");
+			cmdList.add("lavfi");
+			cmdList.add("-i");
+			cmdList.add("anullsrc");
+		}
+
+		if (Platform.isMac()) {
+			cmdList.add("-hwaccel");
+			cmdList.add("auto");
+		}
+
 		double start = Math.max(params.timeseek, 0.0);
 		double end = params.timeend > 0 ? params.timeend : Double.POSITIVE_INFINITY;
 		if (dlna instanceof PartialSource) {
@@ -1037,15 +1116,25 @@ public class FFMpegVideo extends Player {
 		cmdList.addAll(getVideoFilterOptions(dlna, media, params));
 
 		// Map the output streams if necessary
-		if (media.getAudioTracksList().size() > 1) {
+		if (params.aid != null || filename.toLowerCase().endsWith(".wtv")) {
 			// Set the video stream
 			cmdList.add("-map");
-			cmdList.add("0:v");
+			cmdList.add("0:V");
 
-			// Set the proper audio stream
+			if (!filename.toLowerCase().endsWith(".wtv")) {
+				// Set the proper audio stream
+				cmdList.add("-map");
+				cmdList.add("0:a:" + (media.getAudioTracksList().indexOf(params.aid)));
+			}
+		} else {
 			cmdList.add("-map");
-			cmdList.add("0:a:" + (media.getAudioTracksList().indexOf(params.aid)));
+			cmdList.add("1:V");
+			cmdList.add("-map");
+			cmdList.add("0");
 		}
+		cmdList.add("-map_chapters");
+		cmdList.add("-1");
+		cmdList.add("-dn");
 
 		// Now configure the output streams
 

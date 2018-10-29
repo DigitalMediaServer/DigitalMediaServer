@@ -261,10 +261,13 @@ public class TsMuxeRVideo extends Player {
 
 			ffmpegCommands = new String[] {
 				PlayerFactory.getPlayerExecutable(StandardPlayerId.FFMPEG_VIDEO),
+				"-fflags", "+genpts",
 				"-ss", params.timeseek > 0 ? "" + params.timeseek : "0",
 				"-i", filename,
-				"-c", "copy",
-				"-f", "rawvideo",
+				"-an",
+				"-dn",
+				"-c:v", "copy",
+				"-f", media.getCodecV().startsWith("h264") ? "h264" : "mpeg2video",
 				"-y",
 				ffVideoPipe.getInputPipe()
 			};
@@ -371,11 +374,12 @@ public class TsMuxeRVideo extends Player {
 
 						ffmpegCommands = new String[] {
 							PlayerFactory.getPlayerExecutable(StandardPlayerId.FFMPEG_VIDEO),
+							"-fflags", "+genpts",
 							"-ss", params.timeseek > 0 ? "" + params.timeseek : "0",
 							"-i", filename,
 							"-ac", "" + sm.getNbChannels(),
-							"-f", "ac3",
-							"-c:a", sm.isDtsEmbed() || sm.isEncodedAudioPassthrough() ? "copy" : "pcm",
+							"-f", "s16le",
+							"-c:a", sm.isDtsEmbed() || sm.isEncodedAudioPassthrough() ? "copy" : "pcm_s16le",
 							"-y",
 							ffAudioPipe[0].getInputPipe()
 						};
@@ -388,12 +392,13 @@ public class TsMuxeRVideo extends Player {
 						// AAC audio
 						ffmpegCommands = new String[] {
 							PlayerFactory.getPlayerExecutable(StandardPlayerId.FFMPEG_VIDEO),
+							"-fflags", "+genpts",
 							"-ss", params.timeseek > 0 ? "" + params.timeseek : "0",
 							"-i", filename,
 							"-ac", "" + channels,
 							"-f", "adts",
 							"-c:a", "aac",
-							"-ab", Math.min(configuration.getAudioBitrate(), 320) + "k",
+							"-b:a", Math.min(configuration.getAudioBitrate(), 320) + "k",
 							"-y",
 							ffAudioPipe[0].getInputPipe()
 						};
@@ -402,12 +407,13 @@ public class TsMuxeRVideo extends Player {
 						// AC-3 audio
 						ffmpegCommands = new String[] {
 							PlayerFactory.getPlayerExecutable(StandardPlayerId.FFMPEG_VIDEO),
+							"-fflags", "+genpts",
 							"-ss", params.timeseek > 0 ? "" + params.timeseek : "0",
 							"-i", filename,
 							"-ac", "" + channels,
 							"-f", "ac3",
 							"-c:a", (ac3Remux) ? "copy" : "ac3",
-							"-ab", String.valueOf(CodecUtil.getAC3Bitrate(configuration, params.aid)) + "k",
+							"-b:a", String.valueOf(CodecUtil.getAC3Bitrate(configuration, params.aid)) + "k",
 							"-y",
 							ffAudioPipe[0].getInputPipe()
 						};
@@ -474,12 +480,13 @@ public class TsMuxeRVideo extends Player {
 
 							ffmpegCommands = new String[] {
 								PlayerFactory.getPlayerExecutable(StandardPlayerId.FFMPEG_VIDEO),
+								"-fflags", "+genpts",
 								"-ss", params.timeseek > 0 ? "" + params.timeseek : "0",
 								"-i", filename,
 								"-ac", "" + sm.getNbChannels(),
-								"-f", "ac3",
+								"-f", "s16le",
 								singleMediaAudio ? "-y" : "-map", singleMediaAudio ? "-y" : ("0:a:" + (media.getAudioTracksList().indexOf(audio))),
-								"-c:a", sm.isDtsEmbed() || sm.isEncodedAudioPassthrough() ? "copy" : "pcm",
+								"-c:a", sm.isDtsEmbed() || sm.isEncodedAudioPassthrough() ? "copy" : "pcm_s16le",
 								"-y",
 								ffAudioPipe[i].getInputPipe()
 							};
@@ -521,7 +528,7 @@ public class TsMuxeRVideo extends Player {
 									tempFFmpegCommands.add("experimental");
 								}
 							}
-							tempFFmpegCommands.add("-ab");
+							tempFFmpegCommands.add("-b:a");
 							tempFFmpegCommands.add(Math.min(configuration.getAudioBitrate(), 320) + "k");
 							tempFFmpegCommands.add("-y");
 							tempFFmpegCommands.add(ffAudioPipe[i].getInputPipe());
@@ -531,6 +538,7 @@ public class TsMuxeRVideo extends Player {
 							// AC-3 remux or encoding
 							ffmpegCommands = new String[] {
 								PlayerFactory.getPlayerExecutable(StandardPlayerId.FFMPEG_VIDEO),
+								"-fflags", "+genpts",
 								"-ss", params.timeseek > 0 ? "" + params.timeseek : "0",
 								"-i", filename,
 								"-ac", "" + channels,
@@ -665,6 +673,8 @@ public class TsMuxeRVideo extends Player {
 					if (ac3Remux) {
 						// AC-3 remux takes priority
 						type = "A_AC3";
+					} else if (aacTranscode) {
+						type = "A_AAC";
 					} else {
 						if (pcm) {
 							type = "A_LPCM";

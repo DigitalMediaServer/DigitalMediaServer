@@ -33,6 +33,8 @@ public class MKV extends MPG {
 	@Override
 	public String[] getSupportedExtensions() {
 		return new String[] {
+			"264",
+			"265",
 			"3g2",
 			"3gp",
 			"3gp2",
@@ -41,6 +43,8 @@ public class MKV extends MPG {
 			"dv",
 			"evo",
 			"flv",
+			"h264",
+			"h265",
 			"hdmov",
 			"hdm",
 			"m2v",
@@ -52,8 +56,7 @@ public class MKV extends MPG {
 			"rmvb",
 			"rm",
 			"webm",
-			"265",
-			"h265"
+			"y4m"
 		};
 	}
 }
