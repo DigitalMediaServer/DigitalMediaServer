@@ -26,14 +26,24 @@ public class H264LevelTest {
 
 	@Test
 	public void testStaticInstances() {
-		assertEquals(H264Level.L2, H264Level.typeOf("@2"));
-		assertEquals(H264Level.L2, H264Level.typeOf("@L2.0"));
-		assertEquals(H264Level.L2, H264Level.typeOf("@l2.0"));
-		assertEquals(H264Level.L2, H264Level.typeOf("Main@L2.0"));
-		assertEquals(H264Level.L3, H264Level.typeOf("High@L3.0"));
-		assertEquals(H264Level.L4, H264Level.typeOf("high@l4.0"));
-		assertEquals(H264Level.L4_1, H264Level.typeOf("hIgH@L4.1"));
-		assertEquals(H264Level.L5, H264Level.typeOf("level5"));
+		assertEquals(H264Level.L2, H264Level.typeOf("2"));
+		assertEquals(H264Level.L2, H264Level.typeOf("2.0"));
+		assertEquals(H264Level.L1b, H264Level.typeOf("1b"));
+		assertEquals(H264Level.L1b, H264Level.typeOf("1B"));
+		assertEquals(H264Level.L3, H264Level.typeOf("3,0"));
+		assertEquals(H264Level.L4, H264Level.typeOf("4 "));
+		assertEquals(H264Level.L4_1, H264Level.typeOf(" 4.1"));
+		assertEquals(H264Level.L5, H264Level.typeOf(" 5  "));
 		assertEquals(H264Level.L5_1, H264Level.typeOf("5.1"));
+
+//		assertEquals(H264Level.L2, H264Level.typeOf("@2")); //TODO: (Nad) Implement tests in LibMediaInfoParser
+//		assertEquals(H264Level.L2, H264Level.typeOf("@L2.0"));
+//		assertEquals(H264Level.L2, H264Level.typeOf("@l2.0"));
+//		assertEquals(H264Level.L2, H264Level.typeOf("Main@L2.0"));
+//		assertEquals(H264Level.L3, H264Level.typeOf("High@L3.0"));
+//		assertEquals(H264Level.L4, H264Level.typeOf("high@l4.0"));
+//		assertEquals(H264Level.L4_1, H264Level.typeOf("hIgH@L4.1"));
+//		assertEquals(H264Level.L5, H264Level.typeOf("level5"));
+//		assertEquals(H264Level.L5_1, H264Level.typeOf("5.1"));
 	}
 }

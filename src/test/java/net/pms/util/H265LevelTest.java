@@ -19,6 +19,7 @@
 package net.pms.util;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import org.junit.Test;
 import net.pms.media.H265Level;
 
@@ -26,14 +27,22 @@ public class H265LevelTest {
 
 	@Test
 	public void testStaticInstances() {
-		assertEquals(H265Level.L2, H265Level.typeOf("@2"));
-		assertEquals(H265Level.L2, H265Level.typeOf("@L2.0"));
-		assertEquals(H265Level.L2, H265Level.typeOf("@l2.0"));
-		assertEquals(H265Level.L2, H265Level.typeOf("Main@L2.0@low"));
-		assertEquals(H265Level.L3, H265Level.typeOf("High@L3.0"));
-		assertEquals(H265Level.L4, H265Level.typeOf("high@l4.0"));
-		assertEquals(H265Level.L4_1, H265Level.typeOf("hIgH@L4.1"));
-		assertEquals(H265Level.L5, H265Level.typeOf("level5"));
-		assertEquals(H265Level.L5_1, H265Level.typeOf("5.1"));
+		assertNull(H265Level.typeOf("1b"));
+		assertEquals(H265Level.L2, H265Level.typeOf("2")); //TODO: (Nad) Implement tests in LibMediaInfoParser
+		assertEquals(H265Level.L2, H265Level.typeOf("2.0"));
+		assertEquals(H265Level.L3, H265Level.typeOf("3,0"));
+		assertEquals(H265Level.L4, H265Level.typeOf(" 4.0"));
+		assertEquals(H265Level.L4_1, H265Level.typeOf("  4.1  "));
+		assertEquals(H265Level.L5_1, H265Level.typeOf("5.1  "));
+
+//		assertEquals(H265Level.L2, H265Level.typeOf("@2")); //TODO: (Nad) Implement tests in LibMediaInfoParser
+//		assertEquals(H265Level.L2, H265Level.typeOf("@L2.0"));
+//		assertEquals(H265Level.L2, H265Level.typeOf("@l2.0"));
+//		assertEquals(H265Level.L2, H265Level.typeOf("Main@L2.0@low"));
+//		assertEquals(H265Level.L3, H265Level.typeOf("High@L3.0"));
+//		assertEquals(H265Level.L4, H265Level.typeOf("high@l4.0"));
+//		assertEquals(H265Level.L4_1, H265Level.typeOf("hIgH@L4.1"));
+//		assertEquals(H265Level.L5, H265Level.typeOf("level5"));
+//		assertEquals(H265Level.L5_1, H265Level.typeOf("5.1"));
 	}
 }
