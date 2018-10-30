@@ -1398,7 +1398,12 @@ public class MEncoderVideo extends Player {
 
 				encodeSettings = "-lavcopts " + aspectRatioLavcopts + vcodecString + acodec + abitrate +
 					":threads=" + configuration.getMencoderMaxThreads() +
-					":o=preset=superfast,crf=" + x264CRF + ",g=250,i_qfactor=0.71,qcomp=0.6,level=3.1,weightp=0,8x8dct=0,aq-strength=0,me_range=16";
+					":o=preset=superfast,crf=" + x264CRF + ",g=250,i_qfactor=0.71,qcomp=0.6,";
+				VideoLevel level = params.mediaRenderer.getVideoLevelLimit(VideoCodec.H264);
+				if (level != null) {
+					encodeSettings += "level=" + level.toString(false) + ",";
+				}
+				encodeSettings += "weightp=0,8x8dct=0,aq-strength=0,me_range=16";
 
 				encodeSettings = addMaximumBitrateConstraints(encodeSettings, media, "", params.mediaRenderer, audioType);
 			}
@@ -1749,7 +1754,13 @@ public class MEncoderVideo extends Player {
 		}
 
 		// Make MEncoder output framerate correspond to InterFrame
-		if (avisynth() && configuration.getAvisynthInterFrame() && !"60000/1001".equals(frameRateRatio) && !"50".equals(frameRateRatio) && !"60".equals(frameRateRatio)) {
+		if (
+			avisynth() &&
+			configuration.getAvisynthInterFrame() &&
+			frameRateRatio != null &&
+			!"60000/1001".equals(frameRateRatio) &&
+			!"50".equals(frameRateRatio) &&
+			!"60".equals(frameRateRatio)) {
 			switch (frameRateRatio) {
 				case "25":
 					ofps = "50";
@@ -2210,7 +2221,7 @@ public class MEncoderVideo extends Player {
 			cmdList.add("" + params.timeend);
 		}
 
-		// Force srate because MEncoder doesn't like anything other than 48khz for AC-3
+		// Force sample rate because MEncoder doesn't like anything other than 48khz for AC-3
 		String rate = "" + params.mediaRenderer.getTranscodedVideoAudioSampleRate();
 		if (!pcm && !dtsRemux && !ac3Remux && !encodedAudioPassthrough) {
 			cmdList.add("-af");
@@ -2442,7 +2453,14 @@ public class MEncoderVideo extends Player {
 						timeshift = "timeshift=" + params.aid.getDelay() + "ms, ";
 					}
 
-					pwMux.println(videoType + ", \"" + ffVideoPipe.getOutputPipe() + "\", " + fps + "level=4.1, insertSEI, contSPS, track=1");
+					// XXX This is questionable, it's unclear of the codec is always H.264
+					// and what the consequence of omitting the "level" parameter is
+					VideoLevel level = params.mediaRenderer.getVideoLevelLimit(VideoCodec.H264);
+					pwMux.println(
+						videoType + ", \"" + ffVideoPipe.getOutputPipe() + "\", " + fps +
+						(level != null ? "level=" + level.toString(false) + ", " : "") +
+						"insertSEI, contSPS, track=1"
+					);
 					pwMux.println(audioType + ", \"" + ffAudioPipe.getOutputPipe() + "\", " + timeshift + "track=2");
 				}
 
