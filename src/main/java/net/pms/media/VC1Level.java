@@ -165,23 +165,28 @@ public enum VC1Level implements VideoLevel {
 
 	@Override
 	public String toString() {
+		return toString(true);
+	}
+
+	@Override
+	public String toString(boolean full) {
 		switch (this) {
 			case LOW:
-				return "Low Level";
+				return full ? "Low Level" : "LL";
 			case L0:
-				return "Level 0";
+				return full ? "Level 0" : "0";
 			case MEDIUM:
-				return "Medium Level";
+				return full ? "Medium Level" : "ML";
 			case L1:
-				return "Level 1";
+				return full ? "Level 1" : "1";
 			case HIGH:
-				return "High Level";
+				return full ? "High Level" : "HL";
 			case L2:
-				return "Level 2";
+				return full ? "Level 2" : "2";
 			case L3:
-				return "Level 3";
+				return full ? "Level 3" : "3";
 			case L4:
-				return "Level 4";
+				return full ? "Level 4" : "4";
 			default:
 				throw new IllegalStateException("Unimplemented enum value: " + super.toString());
 		}

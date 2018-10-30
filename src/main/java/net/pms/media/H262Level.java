@@ -89,15 +89,20 @@ public enum H262Level implements VideoLevel {
 
 	@Override
 	public String toString() {
+		return toString(true);
+	}
+
+	@Override
+	public String toString(boolean full) {
 		switch (this) {
 			case LL:
-				return "Low Level";
+				return full ? "Low Level" : "LL";
 			case ML:
-				return "Main Level";
+				return full ? "Main Level" : "ML";
 			case H_14:
-				return "High 1440";
+				return full ? "High 1440" : "H14";
 			case HL:
-				return "High Level";
+				return full ? "High Level" : "HL";
 			default:
 				throw new IllegalStateException("Unimplemented enum value: " + super.toString());
 		}

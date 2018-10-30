@@ -269,55 +269,61 @@ public enum AV1Level implements VideoLevel {
 
 	@Override
 	public String toString() {
+		return toString(true);
+	}
+
+	@Override
+	public String toString(boolean full) {
+		StringBuilder sb = full ? new StringBuilder(9).append("Level ") : new StringBuilder(3);
 		switch (this) {
 			case L2:
-				return "Level 2.0";
+				return sb.append("2.0").toString();
 			case L2_1:
-				return "Level 2.1";
+				return sb.append("2.1").toString();
 			case L2_2:
-				return "Level 2.2";
+				return sb.append("2.2").toString();
 			case L2_3:
-				return "Level 2.3";
+				return sb.append("2.3").toString();
 			case L3:
-				return "Level 3.0";
+				return sb.append("3.0").toString();
 			case L3_1:
-				return "Level 3.1";
+				return sb.append("3.1").toString();
 			case L3_2:
-				return "Level 3.2";
+				return sb.append("3.2").toString();
 			case L3_3:
-				return "Level 3.3";
+				return sb.append("3.3").toString();
 			case L4:
-				return "Level 4.0";
+				return sb.append("4.0").toString();
 			case L4_1:
-				return "Level 4.1";
+				return sb.append("4.1").toString();
 			case L4_2:
-				return "Level 4.2";
+				return sb.append("4.2").toString();
 			case L4_3:
-				return "Level 4.3";
+				return sb.append("4.3").toString();
 			case L5:
-				return "Level 5.0";
+				return sb.append("5.0").toString();
 			case L5_1:
-				return "Level 5.1";
+				return sb.append("5.1").toString();
 			case L5_2:
-				return "Level 5.2";
+				return sb.append("5.2").toString();
 			case L5_3:
-				return "Level 5.3";
+				return sb.append("5.3").toString();
 			case L6:
-				return "Level 6.0";
+				return sb.append("6.0").toString();
 			case L6_1:
-				return "Level 6.1";
+				return sb.append("6.1").toString();
 			case L6_2:
-				return "Level 6.2";
+				return sb.append("6.2").toString();
 			case L6_3:
-				return "Level 6.3";
+				return sb.append("6.3").toString();
 			case L7:
-				return "Level 7.0";
+				return sb.append("7.0").toString();
 			case L7_1:
-				return "Level 7.1";
+				return sb.append("7.1").toString();
 			case L7_2:
-				return "Level 7.2";
+				return sb.append("7.2").toString();
 			case L7_3:
-				return "Level 7.3";
+				return sb.append("7.3").toString();
 			default:
 				throw new IllegalStateException("Unimplemented enum value: " + super.toString());
 		}

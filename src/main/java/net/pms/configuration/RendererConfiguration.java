@@ -156,7 +156,6 @@ public class RendererConfiguration extends UPNPHelper.Renderer {
 	protected static final String DLNA_TREE_HACK = "CreateDLNATreeFaster";
 	protected static final String EMBEDDED_SUBS_SUPPORTED = "InternalSubtitlesSupported";
 	protected static final String HALVE_BITRATE = "HalveBitrate";
-	protected static final String H264_LEVEL_LIMIT = "H264LevelLimit"; //TODO: (Nad) Remove
 	protected static final String IGNORE_TRANSCODE_BYTE_RANGE_REQUEST = "IgnoreTranscodeByteRangeRequests";
 	protected static final String IMAGE = "Image";
 	protected static final String KEEP_ASPECT_RATIO = "KeepAspectRatio";
@@ -1248,6 +1247,10 @@ public class RendererConfiguration extends UPNPHelper.Renderer {
 		return getBoolean(TRANSCODE_AUDIO_441KHZ, false);
 	}
 
+	/**
+	 * @return The video level limit for the specified {@link VideoCodec} or
+	 *         {@code null} in none is defined.
+	 */
 	@Nullable
 	public VideoLevel getVideoLevelLimit(@Nullable VideoCodec codec) {
 		if (codec == null) {
@@ -1275,14 +1278,6 @@ public class RendererConfiguration extends UPNPHelper.Renderer {
 			default:
 				return null;
 		}
-	}
-
-	/**
-	 * @return The H.264 level limit, if any, or {@code null}.
-	 */
-	@Nullable
-	public H264Level getH264LevelLimit() { //TODO: (Nad) Remove
-		return H264Level.typeOf(getString(H264_LEVEL_LIMIT, null));
 	}
 
 	public boolean isTranscodeFastStart() {

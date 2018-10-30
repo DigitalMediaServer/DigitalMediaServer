@@ -48,6 +48,7 @@ import net.pms.formats.Format;
 import net.pms.formats.FormatType;
 import net.pms.io.*;
 import net.pms.media.H264Level;
+import net.pms.media.VideoCodec;
 import net.pms.network.HTTPResource;
 import net.pms.newgui.GuiUtil;
 import net.pms.util.*;
@@ -364,7 +365,7 @@ public class VLCVideo extends Player {
 			 */
 			if (!isXboxOneWebVideo && (params.mediaRenderer.isTranscodeToH264() || params.mediaRenderer.isTranscodeToH265())) {
 				if (
-					params.mediaRenderer.getH264LevelLimit() == H264Level.L4_1 &&
+					params.mediaRenderer.getVideoLevelLimit(VideoCodec.H264) == H264Level.L4_1 &&
 					defaultMaxBitrates[0] > 31250
 				) {
 					defaultMaxBitrates[0] = 31250;

@@ -55,4 +55,17 @@ public interface VideoLevel {
 	 *         than ({@code <}) {@code other}, {@code false} otherwise.
 	 */
 	public boolean isLessThan(@Nullable VideoLevel other);
+
+	/**
+	 * Returns the {@link String} representation of this {@link VideoLevel}.
+	 * <p>
+	 * <b>Note: </b>This interface requires that {@link #toString()} produce the
+	 * same output as {@link #toString(boolean)} when {@code full} is
+	 * {@code true}.
+	 *
+	 * @param full if {@code true}, a human readable string is returned. If
+	 *            {@code false}, a short form/code is returned.
+	 * @return The {@link String} representation.
+	 */
+	public String toString(boolean full);
 }

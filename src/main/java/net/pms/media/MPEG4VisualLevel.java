@@ -132,17 +132,23 @@ public enum MPEG4VisualLevel implements VideoLevel {
 
 	@Override
 	public String toString() {
+		return toString(true);
+	}
+
+	@Override
+	public String toString(boolean full) {
+		StringBuilder sb = full ? new StringBuilder(9).append("Level ") : new StringBuilder(3);
 		switch (this) {
 			case L0:
-				return "Level 0";
+				return sb.append("0").toString();
 			case L1:
-				return "Level 1";
+				return sb.append("1").toString();
 			case L2:
-				return "Level 2";
+				return sb.append("2").toString();
 			case L3:
-				return "Level 3";
+				return sb.append("3").toString();
 			case L4:
-				return "Level 4";
+				return sb.append("4").toString();
 			default:
 				throw new IllegalStateException("Unimplemented enum value: " + super.toString());
 		}

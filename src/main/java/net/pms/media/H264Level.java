@@ -216,41 +216,47 @@ public enum H264Level implements VideoLevel {
 
 	@Override
 	public String toString() {
+		return toString(true);
+	}
+
+	@Override
+	public String toString(boolean full) {
+		StringBuilder sb = full ? new StringBuilder(9).append("Level ") : new StringBuilder(3);
 		switch (this) {
 			case L1:
-				return "Level 1";
+				return sb.append("1").toString();
 			case L1_1:
-				return "Level 1.1";
+				return sb.append("1.1").toString();
 			case L1_2:
-				return "Level 1.2";
+				return sb.append("1.2").toString();
 			case L1_3:
-				return "Level 1.3";
+				return sb.append("1.3").toString();
 			case L1b:
-				return "Level 1b";
+				return sb.append("1b").toString();
 			case L2:
-				return "Level 2";
+				return sb.append("2").toString();
 			case L2_1:
-				return "Level 2.1";
+				return sb.append("2.1").toString();
 			case L2_2:
-				return "Level 2.2";
+				return sb.append("2.2").toString();
 			case L3:
-				return "Level 3";
+				return sb.append("3").toString();
 			case L3_1:
-				return "Level 3.1";
+				return sb.append("3.1").toString();
 			case L3_2:
-				return "Level 3.2";
+				return sb.append("3.2").toString();
 			case L4:
-				return "Level 4";
+				return sb.append("4").toString();
 			case L4_1:
-				return "Level 4.1";
+				return sb.append("4.1").toString();
 			case L4_2:
-				return "Level 4.2";
+				return sb.append("4.2").toString();
 			case L5:
-				return "Level 5";
+				return sb.append("5").toString();
 			case L5_1:
-				return "Level 5.1";
+				return sb.append("5.1").toString();
 			case L5_2:
-				return "Level 5.2";
+				return sb.append("5.2").toString();
 			default:
 				throw new IllegalStateException("Unimplemented enum value: " + super.toString());
 		}
