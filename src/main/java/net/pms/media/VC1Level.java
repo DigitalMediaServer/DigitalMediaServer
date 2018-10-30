@@ -88,30 +88,39 @@ public enum VC1Level implements VideoLevel {
 			return null;
 		}
 
-		value = value.trim().toUpperCase(Locale.ROOT);
+		value = value.replaceAll(",", "\\.").trim().toUpperCase(Locale.ROOT);
 		switch (value) {
 			case "L":
 			case "LL":
 				return LOW;
 			case "0":
+			case "L0":
 				return L0;
 			case "M":
 			case "ML":
 				return MEDIUM;
 			case "1":
+			case "L1":
 			case "1.0":
+			case "L1.0":
 				return L1;
 			case "H":
 			case "HL":
 				return HIGH;
 			case "2":
+			case "L2":
 			case "2.0":
+			case "L2.0":
 				return L2;
 			case "3":
+			case "L3":
 			case "3.0":
+			case "L3.0":
 				return L3;
 			case "4":
+			case "L4":
 			case "4.0":
+			case "L4.0":
 				return L4;
 			default:
 				for (VC1Level level : values()) {

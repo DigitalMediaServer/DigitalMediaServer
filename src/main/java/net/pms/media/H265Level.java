@@ -19,9 +19,6 @@
 package net.pms.media;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
-import java.util.Locale;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import javax.annotation.Nullable;
 
 
@@ -71,27 +68,6 @@ public enum H265Level implements VideoLevel {
 	/** Level 6.2 */
 	L6_2;
 
-	/*
-	 * Example values:
-	 *
-	 *   Main@L4.1@High
-	 *   Main 10@L5@High
-	 *   High@L5.1@High
-	 *   High@L5.2@High
-	 *   High@L6@High
-	 *   Main 10@L6.1@High
-	 *   High@L6.2@High
-	 */
-
-	/**
-	 * The {@link Pattern} used to extract the H.265 level from a
-	 * {@code profile@level@sub-profile} notation.
-	 */
-	private static final Pattern PATTERN = Pattern.compile(
-		"^\\s*(?:[^@]*@)?(?:L|LEVEL)?\\s*(\\d+(?:\\.\\d+|,\\d+)?)(?:@\\S.*\\S)?\\s*(?:/|$)",
-		Pattern.CASE_INSENSITIVE
-	);
-
 	@Override
 	public boolean isGreaterThanOrEqualTo(@Nullable VideoLevel other) {
 		return other instanceof H265Level ? compareTo((H265Level) other) >= 0 : false;
@@ -125,43 +101,40 @@ public enum H265Level implements VideoLevel {
 			return null;
 		}
 
-		Matcher matcher = PATTERN.matcher(value);
-		if (matcher.find()) {
-			String level = matcher.group(1).replaceAll(",", "\\.").toLowerCase(Locale.ROOT);
-			switch (level) {
-				case "1":
-				case "1.0":
-					return L1;
-				case "2":
-				case "2.0":
-					return L2;
-				case "2.1":
-					return L2_1;
-				case "3":
-				case "3.0":
-					return L3;
-				case "3.1":
-					return L3_1;
-				case "4":
-				case "4.0":
-					return L4;
-				case "4.1":
-					return L4_1;
-				case "5":
-				case "5.0":
-					return L5;
-				case "5.1":
-					return L5_1;
-				case "5.2":
-					return L5_2;
-				case "6":
-				case "6.0":
-					return L6;
-				case "6.1":
-					return L6_1;
-				case "6.2":
-					return L6_2;
-			}
+		value = value.trim().replaceAll(",", "\\.");
+		switch (value) {
+			case "1":
+			case "1.0":
+				return L1;
+			case "2":
+			case "2.0":
+				return L2;
+			case "2.1":
+				return L2_1;
+			case "3":
+			case "3.0":
+				return L3;
+			case "3.1":
+				return L3_1;
+			case "4":
+			case "4.0":
+				return L4;
+			case "4.1":
+				return L4_1;
+			case "5":
+			case "5.0":
+				return L5;
+			case "5.1":
+				return L5_1;
+			case "5.2":
+				return L5_2;
+			case "6":
+			case "6.0":
+				return L6;
+			case "6.1":
+				return L6_1;
+			case "6.2":
+				return L6_2;
 		}
 
 		return null;

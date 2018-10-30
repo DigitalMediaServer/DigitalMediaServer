@@ -47,8 +47,6 @@ import net.pms.image.ImagesUtil.ScaleType;
 import net.pms.image.thumbnail.CoverUtil;
 import net.pms.io.OutputParams;
 import net.pms.io.ProcessWrapperImpl;
-import net.pms.media.H264Level;
-import net.pms.media.H265Level;
 import net.pms.media.VideoCodec;
 import net.pms.media.VideoLevel;
 import net.pms.network.HTTPResource;
@@ -200,7 +198,7 @@ public class DLNAMediaInfo implements Cloneable {
 	private int referenceFrameCount = -1;
 
 	private VideoLevel videoLevel;
-	private String videoFormatProfile;
+	private String videoProfile;
 
 	private List<DLNAMediaAudio> audioTracks = new ArrayList<>();
 	private List<DLNAMediaSubtitle> subtitleTracks = new ArrayList<>();
@@ -1699,6 +1697,9 @@ public class DLNAMediaInfo implements Cloneable {
 			result.append(", Video Tracks: ").append(getVideoTrackCount());
 			result.append(", codecV: ").append(getCodecV());
 			result.append(", Video Codec: ").append(getVideoCodec());
+			if (isNotBlank(getVideoProfile())) {
+				result.append(", Video Format Profile: ").append(getVideoProfile());
+			}
 			if (videoLevel != null) {
 				result.append(", Video Level: ").append(videoLevel);
 			}
@@ -1741,9 +1742,6 @@ public class DLNAMediaInfo implements Cloneable {
 			}
 			if (isNotBlank(getMatrixCoefficients())) {
 				result.append(", Matrix Coefficients: ").append(getMatrixCoefficients());
-			}
-			if (isNotBlank(getVideoFormatProfile())) {
-				result.append(", Video Format Profile: ").append(getVideoFormatProfile());
 			}
 			if (getVideoBitDepth() != 8) {
 				result.append(", Video Bit Depth: ").append(getVideoBitDepth());
@@ -2488,49 +2486,45 @@ public class DLNAMediaInfo implements Cloneable {
 		this.referenceFrameCount = referenceFrameCount < -1 ? -1 : referenceFrameCount;
 	}
 
+	/**
+	 * @return The video level for the video stream or {@code null} if not
+	 *         parsed, known or relevant.
+	 */
 	@Nullable
-	public VideoLevel getVideoLevel() { //TODO: (Nad) JavaDocs
+	public VideoLevel getVideoLevel() {
 		return videoLevel;
 	}
 
-	public void setVideoLevel(@Nullable VideoLevel videoLevel) { //TODO: (Nad) Remember to set in parsers
+	/**
+	 * Sets the {@link VideoLevel} for the current video codec. Make sure that
+	 * the correct {@link VideoLevel} type/implementation for the
+	 * {@link VideoCodec} is used.
+	 *
+	 * @param videoLevel the {@link VideoLevel} to set or {@code null} if
+	 *            unknown.
+	 */
+	public void setVideoLevel(@Nullable VideoLevel videoLevel) {
 		this.videoLevel = videoLevel;
 	}
 
 	/**
-	 * @return The AVC/H.264 level for video stream or {@code null} if not
-	 *         parsed/relevant.
-	 */
-	public H264Level getH264Level() { //TODO: (Nad) remove
-		return H264Level.typeOf(getVideoFormatProfile());
-	}
-
-	/**
-	 * @return The HEVC/H.265 level for video stream or {@code null} if not
-	 *         parsed/relevant.
-	 */
-	public H265Level getH265Level() { //TODO: (Nad) remove
-		return H265Level.typeOf(getVideoFormatProfile());
-	}
-
-	/**
-	 * Gets the video format profile for the video stream or {@code null} if not
+	 * Gets the video profile for the video stream or {@code null} if not
 	 * parsed/relevant.
 	 *
-	 * @return The video format profile {@link String}.
+	 * @return The video profile {@link String}.
 	 */
 	@Nullable
-	public String getVideoFormatProfile() {
-		return videoFormatProfile;
+	public String getVideoProfile() {
+		return videoProfile;
 	}
 
 	/**
-	 * Sets video format profile for the video stream.
+	 * Sets video profile for the video stream.
 	 *
-	 * @param formatProfile the video format profile.
+	 * @param videoProfile the video profile.
 	 */
-	public void setVideoFormatProfile(@Nullable String formatProfile) {
-		this.videoFormatProfile = formatProfile == null ? null : formatProfile.trim();
+	public void setVideoProfile(@Nullable String videoProfile) {
+		this.videoProfile = videoProfile == null ? null : videoProfile.trim();
 	}
 
 	/**
@@ -2539,15 +2533,15 @@ public class DLNAMediaInfo implements Cloneable {
 	 */
 	@Nullable
 	public String getH264Profile() {
-		if (isBlank(videoFormatProfile) || getVideoCodec() != VideoCodec.H264) {
+		if (isBlank(videoProfile) || getVideoCodec() != VideoCodec.H264) {
 			return null;
 		}
-		int at = videoFormatProfile.indexOf('@');
+		int at = videoProfile.indexOf('@');
 		if (at < 0) {
-			return videoFormatProfile.toLowerCase(Locale.ROOT);
+			return videoProfile.toLowerCase(Locale.ROOT);
 		}
 
-		String result = videoFormatProfile.substring(0, at);
+		String result = videoProfile.substring(0, at);
 		return isBlank(result) ? null : result.toLowerCase(Locale.ROOT);
 	}
 
@@ -2557,15 +2551,15 @@ public class DLNAMediaInfo implements Cloneable {
 	 */
 	@Nullable
 	public String getH265Profile() {
-		if (isBlank(videoFormatProfile) || getVideoCodec() != VideoCodec.H265) {
+		if (isBlank(videoProfile) || getVideoCodec() != VideoCodec.H265) {
 			return null;
 		}
-		int at = videoFormatProfile.indexOf('@');
+		int at = videoProfile.indexOf('@');
 		if (at < 0) {
-			return videoFormatProfile.toLowerCase(Locale.ROOT);
+			return videoProfile.toLowerCase(Locale.ROOT);
 		}
 
-		String result = videoFormatProfile.substring(0, at);
+		String result = videoProfile.substring(0, at);
 		return isBlank(result) ? null : result.toLowerCase(Locale.ROOT);
 	}
 

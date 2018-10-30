@@ -135,7 +135,7 @@ public enum AV1Level implements VideoLevel {
 			return null;
 		}
 
-		value = value.trim();
+		value = value.replaceAll(",", "\\.").trim();
 		switch (value) {
 			case "2":
 			case "2.0":

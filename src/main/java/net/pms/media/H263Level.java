@@ -72,7 +72,7 @@ public enum H263Level implements VideoLevel {
 			return null;
 		}
 
-		value = value.trim();
+		value = value.replaceAll(",", "\\.").trim();
 		switch (value) {
 			case "1":
 			case "1.0":

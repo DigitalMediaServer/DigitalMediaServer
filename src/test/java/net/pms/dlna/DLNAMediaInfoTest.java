@@ -29,40 +29,40 @@ public class DLNAMediaInfoTest {
 	public void testH264() throws Exception {
 		DLNAMediaInfo media = new DLNAMediaInfo();
 
-		media.setVideoFormatProfile("low@L1b");
-		assertEquals(H264Level.L1b, media.getH264Level());
+		media.setVideoProfile("low@L1b");
+		assertEquals(H264Level.L1b, media.getVideoLevel());
 		assertEquals("low", media.getH264Profile());
 
-		media.setVideoFormatProfile("Main@L2.0");
-		assertEquals(H264Level.L2, media.getH264Level());
+		media.setVideoProfile("Main@L2.0");
+		assertEquals(H264Level.L2, media.getVideoLevel());
 		assertEquals("main", media.getH264Profile());
 
-		media.setVideoFormatProfile("High@L3.0");
-		assertEquals(H264Level.L3, media.getH264Level());
+		media.setVideoProfile("High@L3.0");
+		assertEquals(H264Level.L3, media.getVideoLevel());
 		assertEquals("high", media.getH264Profile());
 
-		media.setVideoFormatProfile("high@l4.0");
-		assertEquals(H264Level.L4, media.getH264Level());
+		media.setVideoProfile("high@l4.0");
+		assertEquals(H264Level.L4, media.getVideoLevel());
 		assertEquals("high", media.getH264Profile());
 
-		media.setVideoFormatProfile("hIgH@L4.1");
-		assertEquals(H264Level.L4_1, media.getH264Level());
+		media.setVideoProfile("hIgH@L4.1");
+		assertEquals(H264Level.L4_1, media.getVideoLevel());
 		assertEquals("high", media.getH264Profile());
 
-		media.setVideoFormatProfile("5");
-		assertEquals(H264Level.L5, media.getH264Level());
+		media.setVideoProfile("5");
+		assertEquals(H264Level.L5, media.getVideoLevel());
 		assertEquals("5", media.getH264Profile());
 
-		media.setVideoFormatProfile("LEVEL 5.1");
-		assertEquals(H264Level.L5_1, media.getH264Level());
+		media.setVideoProfile("LEVEL 5.1");
+		assertEquals(H264Level.L5_1, media.getVideoLevel());
 		assertEquals("level 5.1", media.getH264Profile());
 
-		media.setVideoFormatProfile("level5,2");
-		assertEquals(H264Level.L5_2, media.getH264Level());
+		media.setVideoProfile("level5,2");
+		assertEquals(H264Level.L5_2, media.getVideoLevel());
 		assertEquals("level5,2", media.getH264Profile());
 
-		media.setVideoFormatProfile("level");
-		assertNull(media.getH264Level());
+		media.setVideoProfile("level");
+		assertNull(media.getVideoLevel());
 		assertEquals("level", media.getH264Profile());
 	}
 
@@ -70,48 +70,48 @@ public class DLNAMediaInfoTest {
 	public void testH265() throws Exception {
 		DLNAMediaInfo media = new DLNAMediaInfo();
 
-		media.setVideoFormatProfile("Main@L2.0@High");
-		assertEquals(H265Level.L2, media.getH265Level());
+		media.setVideoProfile("Main@L2.0@High");
+		assertEquals(H265Level.L2, media.getVideoLevel());
 		assertEquals("main", media.getH265Profile());
 
-		media.setVideoFormatProfile("High@L3.0");
-		assertEquals(H265Level.L3, media.getH265Level());
+		media.setVideoProfile("High@L3.0");
+		assertEquals(H265Level.L3, media.getVideoLevel());
 		assertEquals("high", media.getH265Profile());
 
-		media.setVideoFormatProfile("mAin@l4.0@maIN");
-		assertEquals(H265Level.L4, media.getH265Level());
+		media.setVideoProfile("mAin@l4.0@maIN");
+		assertEquals(H265Level.L4, media.getVideoLevel());
 		assertEquals("main", media.getH265Profile());
 
-		media.setVideoFormatProfile("hIgH@L4.1");
-		assertEquals(H265Level.L4_1, media.getH265Level());
+		media.setVideoProfile("hIgH@L4.1");
+		assertEquals(H265Level.L4_1, media.getVideoLevel());
 		assertEquals("high", media.getH265Profile());
 
-		media.setVideoFormatProfile("hIgH@L4.2@loW");
-		assertNull(media.getH265Level());
+		media.setVideoProfile("hIgH@L4.2@loW");
+		assertNull(media.getVideoLevel());
 		assertEquals("high", media.getH265Profile());
 
-		media.setVideoFormatProfile("5");
-		assertEquals(H265Level.L5, media.getH265Level());
+		media.setVideoProfile("5");
+		assertEquals(H265Level.L5, media.getVideoLevel());
 		assertEquals("5", media.getH265Profile());
 
-		media.setVideoFormatProfile("LEVEL 5.1");
-		assertEquals(H265Level.L5_1, media.getH265Level());
+		media.setVideoProfile("LEVEL 5.1");
+		assertEquals(H265Level.L5_1, media.getVideoLevel());
 		assertEquals("level 5.1", media.getH265Profile());
 
-		media.setVideoFormatProfile("level5,2");
-		assertEquals(H265Level.L5_2, media.getH265Level());
+		media.setVideoProfile("level5,2");
+		assertEquals(H265Level.L5_2, media.getVideoLevel());
 		assertEquals("level5,2", media.getH265Profile());
 
-		media.setVideoFormatProfile("level");
-		assertNull(media.getH265Level());
+		media.setVideoProfile("level");
+		assertNull(media.getVideoLevel());
 		assertEquals("level", media.getH265Profile());
 
-		media.setVideoFormatProfile("@l2.0");
-		assertEquals(H265Level.L2, media.getH265Level());
+		media.setVideoProfile("@l2.0");
+		assertEquals(H265Level.L2, media.getVideoLevel());
 		assertNull(media.getH265Profile());
 
-		media.setVideoFormatProfile("@2");
-		assertEquals(H265Level.L2, media.getH265Level());
+		media.setVideoProfile("@2");
+		assertEquals(H265Level.L2, media.getVideoLevel());
 		assertNull(media.getH265Profile());
 	}
 }

@@ -78,7 +78,7 @@ public enum MPEG4VisualLevel implements VideoLevel {
 			return null;
 		}
 
-		value = value.trim();
+		value = value.replaceAll(",", "\\.").trim();
 		switch (value) {
 			case "0":
 				return L0;
