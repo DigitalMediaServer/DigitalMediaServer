@@ -162,7 +162,7 @@ public class DLNAMediaDatabase implements Runnable {
 					sb.append(", ASPECTRATIOCONTAINER    OTHER");
 					sb.append(", ASPECTRATIOVIDEOTRACK   OTHER");
 					sb.append(", REFRAMES                INT");
-					sb.append(", VIDEOFORMATPROFILE                VARCHAR2(").append(SIZE_VIDEO_FORMAT_PROFILE).append(')');
+					sb.append(", VIDEOFORMATPROFILE                VARCHAR2(").append(SIZE_VIDEO_FORMAT_PROFILE).append(')'); //TODO: (Nad) Add videoLevel
 					sb.append(", IMAGEINFO               OTHER");
 					sb.append(", THUMB                   OTHER");
 					sb.append(", CONTAINER               VARCHAR2(").append(SIZE_CONTAINER).append(')');

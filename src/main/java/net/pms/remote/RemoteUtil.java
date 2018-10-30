@@ -287,8 +287,7 @@ public class RemoteUtil {
 			mime.equals(MIME_MP4) &&
 			(
 				PMS.getConfiguration().isWebMp4Trans() ||
-				media.getH264Level() == null ||
-				media.getH264Level().isGreaterThanOrEqualTo(H264Level.L4) //TODO: (Nad) Here too
+				!H264Level.L4.isGreaterThan(media.getVideoLevel())
 			);
 	}
 

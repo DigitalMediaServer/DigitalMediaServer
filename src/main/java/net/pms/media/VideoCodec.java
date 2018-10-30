@@ -154,6 +154,7 @@ public enum VideoCodec implements Codec {
 		StringBuilder sb;
 		switch (this) {
 			case MPEG4ASP:
+			case MPEG4SP:
 				sb = new StringBuilder().append("MPEG4-Visual");
 				break;
 			case AV1:

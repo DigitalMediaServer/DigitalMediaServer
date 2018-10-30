@@ -56,6 +56,7 @@ import net.pms.dlna.*;
 import net.pms.formats.Format;
 import net.pms.formats.FormatType;
 import net.pms.io.*;
+import net.pms.media.VideoLevel;
 import net.pms.newgui.GuiUtil;
 import net.pms.platform.windows.NTStatus;
 import net.pms.util.CodecUtil;
@@ -272,34 +273,21 @@ public class TsMuxeRVideo extends Player {
 			newInput.setFilename(filename);
 			newInput.setPush(params.stdin);
 
-			/**
-			 * Note: This logic is weird; on one hand we check if the renderer requires videos to be Level 4.1 or below, but then
-			 * the other function allows the video to exceed those limits.
-			 * In reality this won't cause problems since renderers typically don't support above 4.1 anyway - nor are many
-			 * videos encoded higher than that either - but it's worth acknowledging the logic discrepancy.
-			 */
-			if (media.isH264() && params.mediaRenderer.getH264LevelLimit() != null) {
-				if (media.getH264Level() == null) {
-					LOGGER.warn("This video might not play properly because the H.264 level is unknown");
-				} else if (params.mediaRenderer.getH264LevelLimit().isLessThan(media.getH264Level())) { //TODO: (Nad) Here
+			VideoLevel videoLevelLimit = params.mediaRenderer.getVideoLevelLimit(media.getVideoCodec());
+			VideoLevel videoLevel = media.getVideoLevel();
+			if (
+				videoLevelLimit != null &&
+				!videoLevelLimit.isGreaterThanOrEqualTo(videoLevel)
+			) {
+				if (videoLevel == null) {
+					LOGGER.warn("This video might not play properly because the {} level is unknown", media.getVideoCodec());
+				} else {
 					LOGGER.warn(
-						"The video probably won't play properly because the H.264 level ({}) " +
-						"is above the limit for this renderer ({})",
-						media.getH264Level(),
-						params.mediaRenderer.getH264LevelLimit()
-					);
-				}
-			}
-
-			if (media.isH265() && params.mediaRenderer.getH265LevelLimit() != null) {
-				if (media.getH265Level() == null) {
-					LOGGER.warn("This video might not play properly because the H.265 level is unknown");
-				} else if (params.mediaRenderer.getH265LevelLimit().isLessThan(media.getH265Level())) {
-					LOGGER.warn(
-						"The video probably won't play properly because the H.265 level ({}) " +
-						"is above the limit for this renderer ({})",
-						media.getH265Level(),
-						params.mediaRenderer.getH265LevelLimit()
+						"The video probably won't play properly because the {} level ({}) " +
+						"is above the limit ({}) for this renderer",
+						media.getVideoCodec(),
+						videoLevel,
+						videoLevelLimit
 					);
 				}
 			}

@@ -29,7 +29,7 @@ import javax.annotation.Nullable;
  *
  * @author Nadahar
  */
-public enum H264Level implements VideoLevel { //TODO: (Nad) Implement agnostic limit logic
+public enum H264Level implements VideoLevel {
 
 	/** Level 1 */
 	L1,

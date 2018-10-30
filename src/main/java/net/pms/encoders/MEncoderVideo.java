@@ -62,6 +62,7 @@ import net.pms.formats.ISOVOB;
 import net.pms.formats.v2.SubtitleType;
 import net.pms.io.*;
 import net.pms.media.H264Level;
+import net.pms.media.VideoLevel;
 import net.pms.network.HTTPResource;
 import net.pms.newgui.GuiUtil;
 import net.pms.newgui.components.CustomJButton;
@@ -882,6 +883,7 @@ public class MEncoderVideo extends Player {
 
 		// Decide whether to defer to tsMuxeR or continue to use MEncoder
 		boolean deferToTsmuxer = true;
+		VideoLevel videoLevelLimit = params.mediaRenderer.getVideoLevelLimit(media.getVideoCodec());
 		String prependTraceReason = "Not muxing the video stream with tsMuxeR via MEncoder because ";
 		if (!configuration.isMencoderMuxWhenCompatible()) {
 			deferToTsmuxer = false;
@@ -907,32 +909,24 @@ public class MEncoderVideo extends Player {
 			deferToTsmuxer = false;
 			LOGGER.trace(prependTraceReason + "we are using AviSynth.");
 		}
-		if (deferToTsmuxer == true && media.isH264() && params.mediaRenderer.getH264LevelLimit() != null) {
-			if (media.getH264Level() == null) {
-				deferToTsmuxer = false;
-				LOGGER.trace(prependTraceReason + "the H.264 level of the video stream is unknown.");
-			} else if (params.mediaRenderer.getH264LevelLimit().isLessThan(media.getH264Level())) { //TODO: (Nad) Here
-				deferToTsmuxer = false;
-				LOGGER.trace(prependTraceReason +
-					"{} the video stream ({}) isn't within H.264 level limit ({}) for this renderer.",
-					prependTraceReason,
-					media.getH264Level(),
-					params.mediaRenderer.getH264LevelLimit()
-				);
-			}
-		}
-		if (deferToTsmuxer == true && media.isH265() && params.mediaRenderer.getH265LevelLimit() != null) {
-			if (media.getH265Level() == null) {
-				deferToTsmuxer = false;
-				LOGGER.trace(prependTraceReason + "the H.265 level of the video stream is unknown.");
-			} else if (params.mediaRenderer.getH265LevelLimit().isLessThan(media.getH265Level())) {
-				deferToTsmuxer = false;
-				LOGGER.trace(prependTraceReason +
-					"{} the video stream ({}) isn't within H.265 level limit ({}) for this renderer.",
-					prependTraceReason,
-					media.getH265Level(),
-					params.mediaRenderer.getH265LevelLimit()
-				);
+		if (
+			deferToTsmuxer == true &&
+			videoLevelLimit != null &&
+			!videoLevelLimit.isGreaterThanOrEqualTo(media.getVideoLevel())
+		) {
+			deferToTsmuxer = false;
+			if (LOGGER.isTraceEnabled()) {
+				VideoLevel level = media.getVideoLevel();
+				if (level == null) {
+					LOGGER.trace(prependTraceReason + "the {} level is unknown", media.getVideoCodec());
+				} else {
+					LOGGER.trace(
+						prependTraceReason + "the {} level ({}) is above the limit ({}) for this renderer",
+						media.getVideoCodec(),
+						level,
+						videoLevelLimit
+					);
+				}
 			}
 		}
 		if (deferToTsmuxer == true && !media.isMuxable(params.mediaRenderer)) {

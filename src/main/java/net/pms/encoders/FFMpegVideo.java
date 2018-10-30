@@ -58,6 +58,7 @@ import net.pms.formats.PLAYLIST;
 import net.pms.formats.v2.SubtitleType;
 import net.pms.io.*;
 import net.pms.media.H264Level;
+import net.pms.media.VideoLevel;
 import net.pms.network.HTTPResource;
 import net.pms.newgui.GuiUtil;
 import net.pms.platform.windows.NTStatus;
@@ -401,7 +402,7 @@ public class FFMpegVideo extends Player {
 					transcodeOptions.add("-preset");
 					transcodeOptions.add("ultrafast");
 				}
-				if (!customFFmpegOptions.contains("-level")) {
+				if (!customFFmpegOptions.contains("-level")) { //TODO: (Nad) Transcoding
 					transcodeOptions.add("-level");
 					transcodeOptions.add("31");
 				}
@@ -497,7 +498,7 @@ public class FFMpegVideo extends Player {
 			 */
 			if (!isXboxOneWebVideo && params.mediaRenderer.isTranscodeToH264()) {
 				if (
-					params.mediaRenderer.getH264LevelLimit() == H264Level.L4_1 &&
+					params.mediaRenderer.getH264LevelLimit() == H264Level.L4_1 && //TODO: (Nad) Transcoding
 					defaultMaxBitrates[0] > 31250
 				) {
 					defaultMaxBitrates[0] = 31250;
@@ -925,6 +926,7 @@ public class FFMpegVideo extends Player {
 		if (!(renderer instanceof RendererConfiguration.OutputOverride) && configuration.isFFmpegMuxWithTsMuxerWhenCompatible()) {
 			// Decide whether to defer to tsMuxeR or continue to use FFmpeg
 			boolean deferToTsmuxer = true;
+			VideoLevel videoLevelLimit = params.mediaRenderer.getVideoLevelLimit(media.getVideoCodec());
 			String prependTraceReason = "Not muxing the video stream with tsMuxeR via FFmpeg because ";
 			if (deferToTsmuxer == true && !configuration.getHideTranscodeEnabled() && dlna.isNoName() && (dlna.getParent() instanceof FileTranscodeVirtualFolder)) {
 				deferToTsmuxer = false;
@@ -942,32 +944,24 @@ public class FFMpegVideo extends Player {
 				deferToTsmuxer = false;
 				LOGGER.trace(prependTraceReason + "we are using AviSynth.");
 			}
-			if (deferToTsmuxer == true && media.isH264() && params.mediaRenderer.getH264LevelLimit() != null) {
-				if (media.getH264Level() == null) {
-					deferToTsmuxer = false;
-					LOGGER.trace(prependTraceReason + "the H.264 level of the video stream is unknown.");
-				} else if (params.mediaRenderer.getH264LevelLimit().isLessThan(media.getH264Level())) { //TODO: (Nad) Here
-					deferToTsmuxer = false;
-					LOGGER.trace(prependTraceReason +
-						"{} the video stream ({}) isn't within H.264 level limit ({}) for this renderer.",
-						prependTraceReason,
-						media.getH264Level(),
-						params.mediaRenderer.getH264LevelLimit()
-					);
-				}
-			}
-			if (deferToTsmuxer == true && media.isH265() && params.mediaRenderer.getH265LevelLimit() != null) {
-				if (media.getH265Level() == null) {
-					deferToTsmuxer = false;
-					LOGGER.trace(prependTraceReason + "the H.265 level of the video stream is unknown.");
-				} else if (params.mediaRenderer.getH265LevelLimit().isLessThan(media.getH265Level())) {
-					deferToTsmuxer = false;
-					LOGGER.trace(prependTraceReason +
-						"{} the video stream ({}) isn't within H.265 level limit ({}) for this renderer.",
-						prependTraceReason,
-						media.getH265Level(),
-						params.mediaRenderer.getH265LevelLimit()
-					);
+			if (
+				deferToTsmuxer == true &&
+				videoLevelLimit != null &&
+				!videoLevelLimit.isGreaterThanOrEqualTo(media.getVideoLevel())
+			) {
+				deferToTsmuxer = false;
+				if (LOGGER.isTraceEnabled()) {
+					VideoLevel level = media.getVideoLevel();
+					if (level == null) {
+						LOGGER.trace(prependTraceReason + "the {} level is unknown", media.getVideoCodec());
+					} else {
+						LOGGER.trace(
+							prependTraceReason + "the {} level ({}) is above the limit ({}) for this renderer",
+							media.getVideoCodec(),
+							level,
+							videoLevelLimit
+						);
+					}
 				}
 			}
 			if (deferToTsmuxer == true && !media.isMuxable(params.mediaRenderer)) {
@@ -1267,7 +1261,7 @@ public class FFMpegVideo extends Player {
 					}
 				}
 
-				pwMux.println(videoType + ", \"" + ffVideoPipe.getOutputPipe() + "\", " + fps + "level=4.1, insertSEI, contSPS, track=1");
+				pwMux.println(videoType + ", \"" + ffVideoPipe.getOutputPipe() + "\", " + fps + "level=4.1, insertSEI, contSPS, track=1"); //TODO: (Nad) Transcoding
 				pwMux.println(audioType + ", \"" + ffAudioPipe.getOutputPipe() + "\", track=2");
 			}
 

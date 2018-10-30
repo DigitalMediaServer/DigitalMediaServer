@@ -977,7 +977,7 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 				} else if (!renderer.isVideoBitDepthSupported(media.getVideoBitDepth())) {
 					isIncompatible = true;
 					LOGGER.trace(prependTraceReason + "the video bit depth ({}) is not supported.", getName(), media.getVideoBitDepth());
-				} else if (videoLevelLimit != null && !videoLevelLimit.isGreaterThanOrEqualTo(media.getVideoLevel())) { //TODO: (Nad) Done here
+				} else if (videoLevelLimit != null && !videoLevelLimit.isGreaterThanOrEqualTo(media.getVideoLevel())) {
 					isIncompatible = true;
 					if (LOGGER.isTraceEnabled()) {
 						VideoLevel level = media.getVideoLevel();
@@ -985,7 +985,7 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 							LOGGER.trace(prependTraceReason + "the {} level is unknown", media.getVideoCodec());
 						} else {
 							LOGGER.trace(
-								prependTraceReason + "the {} level ({}) is above the limit ({})",
+								prependTraceReason + "the {} level ({}) is above the limit ({}) for this renderer",
 								media.getVideoCodec(),
 								level,
 								videoLevelLimit

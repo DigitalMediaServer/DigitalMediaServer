@@ -29,6 +29,9 @@ import javax.annotation.Nullable;
  */
 public enum MPEG4VisualLevel implements VideoLevel {
 
+	/** Level 0 */
+	L0,
+
 	/** Level 1 */
 	L1,
 
@@ -77,6 +80,8 @@ public enum MPEG4VisualLevel implements VideoLevel {
 
 		value = value.trim();
 		switch (value) {
+			case "0":
+				return L0;
 			case "1":
 			case "1.0":
 				return L1;
@@ -106,6 +111,8 @@ public enum MPEG4VisualLevel implements VideoLevel {
 	@Nullable
 	public static MPEG4VisualLevel typeOf(int value) {
 		switch (value) {
+			case 0:
+				return L0;
 			case 1:
 			case 10:
 				return L1;
@@ -126,6 +133,8 @@ public enum MPEG4VisualLevel implements VideoLevel {
 	@Override
 	public String toString() {
 		switch (this) {
+			case L0:
+				return "Level 0";
 			case L1:
 				return "Level 1";
 			case L2:

@@ -1267,6 +1267,7 @@ public class RendererConfiguration extends UPNPHelper.Renderer {
 			case H265:
 				return H265Level.typeOf(getString(codec.getLevelLimitKey(), null));
 			case MPEG4ASP:
+			case MPEG4SP:
 				return MPEG4VisualLevel.typeOf(getString(codec.getLevelLimitKey(), null));
 			case VC1:
 				return VC1Level.typeOf(getString(codec.getLevelLimitKey(), null));

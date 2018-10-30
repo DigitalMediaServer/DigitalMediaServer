@@ -33,6 +33,7 @@ import net.pms.encoders.StandardPlayerId;
 import net.pms.io.OutputParams;
 import net.pms.io.ProcessWrapperImpl;
 import net.pms.media.H264Level;
+import net.pms.media.VideoLevel;
 
 
 /**
@@ -70,7 +71,7 @@ public class AVCUtil {
 	 *         it's not or it can't be determined.
 	 */
 	public static boolean isWithinPS3Limits(@Nonnull DLNAMediaInfo media, @Nullable InputFile file) {
-		H264Level level = media.getH264Level();
+		VideoLevel level = media.getVideoLevel();
 		int referenceFrames = media.getReferenceFrameCount();
 
 		if ((
@@ -95,7 +96,7 @@ public class AVCUtil {
 			}
 		}
 
-		if (level != null && level.isLessThanOrEqualTo(H264Level.L4)) { //TODO: (Nad) Here three
+		if (H264Level.L4.isGreaterThanOrEqualTo(level)) {
 			return true;
 		}
 
