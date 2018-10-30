@@ -404,8 +404,13 @@ public class FFMpegVideo extends Player {
 					transcodeOptions.add("ultrafast");
 				}
 				if (!customFFmpegOptions.contains("-level")) {
-					transcodeOptions.add("-level");
-					transcodeOptions.add("31");
+					VideoLevel level = renderer.getVideoLevelLimit(
+						renderer.isTranscodeToH264() ? VideoCodec.H264 : VideoCodec.H265
+					);
+					if (level != null) {
+						transcodeOptions.add("-level");
+						transcodeOptions.add(level.toString(false));
+					}
 				}
 				transcodeOptions.add("-pix_fmt");
 				transcodeOptions.add("yuv420p");
@@ -446,7 +451,7 @@ public class FFMpegVideo extends Player {
 		int defaultMaxBitrates[] = getVideoBitrateConfig(configuration.getMaximumBitrate());
 		int rendererMaxBitrates[] = new int[2];
 
-		if (StringUtils.isNotEmpty(params.mediaRenderer.getMaxVideoBitrate())) {
+		if (isNotBlank(params.mediaRenderer.getMaxVideoBitrate())) {
 			rendererMaxBitrates = getVideoBitrateConfig(params.mediaRenderer.getMaxVideoBitrate());
 		}
 
@@ -470,7 +475,7 @@ public class FFMpegVideo extends Player {
 		boolean isXboxOneWebVideo = params.mediaRenderer.isXboxOne() && purpose() == VIDEO_WEBSTREAM_PLAYER;
 		int maximumBitrate = defaultMaxBitrates[0];
 
-		if (params.mediaRenderer.getCBRVideoBitrate() == 0 && params.timeend == 0) {
+		if (params.mediaRenderer.getCBRVideoBitrate() < 1 && params.timeend == 0) {
 			if (rendererMaxBitrates[0] < 0) {
 				// odd special case here
 				// this is -1 so we guess that 3000 kbps is good
@@ -1262,7 +1267,14 @@ public class FFMpegVideo extends Player {
 					}
 				}
 
-				pwMux.println(videoType + ", \"" + ffVideoPipe.getOutputPipe() + "\", " + fps + "level=4.1, insertSEI, contSPS, track=1");
+				// XXX This is questionable, it's unclear of the codec is always H.264
+				// and what the consequence of omitting the "level" parameter is
+				VideoLevel level = params.mediaRenderer.getVideoLevelLimit(VideoCodec.H264);
+				pwMux.println(
+					videoType + ", \"" + ffVideoPipe.getOutputPipe() + "\", " + fps +
+					(level != null ? "level=" + level.toString(false) + ", " : "") +
+					"insertSEI, contSPS, track=1"
+				);
 				pwMux.println(audioType + ", \"" + ffAudioPipe.getOutputPipe() + "\", track=2");
 			}
 
