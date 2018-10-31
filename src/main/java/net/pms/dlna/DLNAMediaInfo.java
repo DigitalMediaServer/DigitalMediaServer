@@ -2528,42 +2528,6 @@ public class DLNAMediaInfo implements Cloneable {
 	}
 
 	/**
-	 * @return The AVC/H.264 profile for video stream or {@code null} if not
-	 *         parsed/relevant.
-	 */
-	@Nullable
-	public String getH264Profile() {
-		if (isBlank(videoProfile) || getVideoCodec() != VideoCodec.H264) {
-			return null;
-		}
-		int at = videoProfile.indexOf('@');
-		if (at < 0) {
-			return videoProfile.toLowerCase(Locale.ROOT);
-		}
-
-		String result = videoProfile.substring(0, at);
-		return isBlank(result) ? null : result.toLowerCase(Locale.ROOT);
-	}
-
-	/**
-	 * @return The HEVC/H.265 profile for video stream or {@code null} if not
-	 *         parsed/relevant.
-	 */
-	@Nullable
-	public String getH265Profile() {
-		if (isBlank(videoProfile) || getVideoCodec() != VideoCodec.H265) {
-			return null;
-		}
-		int at = videoProfile.indexOf('@');
-		if (at < 0) {
-			return videoProfile.toLowerCase(Locale.ROOT);
-		}
-
-		String result = videoProfile.substring(0, at);
-		return isBlank(result) ? null : result.toLowerCase(Locale.ROOT);
-	}
-
-	/**
 	 * @return The {@link List} of audio tracks.
 	 * @since 1.60.0
 	 */

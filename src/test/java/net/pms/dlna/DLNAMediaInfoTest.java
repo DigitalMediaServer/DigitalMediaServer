@@ -20,98 +20,121 @@ package net.pms.dlna;
 
 import static org.junit.Assert.*;
 import org.junit.Test;
-import net.pms.media.H264Level;
-import net.pms.media.H265Level;
+import net.pms.util.Rational;
 
 public class DLNAMediaInfoTest {
 
 	@Test
-	public void testH264() throws Exception {
+	public void testAspectRatioContainer() {
 		DLNAMediaInfo media = new DLNAMediaInfo();
 
-//		media.setVideoProfile("low@L1b"); //TODO: (Nad) Implement tests in LibMediaInfoParser
-//		assertEquals(H264Level.L1b, media.getVideoLevel());
-//		assertEquals("low", media.getH264Profile());
-//
-//		media.setVideoProfile("Main@L2.0");
-//		assertEquals(H264Level.L2, media.getVideoLevel());
-//		assertEquals("main", media.getH264Profile());
-//
-//		media.setVideoProfile("High@L3.0");
-//		assertEquals(H264Level.L3, media.getVideoLevel());
-//		assertEquals("high", media.getH264Profile());
-//
-//		media.setVideoProfile("high@l4.0");
-//		assertEquals(H264Level.L4, media.getVideoLevel());
-//		assertEquals("high", media.getH264Profile());
-//
-//		media.setVideoProfile("hIgH@L4.1");
-//		assertEquals(H264Level.L4_1, media.getVideoLevel());
-//		assertEquals("high", media.getH264Profile());
-//
-//		media.setVideoProfile("5");
-//		assertEquals(H264Level.L5, media.getVideoLevel());
-//		assertEquals("5", media.getH264Profile());
-//
-//		media.setVideoProfile("LEVEL 5.1");
-//		assertEquals(H264Level.L5_1, media.getVideoLevel());
-//		assertEquals("level 5.1", media.getH264Profile());
-//
-//		media.setVideoProfile("level5,2");
-//		assertEquals(H264Level.L5_2, media.getVideoLevel());
-//		assertEquals("level5,2", media.getH264Profile());
-//
-//		media.setVideoProfile("level");
-//		assertNull(media.getVideoLevel());
-//		assertEquals("level", media.getH264Profile());
+		media.setAspectRatioContainer("4:3");
+		assertEquals(Rational.valueOf(4, 3), media.getAspectRatioContainer());
+
+		media.setAspectRatioContainer("4/3");
+		assertEquals(Rational.valueOf(4, 3), media.getAspectRatioContainer());
+
+		media.setAspectRatioContainer("16:12");
+		assertEquals(Rational.valueOf(4, 3), media.getAspectRatioContainer());
+
+		media.setAspectRatioContainer("1.25");
+		assertEquals(Rational.valueOf(5, 4), media.getAspectRatioContainer());
+
+		media.setAspectRatioContainer((String) null);
+		assertNull(media.getAspectRatioContainer());
+
+		media.setAspectRatioContainer(Rational.valueOf(16, 12));
+		assertEquals(Rational.valueOf(4, 3), media.getAspectRatioContainer());
+
+		media.setAspectRatioContainer(Rational.valueOf("4:3"));
+		assertEquals(Rational.valueOf(4, 3), media.getAspectRatioContainer());
+
+		media.setAspectRatioContainer(Rational.valueOf("1.25"));
+		assertEquals(Rational.valueOf(5, 4), media.getAspectRatioContainer());
+
+		media.setAspectRatioContainer(Rational.valueOf(16, 0));
+		assertEquals(Rational.POSITIVE_INFINITY, media.getAspectRatioContainer());
+
+		media.setAspectRatioContainer(Rational.valueOf(0, 16));
+		assertNull(media.getAspectRatioContainer());
+
+		media.setAspectRatioContainer((Rational) null);
+		assertNull(media.getAspectRatioContainer());
 	}
 
 	@Test
-	public void testH265() throws Exception {
-		DLNAMediaInfo media = new DLNAMediaInfo(); //TODO: (Nad) Implement tests in LibMediaInfoParser
+	public void testAspectRatioDvdIso() {
+		DLNAMediaInfo media = new DLNAMediaInfo();
 
-//		media.setVideoProfile("Main@L2.0@High");
-//		assertEquals(H265Level.L2, media.getVideoLevel());
-//		assertEquals("main", media.getH265Profile());
-//
-//		media.setVideoProfile("High@L3.0");
-//		assertEquals(H265Level.L3, media.getVideoLevel());
-//		assertEquals("high", media.getH265Profile());
-//
-//		media.setVideoProfile("mAin@l4.0@maIN");
-//		assertEquals(H265Level.L4, media.getVideoLevel());
-//		assertEquals("main", media.getH265Profile());
-//
-//		media.setVideoProfile("hIgH@L4.1");
-//		assertEquals(H265Level.L4_1, media.getVideoLevel());
-//		assertEquals("high", media.getH265Profile());
-//
-//		media.setVideoProfile("hIgH@L4.2@loW");
-//		assertNull(media.getVideoLevel());
-//		assertEquals("high", media.getH265Profile());
-//
-//		media.setVideoProfile("5");
-//		assertEquals(H265Level.L5, media.getVideoLevel());
-//		assertEquals("5", media.getH265Profile());
-//
-//		media.setVideoProfile("LEVEL 5.1");
-//		assertEquals(H265Level.L5_1, media.getVideoLevel());
-//		assertEquals("level 5.1", media.getH265Profile());
-//
-//		media.setVideoProfile("level5,2");
-//		assertEquals(H265Level.L5_2, media.getVideoLevel());
-//		assertEquals("level5,2", media.getH265Profile());
-//
-//		media.setVideoProfile("level");
-//		assertNull(media.getVideoLevel());
-//		assertEquals("level", media.getH265Profile());
-//
-//		media.setVideoProfile("@l2.0");
-//		assertEquals(H265Level.L2, media.getVideoLevel());
-//		assertNull(media.getH265Profile());
-//
-//		media.setVideoProfile("@2");
-//		assertEquals(H265Level.L2, media.getVideoLevel());
-//		assertNull(media.getH265Profile());
+		media.setAspectRatioDvdIso("4:3");
+		assertEquals(Rational.valueOf(4, 3), media.getAspectRatioDvdIso());
+
+		media.setAspectRatioDvdIso("4/3");
+		assertEquals(Rational.valueOf(4, 3), media.getAspectRatioDvdIso());
+
+		media.setAspectRatioDvdIso("16:12");
+		assertEquals(Rational.valueOf(4, 3), media.getAspectRatioDvdIso());
+
+		media.setAspectRatioDvdIso("1.25");
+		assertEquals(Rational.valueOf(5, 4), media.getAspectRatioDvdIso());
+
+		media.setAspectRatioDvdIso((String) null);
+		assertNull(media.getAspectRatioDvdIso());
+
+		media.setAspectRatioDvdIso(Rational.valueOf(16, 12));
+		assertEquals(Rational.valueOf(4, 3), media.getAspectRatioDvdIso());
+
+		media.setAspectRatioDvdIso(Rational.valueOf("4:3"));
+		assertEquals(Rational.valueOf(4, 3), media.getAspectRatioDvdIso());
+
+		media.setAspectRatioDvdIso(Rational.valueOf("1.25"));
+		assertEquals(Rational.valueOf(5, 4), media.getAspectRatioDvdIso());
+
+		media.setAspectRatioDvdIso(Rational.valueOf(16, 0));
+		assertEquals(Rational.POSITIVE_INFINITY, media.getAspectRatioDvdIso());
+
+		media.setAspectRatioDvdIso(Rational.valueOf(0, 16));
+		assertNull(media.getAspectRatioDvdIso());
+
+		media.setAspectRatioDvdIso((Rational) null);
+		assertNull(media.getAspectRatioDvdIso());
+	}
+
+	@Test
+	public void testAspectRatioVideoTrack() {
+		DLNAMediaInfo media = new DLNAMediaInfo();
+
+		media.setAspectRatioVideoTrack("4:3");
+		assertEquals(Rational.valueOf(4, 3), media.getAspectRatioVideoTrack());
+
+		media.setAspectRatioVideoTrack("4/3");
+		assertEquals(Rational.valueOf(4, 3), media.getAspectRatioVideoTrack());
+
+		media.setAspectRatioVideoTrack("16:12");
+		assertEquals(Rational.valueOf(4, 3), media.getAspectRatioVideoTrack());
+
+		media.setAspectRatioVideoTrack("1.25");
+		assertEquals(Rational.valueOf(5, 4), media.getAspectRatioVideoTrack());
+
+		media.setAspectRatioVideoTrack((String) null);
+		assertNull(media.getAspectRatioVideoTrack());
+
+		media.setAspectRatioVideoTrack(Rational.valueOf(16, 12));
+		assertEquals(Rational.valueOf(4, 3), media.getAspectRatioVideoTrack());
+
+		media.setAspectRatioVideoTrack(Rational.valueOf("4:3"));
+		assertEquals(Rational.valueOf(4, 3), media.getAspectRatioVideoTrack());
+
+		media.setAspectRatioVideoTrack(Rational.valueOf("1.25"));
+		assertEquals(Rational.valueOf(5, 4), media.getAspectRatioVideoTrack());
+
+		media.setAspectRatioVideoTrack(Rational.valueOf(16, 0));
+		assertEquals(Rational.POSITIVE_INFINITY, media.getAspectRatioVideoTrack());
+
+		media.setAspectRatioVideoTrack(Rational.valueOf(0, 16));
+		assertNull(media.getAspectRatioVideoTrack());
+
+		media.setAspectRatioVideoTrack((Rational) null);
+		assertNull(media.getAspectRatioVideoTrack());
 	}
 }

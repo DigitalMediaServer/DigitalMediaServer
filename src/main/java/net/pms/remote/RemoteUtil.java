@@ -282,7 +282,7 @@ public class RemoteUtil {
 	}
 
 	public static boolean transMp4(String mime, DLNAMediaInfo media) {
-		LOGGER.debug("MP4 profile {}", media.getH264Profile());
+		LOGGER.debug("MP4 profile {}", media.getVideoProfile());
 		return
 			mime.equals(MIME_MP4) &&
 			(

@@ -60,7 +60,7 @@ public class LibMediaInfoParser {
 
 	 */
 	private static final Pattern SIMPLE_PROFILE_LEVEL_PATTERN = Pattern.compile(
-		"^\\s*([^@]*[^@\\s])\\s*@?\\s*(.*\\S)?\\s*$"
+		"^\\s*([^@]*[^@\\s])?\\s*@?\\s*(.*\\S)?\\s*$"
 	);
 
 	/**
@@ -74,8 +74,8 @@ public class LibMediaInfoParser {
 	 * <li>{@code Complex@L2}</li>
 	 * </ul>
 	 */
-	private static final Pattern SIMPLE_PROFILE_NUMERIC_LEVEL_PATTERN = Pattern.compile( //TODO: (Nad) Make tests
-		"^\\s*([^@]*[^@\\s])\\s*@?\\s*(?:L|LEVEL)?\\s*(\\d+(?:\\.\\d+|,\\d+)?)?\\s*$", Pattern.CASE_INSENSITIVE
+	private static final Pattern SIMPLE_PROFILE_NUMERIC_LEVEL_PATTERN = Pattern.compile(
+		"^\\s*([^@]*[^@\\s])?\\s*@?\\s*(?:L|LEVEL)?\\s*(\\d+(?:\\.\\d+|,\\d+)?)?\\s*$", Pattern.CASE_INSENSITIVE
 	);
 
 	/**
@@ -92,7 +92,7 @@ public class LibMediaInfoParser {
 	 * </ul>
 	 */
 	private static final Pattern H264_PROFILE_LEVEL_PATTERN = Pattern.compile(
-		"^\\s*(?:([^@]*)@)?(?:L|LEVEL)?\\s*([\\db]+(?:\\.\\d+|,\\d+)?)(?:@\\S.*\\S)?\\s*(?:/|$)", Pattern.CASE_INSENSITIVE
+		"^\\s*([^@]*[^@\\s])?\\s*@?\\s*(?:L|LEVEL)?\\s*([\\db]+(?:\\.\\d+|,\\d+)?)?\\s*(?:@\\S.*\\S)?\\s*(?:/|$)", Pattern.CASE_INSENSITIVE
 	);
 
 	/**
@@ -111,7 +111,7 @@ public class LibMediaInfoParser {
 	 * </ul>
 	 */
 	private static final Pattern H265_PROFILE_LEVEL_PATTERN = Pattern.compile(
-		"^\\s*(?:([^@]*)@)?(?:L|LEVEL)?\\s*(\\d+(?:\\.\\d+|,\\d+)?)(?:@\\S.*\\S)?\\s*(?:/|$)", Pattern.CASE_INSENSITIVE
+		"^\\s*([^@]*[^@\\s])?\\s*@?\\s*(?:L|LEVEL)?\\s*(\\d+(?:\\.\\d+|,\\d+)?)?\\s*(?:@\\S.*\\S)?\\s*(?:/|$)", Pattern.CASE_INSENSITIVE
 	);
 
 	private static MediaInfo MI;
@@ -1267,15 +1267,18 @@ public class LibMediaInfoParser {
 		}
 	}
 
-	private static void setVideoProfileAndLevel(@Nonnull DLNAMediaInfo media, @Nullable String value) {
+	public static void setVideoProfileAndLevel(@Nonnull DLNAMediaInfo media, @Nullable String value) {
 		// Value can look like "Advanced@L1", "Complex@L2", "MP@LL" or "Simple@L3" with VC-1 or MPEG-4 Visual.
 		if (isBlank(value)) {
+			media.setVideoProfile(null);
+			media.setVideoLevel(null);
 			return;
 		}
 
 		VideoCodec codec = media.getVideoCodec();
 		if (codec == null) {
 			media.setVideoProfile(value);
+			media.setVideoLevel(null);
 			return;
 		}
 
@@ -1287,6 +1290,9 @@ public class LibMediaInfoParser {
 				if (matcher.find()) {
 					media.setVideoProfile(matcher.group(1));
 					media.setVideoLevel(AV1Level.typeOf(matcher.group(2)));
+				} else {
+					media.setVideoProfile(null);
+					media.setVideoLevel(null);
 				}
 				break;
 			case H262:
@@ -1294,6 +1300,9 @@ public class LibMediaInfoParser {
 				if (matcher.find()) {
 					media.setVideoProfile(matcher.group(1));
 					media.setVideoLevel(H262Level.typeOf(matcher.group(2)));
+				} else {
+					media.setVideoProfile(null);
+					media.setVideoLevel(null);
 				}
 				break;
 			case H263:
@@ -1301,6 +1310,9 @@ public class LibMediaInfoParser {
 				if (matcher.find()) {
 					media.setVideoProfile(matcher.group(1));
 					media.setVideoLevel(H263Level.typeOf(matcher.group(2)));
+				} else {
+					media.setVideoProfile(null);
+					media.setVideoLevel(null);
 				}
 				break;
 			case H264:
@@ -1308,6 +1320,9 @@ public class LibMediaInfoParser {
 				if (matcher.find()) {
 					media.setVideoProfile(matcher.group(1));
 					media.setVideoLevel(H264Level.typeOf(matcher.group(2)));
+				} else {
+					media.setVideoProfile(null);
+					media.setVideoLevel(null);
 				}
 				break;
 			case H265:
@@ -1315,6 +1330,9 @@ public class LibMediaInfoParser {
 				if (matcher.find()) {
 					media.setVideoProfile(matcher.group(1));
 					media.setVideoLevel(H265Level.typeOf(matcher.group(2)));
+				} else {
+					media.setVideoProfile(null);
+					media.setVideoLevel(null);
 				}
 				break;
 			case MPEG4ASP:
@@ -1323,6 +1341,9 @@ public class LibMediaInfoParser {
 				if (matcher.find()) {
 					media.setVideoProfile(matcher.group(1));
 					media.setVideoLevel(MPEG4VisualLevel.typeOf(matcher.group(2)));
+				} else {
+					media.setVideoProfile(null);
+					media.setVideoLevel(null);
 				}
 				break;
 			case VC1:
@@ -1330,6 +1351,9 @@ public class LibMediaInfoParser {
 				if (matcher.find()) {
 					media.setVideoProfile(matcher.group(1));
 					media.setVideoLevel(VC1Level.typeOf(matcher.group(2)));
+				} else {
+					media.setVideoProfile(null);
+					media.setVideoLevel(null);
 				}
 				break;
 			case VP9:
@@ -1337,10 +1361,14 @@ public class LibMediaInfoParser {
 				if (matcher.find()) {
 					media.setVideoProfile(matcher.group(1));
 					media.setVideoLevel(VP9Level.typeOf(matcher.group(2)));
+				} else {
+					media.setVideoProfile(null);
+					media.setVideoLevel(null);
 				}
 				break;
 			default:
 				media.setVideoProfile(value);
+				media.setVideoLevel(null);
 				break;
 		}
 	}
