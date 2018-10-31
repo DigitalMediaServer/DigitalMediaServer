@@ -1077,7 +1077,7 @@ public class PmsConfiguration extends RendererConfiguration {
 	 * @return True if tsMuxeR should parse fps from FFmpeg.
 	 */
 	public boolean isTsmuxerForceFps() {
-		return getBoolean(KEY_TSMUXER_FORCEFPS, true);
+		return getBoolean(KEY_TSMUXER_FORCEFPS, false);
 	}
 
 	/**

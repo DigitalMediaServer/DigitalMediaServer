@@ -196,6 +196,7 @@ public class FFMpegVideo extends Player {
 
 		if (!isDisableSubtitles(params) && override) {
 			boolean isSubsManualTiming = true;
+			final String filename = dlna.getFileName();
 			DLNAMediaSubtitle convertedSubs = dlna.getMediaSubtitle();
 			StringBuilder subsFilter = new StringBuilder();
 			if (params.sid != null && params.sid.getType().isText()) {
@@ -256,17 +257,24 @@ public class FFMpegVideo extends Player {
 					}
 				}
 			} else if (params.sid.getType().isPicture()) {
+				StringBuilder subsPictureFilter = new StringBuilder();
 				if (params.sid.getId() < 100) {
 					// Embedded
-					subsFilter.append("[0:v][0:s:").append(media.getSubtitleTracksList().indexOf(params.sid)).append("]overlay");
+					subsPictureFilter.append("[0:V][0:s:").append(media.getSubtitleTracksList().indexOf(params.sid)).append("]overlay");
 					isSubsManualTiming = false;
 				} else {
 					// External
 					videoFilterOptions.add("-i");
 					videoFilterOptions.add(params.sid.getExternalFile().getAbsolutePath());
-					subsFilter.append("[0:v][1:s]overlay"); // this assumes the sub file is single-language
+					if (params.aid != null || filename.toLowerCase().endsWith(".wtv")) {
+						subsPictureFilter.append("[0:V][1:s]overlay");
+					} else {
+						subsPictureFilter.append("[0:V][2:s]overlay");
+					}
 				}
+				filterChain.add(0, subsPictureFilter.toString());
 			}
+
 			if (isNotBlank(subsFilter)) {
 				if (params.timeseek > 0 && isSubsManualTiming) {
 					filterChain.add("setpts=PTS+" + params.timeseek + "/TB"); // based on https://trac.ffmpeg.org/ticket/2067
@@ -326,6 +334,7 @@ public class FFMpegVideo extends Player {
 		List<String> transcodeOptions = new ArrayList<>();
 		final String filename = dlna.getFileName();
 		final RendererConfiguration renderer = params.mediaRenderer;
+		final boolean vtb = Platform.isMac() && BasicSystemUtils.INSTANCE.getOSVersion().isGreaterThanOrEqualTo(10, 8);
 		String customFFmpegOptions = renderer.getCustomFFmpegOptions();
 		ExecutableInfo executableInfo = getExecutableInfo();
 		Codec aacAt = ((FFmpegExecutableInfo) executableInfo).getCodecs().get("aac_at");
@@ -393,10 +402,10 @@ public class FFMpegVideo extends Player {
 					if (renderer.isTranscodeToAAC()) {
 						if (executableInfo instanceof FFmpegExecutableInfo) {
 							transcodeOptions.add("-c:a");
-							if (aacAt != null) {
-								transcodeOptions.add("aac_at");
-							} else if (aacLibfdk != null) {
+							if (vtb && aacLibfdk != null) {
 								transcodeOptions.add("libfdk_aac");
+							} else if (vtb && aacAt != null) {
+								transcodeOptions.add("aac_at");
 							} else {
 								transcodeOptions.add("aac");
 							}
@@ -404,7 +413,7 @@ public class FFMpegVideo extends Player {
 					} else {
 						if (executableInfo instanceof FFmpegExecutableInfo) {
 							transcodeOptions.add("-c:a");
-							if (ac3At != null) {
+							if (vtb && ac3At != null) {
 								transcodeOptions.add("ac3_at");
 							} else {
 								transcodeOptions.add("ac3");
@@ -427,7 +436,7 @@ public class FFMpegVideo extends Player {
 					transcodeOptions.add("-c:v");
 					if (renderer.isTranscodeToH264()) {
 						if (executableInfo instanceof FFmpegExecutableInfo) {
-							if (h264Videotoolbox != null) {
+							if (vtb && h264Videotoolbox != null) {
 								transcodeOptions.add("h264_videotoolbox");
 							} else {
 								transcodeOptions.add("libx264");
@@ -435,11 +444,21 @@ public class FFMpegVideo extends Player {
 						}
 					} else {
 						if (executableInfo instanceof FFmpegExecutableInfo) {
-							if (hevcVideotoolbox != null) {
+							if (vtb && hevcVideotoolbox != null) {
 								transcodeOptions.add("hevc_videotoolbox");
 							} else {
 								transcodeOptions.add("libx265");
 							}
+						}
+					}
+					if (!transcodeOptions.contains(" h264_") && !transcodeOptions.contains(" hevc_")) {
+						if (!customFFmpegOptions.contains("-tune")) {
+							transcodeOptions.add("-tune");
+							transcodeOptions.add("zerolatency");
+						}
+						if (!Pattern.compile("(?:\\bpreset(?!:a)|-vpre)\\b").matcher(customFFmpegOptions).find()) {
+							transcodeOptions.add("-preset");
+							transcodeOptions.add("ultrafast");
 						}
 					}
 				}
@@ -451,15 +470,6 @@ public class FFMpegVideo extends Player {
 						transcodeOptions.add("-level");
 						transcodeOptions.add(level.toString(false));
 					}
-				if (hevcVideotoolbox == null && h264Videotoolbox == null) {
-					if (!customFFmpegOptions.contains("-tune")) {
-						transcodeOptions.add("-tune");
-						transcodeOptions.add("zerolatency");
-					}
-					if (!Pattern.compile("(?:\\bpreset(?!:a)|-vpre)\\b").matcher(customFFmpegOptions).find()) {
-						transcodeOptions.add("-preset");
-						transcodeOptions.add("ultrafast");
-					}
 				}
 				if (!Pattern.compile("-pix_fmt\\b|\\bformat=").matcher(customFFmpegOptions).find()) {
 					transcodeOptions.add("-pix_fmt");
@@ -469,7 +479,7 @@ public class FFMpegVideo extends Player {
 				if (!Pattern.compile("-(?:c:v|codec:v|vcodec)\\b").matcher(customFFmpegOptions).find()) {
 					if (executableInfo instanceof FFmpegExecutableInfo) {
 						transcodeOptions.add("-c:v");
-						if (mpeg2Videotoolbox != null) {
+						if (vtb && mpeg2Videotoolbox != null) {
 							transcodeOptions.add("mpeg2_videotoolbox");
 						} else {
 							transcodeOptions.add("mpeg2video");
@@ -876,21 +886,19 @@ public class FFMpegVideo extends Player {
 		// Prevent FFmpeg timeout
 		cmdList.add("-y");
 
-		cmdList.add("-loglevel");
-		cmdList.add(FFmpegProgramInfo.getFFmpegLogLevel());
-
-		cmdList.add("-fflags");
-		cmdList.add("+genpts");
-
-		// Avoid H.264 transcoding fail, at least when generating a MP4 file with FFmpeg  and make the media DLNA compatible
-		if (params.aid == null && !filename.toLowerCase().endsWith(".wtv")) {
-			cmdList.add("-f");
-			cmdList.add("lavfi");
-			cmdList.add("-i");
-			cmdList.add("anullsrc");
+		if (!LOGGER.isTraceEnabled()) {
+			cmdList.add("-loglevel");
+			cmdList.add("fatal");
 		}
 
-		if (Platform.isMac()) {
+		cmdList.add("-fflags");
+		cmdList.add("+genpts"); //https://trac.ffmpeg.org/ticket/1979
+
+		if (
+			Platform.isMac() &&
+			BasicSystemUtils.INSTANCE.getOSVersion().isGreaterThanOrEqualTo(10, 8)
+			//&& noVM
+		) {
 			cmdList.add("-hwaccel");
 			cmdList.add("auto");
 		}
@@ -970,6 +978,14 @@ public class FFMpegVideo extends Player {
 			} else {
 				cmdList.add(filename);
 			}
+		}
+
+		// Avoid H.264 transcoding fail, at least when generating a MP4 file with FFmpeg  and make the media DLNA compatible
+		if (params.aid == null && !filename.toLowerCase().endsWith(".wtv")) {
+			cmdList.add("-f");
+			cmdList.add("lavfi");
+			cmdList.add("-i");
+			cmdList.add("anullsrc");
 		}
 
 		/**
@@ -1115,22 +1131,20 @@ public class FFMpegVideo extends Player {
 		// after video input is specified and before output streams are mapped.
 		cmdList.addAll(getVideoFilterOptions(dlna, media, params));
 
-		// Map the output streams if necessary
-		if (params.aid != null || filename.toLowerCase().endsWith(".wtv")) {
+		// Map the output streams
+		if (params.aid != null) {
 			// Set the video stream
 			cmdList.add("-map");
 			cmdList.add("0:V");
 
-			if (!filename.toLowerCase().endsWith(".wtv")) {
-				// Set the proper audio stream
-				cmdList.add("-map");
-				cmdList.add("0:a:" + (media.getAudioTracksList().indexOf(params.aid)));
-			}
-		} else {
+			// Set the proper audio stream
 			cmdList.add("-map");
-			cmdList.add("1:V");
+			cmdList.add("0:a:" + (media.getAudioTracksList().indexOf(params.aid)));
+		} else if (!filename.toLowerCase().endsWith(".wtv")) {
 			cmdList.add("-map");
-			cmdList.add("0");
+			cmdList.add("0:V");
+			cmdList.add("-map");
+			cmdList.add("1");
 		}
 		cmdList.add("-map_chapters");
 		cmdList.add("-1");

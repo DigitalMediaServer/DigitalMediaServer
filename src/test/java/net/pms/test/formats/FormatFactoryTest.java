@@ -126,7 +126,9 @@ public class FormatFactoryTest {
 		testSingleFormat("test.dv", "MKV", FormatType.CONTAINER);
 		testSingleFormat("test.evo", "MKV", FormatType.CONTAINER);
 		testSingleFormat("test.flv", "MKV", FormatType.CONTAINER);
+		testSingleFormat("test.264", "MKV", FormatType.CONTAINER);
 		testSingleFormat("test.h264", "MKV", FormatType.CONTAINER);
+		testSingleFormat("test.265", "MKV", FormatType.CONTAINER);
 		testSingleFormat("test.h265", "MKV", FormatType.CONTAINER);
 		testSingleFormat("test.hdmov", "MKV", FormatType.CONTAINER);
 		testSingleFormat("test.hdm", "MKV", FormatType.CONTAINER);
@@ -161,6 +163,7 @@ public class FormatFactoryTest {
 		testSingleFormat("test.mjp2", "MPG", FormatType.CONTAINER);
 		testSingleFormat("test.mod", "MPG", FormatType.CONTAINER);
 		testSingleFormat("test.mp4", "MPG", FormatType.CONTAINER);
+		testSingleFormat("test.mp4v", "MPG", FormatType.CONTAINER);
 		testSingleFormat("test.mpe", "MPG", FormatType.CONTAINER);
 		testSingleFormat("test.mpeg", "MPG", FormatType.CONTAINER);
 		testSingleFormat("test.mpg", "MPG", FormatType.CONTAINER);
@@ -254,6 +257,7 @@ public class FormatFactoryTest {
 		testSingleFormat("test.vtt", "WebVTT", FormatType.SUBTITLES);
 		testSingleFormat("test.wma", "WMA", FormatType.AUDIO);
 		testSingleFormat("http://example.com/", "WEB", null);
+		testSingleFormat("test.y4m", "MKV", FormatType.CONTAINER);
 	}
 
 

@@ -241,6 +241,8 @@ public class TsMuxeRVideo extends Player {
 				String[] flacCmd = new String[] {
 					PlayerFactory.getPlayerExecutable(StandardPlayerId.FFMPEG_VIDEO),
 					"-i", filename,
+					"-vn",
+					"-dn",
 					"-ar", rate,
 					"-f", "wav",
 					"-acodec", depth,
@@ -374,9 +376,10 @@ public class TsMuxeRVideo extends Player {
 
 						ffmpegCommands = new String[] {
 							PlayerFactory.getPlayerExecutable(StandardPlayerId.FFMPEG_VIDEO),
-							"-fflags", "+genpts",
 							"-ss", params.timeseek > 0 ? "" + params.timeseek : "0",
 							"-i", filename,
+							"-vn",
+							"-dn",
 							"-ac", "" + sm.getNbChannels(),
 							"-f", "s16le",
 							"-c:a", sm.isDtsEmbed() || sm.isEncodedAudioPassthrough() ? "copy" : "pcm_s16le",
@@ -392,9 +395,10 @@ public class TsMuxeRVideo extends Player {
 						// AAC audio
 						ffmpegCommands = new String[] {
 							PlayerFactory.getPlayerExecutable(StandardPlayerId.FFMPEG_VIDEO),
-							"-fflags", "+genpts",
 							"-ss", params.timeseek > 0 ? "" + params.timeseek : "0",
 							"-i", filename,
+							"-vn",
+							"-dn",
 							"-ac", "" + channels,
 							"-f", "adts",
 							"-c:a", "aac",
@@ -407,9 +411,10 @@ public class TsMuxeRVideo extends Player {
 						// AC-3 audio
 						ffmpegCommands = new String[] {
 							PlayerFactory.getPlayerExecutable(StandardPlayerId.FFMPEG_VIDEO),
-							"-fflags", "+genpts",
 							"-ss", params.timeseek > 0 ? "" + params.timeseek : "0",
 							"-i", filename,
+							"-vn",
+							"-dn",
 							"-ac", "" + channels,
 							"-f", "ac3",
 							"-c:a", (ac3Remux) ? "copy" : "ac3",
@@ -480,9 +485,10 @@ public class TsMuxeRVideo extends Player {
 
 							ffmpegCommands = new String[] {
 								PlayerFactory.getPlayerExecutable(StandardPlayerId.FFMPEG_VIDEO),
-								"-fflags", "+genpts",
 								"-ss", params.timeseek > 0 ? "" + params.timeseek : "0",
 								"-i", filename,
+								"-vn",
+								"-dn",
 								"-ac", "" + sm.getNbChannels(),
 								"-f", "s16le",
 								singleMediaAudio ? "-y" : "-map", singleMediaAudio ? "-y" : ("0:a:" + (media.getAudioTracksList().indexOf(audio))),
@@ -538,14 +544,15 @@ public class TsMuxeRVideo extends Player {
 							// AC-3 remux or encoding
 							ffmpegCommands = new String[] {
 								PlayerFactory.getPlayerExecutable(StandardPlayerId.FFMPEG_VIDEO),
-								"-fflags", "+genpts",
 								"-ss", params.timeseek > 0 ? "" + params.timeseek : "0",
 								"-i", filename,
+								"-vn",
+								"-dn",
 								"-ac", "" + channels,
 								"-f", "ac3",
 								singleMediaAudio ? "-y" : "-map", singleMediaAudio ? "-y" : ("0:a:" + (media.getAudioTracksList().indexOf(audio))),
 								"-c:a", (ac3Remux) ? "copy" : "ac3",
-								"-ab", String.valueOf(CodecUtil.getAC3Bitrate(configuration, audio)) + "k",
+								"-b:a", String.valueOf(CodecUtil.getAC3Bitrate(configuration, audio)) + "k",
 								"-y",
 								ffAudioPipe[i].getInputPipe()
 							};
@@ -565,9 +572,7 @@ public class TsMuxeRVideo extends Player {
 		try (PrintWriter pw = new PrintWriter(f)) {
 			pw.print("MUXOPT --no-pcr-on-video-pid");
 			pw.print(" --new-audio-pes");
-			pw.print(" --no-asyncio");
 			pw.print(" --vbr");
-			pw.println(" --vbv-len=500");
 
 			String sei = "insertSEI";
 			if (
@@ -762,7 +767,7 @@ public class TsMuxeRVideo extends Player {
 
 	@Override
 	public String mimeType() {
-		return "video/mpeg";
+		return "video/vnd.dlna.mpeg-tts";
 	}
 
 	@Override
