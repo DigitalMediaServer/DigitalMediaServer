@@ -80,9 +80,14 @@ public class BasicSystemUtils implements SystemUtils {
 	/** The singleton platform dependent {@link SystemUtils} instance */
 	public static SystemUtils INSTANCE = BasicSystemUtils.createInstance();
 
-	private final Object defaultFoldersLock = new Object();
+	private static final Object defaultFoldersLock = new Object();
+
 	@GuardedBy("defaultFoldersLock")
-	private static List<Path> defaultFolders = null;
+	private static List<Path> defaultFolders;
+
+	@Nullable
+	@GuardedBy("defaultFoldersLock")
+	private static Path desktopFolder;
 	private static final Set<FileFlag> REQUIRED_SHARED_FOLDER_PERMISSIONS = new HashSet<>(
 		Arrays.asList(new FileFlag[] {
 			FileFlag.BROWSE,
@@ -372,47 +377,64 @@ public class BasicSystemUtils implements SystemUtils {
 		synchronized (defaultFoldersLock) {
 			if (defaultFolders == null) {
 				// Lazy initialization
-				List<Path> folders = new ArrayList<>();
-				enumerateDefaultFolders(folders);
-
-				// Remove non-existing or not readable folders
-				for (Iterator<Path> iterator = folders.iterator(); iterator.hasNext();) {
-					Path path = iterator.next();
-					try {
-						Set<FileFlag> flags = new FilePermissions(path).getFlags(REQUIRED_SHARED_FOLDER_PERMISSIONS);
-						if (!flags.containsAll(REQUIRED_SHARED_FOLDER_PERMISSIONS)) {
-							iterator.remove();
-							HashSet<FileFlag> missingFlags = new HashSet<>(REQUIRED_SHARED_FOLDER_PERMISSIONS);
-							missingFlags.removeAll(flags);
-							if (missingFlags.contains(FileFlag.FOLDER)) {
-								LOGGER.warn(
-									"Skipping default folder \"{}\" because it's not a folder",
-									path
-								);
-							} else {
-								LOGGER.warn(
-									"Skipping default folder \"{}\" because it's missing {} permission{}",
-									path,
-									StringUtil.createReadableCombinedString(missingFlags),
-									missingFlags.size() > 1 ? "s" : ""
-								);
-							}
-						}
-					} catch (FileNotFoundException e) {
-						iterator.remove();
-						LOGGER.trace("Default folder \"{}\" not found", path.toString());
-					}
-				}
-
-				defaultFolders = Collections.unmodifiableList(folders);
+				populateDefaultFolders();
 			}
 			return defaultFolders;
 		}
 	}
 
+	@Override
+	public final Path getDesktopFolder() {
+		synchronized (defaultFoldersLock) {
+			if (defaultFolders == null) {
+				// Lazy initialization
+				populateDefaultFolders();
+			}
+			return desktopFolder;
+		}
+	}
+
+	@GuardedBy("defaultFoldersLock")
+	protected void populateDefaultFolders() {
+		List<Path> folders = new ArrayList<>();
+		desktopFolder = enumerateDefaultFolders(folders);
+
+		// Remove non-existing or not readable folders
+		for (Iterator<Path> iterator = folders.iterator(); iterator.hasNext();) {
+			Path path = iterator.next();
+			try {
+				Set<FileFlag> flags = new FilePermissions(path).getFlags(REQUIRED_SHARED_FOLDER_PERMISSIONS);
+				if (!flags.containsAll(REQUIRED_SHARED_FOLDER_PERMISSIONS)) {
+					iterator.remove();
+					HashSet<FileFlag> missingFlags = new HashSet<>(REQUIRED_SHARED_FOLDER_PERMISSIONS);
+					missingFlags.removeAll(flags);
+					if (missingFlags.contains(FileFlag.FOLDER)) {
+						LOGGER.warn(
+							"Skipping default folder \"{}\" because it's not a folder",
+							path
+						);
+					} else {
+						LOGGER.warn(
+							"Skipping default folder \"{}\" because it's missing {} permission{}",
+							path,
+							StringUtil.createReadableCombinedString(missingFlags),
+							missingFlags.size() > 1 ? "s" : ""
+						);
+					}
+				}
+			} catch (FileNotFoundException e) {
+				iterator.remove();
+				LOGGER.trace("Default folder \"{}\" not found", path.toString());
+			}
+		}
+
+		defaultFolders = Collections.unmodifiableList(folders);
+	}
+
 	/**
 	 * Enumerates the list of folders that is considered "default folders" for
-	 * the current platform.
+	 * the current platform and adds them to the specified {@link List}. In
+	 * addition, the desktop folder is returned if resolved.
 	 * <p>
 	 * Subclasses should override this method. The method does not have to
 	 * handle thread synchronization, and speed isn't a factor as this is
@@ -420,13 +442,21 @@ public class BasicSystemUtils implements SystemUtils {
 	 *
 	 * @param folders the {@link List} of {@link Path}s to populate with
 	 *            "default folders".
+	 * @return The desktop folder if resolved, or {@code null}.
 	 */
-	protected void enumerateDefaultFolders(@Nonnull List<Path> folders) {
+	@Nullable
+	protected Path enumerateDefaultFolders(@Nonnull List<Path> folders) {
+		Path desktop = null;
 		Path xdg = FileUtil.findExecutableInOSPath(Paths.get("xdg-user-dir"));
 		if (xdg != null) {
-			String[] folderNames = {"DESKTOP", "DOWNLOAD", "PUBLICSHARE", "MUSIC", "PICTURES", "VIDEOS"};
+			Path folder = getLinuxFolder(xdg, "DESKTOP");
+			if (folder != null) {
+				folders.add(folder);
+				desktop = folder;
+			}
+			String[] folderNames = {"DOWNLOAD", "PUBLICSHARE", "MUSIC", "PICTURES", "VIDEOS"};
 			for (String folderName : folderNames) {
-				Path folder = getLinuxFolder(xdg, folderName);
+				folder = getLinuxFolder(xdg, folderName);
 				if (folder != null) {
 					folders.add(folder);
 				}
@@ -438,6 +468,7 @@ public class BasicSystemUtils implements SystemUtils {
 				folders.add(Paths.get(userHome));
 			}
 		}
+		return desktop;
 	}
 
 	@Nullable

@@ -28,11 +28,13 @@ import net.pms.dlna.RealFile;
 import net.pms.dlna.RootFolder;
 import net.pms.image.ImageFormat;
 import net.pms.io.BasicSystemUtils;
+import net.pms.logging.LoggingConfig;
 import net.pms.network.HTTPResource;
-import net.pms.newgui.DbgPacker;
+import net.pms.network.HTTPServer;
 import net.pms.util.FullyPlayed;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.text.StringEscapeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -353,28 +355,18 @@ public class RemoteWeb {
 
 				} else if (path.startsWith("/files/log/")) {
 					String filename = path.substring(11);
-					if (filename.equals("info")) {
-						String log = PMS.get().getFrame().getLog();
-						log = log.replaceAll("\n", "<br>");
-						String fullLink = "<br><a href=\"/files/log/full\">Full log</a><br><br>";
-						String x = fullLink + log;
-						if (StringUtils.isNotEmpty(log)) {
-							x = x + fullLink;
-						}
-						response = "<html><title>DMS LOG</title><body>" + x + "</body></html>";
+					File file = parent.getResources().getFile(filename);
+					if (file != null) {
+						filename = file.getName();
+						HashMap<String, Object> vars = new HashMap<>();
+						vars.put("title", filename);
+						vars.put("brush", filename.endsWith("debug.log") || filename.endsWith("debug.log.prev") ? "debug_log" :
+							filename.endsWith(".log") ? "log" : "conf");
+						vars.put("log", StringEscapeUtils.escapeHtml4(RemoteUtil.read(file)));
+						response = parent.getResources().getTemplate("util/log.html").execute(vars);
+						mime = "text/html";
 					} else {
-						File file = parent.getResources().getFile(filename);
-						if (file != null) {
-							filename = file.getName();
-							HashMap<String, Object> vars = new HashMap<>();
-							vars.put("title", filename);
-							vars.put("brush", filename.endsWith("debug.log") ? "debug_log" :
-								filename.endsWith(".log") ? "log" : "conf");
-							vars.put("log", RemoteUtil.read(file).replace("<", "&lt;"));
-							response = parent.getResources().getTemplate("util/log.html").execute(vars);
-						} else {
-							status = 404;
-						}
+						status = 404;
 					}
 					mime = "text/html";
 
@@ -458,30 +450,29 @@ public class RemoteWeb {
 
 		public RemoteDocHandler(RemoteWeb parent) {
 			this.parent = parent;
-			// Make sure logs are available right away
-			getLogs(false);
 		}
 
 		@Override
-		public void handle(HttpExchange t) throws IOException {
+		public void handle(HttpExchange exchange) throws IOException {
 			try {
-				LOGGER.debug("root req " + t.getRequestURI());
-				if (RemoteUtil.deny(t)) {
+				LOGGER.debug("root req " + exchange.getRequestURI());
+				if (RemoteUtil.deny(exchange)) {
 					throw new IOException("Access denied");
 				}
-				if (t.getRequestURI().getPath().contains("favicon")) {
-					RemoteUtil.sendLogo(t);
+				if (exchange.getRequestURI().getPath().contains("favicon")) {
+					RemoteUtil.sendLogo(exchange);
 					return;
 				}
 
 				HashMap<String, Object> vars = new HashMap<>();
-				vars.put("logs", getLogs(true));
+				vars.put("logs", getLogs());
 				if (configuration.getUseCache()) {
-					vars.put("cache", "http://" + PMS.get().getServer().getHost() + ":" + PMS.get().getServer().getPort() + "/console/home");
+					HTTPServer server = PMS.get().getServer();
+					vars.put("cache", "http://" + server.getHost() + ":" + server.getPort() + "/console/home");
 				}
 
 				String response = parent.getResources().getTemplate("doc.html").execute(vars);
-				RemoteUtil.respond(t, response, 200, "text/html");
+				RemoteUtil.respond(exchange, response, 200, "text/html");
 			} catch (IOException e) {
 				throw e;
 			} catch (Exception e) {
@@ -491,22 +482,15 @@ public class RemoteWeb {
 			}
 		}
 
-		private ArrayList<HashMap<String, String>> getLogs(boolean asList) {
-			Set<File> files = new DbgPacker().getItems();
-			if (!asList) {
-				return null;
-			}
+		private ArrayList<HashMap<String, String>> getLogs() {
+			Set<File> files = LoggingConfig.getDebugFiles(false);
 			ArrayList<HashMap<String, String>> logs = new ArrayList<HashMap<String, String>>();
-			for (File f : files) {
-				if (f.exists()) {
-					String id = String.valueOf(parent.getResources().add(f));
-					if (asList) {
-						HashMap<String, String> item = new HashMap<>();
-						item.put("filename", f.getName());
-						item.put("id", id);
-						logs.add(item);
-					}
-				}
+			for (File file : files) {
+				String id = String.valueOf(parent.getResources().add(file));
+				HashMap<String, String> item = new HashMap<>();
+				item.put("filename", file.getName());
+				item.put("id", id);
+				logs.add(item);
 			}
 			return logs;
 		}

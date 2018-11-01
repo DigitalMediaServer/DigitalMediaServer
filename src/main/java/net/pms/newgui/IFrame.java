@@ -22,17 +22,16 @@ import net.pms.configuration.RendererConfiguration;
 import net.pms.newgui.StatusTab.ConnectionState;
 
 public interface IFrame {
-	public void append(String msg);
-	public void updateBuffer();
-	public void setReadValue(long v, String msg);
-	public void setConnectionState(ConnectionState connectionState);
-	public void addRenderer(RendererConfiguration renderer);
-	public void updateRenderer(RendererConfiguration renderer);
-	public void webInterfaceEnabled(boolean value);
-	public void setReloadable(boolean reload);
-	public void addEngines();
-	public void setStatusLine(String line);
-	public void serverReady();
-	public void setScanLibraryEnabled(boolean flag);
-	public String getLog();
+	void append(String msg);
+	void updateBuffer();
+	void setReadValue(long v, String msg);
+	void setConnectionState(ConnectionState connectionState);
+	void addRenderer(RendererConfiguration renderer);
+	void updateRenderer(RendererConfiguration renderer);
+	void webInterfaceEnabled(boolean value);
+	void setReloadable(boolean reload);
+	void addEngines();
+	void setStatusLine(String line);
+	void serverReady();
+	void setScanLibraryEnabled(boolean flag);
 }

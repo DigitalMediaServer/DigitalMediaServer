@@ -18,22 +18,13 @@
  */
 package net.pms.newgui;
 
-import java.util.ArrayList;
 import net.pms.configuration.RendererConfiguration;
 import net.pms.newgui.StatusTab.ConnectionState;
-import org.apache.commons.lang3.StringUtils;
 
 public class DummyFrame implements IFrame {
 
-	private ArrayList<String> log;
-
-	public DummyFrame() {
-		log = new ArrayList<>();
-	}
-
 	@Override
 	public void append(String msg) {
-		log.add(msg);
 	}
 
 	@Override
@@ -78,10 +69,5 @@ public class DummyFrame implements IFrame {
 
 	@Override
 	public void setScanLibraryEnabled(boolean flag) {
-	}
-
-	@Override
-	public String getLog() {
-		return StringUtils.join(log, "\n");
 	}
 }

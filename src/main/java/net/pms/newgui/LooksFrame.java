@@ -110,7 +110,7 @@ public class LooksFrame extends JFrame implements IFrame {
 	private GeneralTab gt;
 	private HelpTab ht;
 	private final JTabbedPane mainTabbedPane = new JTabbedPane(SwingConstants.TOP);
-	private final AnimatedButton reload = createAnimatedToolBarButton(null, "button-restart.png");;
+	private final AnimatedButton reload = createAnimatedToolBarButton(null, "button-restart.png");
 	private final AnimatedIcon restartRequredIcon = new AnimatedIcon(
 		reload,
 		true,
@@ -790,11 +790,6 @@ public class LooksFrame extends JFrame implements IFrame {
 		});
 	}
 
-	@Override
-	public String getLog() {
-		return getTt().getList().getText();
-	}
-
 	/**
 	 * @return The {@link MinimizeListenerRegistrar} instance created for this
 	 *         {@link LooksFrame} instance.
@@ -825,31 +820,41 @@ public class LooksFrame extends JFrame implements IFrame {
 	 *
 	 * @author Nadahar
 	 */
-	public static enum LooksFrameTab {
+	public enum LooksFrameTab {
 
 		/** The {@code Status} tab */
-		STATUS_TAB,
+		STATUS_TAB(0),
 
 		/** The {@code Logs} tab */
-		TRACES_TAB,
+		TRACES_TAB(1),
 
 		/** The {@code General Configuration} tab */
-		GENERAL_TAB,
+		GENERAL_TAB(2),
 
 		/** The {@code Navigation/Share Settings} tab */
-		NAVIGATION_TAB,
+		NAVIGATION_TAB(3),
 
 		/** The {@code Transcoding Settings} tab */
-		TRANSCODING_TAB,
+		TRANSCODING_TAB(4),
 
 		/** The {@code Help} tab */
-		HELP_TAB,
+		HELP_TAB(5),
 
 		/** The {@code About} tab */
-		ABOUT_TAB,
+		ABOUT_TAB(6),
 
 		/** An unknown or invalid tab */
-		UNKNOWN;
+		UNKNOWN(-1);
+
+		private final int idx;
+
+		private LooksFrameTab(int idx) {
+			this.idx = idx;
+		}
+
+		public int getIdx() {
+			return idx;
+		}
 
 		/**
 		 * Converts a tab index value to a {@link LooksFrameTab} instance.
@@ -859,24 +864,12 @@ public class LooksFrame extends JFrame implements IFrame {
 		 */
 		@Nonnull
 		public static LooksFrameTab typeOf(int value) {
-			switch (value) {
-				case 0:
-					return STATUS_TAB;
-				case 1:
-					return TRACES_TAB;
-				case 2:
-					return GENERAL_TAB;
-				case 3:
-					return NAVIGATION_TAB;
-				case 4:
-					return TRANSCODING_TAB;
-				case 5:
-					return HELP_TAB;
-				case 6:
-					return ABOUT_TAB;
-				default:
-					return UNKNOWN;
+			for (LooksFrameTab tab : values()) {
+				if (tab.idx == value) {
+					return tab;
+				}
 			}
+			return UNKNOWN;
 		}
 	}
 
