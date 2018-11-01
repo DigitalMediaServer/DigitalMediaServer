@@ -290,7 +290,7 @@ public class PMS {
 
 		LOGGER.info("Logging configuration file: {}", LoggingConfig.getConfigFilePath());
 
-		HashMap<String, String> lfps = LoggingConfig.getLogFilePaths();
+		Map<String, String> lfps = LoggingConfig.getLogFilePaths();
 
 		// Logfile name(s) and path(s)
 		if (lfps != null && lfps.size() > 0) {
@@ -362,7 +362,6 @@ public class PMS {
 			LOGGER.error("Failed to create profile folder \"{}\"", configuration.getDataDir());
 		}
 
-		dbgPack = new DbgPacker();
 		tfm = new TempFileMgr();
 
 		// This should be removed soon
@@ -1749,12 +1748,6 @@ public class PMS {
 			LOGGER.warn("Could not rename \"{}\" to \"{}\": {}", fullLogFileName, newLogFileName, e.getMessage());
 			LOGGER.trace("", e);
 		}
-	}
-
-	private DbgPacker dbgPack;
-
-	public DbgPacker dbgPack() {
-		return dbgPack;
 	}
 
 	private TempFileMgr tfm;

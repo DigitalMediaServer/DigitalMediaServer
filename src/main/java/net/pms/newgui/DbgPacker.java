@@ -1,67 +1,45 @@
 package net.pms.newgui;
 
 import com.sun.jna.Platform;
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
-import java.util.HashMap;
+import java.nio.file.Paths;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Set;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
+import javax.annotation.Nullable;
 import javax.swing.*;
 import javax.swing.filechooser.FileFilter;
 import javax.swing.plaf.metal.MetalIconFactory;
 import net.pms.Messages;
 import net.pms.PMS;
-import net.pms.configuration.DeviceConfiguration;
-import net.pms.configuration.PmsConfiguration;
-import net.pms.configuration.RendererConfiguration;
+import net.pms.io.BasicSystemUtils;
 import net.pms.logging.LoggingConfig;
 import net.pms.newgui.components.CustomJButton;
-import net.pms.util.FileUtil;
-import org.apache.commons.lang3.StringUtils;
+import net.pms.util.FilePermissions;
+import net.pms.util.FilePermissions.FileFlag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class DbgPacker implements ActionListener {
 	private static final Logger LOGGER = LoggerFactory.getLogger(DbgPacker.class);
+	public static final String ZIP_FILE_NAME = "dms_debug.zip";
 
 	private LinkedHashMap<File, JCheckBox> items;
-	private String defaultLogFile, zippedLogFile;
+	private Path zippedDebugFile;
 	private CustomJButton openZip;
 
-	public DbgPacker() {
-		items = new LinkedHashMap<>();
-
-		HashMap<String, String> logFilePaths = LoggingConfig.getLogFilePaths();
-		if (!logFilePaths.isEmpty()) {
-			defaultLogFile = LoggingConfig.getLogFilePaths().get("default.log");
-			if (defaultLogFile == null) {
-				// Just get the path of one of the files as we can't find the default
-				Map.Entry<String, String> entry = logFilePaths.entrySet().iterator().next();
-				defaultLogFile = entry.getValue();
-			}
-			zippedLogFile = new File(defaultLogFile).getParent().toString();
-		} else {
-			// Fall back to getting the default folder
-			zippedLogFile = PMS.getConfiguration().getDefaultLogFilePath();
-		}
-		if (!zippedLogFile.isEmpty()) {
-			zippedLogFile = FileUtil.appendPathSeparator(zippedLogFile) + "dms_debug.zip";
-		} else {
-			LOGGER.error("Could not find destination folder for packed debug files");
-		}
-	}
-
 	public JComponent config() {
-		poll();
 		JPanel top = new JPanel(new GridBagLayout());
 		GridBagConstraints c = new GridBagConstraints();
 		c.fill = GridBagConstraints.BOTH;
@@ -69,20 +47,15 @@ public class DbgPacker implements ActionListener {
 		c.ipadx = 5;
 		c.gridx = 0;
 		c.gridy = 0;
-		for (Map.Entry<File, JCheckBox> item : items.entrySet()) {
-			File file = item.getKey();
-			boolean exists = file.exists();
-			JCheckBox box = item.getValue();
-			if (box == null) {
-				box = new JCheckBox(file.getName(), exists);
-				item.setValue(box);
-			}
-			if (!exists) {
-				box.setSelected(false);
-				box.setEnabled(false);
-			}
+		items = new LinkedHashMap<>();
+		JCheckBox checkBox;
+		boolean exists;
+		for (File file : LoggingConfig.getDebugFiles(false)) {
+			exists = file.exists();
+			checkBox = new JCheckBox(file.getName(), exists);
+			checkBox.setEnabled(exists);
 			c.weightx = 1.0;
-			top.add(box, c);
+			top.add(checkBox, c);
 			CustomJButton open = exists ? new CustomJButton(MetalIconFactory.getTreeLeafIcon()) : new CustomJButton("+");
 			open.setActionCommand(file.getAbsolutePath());
 			open.setToolTipText((exists ? "" : Messages.getString("DbgPacker.1") + " ") + file.getAbsolutePath());
@@ -92,6 +65,14 @@ public class DbgPacker implements ActionListener {
 			top.add(open, c);
 			c.gridx--;
 			c.gridy++;
+			if (exists) {
+				try {
+					file = file.getCanonicalFile();
+				} catch (IOException e) {
+					LOGGER.error("Failed to resolve canonical file for \"{}\"", file);
+				}
+			}
+			items.put(file, checkBox);
 		}
 		c.weightx = 2.0;
 		CustomJButton debugPack = new CustomJButton(Messages.getString("DbgPacker.2"));
@@ -109,58 +90,6 @@ public class DbgPacker implements ActionListener {
 		return top;
 	}
 
-	private void poll() {
-		// call the client callbacks
-		PmsConfiguration configuration = PMS.getConfiguration();
-
-		// check dbgpack property in DMS.conf
-		LOGGER.debug("Checking dbgpack property in DMS.conf");
-		String f = (String) configuration.getCustomProperty("dbgpack");
-		if (f != null) {
-			add(f.split(","));
-		}
-
-		// add confs of connected renderers
-		for (RendererConfiguration r : RendererConfiguration.getConnectedRenderersConfigurations()) {
-			add(r.getFile());
-			if (((DeviceConfiguration)r).isCustomized()) {
-				add(((DeviceConfiguration)r).getParentFile());
-			}
-		}
-
-		// add core items with the default logfile last (LinkedHashMap preserves insertion order)
-		Path profileFolder = configuration.getProfileFolder();
-
-		// add virtual folders file if it exists
-		String vfolders = configuration.getVirtualFoldersFile();
-		if (StringUtils.isNotEmpty(vfolders)) {
-			add(profileFolder.resolve(vfolders).toFile());
-		}
-
-		add(profileFolder.resolve("WEB.conf").toFile());
-		add(configuration.getConfigurationFile().toFile());
-		if (defaultLogFile != null && !defaultLogFile.isEmpty()){
-			add(new File(defaultLogFile + ".prev"));
-			add(new File(defaultLogFile));
-		}
-	}
-
-	private void add(String[] files) {
-		for (String file : files) {
-			add(new File(file));
-		}
-	}
-
-	private void add(File file) {
-		if (file != null) {
-			LOGGER.debug("adding {}",file.getAbsolutePath());
-			try {
-				items.put(file.getCanonicalFile(), null);
-			} catch (IOException e) {
-			}
-		}
-	}
-
 	private static void writeToZip(ZipOutputStream out, File f) throws Exception {
 		byte[] buf = new byte[1024];
 		int len;
@@ -175,11 +104,6 @@ public class DbgPacker implements ActionListener {
 			}
 			out.closeEntry();
 		}
-	}
-
-	public Set<File> getItems() {
-		poll();
-		return items.keySet();
 	}
 
 	private boolean saveDialog() {
@@ -210,12 +134,57 @@ public class DbgPacker implements ActionListener {
 					return "*.zip";
 				}
 			});
-		fc.setSelectedFile(new File(zippedLogFile));
+		if (zippedDebugFile == null) {
+			resolveTargetPath();
+		}
+
+		if (zippedDebugFile != null) {
+			fc.setSelectedFile(zippedDebugFile.toFile());
+		}
 		if (fc.showSaveDialog(null) == JFileChooser.APPROVE_OPTION) {
-			zippedLogFile = fc.getSelectedFile().getPath();
+			File file = fc.getSelectedFile();
+			if (file != null) {
+				zippedDebugFile = file.toPath();
+			}
 			return true;
 		}
 		return false;
+	}
+
+	private boolean validFolder(@Nullable Path folder) {
+		try {
+			return folder != null && new FilePermissions(folder).hasFlags(FileFlag.FOLDER, FileFlag.BROWSE, FileFlag.WRITE);
+		} catch (FileNotFoundException e) {
+			return false;
+		}
+	}
+
+	private void resolveTargetPath() {
+		Path path = BasicSystemUtils.INSTANCE.getDesktopFolder();
+		if (!validFolder(path)) {
+			Map<String, String> logFilePaths = LoggingConfig.getLogFilePaths();
+			if (logFilePaths != null && !logFilePaths.isEmpty()) {
+				String s = logFilePaths.get("default.log");
+				if (isNotBlank(s)) {
+					try {
+						path = Paths.get(s);
+						if (path != null) {
+							path = path.getParent();
+							if (!validFolder(path)) {
+								path = null;
+							}
+						}
+					} catch (InvalidPathException e) {
+						path = null;
+					}
+				}
+			}
+		}
+		if (path == null) {
+			LOGGER.warn("Could not resolve suggested destination folder for packed debug files");
+		} else {
+			zippedDebugFile = path.resolve(ZIP_FILE_NAME);
+		}
 	}
 
 	private void packDbg() {
@@ -223,7 +192,7 @@ public class DbgPacker implements ActionListener {
 			return;
 		}
 		try {
-			try (ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(zippedLogFile))) {
+			try (ZipOutputStream zos = new ZipOutputStream(Files.newOutputStream(zippedDebugFile))) {
 				for (Map.Entry<File, JCheckBox> item : items.entrySet()) {
 					if (item.getValue().isSelected()) {
 						File file = item.getKey();
@@ -234,7 +203,8 @@ public class DbgPacker implements ActionListener {
 			}
 			openZip.setEnabled(true);
 		} catch (Exception e) {
-			LOGGER.debug("Error packing zip file: {}", e.getLocalizedMessage());
+			LOGGER.error("Error writing debug ZIP file: {}", e.getLocalizedMessage());
+			LOGGER.trace("", e);
 		}
 	}
 
@@ -246,7 +216,7 @@ public class DbgPacker implements ActionListener {
 		} else {
 			// Open: "showzip" - zipped file folder
 			//   not "showzip" - one of the listed files
-			File file = str.equals("showzip") ? new File(zippedLogFile).getParentFile() : new File(str);
+			File file = str.equals("showzip") ? zippedDebugFile == null ? new File("") : zippedDebugFile.toFile().getParentFile() : new File(str);
 			if (file.exists()) {
 				try {
 					java.awt.Desktop.getDesktop().open(file);

@@ -18,7 +18,6 @@
  */
 package net.pms.newgui;
 
-import ch.qos.logback.classic.Level;
 import com.jgoodies.forms.builder.PanelBuilder;
 import com.jgoodies.forms.layout.CellConstraints;
 import com.jgoodies.forms.layout.FormLayout;
@@ -38,7 +37,6 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.File;
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -64,6 +62,7 @@ import org.slf4j.LoggerFactory;
 public class TracesTab {
 	private static final Logger LOGGER = LoggerFactory.getLogger(TracesTab.class);
 	private PmsConfiguration configuration;
+	private DbgPacker debugPacker;
 	private JTextField jSearchBox, jSyslogHost;
 	private JComboBox<String> jTracesFilter, jSyslogFacility;
 	private JCheckBox jCSSearch, jRESearch, jMLSearch, jShowOptions, jBuffered, jUseSyslog;
@@ -565,7 +564,7 @@ public class TracesTab {
 
 		// Add buttons to open logfiles (there may be more than one)
 		JPanel pLogFileButtons = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-		HashMap<String, String> logFiles = LoggingConfig.getLogFilePaths();
+		Map<String, String> logFiles = LoggingConfig.getLogFilePaths();
 		for (Map.Entry<String,String> logger : logFiles.entrySet()) {
 			String loggerNameDisplay = logger.getKey();
 			if (logger.getKey().toLowerCase().startsWith("default.log")) {
@@ -647,7 +646,10 @@ public class TracesTab {
 		packDbg.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				JComponent comp = PMS.get().dbgPack().config();
+				if (debugPacker == null) {
+					debugPacker = new DbgPacker();
+				}
+				JComponent comp = debugPacker.config();
 				String[] cancelStr = {Messages.getString("Dialog.Close")};
 				JOptionPane.showOptionDialog(looksFrame,
 					comp, Messages.getString("Dialog.Options"), JOptionPane.CLOSED_OPTION, JOptionPane.PLAIN_MESSAGE, null, cancelStr, null);

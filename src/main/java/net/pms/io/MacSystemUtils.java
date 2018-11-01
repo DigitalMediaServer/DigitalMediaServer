@@ -215,12 +215,18 @@ public class MacSystemUtils extends BasicSystemUtils {
 	}
 
 	@Override
-	protected void enumerateDefaultFolders(List<Path> folders) {
-		folders.addAll(NSFoundation.nsSearchPathForDirectoriesInDomains(
+	@Nullable
+	protected Path enumerateDefaultFolders(List<Path> folders) {
+		Path desktop = null;
+		List<Path> desktops = NSFoundation.nsSearchPathForDirectoriesInDomains(
 			NSSearchPathDirectory.NSDesktopDirectory,
 			NSSearchPathDomainMask.NSAllDomainsMask,
 			true
-		));
+		);
+		if (!desktops.isEmpty()) {
+			folders.addAll(desktops);
+			desktop = folders.get(0);
+		}
 		folders.addAll(NSFoundation.nsSearchPathForDirectoriesInDomains(
 			NSSearchPathDirectory.NSDownloadsDirectory,
 			NSSearchPathDomainMask.NSAllDomainsMask,
@@ -246,5 +252,6 @@ public class MacSystemUtils extends BasicSystemUtils {
 			NSSearchPathDomainMask.NSAllDomainsMask,
 			true
 		));
+		return desktop;
 	}
 }

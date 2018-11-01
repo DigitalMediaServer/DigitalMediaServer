@@ -414,7 +414,8 @@ public class WindowsSystemUtils extends BasicSystemUtils {
 	}
 
 	@Override
-	protected void enumerateDefaultFolders(List<Path> folders) {
+	protected Path enumerateDefaultFolders(List<Path> folders) {
+		Path desktop = null;
 		Version version = getOSVersion();
 		if (version.isGreaterThanOrEqualTo(6)) {
 			ArrayList<GUID> knownFolders = new ArrayList<>(Arrays.asList(new GUID[]{
@@ -440,6 +441,9 @@ public class WindowsSystemUtils extends BasicSystemUtils {
 				Path folder = Shell32Util.getCurrentUserKnownFolderPath(guid);
 				if (folder != null) {
 					folders.add(folder);
+					if (guid == KnownFolders.FOLDERID_Desktop) {
+						desktop = folder;
+					}
 				} else {
 					LOGGER.debug("Default folder \"{}\" not found", guid);
 				}
@@ -459,11 +463,15 @@ public class WindowsSystemUtils extends BasicSystemUtils {
 				Path folder = Shell32Util.getCurrentUserFolderPath(csidl);
 				if (folder != null) {
 					folders.add(folder);
+					if (csidl == CSIDL.CSIDL_DESKTOPDIRECTORY) {
+						desktop = folder;
+					}
 				} else {
 					LOGGER.debug("Default folder \"{}\" not found", csidl);
 				}
 			}
 		}
+		return desktop;
 	}
 
 	/**

@@ -192,9 +192,10 @@ public class LoggingTest {
 		LoggerContext context = (LoggerContext) LoggerFactory.getILoggerFactory();
 		Logger rootLogger = context.getLogger(Logger.ROOT_LOGGER_NAME);
 
-		/* During DMS build a valid configuration should be accessible at least under "external resources"
+		/*
+		 * During DMS build a valid configuration should be accessible at least under "external resources"
 		 * and thus testing for a valid configuration is considered OK to be able to do the other tests.
-		 * "internal defaults" is returned if a valid configuration can't be found.
+		 * Null is returned if a valid configuration can't be found.
 		 */
 
 		// Test for a valid configuration
@@ -203,7 +204,7 @@ public class LoggingTest {
 		assertFalse("LoggingConfigIsFile", file.isDirectory());
 
 		// Test getLogFilePaths() and LoggingConfigFileLoader.getLogFilePaths()
-		HashMap<String, String> logFilePaths = LoggingConfig.getLogFilePaths();
+		Map<String, String> logFilePaths = LoggingConfig.getLogFilePaths();
 		@SuppressWarnings("deprecation")
 		HashMap<String, String> compLogFilePaths = LoggingConfigFileLoader.getLogFilePaths();
 		Iterator<Appender<ILoggingEvent>> iterator = rootLogger.iteratorForAppenders();

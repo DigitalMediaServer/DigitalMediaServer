@@ -34,19 +34,28 @@ import ch.qos.logback.core.encoder.Encoder;
 import ch.qos.logback.core.filter.Filter;
 import ch.qos.logback.core.joran.spi.JoranException;
 import ch.qos.logback.core.util.StatusPrinter;
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
+import java.io.File;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import net.pms.PMS;
 import net.pms.configuration.PmsConfiguration;
+import net.pms.configuration.RendererConfiguration;
 import net.pms.util.Iterators;
 import net.pms.util.PropertiesUtil;
 import net.pms.util.FilePermissions.FileFlag;
@@ -60,10 +69,8 @@ import org.slf4j.LoggerFactory;
  */
 public class LoggingConfig {
 	private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(LoggingConfig.class);
-	private static Object filepathLock = new Object();
 	private static Path filepath;
-	private static Object logFilePathsLock = new Object();
-	private static HashMap<String, String> logFilePaths = new HashMap<>(); // key: appender name, value: log file path
+	private static Map<String, String> logFilePaths; // key: appender name, value: log file path
 	private static LoggerContext loggerContext = null;
 	private static Logger rootLogger;
 	private static SyslogAppender syslog;
@@ -80,18 +87,13 @@ public class LoggingConfig {
 	/**
 	 * Gets the full path of a successfully loaded Logback configuration file.
 	 *
-	 * If the configuration file could not be loaded the string
-	 * <code>internal defaults</code> is returned.
+	 * If the configuration file could not be loaded, {@code null} is returned.
 	 *
-	 * @return pathname or <code>null</code>
+	 * @return The configuration file {@link Path} or {@code null}.
 	 */
-	public static Path getConfigFilePath() {
-		synchronized (filepathLock) {
-			if (filepath != null) {
-				return filepath;
-			}
-			return Paths.get("internal defaults");
-		}
+	@Nullable
+	public static synchronized Path getConfigFilePath() {
+		return filepath;
 	}
 
 	private static boolean setContextAndRoot() {
@@ -184,10 +186,8 @@ public class LoggingConfig {
 				CacheLogger.initContext();
 			}
 			// Save the file path after loading the file
-			synchronized (filepathLock) {
-				filepath = file.toAbsolutePath();
-				LOGGER.debug("LogBack started with configuration file: {}", filepath);
-			}
+			filepath = file.toAbsolutePath();
+			LOGGER.debug("LogBack started with configuration file: {}", filepath);
 		} catch (JoranException je) {
 			try {
 				System.err.println("LogBack configuration failed: " + je.getLocalizedMessage());
@@ -240,21 +240,19 @@ public class LoggingConfig {
 		for (Logger logger : loggerContext.getLoggerList()) {
 			iterators.addIterator(logger.iteratorForAppenders());
 		}
-		// Iterate
 
 		Iterator<Appender<ILoggingEvent>> it = iterators.combinedIterator();
-		synchronized (logFilePathsLock) {
-			while (it.hasNext()) {
-				Appender<ILoggingEvent> appender = it.next();
-
-				if (appender instanceof FileAppender) {
-					FileAppender<ILoggingEvent> fa = (FileAppender<ILoggingEvent>) appender;
-					logFilePaths.put(fa.getName(), fa.getFile());
-				} else if (appender instanceof SyslogAppender) {
-					syslogDisabled = true;
-				}
+		logFilePaths = new HashMap<>();
+		while (it.hasNext()) {
+			Appender<ILoggingEvent> appender = it.next();
+			if (appender instanceof FileAppender) {
+				FileAppender<ILoggingEvent> fa = (FileAppender<ILoggingEvent>) appender;
+				logFilePaths.put(fa.getName(), fa.getFile());
+			} else if (appender instanceof SyslogAppender) {
+				syslogDisabled = true;
 			}
 		}
+		logFilePaths = Collections.unmodifiableMap(logFilePaths);
 
 		// Set filters for console and traces
 		setConfigurableFilters(true, true);
@@ -639,9 +637,59 @@ public class LoggingConfig {
 		LOGGER.info("Verbose file logging pattern enforced");
 	}
 
-	public static HashMap<String, String> getLogFilePaths() {
-		synchronized (logFilePathsLock) {
-			return logFilePaths;
+	public static synchronized Map<String, String> getLogFilePaths() {
+		return logFilePaths;
+	}
+
+	@Nonnull
+	public static Set<File> getDebugFiles(boolean logsOnly) {
+		Set<File> result = new LinkedHashSet<>();
+		File file;
+
+		if (!logsOnly) {
+			// Add configuration files
+			PmsConfiguration configuration = PMS.getConfiguration();
+
+			for (RendererConfiguration r : RendererConfiguration.getConnectedRenderersConfigurations()) {
+				file = r.getFile();
+				if (file != null && file.exists()) {
+					result.add(file);
+				}
+			}
+
+			Path profileFolder = configuration.getProfileFolder();
+
+			String virtualFolders = configuration.getVirtualFoldersFile();
+			if (isNotBlank(virtualFolders)) {
+				file = profileFolder.resolve(virtualFolders).toFile();
+				if (file.exists()) {
+					result.add(file);
+				}
+			}
+
+			file = profileFolder.resolve("WEB.conf").toFile();
+			if (file.exists()) {
+				result.add(file);
+			}
+			file = configuration.getConfigurationFile().toFile();
+			if (file.exists()) {
+				result.add(file);
+			}
 		}
+
+		// Add log files
+		for (Entry<String, String> entry : getLogFilePaths().entrySet()) {
+			file = new File(entry.getValue());
+			if (file.exists()) {
+				result.add(file.getAbsoluteFile());
+			}
+			if ("default.log".equals(entry.getKey())) {
+				file = new File(entry.getValue() + ".prev");
+				if (file.exists()) {
+					result.add(file.getAbsoluteFile());
+				}
+			}
+		}
+		return result;
 	}
 }

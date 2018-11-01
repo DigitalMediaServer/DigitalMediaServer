@@ -112,4 +112,11 @@ public interface SystemUtils {
 	 */
 	@Nonnull
 	List<Path> getDefaultFolders();
+
+	/**
+	 * @return The {@link Path} to the desktop folder if applicable and
+	 *         resolved, otherwise {@code null}.
+	 */
+	@Nullable
+	Path getDesktopFolder();
 }
