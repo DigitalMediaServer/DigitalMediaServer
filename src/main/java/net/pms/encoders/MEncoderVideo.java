@@ -1396,14 +1396,19 @@ public class MEncoderVideo extends Player {
 					}
 				}
 
+				VideoLevel level = params.mediaRenderer.getVideoLevelLimit(VideoCodec.H264);
+				level2digitsWithoutDot = "";
+				if (level != null) {
+					level2digitsWithoutDot = ":level=41"; //I guess you will use a Regex string
+				}
 				encodeSettings = "-lavcopts " + aspectRatioLavcopts + vcodecString + acodec + abitrate +
 					":threads=" + configuration.getMencoderMaxThreads() +
-					":o=preset=superfast,crf=" + x264CRF + ",g=250,i_qfactor=0.71,qcomp=0.6,";
-				VideoLevel level = params.mediaRenderer.getVideoLevelLimit(VideoCodec.H264);
-				if (level != null) {
-					encodeSettings += "level=" + level.toString(false) + ",";
+					"" + level2digitsWithoutDot +
+					":keyint=250" +
+					":qcomp=0.6"; //default value
+				if (Platform.isWindows()) { //Only for SB builds
+					encodeSettings += ":o=preset=superfast,crf=" + x264CRF + ",i_qfactor=0.71,weightp=0,8x8dct=0,aq-strength=0,me_range=16";
 				}
-				encodeSettings += "weightp=0,8x8dct=0,aq-strength=0,me_range=16";
 
 				encodeSettings = addMaximumBitrateConstraints(encodeSettings, media, "", params.mediaRenderer, audioType);
 			}
