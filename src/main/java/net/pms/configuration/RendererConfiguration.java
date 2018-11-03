@@ -155,7 +155,6 @@ public class RendererConfiguration extends UPNPHelper.Renderer {
 	protected static final String DLNA_PN_CHANGES = "DLNAProfileChanges";
 	protected static final String DLNA_TREE_HACK = "CreateDLNATreeFaster";
 	protected static final String EMBEDDED_SUBS_SUPPORTED = "InternalSubtitlesSupported";
-	protected static final String HALVE_BITRATE = "HalveBitrate";
 	protected static final String IGNORE_TRANSCODE_BYTE_RANGE_REQUEST = "IgnoreTranscodeByteRangeRequests";
 	protected static final String IMAGE = "Image";
 	protected static final String KEEP_ASPECT_RATIO = "KeepAspectRatio";
@@ -1865,16 +1864,16 @@ public class RendererConfiguration extends UPNPHelper.Renderer {
 	public String getMaxVideoBitrate() {
 		if (PMS.getConfiguration().isAutomaticMaximumBitrate()) {
 			try {
-					int estimatedSpeed = Integer.parseInt(calculatedSpeed());
-					int maximumBitrate = Integer.parseInt(PMS.getConfiguration().getMaximumBitrateDisplay());
-					if (maximumBitrate >= estimatedSpeed) {
-						return calculatedSpeed();
-					}
+				int estimatedSpeed = Integer.parseInt(calculatedSpeed());
+				int maximumBitrate = Integer.parseInt(PMS.getConfiguration().getMaximumBitrateDisplay());
+				if (maximumBitrate >= estimatedSpeed) {
+					return calculatedSpeed();
+				}
 			} catch (InterruptedException e) {
 				if (
-						PMS.getConfiguration().getMaximumBitrateDisplay() != "90" &&
-						PMS.getConfiguration().getMaximumBitrateDisplay() != "30" &&
-						PMS.getConfiguration().getMaximumBitrateDisplay() != "0"
+					PMS.getConfiguration().getMaximumBitrateDisplay() != "90" &&
+					PMS.getConfiguration().getMaximumBitrateDisplay() != "30" &&
+					PMS.getConfiguration().getMaximumBitrateDisplay() != "0"
 				) {
 					return PMS.getConfiguration().getMaximumBitrateDisplay();
 				}
@@ -1885,23 +1884,13 @@ public class RendererConfiguration extends UPNPHelper.Renderer {
 			}
 		}
 		if (
-				PMS.getConfiguration().getMaximumBitrateDisplay() != "90" &&
-				PMS.getConfiguration().getMaximumBitrateDisplay() != "30" &&
-				PMS.getConfiguration().getMaximumBitrateDisplay() != "0"
+			PMS.getConfiguration().getMaximumBitrateDisplay() != "90" &&
+			PMS.getConfiguration().getMaximumBitrateDisplay() != "30" &&
+			PMS.getConfiguration().getMaximumBitrateDisplay() != "0"
 		) {
 			return getString(MAX_VIDEO_BITRATE, PMS.getConfiguration().getMaximumBitrateDisplay());
 		}
 		return getString(MAX_VIDEO_BITRATE, "0");
-	}
-
-	/**
-	 * This was originally added for the PS3 after it was observed to need
-	 * a video whose maximum bitrate was under half of the network maximum.
-	 *
-	 * @return whether to set the maximum bitrate to half of the network max
-	 */
-	public boolean isHalveBitrate() {
-		return getBoolean(HALVE_BITRATE, false);
 	}
 
 	/**
@@ -1933,10 +1922,6 @@ public class RendererConfiguration extends UPNPHelper.Renderer {
 				defaultMaxBitrates[0]
 			);
 			defaultMaxBitrates = rendererMaxBitrates;
-		}
-
-		if (isHalveBitrate()) {
-			defaultMaxBitrates[0] /= 2;
 		}
 
 		maximumBitrateTotal = defaultMaxBitrates[0] * 1000000;

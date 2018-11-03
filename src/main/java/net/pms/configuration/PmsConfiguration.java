@@ -4575,7 +4575,7 @@ public class PmsConfiguration extends RendererConfiguration {
 	}
 
 	public boolean isAutomaticMaximumBitrate() {
-		return getBoolean(KEY_AUTOMATIC_MAXIMUM_BITRATE, true);
+		return getBoolean(KEY_AUTOMATIC_MAXIMUM_BITRATE, false);
 	}
 
 	public void setAutomaticMaximumBitrate(boolean b) {

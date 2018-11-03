@@ -324,6 +324,7 @@ public class FFMpegVideo extends Player {
 		List<String> transcodeOptions = new ArrayList<>();
 		final String filename = dlna.getFileName();
 		final RendererConfiguration renderer = params.mediaRenderer;
+
 		String customFFmpegOptions = renderer.getCustomFFmpegOptions();
 
 		if (
@@ -492,11 +493,6 @@ public class FFMpegVideo extends Player {
 			} else {
 				// Convert value from Mb to Kb
 				defaultMaxBitrates[0] = 1000 * defaultMaxBitrates[0];
-			}
-
-			if (params.mediaRenderer.isHalveBitrate()) {
-				defaultMaxBitrates[0] /= 2;
-				LOGGER.trace("Halving the video bitrate limit to {} kb/s", defaultMaxBitrates[0]);
 			}
 
 			int bufSize = 1835;
