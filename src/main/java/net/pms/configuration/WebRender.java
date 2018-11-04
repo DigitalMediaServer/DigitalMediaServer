@@ -27,6 +27,7 @@ import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import net.pms.Messages;
@@ -129,7 +130,7 @@ public class WebRender extends DeviceConfiguration implements RendererConfigurat
 		configuration.addProperty(SUPPORTED, "f:jpg m:image/jpeg");
 		configuration.addProperty(SUPPORTED, "f:png m:image/png");
 		configuration.addProperty(SUPPORTED, "f:gif m:image/gif");
-		configuration.addProperty(SUPPORTED, "f:tiff m:image/tiff");
+//		configuration.addProperty(SUPPORTED, "f:tiff m:image/tiff");
 		configuration.addProperty(TRANSCODE_AUDIO, MP3);
 		return true;
 	}
@@ -175,17 +176,22 @@ public class WebRender extends DeviceConfiguration implements RendererConfigurat
 	}
 
 	public static int getBrowser(String userAgent) {
-		String ua = userAgent.toLowerCase();
+		if (userAgent == null) {
+			return 0;
+		}
+		String ua = userAgent.toLowerCase(Locale.ROOT);
 		return
 			ua.contains("edge")          ? EDGE :
 			ua.contains("chrome")        ? CHROME :
-			(ua.contains("msie") ||
-			ua.contains("trident"))      ? MSIE :
+			ua.contains("msie") ||
+			ua.contains("trident") ||
+			ua.contains("iemobile")     ? MSIE :
 			ua.contains("firefox")       ? FIREFOX :
 			ua.contains("safari")        ? SAFARI :
 			ua.contains("playstation 4") ? PS4 :
 			ua.contains("xbox one")      ? XBOX1 :
-			ua.contains("opera")         ? OPERA :
+			ua.contains("opera") ||
+			ua.contains("opr")          ? OPERA :
 			ua.contains("chromium")      ? CHROMIUM :
 			ua.contains("vivaldi")       ? VIVALDI :
 			0;
@@ -484,11 +490,15 @@ public class WebRender extends DeviceConfiguration implements RendererConfigurat
 				return
 					browser == FIREFOX || browser == CHROME ||
 					browser == CHROMIUM || browser == OPERA ||
-					browser == MSIE || browser == EDGE || browser == SAFARI;
+					browser == MSIE || browser == EDGE ||
+					browser == SAFARI || browser == VIVALDI;
 			case TIFF:
-				return browser == EDGE || browser == CHROMIUM || browser == SAFARI || browser == MSIE;
+				return browser == SAFARI;
 			case WEBP:
-				return browser == CHROME || browser == CHROMIUM || browser == OPERA;
+				return
+					browser == CHROME || browser == EDGE ||
+					browser == CHROMIUM || browser == OPERA ||
+					browser == VIVALDI; // Firefox will support it in version 65
 			default:
 				return false;
 		}
