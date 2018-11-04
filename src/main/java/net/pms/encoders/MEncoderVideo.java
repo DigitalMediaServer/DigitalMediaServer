@@ -82,6 +82,7 @@ import org.slf4j.LoggerFactory;
 public class MEncoderVideo extends Player {
 	private static final Logger LOGGER = LoggerFactory.getLogger(MEncoderVideo.class);
 	public static final PlayerId ID = StandardPlayerId.MENCODER_VIDEO;
+	private static Rational ASPECT_16_9 = Rational.valueOf(16, 9);
 
 	/** The {@link Configuration} key for the custom MEncoder path. */
 	public static final String KEY_MENCODER_PATH = "mencoder_path";
@@ -954,7 +955,13 @@ public class MEncoderVideo extends Player {
 			deferToTsmuxer = false;
 			LOGGER.trace(prependTraceReason + "the colorspace probably isn't supported by the renderer.");
 		}
-		if (deferToTsmuxer == true && (params.mediaRenderer.isKeepAspectRatio() || params.mediaRenderer.isKeepAspectRatioTranscoding()) && !"16:9".equals(media.getAspectRatioContainer())) {
+		if (
+			deferToTsmuxer == true && (
+				params.mediaRenderer.isKeepAspectRatio() ||
+				params.mediaRenderer.isKeepAspectRatioTranscoding()
+			) &&
+			!ASPECT_16_9.equals(media.getAspectRatioContainer())
+		) {
 			deferToTsmuxer = false;
 			LOGGER.trace(prependTraceReason + "the renderer needs us to add borders so it displays the correct aspect ratio of " + media.getAspectRatioContainer() + ".");
 		}
@@ -1321,7 +1328,7 @@ public class MEncoderVideo extends Player {
 						params.mediaRenderer.isKeepAspectRatio() ||
 						params.mediaRenderer.isKeepAspectRatioTranscoding()
 					) &&
-					!"16:9".equals(media.getAspectRatioContainer())
+					!ASPECT_16_9.equals(media.getAspectRatioContainer())
 				) &&
 				!configuration.isMencoderScaler()
 			) {
@@ -1981,7 +1988,7 @@ public class MEncoderVideo extends Player {
 						params.mediaRenderer.isKeepAspectRatio() ||
 						params.mediaRenderer.isKeepAspectRatioTranscoding()
 					) &&
-					!"16:9".equals(media.getAspectRatioContainer())
+					!ASPECT_16_9.equals(media.getAspectRatioContainer())
 				)
 			) &&
 			!configuration.isMencoderScaler()

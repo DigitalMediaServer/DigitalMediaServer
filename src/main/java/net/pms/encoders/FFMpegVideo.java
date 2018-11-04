@@ -65,6 +65,7 @@ import net.pms.newgui.GuiUtil;
 import net.pms.platform.windows.NTStatus;
 import net.pms.util.CodecUtil;
 import net.pms.util.ProcessUtil;
+import net.pms.util.Rational;
 import net.pms.util.StringUtil;
 import net.pms.util.SubtitleUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -98,6 +99,7 @@ import org.slf4j.LoggerFactory;
 public class FFMpegVideo extends Player {
 	private static final Logger LOGGER = LoggerFactory.getLogger(FFMpegVideo.class);
 	public static final PlayerId ID = StandardPlayerId.FFMPEG_VIDEO;
+	private static Rational ASPECT_16_9 = Rational.valueOf(16, 9);
 
 	/** The {@link Configuration} key for the custom FFmpeg path. */
 	public static final String KEY_FFMPEG_PATH = "ffmpeg_path";
@@ -145,7 +147,7 @@ public class FFMpegVideo extends Player {
 		// Make sure the aspect ratio is 16/9 if the renderer needs it.
 		boolean keepAR = (renderer.isKeepAspectRatio() || renderer.isKeepAspectRatioTranscoding()) &&
 				!media.is3dFullSbsOrOu() &&
-				!"16:9".equals(media.getAspectRatioContainer());
+				!ASPECT_16_9.equals(media.getAspectRatioContainer());
 
 		// Scale and pad the video if necessary
 		if (isResolutionTooHighForRenderer || (!renderer.isRescaleByRenderer() && renderer.isMaximumResolutionSpecified() && media.getWidth() < 720)) { // Do not rescale for SD video and higher
@@ -990,7 +992,13 @@ public class FFMpegVideo extends Player {
 				deferToTsmuxer = false;
 				LOGGER.trace(prependTraceReason + "the colorspace probably isn't supported by the renderer.");
 			}
-			if (deferToTsmuxer == true && (params.mediaRenderer.isKeepAspectRatio() || params.mediaRenderer.isKeepAspectRatioTranscoding()) && !"16:9".equals(media.getAspectRatioContainer())) {
+			if (
+				deferToTsmuxer == true && (
+					params.mediaRenderer.isKeepAspectRatio() ||
+					params.mediaRenderer.isKeepAspectRatioTranscoding()
+				) &&
+				!ASPECT_16_9.equals(media.getAspectRatioContainer())
+			) {
 				deferToTsmuxer = false;
 				LOGGER.trace(prependTraceReason + "the renderer needs us to add borders so it displays the correct aspect ratio of " + media.getAspectRatioContainer() + ".");
 			}
