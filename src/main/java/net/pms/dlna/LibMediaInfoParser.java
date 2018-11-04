@@ -8,6 +8,7 @@ import java.util.Locale;
 import java.util.StringTokenizer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import net.pms.configuration.FormatConfiguration;
 import net.pms.configuration.RendererConfiguration;
@@ -19,6 +20,15 @@ import net.pms.formats.v2.SubtitleType;
 import net.pms.image.ImageFormat;
 import net.pms.image.ImagesUtil;
 import net.pms.image.ImagesUtil.ScaleType;
+import net.pms.media.AV1Level;
+import net.pms.media.H262Level;
+import net.pms.media.H263Level;
+import net.pms.media.H264Level;
+import net.pms.media.H265Level;
+import net.pms.media.MPEG4VisualLevel;
+import net.pms.media.VC1Level;
+import net.pms.media.VP9Level;
+import net.pms.media.VideoCodec;
 import net.pms.util.FileUtil;
 import net.pms.util.StringUtil;
 import org.apache.commons.codec.binary.Base64;
@@ -37,6 +47,72 @@ public class LibMediaInfoParser {
 
 	private static final Pattern intPattern = Pattern.compile("([\\+-]?\\d+)([eE][\\+-]?\\d+)?");
 	private static final Pattern lastIntPattern = Pattern.compile("([\\+-]?\\d+)([eE][\\+-]?\\d+)?\\s*$");
+
+	/**
+	 * The {@link Pattern} used to extract profile and level from a simple
+	 * {@code profile@level} notation.
+	 * <p>
+	 * Examples values:
+	 * <ul>
+	 * <li>{@code MP@LL}</li>
+	 * <li>{@code Advanced@High}</li>
+	 * </ul>
+
+	 */
+	private static final Pattern SIMPLE_PROFILE_LEVEL_PATTERN = Pattern.compile(
+		"^\\s*([^@]*[^@\\s])?\\s*@?\\s*(.*\\S)?\\s*$"
+	);
+
+	/**
+	 * The {@link Pattern} used to extract profile and numeric level from a simple
+	 * {@code profile@level} notation.
+	 * <p>
+	 * Examples values:
+	 * <ul>
+	 * <li>{@code Advanced@L1}</li>
+	 * <li>{@code Simple@L3.2}</li>
+	 * <li>{@code Complex@L2}</li>
+	 * </ul>
+	 */
+	private static final Pattern SIMPLE_PROFILE_NUMERIC_LEVEL_PATTERN = Pattern.compile(
+		"^\\s*([^@]*[^@\\s])?\\s*@?\\s*(?:L|LEVEL)?\\s*(\\d+(?:\\.\\d+|,\\d+)?)?\\s*$", Pattern.CASE_INSENSITIVE
+	);
+
+	/**
+	 * The {@link Pattern} used to extract a H.264 profile and level from a
+	 * {@code profile@level} notation.
+	 * <p>
+	 * Examples values:
+	 * <ul>
+	 * <li>{@code High@L3.0 }</li>
+	 * <li>{@code High@L4.0}</li>
+	 * <li>{@code High@L4.1}</li>
+	 * <li>{@code High@L5.2@High}</li>
+	 * <li>{@code Stereo High@L4.1 / High@L4.1}</li>
+	 * </ul>
+	 */
+	private static final Pattern H264_PROFILE_LEVEL_PATTERN = Pattern.compile(
+		"^\\s*([^@]*[^@\\s])?\\s*@?\\s*(?:L|LEVEL)?\\s*([\\db]+(?:\\.\\d+|,\\d+)?)?\\s*(?:@\\S.*\\S)?\\s*(?:/|$)", Pattern.CASE_INSENSITIVE
+	);
+
+	/**
+	 * The {@link Pattern} used to extract a H.265 profile and level from a
+	 * {@code profile@level@sub-profile} notation.
+	 * <p>
+	 * Examples values:
+	 * <ul>
+	 * <li>{@code Main@L4.1@High}</li>
+	 * <li>{@code Main 10@L5@High}</li>
+	 * <li>{@code High@L5.1@High}</li>
+	 * <li>{@code High@L5.2@High}</li>
+	 * <li>{@code High@L6@High}</li>
+	 * <li>{@code Main 10@L6.1@High}</li>
+	 * <li>{@code High@L6.2@High}</li>
+	 * </ul>
+	 */
+	private static final Pattern H265_PROFILE_LEVEL_PATTERN = Pattern.compile(
+		"^\\s*([^@]*[^@\\s])?\\s*@?\\s*(?:L|LEVEL)?\\s*(\\d+(?:\\.\\d+|,\\d+)?)?\\s*(?:@\\S.*\\S)?\\s*(?:/|$)", Pattern.CASE_INSENSITIVE
+	);
 
 	private static MediaInfo MI;
 
@@ -130,7 +206,8 @@ public class LibMediaInfoParser {
 					} else {
 						getFormat(StreamType.Video, media, currentAudioTrack, MI.Get(StreamType.Video, i, "Format"), file);
 						getFormat(StreamType.Video, media, currentAudioTrack, MI.Get(StreamType.Video, i, "Format_Version"), file);
-						getFormat(StreamType.Video, media, currentAudioTrack, MI.Get(StreamType.Video, i, "Format_Profile"), file);
+						value = MI.Get(StreamType.Video, i, "Format_Profile");
+						getFormat(StreamType.Video, media, currentAudioTrack, value, file);
 						getFormat(StreamType.Video, media, currentAudioTrack, MI.Get(StreamType.Video, i, "CodecID"), file);
 						media.setWidth(getPixelValue(MI.Get(StreamType.Video, i, "Width")));
 						media.setHeight(getPixelValue(MI.Get(StreamType.Video, i, "Height")));
@@ -150,6 +227,11 @@ public class LibMediaInfoParser {
 						media.setFrameRateModeRaw(MI.Get(StreamType.Video, i, "FrameRate_Mode"));
 						media.setReferenceFrameCount(getReferenceFrameCount(MI.Get(StreamType.Video, i, "Format_Settings_RefFrames")));
 						media.setVideoTrackTitleFromMetadata(MI.Get(StreamType.Video, i, "Title"));
+
+						if (isNotBlank(value) && media.getCodecV() != null) {
+							setVideoProfileAndLevel(media, value);
+						}
+
 						value = MI.Get(StreamType.Video, i, "Format_Settings_QPel");
 						if (isNotBlank(value)) {
 							media.putExtra(FormatConfiguration.MI_QPEL, value);
@@ -513,6 +595,8 @@ public class LibMediaInfoParser {
 			format = FormatConfiguration.FLV;
 		} else if (value.equals("webm")) {
 			format = FormatConfiguration.WEBM;
+		} else if (value.equals("mxf")) {
+			format = FormatConfiguration.MXF;
 		} else if (value.equals("qt") || value.equals("quicktime")) {
 			format = FormatConfiguration.MOV;
 		} else if (
@@ -540,6 +624,8 @@ public class LibMediaInfoParser {
 			format = FormatConfiguration.MPEGPS;
 		} else if (value.contains("mpeg-ts") || value.equals("bdav")) {
 			format = FormatConfiguration.MPEGTS;
+		} else if (value.equals("mjp2")) {
+			format = FormatConfiguration.MJP2;
 		} else if (value.equals("caf")) {
 			format = FormatConfiguration.CAF;
 		} else if (value.contains("aiff")) {
@@ -568,6 +654,10 @@ public class LibMediaInfoParser {
 			value.equals("wmv2")
 		) {
 			format = FormatConfiguration.WMV;
+		} else if (
+			value.startsWith("dvr")
+		) {
+			media.setContainer(FormatConfiguration.DVRMS);
 		} else if (
 			streamType == StreamType.Video && (
 				value.contains("mjpg") ||
@@ -601,6 +691,8 @@ public class LibMediaInfoParser {
 			format = FormatConfiguration.VP8;
 		} else if (value.startsWith("vp9")) {
 			format = FormatConfiguration.VP9;
+		} else if (value.startsWith("av1")) {
+			format = FormatConfiguration.AV1;
 		} else if (
 			(
 				value.startsWith("div") ||
@@ -651,6 +743,10 @@ public class LibMediaInfoParser {
 			value.equals("wmva")
 		) {
 			format = FormatConfiguration.VC1;
+		} else if (value.equals("vc-3") || value.startsWith("dnxhd")) {
+			format = FormatConfiguration.VC3;
+		} else if (value.startsWith("apr") || value.startsWith("prores")) {
+			format = FormatConfiguration.PRORES;
 		} else if (value.equals("au") || value.equals("uLaw/AU Audio File")) {
 			format = FormatConfiguration.AU;
 		} else if (value.equals("layer 3")) {
@@ -699,22 +795,27 @@ public class LibMediaInfoParser {
 			value.equals("2000")
 		) {
 			format = FormatConfiguration.AC3;
+		} else if (value.equals("e-ac-3")) {
+			format = FormatConfiguration.EAC3;
+		} else if (value.equals("mlp")) {
+			format = FormatConfiguration.MLP;
+		} else if (value.contains("truehd") || value.contains("mlp fba") && !value.contains("mlp fba 16-ch")) {
+			format = FormatConfiguration.TRUEHD;
+		} else if (value.contains("atmos") || value.contains("mlp fba 16-ch") || value.equals("131")) {
+			format = FormatConfiguration.ATMOS;
 		} else if (value.startsWith("cook")) {
 			format = FormatConfiguration.COOK;
 		} else if (value.startsWith("qdesign")) {
 			format = FormatConfiguration.QDESIGN;
 		} else if (value.equals("realaudio lossless")) {
 			format = FormatConfiguration.RALF;
-		} else if (value.equals("e-ac-3")) {
-			format = FormatConfiguration.EAC3;
-		} else if (value.contains("truehd")) {
-			format = FormatConfiguration.TRUEHD;
 		} else if (value.equals("tta")) {
 			format = FormatConfiguration.TTA;
 		} else if (value.equals("55") || value.equals("a_mpeg/l3")) {
 			format = FormatConfiguration.MP3;
 		} else if (
 			value.equals("lc") ||
+			value.equals("aac lc") ||
 			value.equals("00001000-0000-FF00-8000-00AA00389B71") ||
 			(
 				value.equals("aac") &&
@@ -722,19 +823,19 @@ public class LibMediaInfoParser {
 			)
 		) {
 			// mp4a-40-2, enca-67-2
-			format = FormatConfiguration.AAC_LC;
-		} else if (value.equals("ltp")) {
+			format = FormatConfiguration.AAC_LC; // v2 and v4
+		} else if (value.equals("ltp") || value.equals("aac ltp")) {
 			format = FormatConfiguration.AAC_LTP;
-		} else if (value.contains("he-aac")) {
-			format = FormatConfiguration.HE_AAC;
+		} else if (value.contains("he-aac") || value.contains("he-aacv2") || value.equals("aac lc sbr") || value.equals("aac lc sbr ps")) {
+			format = FormatConfiguration.HE_AAC; // v1 and v2
 		} else if (
 			value.equals("er bsac") ||
 			value.equals("mp4a-40-22")
 		) {
 			format = FormatConfiguration.ER_BSAC;
-		} else if (value.equals("main")) {
+		} else if (value.equals("main") || value.equals("aac main")) {
 			format = FormatConfiguration.AAC_MAIN;
-		} else if (value.equals("ssr")) {
+		} else if (value.equals("ssr") || value.equals("aac ssr")) {
 			format = FormatConfiguration.AAC_SSR;
 		} else if (value.startsWith("a_aac/")) {
 			if (value.equals("a_aac/mpeg2/main")) {
@@ -830,8 +931,6 @@ public class LibMediaInfoParser {
 			format = FormatConfiguration.MPC;
 		} else if (value.contains("wavpack")) {
 			format = FormatConfiguration.WAVPACK;
-		} else if (value.contains("mlp")) {
-			format = FormatConfiguration.MLP;
 		} else if (value.equals("openmg")) {
 			format = FormatConfiguration.ATRAC;
 		} else if (value.startsWith("atrac") || value.endsWith("-a119-fffa01e4ce62") || value.endsWith("-88fc-61654f8c836c")) {
@@ -851,13 +950,6 @@ public class LibMediaInfoParser {
 			format = FormatConfiguration.BMP;
 		} else if (value.equals("tiff")) {
 			format = FormatConfiguration.TIFF;
-		} else if (
-			streamType == StreamType.Video &&
-			FormatConfiguration.H264.equals(media.getCodecV()) &&
-			containsIgnoreCase(value, "@l")
-		) {
-			media.setAvcLevel(getAvcLevel(value));
-			media.setH264Profile(getAvcProfile(value));
 		}
 
 		if (format != null) {
@@ -916,32 +1008,6 @@ public class LibMediaInfoParser {
 			LOGGER.trace("", e);
 			return -1;
 		}
-	}
-
-	/**
-	 * @param value {@code Format_Profile} value to parse.
-	 * @return AVC level or {@code null} if could not parse.
-	 */
-	public static String getAvcLevel(String value) {
-		// Example values:
-		// High@L3.0
-		// High@L4.0
-		// High@L4.1
-		final String avcLevel = substringAfterLast(lowerCase(value), "@l");
-		if (isNotBlank(avcLevel)) {
-			return avcLevel;
-		}
-		LOGGER.warn("Could not parse AvcLevel value {}." , value);
-		return null;
-	}
-
-	public static String getAvcProfile(String value) {
-		String profile = substringBefore(lowerCase(value), "@l");
-		if (isNotBlank(profile)) {
-			return profile;
-		}
-		LOGGER.warn("Could not parse AvcProfile value {}." , value);
-		return null;
 	}
 
 	public static int getSpecificID(String value) {
@@ -1198,6 +1264,112 @@ public class LibMediaInfoParser {
 		} catch (NumberFormatException e) {
 			LOGGER.warn("Could not parse duration from \"{}\"", value);
 			return null;
+		}
+	}
+
+	public static void setVideoProfileAndLevel(@Nonnull DLNAMediaInfo media, @Nullable String value) {
+		// Value can look like "Advanced@L1", "Complex@L2", "MP@LL" or "Simple@L3" with VC-1 or MPEG-4 Visual.
+		if (isBlank(value)) {
+			media.setVideoProfile(null);
+			media.setVideoLevel(null);
+			return;
+		}
+
+		VideoCodec codec = media.getVideoCodec();
+		if (codec == null) {
+			media.setVideoProfile(value);
+			media.setVideoLevel(null);
+			return;
+		}
+
+		// Specialized parsing depending on the codec and how LibMediaInfo formats this.
+		Matcher matcher;
+		switch (codec) {
+			case AV1:
+				matcher = SIMPLE_PROFILE_NUMERIC_LEVEL_PATTERN.matcher(value);
+				if (matcher.find()) {
+					media.setVideoProfile(matcher.group(1));
+					media.setVideoLevel(AV1Level.typeOf(matcher.group(2)));
+				} else {
+					media.setVideoProfile(null);
+					media.setVideoLevel(null);
+				}
+				break;
+			case H262:
+				matcher = SIMPLE_PROFILE_LEVEL_PATTERN.matcher(value);
+				if (matcher.find()) {
+					media.setVideoProfile(matcher.group(1));
+					media.setVideoLevel(H262Level.typeOf(matcher.group(2)));
+				} else {
+					media.setVideoProfile(null);
+					media.setVideoLevel(null);
+				}
+				break;
+			case H263:
+				matcher = SIMPLE_PROFILE_NUMERIC_LEVEL_PATTERN.matcher(value);
+				if (matcher.find()) {
+					media.setVideoProfile(matcher.group(1));
+					media.setVideoLevel(H263Level.typeOf(matcher.group(2)));
+				} else {
+					media.setVideoProfile(null);
+					media.setVideoLevel(null);
+				}
+				break;
+			case H264:
+				matcher = H264_PROFILE_LEVEL_PATTERN.matcher(value);
+				if (matcher.find()) {
+					media.setVideoProfile(matcher.group(1));
+					media.setVideoLevel(H264Level.typeOf(matcher.group(2)));
+				} else {
+					media.setVideoProfile(null);
+					media.setVideoLevel(null);
+				}
+				break;
+			case H265:
+				matcher = H265_PROFILE_LEVEL_PATTERN.matcher(value);
+				if (matcher.find()) {
+					media.setVideoProfile(matcher.group(1));
+					media.setVideoLevel(H265Level.typeOf(matcher.group(2)));
+				} else {
+					media.setVideoProfile(null);
+					media.setVideoLevel(null);
+				}
+				break;
+			case MPEG4ASP:
+			case MPEG4SP:
+				matcher = SIMPLE_PROFILE_NUMERIC_LEVEL_PATTERN.matcher(value);
+				if (matcher.find()) {
+					media.setVideoProfile(matcher.group(1));
+					media.setVideoLevel(MPEG4VisualLevel.typeOf(matcher.group(2)));
+				} else {
+					media.setVideoProfile(null);
+					media.setVideoLevel(null);
+				}
+				break;
+			case VC1:
+				matcher = SIMPLE_PROFILE_LEVEL_PATTERN.matcher(value);
+				if (matcher.find()) {
+					media.setVideoProfile(matcher.group(1));
+					media.setVideoLevel(VC1Level.typeOf(matcher.group(2)));
+				} else {
+					media.setVideoProfile(null);
+					media.setVideoLevel(null);
+				}
+				break;
+			case VP9:
+				matcher = SIMPLE_PROFILE_NUMERIC_LEVEL_PATTERN.matcher(value);
+				if (matcher.find()) {
+					media.setVideoProfile(matcher.group(1));
+					media.setVideoLevel(VP9Level.typeOf(matcher.group(2)));
+				} else {
+					media.setVideoProfile(null);
+					media.setVideoLevel(null);
+				}
+				break;
+			default:
+				media.setVideoProfile(value);
+				media.setVideoLevel(null);
+				break;
 		}
 	}
 

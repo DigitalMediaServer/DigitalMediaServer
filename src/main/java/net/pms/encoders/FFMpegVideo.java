@@ -57,6 +57,9 @@ import net.pms.formats.FormatType;
 import net.pms.formats.PLAYLIST;
 import net.pms.formats.v2.SubtitleType;
 import net.pms.io.*;
+import net.pms.media.H264Level;
+import net.pms.media.VideoCodec;
+import net.pms.media.VideoLevel;
 import net.pms.network.HTTPResource;
 import net.pms.newgui.GuiUtil;
 import net.pms.platform.windows.NTStatus;
@@ -414,8 +417,13 @@ public class FFMpegVideo extends Player {
 					transcodeOptions.add("ultrafast");
 				}
 				if (!customFFmpegOptions.contains("-level")) {
-					transcodeOptions.add("-level");
-					transcodeOptions.add("31");
+					VideoLevel level = renderer.getVideoLevelLimit(
+						renderer.isTranscodeToH264() ? VideoCodec.H264 : VideoCodec.H265
+					);
+					if (level != null) {
+						transcodeOptions.add("-level");
+						transcodeOptions.add(level.toString(false));
+					}
 				}
 				if (!customFFmpegOptions.contains("-pix_fmt")) {
 					transcodeOptions.add("-pix_fmt");
@@ -460,7 +468,7 @@ public class FFMpegVideo extends Player {
 		int defaultMaxBitrates[] = getVideoBitrateConfig(configuration.getMaximumBitrate());
 		int rendererMaxBitrates[] = new int[2];
 
-		if (StringUtils.isNotEmpty(params.mediaRenderer.getMaxVideoBitrate())) {
+		if (isNotBlank(params.mediaRenderer.getMaxVideoBitrate())) {
 			rendererMaxBitrates = getVideoBitrateConfig(params.mediaRenderer.getMaxVideoBitrate());
 		}
 
@@ -484,7 +492,7 @@ public class FFMpegVideo extends Player {
 		boolean isXboxOneWebVideo = params.mediaRenderer.isXboxOne() && purpose() == VIDEO_WEBSTREAM_PLAYER;
 		int maximumBitrate = defaultMaxBitrates[0];
 
-		if (params.mediaRenderer.getCBRVideoBitrate() == 0 && params.timeend == 0) {
+		if (params.mediaRenderer.getCBRVideoBitrate() < 1 && params.timeend == 0) {
 			if (rendererMaxBitrates[0] < 0) {
 				// odd special case here
 				// this is -1 so we guess that 3000 kbps is good
@@ -513,7 +521,7 @@ public class FFMpegVideo extends Player {
 			 */
 			if (!isXboxOneWebVideo && params.mediaRenderer.isTranscodeToH264()) {
 				if (
-					params.mediaRenderer.isH264Level41Limited() &&
+					params.mediaRenderer.getVideoLevelLimit(VideoCodec.H264) == H264Level.L4_1 &&
 					defaultMaxBitrates[0] > 31250
 				) {
 					defaultMaxBitrates[0] = 31250;
@@ -944,6 +952,7 @@ public class FFMpegVideo extends Player {
 		if (!(renderer instanceof RendererConfiguration.OutputOverride) && configuration.isFFmpegMuxWithTsMuxerWhenCompatible()) {
 			// Decide whether to defer to tsMuxeR or continue to use FFmpeg
 			boolean deferToTsmuxer = true;
+			VideoLevel videoLevelLimit = params.mediaRenderer.getVideoLevelLimit(media.getVideoCodec());
 			String prependTraceReason = "Not muxing the video stream with tsMuxeR via FFmpeg because ";
 			if (deferToTsmuxer == true && !configuration.getHideTranscodeEnabled() && dlna.isNoName() && (dlna.getParent() instanceof FileTranscodeVirtualFolder)) {
 				deferToTsmuxer = false;
@@ -961,9 +970,25 @@ public class FFMpegVideo extends Player {
 				deferToTsmuxer = false;
 				LOGGER.trace(prependTraceReason + "we are using AviSynth.");
 			}
-			if (deferToTsmuxer == true && params.mediaRenderer.isH264Level41Limited() && !media.isVideoWithinH264LevelLimits(newInput, params.mediaRenderer)) {
+			if (
+				deferToTsmuxer == true &&
+				videoLevelLimit != null &&
+				!videoLevelLimit.isGreaterThanOrEqualTo(media.getVideoLevel())
+			) {
 				deferToTsmuxer = false;
-				LOGGER.trace(prependTraceReason + "the video stream is not within H.264 level limits for this renderer.");
+				if (LOGGER.isTraceEnabled()) {
+					VideoLevel level = media.getVideoLevel();
+					if (level == null) {
+						LOGGER.trace(prependTraceReason + "the {} level is unknown", media.getVideoCodec());
+					} else {
+						LOGGER.trace(
+							prependTraceReason + "the {} level ({}) is above the limit ({}) for this renderer",
+							media.getVideoCodec(),
+							level.toString(false),
+							videoLevelLimit.toString(false)
+						);
+					}
+				}
 			}
 			if (deferToTsmuxer == true && !media.isMuxable(params.mediaRenderer)) {
 				deferToTsmuxer = false;
@@ -1262,7 +1287,14 @@ public class FFMpegVideo extends Player {
 					}
 				}
 
-				pwMux.println(videoType + ", \"" + ffVideoPipe.getOutputPipe() + "\", " + fps + "level=4.1, insertSEI, contSPS, track=1");
+				// XXX This is questionable, it's unclear of the codec is always H.264
+				// and what the consequence of omitting the "level" parameter is
+				VideoLevel level = params.mediaRenderer.getVideoLevelLimit(VideoCodec.H264);
+				pwMux.println(
+					videoType + ", \"" + ffVideoPipe.getOutputPipe() + "\", " + fps +
+					(level != null ? "level=" + level.toString(false) + ", " : "") +
+					"insertSEI, contSPS, track=1"
+				);
 				pwMux.println(audioType + ", \"" + ffAudioPipe.getOutputPipe() + "\", track=2");
 			}
 

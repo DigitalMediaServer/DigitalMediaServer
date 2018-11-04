@@ -24,7 +24,6 @@ import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.*;
 import java.util.Map.Entry;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 import javax.annotation.Nullable;
 import net.pms.PMS;
 import net.pms.configuration.FormatConfiguration;
@@ -48,6 +47,8 @@ import net.pms.image.ImagesUtil.ScaleType;
 import net.pms.image.thumbnail.CoverUtil;
 import net.pms.io.OutputParams;
 import net.pms.io.ProcessWrapperImpl;
+import net.pms.media.VideoCodec;
+import net.pms.media.VideoLevel;
 import net.pms.network.HTTPResource;
 import net.pms.util.FileUtil;
 import net.pms.util.MpegUtil;
@@ -124,9 +125,6 @@ public class DLNAMediaInfo implements Cloneable {
 		audioOrVideoContainers = Collections.unmodifiableMap(mutableAudioOrVideoContainers);
 	}
 
-	private final Object videoWithinH264LevelLimitsLock = new Object();
-	private Boolean videoWithinH264LevelLimits = null;
-
 	// Stored in database
 	@Nullable
 	private Double durationSec;
@@ -197,14 +195,10 @@ public class DLNAMediaInfo implements Cloneable {
 	@Deprecated
 	public int bitsPerPixel;
 
-	private final ReentrantReadWriteLock referenceFrameCountLock = new ReentrantReadWriteLock();
 	private int referenceFrameCount = -1;
 
-	private final ReentrantReadWriteLock avcLevelLock = new ReentrantReadWriteLock();
-	private String avcLevel = null;
-
-	private final Object h264ProfileLock = new Object();
-	private String h264Profile = null;
+	private VideoLevel videoLevel;
+	private String videoProfile;
 
 	private List<DLNAMediaAudio> audioTracks = new ArrayList<>();
 	private List<DLNAMediaSubtitle> subtitleTracks = new ArrayList<>();
@@ -284,9 +278,6 @@ public class DLNAMediaInfo implements Cloneable {
 	private final Object ffmpeg_failureLock = new Object();
 	private boolean ffmpeg_failure = false;
 
-	private final Object ffmpeg_annexb_failureLock = new Object();
-	private boolean ffmpeg_annexb_failure;
-	private boolean muxable;
 	private Map<String, String> extras;
 
 	/**
@@ -422,11 +413,6 @@ public class DLNAMediaInfo implements Cloneable {
 	 * Also used by DLNAResource to help determine the DLNA.ORG_PN (file type)
 	 * value to send to the renderer.
 	 *
-	 * Some of this code is repeated in isVideoWithinH264LevelLimits(), and since
-	 * both functions are sometimes (but not always) used together, this is
-	 * not an efficient use of code.
-	 *
-	 * TODO: Fix the above situation.
 	 * TODO: Now that FFmpeg is muxing without tsMuxeR, we should make a separate
 	 *       function for that, or even better, re-think this whole approach.
 	 *
@@ -436,8 +422,8 @@ public class DLNAMediaInfo implements Cloneable {
 	 */
 	public boolean isMuxable(RendererConfiguration mediaRenderer) {
 		// Make sure the file is H.264 video
-		if (isH264()) {
-			muxable = true;
+		if (!isH264()) {
+			return false;
 		}
 
 		// Check if the renderer supports the resolution of the video
@@ -454,17 +440,17 @@ public class DLNAMediaInfo implements Cloneable {
 				!isMod4()
 			)
 		) {
-			muxable = false;
+			return false;
 		}
 
 		// Temporary fix: MediaInfo support will take care of this in the future
 		// For now, http://ps3mediaserver.org/forum/viewtopic.php?f=11&t=6361&start=0
 		// Bravia does not support AVC video at less than 288px high
 		if (mediaRenderer.isBRAVIA() && height < 288) {
-			muxable = false;
+			return false;
 		}
 
-		return muxable;
+		return true;
 	}
 
 	/**
@@ -893,7 +879,7 @@ public class DLNAMediaInfo implements Cloneable {
 					}
 
 					// Set container for formats that the normal parsing fails to do from Format
-					if (StringUtils.isBlank(container) && ext != null) {
+					if (isBlank(container) && ext != null) {
 						if (ext.getIdentifier() == Identifier.ADPCM) {
 							audio.setCodecA(FormatConfiguration.ADPCM);
 						} else if (ext.getIdentifier() == Identifier.DSF) {
@@ -903,7 +889,7 @@ public class DLNAMediaInfo implements Cloneable {
 						}
 					}
 
-					if (StringUtils.isNotBlank(audio.getSongname())) {
+					if (isNotBlank(audio.getSongname())) {
 						if (renderer != null && renderer.isPrependTrackNumbers() && audio.getTrack() > 0) {
 							audio.setSongname(audio.getTrack() + ": " + audio.getSongname());
 						}
@@ -915,7 +901,7 @@ public class DLNAMediaInfo implements Cloneable {
 						audioTracks.add(audio);
 					}
 				}
-				if (StringUtils.isBlank(container)) {
+				if (isBlank(container)) {
 					container = audio.getCodecA();
 				}
 			}
@@ -1385,18 +1371,30 @@ public class DLNAMediaInfo implements Cloneable {
 	}
 
 	/**
-	 * Whether the file contains H.264 (AVC) video.
+	 * Returns whether this media contains a H.264 (AVC) video.
 	 *
-	 * @return {boolean}
+	 * @return {@code true} if this media contains a H.264 video stream,
+	 *         {@code false} otherwise.
 	 */
 	public boolean isH264() {
-		return codecV != null && codecV.equals("h264");
+		return FormatConfiguration.H264.equals(codecV);
 	}
 
 	/**
-	 * Whether the file contains MPEG-4 video.
+	 * Returns whether this media contains a H.265 (HEVC) video.
 	 *
-	 * @return {boolean}
+	 * @return {@code true} if this media contains a H.265 video stream,
+	 *         {@code false} otherwise.
+	 */
+	public boolean isH265() {
+		return FormatConfiguration.H265.equals(codecV) || codecV != null && codecV.startsWith("hevc");
+	}
+
+	/**
+	 * Returns whether this media contains a MPEG-4 Visual video.
+	 *
+	 * @return {@code true} if this media contains a MPEG-4 Visual video stream,
+	 *         {@code false} otherwise.
 	 */
 	public boolean isMPEG4() {
 		return FormatConfiguration.MPEG4ASP.equals(codecV) || FormatConfiguration.MPEG4SP.equals(codecV);
@@ -1471,27 +1469,64 @@ public class DLNAMediaInfo implements Cloneable {
 	}
 
 	public void postParse(InputFile f) {
-		String codecA = null;
-		if (getFirstAudioTrack() != null) {
-			codecA = getFirstAudioTrack().getCodecA();
-		}
-
 		if (container != null) {
 			switch (container) {
+				case FormatConfiguration.THREEGPP:
+					mimeType = HTTPResource.THREEGPP_TYPEMIME;
+					break;
+				case FormatConfiguration.THREEGPP2:
+					mimeType = HTTPResource.THREEGPP2_TYPEMIME;
+					break;
 				case FormatConfiguration.AVI:
 					mimeType = HTTPResource.AVI_TYPEMIME;
 					break;
 				case FormatConfiguration.ASF:
+				case FormatConfiguration.DVRMS:
 					mimeType = HTTPResource.ASF_TYPEMIME;
+					break;
+				case FormatConfiguration.DIVX:
+					mimeType = HTTPResource.DIVX_TYPEMIME;
 					break;
 				case FormatConfiguration.FLV:
 					mimeType = HTTPResource.FLV_TYPEMIME;
 					break;
-				case FormatConfiguration.WMV:
-					mimeType = HTTPResource.WMV_TYPEMIME;
+				case FormatConfiguration.MJP2:
+					mimeType = HTTPResource.MJP2_TYPEMIME;
+					break;
+				case FormatConfiguration.MKV:
+					mimeType = HTTPResource.MATROSKA_TYPEMIME;
 					break;
 				case FormatConfiguration.MOV:
 					mimeType = HTTPResource.MOV_TYPEMIME;
+					break;
+				case FormatConfiguration.MP4:
+					mimeType = HTTPResource.MP4_TYPEMIME;
+					break;
+				case FormatConfiguration.MPEGPS:
+				case FormatConfiguration.MPEG1:
+				case FormatConfiguration.MPEG2:
+					mimeType = HTTPResource.MPEG_TYPEMIME;
+					break;
+				case FormatConfiguration.MPEGTS:
+					mimeType = HTTPResource.MPEGTS_TYPEMIME;
+					break;
+				case FormatConfiguration.MXF:
+					mimeType = HTTPResource.MXF_TYPEMIME;
+					break;
+				case FormatConfiguration.OGG:
+					mimeType = HTTPResource.OGG_TYPEMIME;
+					break;
+				case FormatConfiguration.RM:
+					mimeType = HTTPResource.RM_TYPEMIME;
+					break;
+				case FormatConfiguration.WEBM:
+					mimeType = HTTPResource.AUDIO_WEBM_TYPEMIME;
+					break;
+				case FormatConfiguration.WMV:
+					mimeType = HTTPResource.WMV_TYPEMIME;
+					break;
+				case FormatConfiguration.AC3:
+					mimeType = HTTPResource.AUDIO_AC3_TYPEMIME;
 					break;
 				case FormatConfiguration.ADPCM:
 					mimeType = HTTPResource.AUDIO_ADPCM_TYPEMIME;
@@ -1499,14 +1534,23 @@ public class DLNAMediaInfo implements Cloneable {
 				case FormatConfiguration.ADTS:
 					mimeType = HTTPResource.AUDIO_ADTS_TYPEMIME;
 					break;
-				case FormatConfiguration.M4A:
-					mimeType = HTTPResource.AUDIO_M4A_TYPEMIME;
+				case FormatConfiguration.AIFF:
+					mimeType = HTTPResource.AUDIO_AIFF_TYPEMIME;
 					break;
-				case FormatConfiguration.AC3:
-					mimeType = HTTPResource.AUDIO_AC3_TYPEMIME;
+				case FormatConfiguration.AIFC:
+					mimeType = HTTPResource.AUDIO_AIFC_TYPEMIME;
+					break;
+				case FormatConfiguration.AMR:
+					mimeType = HTTPResource.AUDIO_AMR_TYPEMIME;
+					break;
+				case FormatConfiguration.ATRAC:
+					mimeType = HTTPResource.AUDIO_ATRAC_TYPEMIME;
 					break;
 				case FormatConfiguration.AU:
 					mimeType = HTTPResource.AUDIO_AU_TYPEMIME;
+					break;
+				case FormatConfiguration.CAF:
+					mimeType = HTTPResource.AUDIO_CAF_TYPEMIME;
 					break;
 				case FormatConfiguration.DFF:
 					mimeType = HTTPResource.AUDIO_DFF_TYPEMIME;
@@ -1514,23 +1558,30 @@ public class DLNAMediaInfo implements Cloneable {
 				case FormatConfiguration.DSF:
 					mimeType = HTTPResource.AUDIO_DSF_TYPEMIME;
 					break;
+				case FormatConfiguration.DTS:
+					mimeType = HTTPResource.AUDIO_DTS_TYPEMIME;
+					break;
+				case FormatConfiguration.DTSHD:
+					mimeType = HTTPResource.AUDIO_DTSHD_TYPEMIME;
+					break;
 				case FormatConfiguration.EAC3:
 					mimeType = HTTPResource.AUDIO_EAC3_TYPEMIME;
 					break;
+				case FormatConfiguration.FLAC:
+					mimeType = HTTPResource.AUDIO_FLAC_TYPEMIME;
+					break;
+				case FormatConfiguration.LPCM:
+					mimeType = HTTPResource.AUDIO_LPCM_TYPEMIME;
+				case FormatConfiguration.M4A:
+					mimeType = HTTPResource.AUDIO_M4A_TYPEMIME;
+					break;
 				case FormatConfiguration.MPA:
+				case FormatConfiguration.MP1:
+				case FormatConfiguration.MP2:
 					mimeType = HTTPResource.AUDIO_MPA_TYPEMIME;
 					break;
-				case FormatConfiguration.MP2:
-					mimeType = HTTPResource.AUDIO_MP2_TYPEMIME;
-					break;
-				case FormatConfiguration.AIFC:
-					mimeType = HTTPResource.AUDIO_AIFC_TYPEMIME;
-					break;
-				case FormatConfiguration.AIFF:
-					mimeType = HTTPResource.AUDIO_AIFF_TYPEMIME;
-					break;
-				case FormatConfiguration.ATRAC:
-					mimeType = HTTPResource.AUDIO_ATRAC_TYPEMIME;
+				case FormatConfiguration.MP3:
+					mimeType = HTTPResource.AUDIO_MP3_TYPEMIME;
 					break;
 				case FormatConfiguration.MKA:
 					mimeType = HTTPResource.AUDIO_MKA_TYPEMIME;
@@ -1544,23 +1595,20 @@ public class DLNAMediaInfo implements Cloneable {
 				case FormatConfiguration.MPC:
 					mimeType = HTTPResource.AUDIO_MPC_TYPEMIME;
 					break;
-				case FormatConfiguration.OGG:
-					mimeType = HTTPResource.OGG_TYPEMIME;
-					break;
 				case FormatConfiguration.OGA:
 					mimeType = HTTPResource.AUDIO_OGA_TYPEMIME;
 					break;
 				case FormatConfiguration.RA:
 					mimeType = HTTPResource.AUDIO_RA_TYPEMIME;
 					break;
-				case FormatConfiguration.RM:
-					mimeType = HTTPResource.RM_TYPEMIME;
-					break;
 				case FormatConfiguration.SHORTEN:
 					mimeType = HTTPResource.AUDIO_SHN_TYPEMIME;
 					break;
 				case FormatConfiguration.THREEGA:
 					mimeType = HTTPResource.AUDIO_THREEGPPA_TYPEMIME;
+					break;
+				case FormatConfiguration.THREEG2A:
+					mimeType = HTTPResource.AUDIO_THREEGPP2A_TYPEMIME;
 					break;
 				case FormatConfiguration.TRUEHD:
 					mimeType = HTTPResource.AUDIO_TRUEHD_TYPEMIME;
@@ -1581,83 +1629,29 @@ public class DLNAMediaInfo implements Cloneable {
 				case FormatConfiguration.WMA10:
 					mimeType = HTTPResource.AUDIO_WMA_TYPEMIME;
 					break;
+				case FormatConfiguration.BMP:
+					mimeType = HTTPResource.BMP_TYPEMIME;
+					break;
+				case FormatConfiguration.GIF:
+					mimeType = HTTPResource.GIF_TYPEMIME;
+					break;
+				case FormatConfiguration.JPG:
+					mimeType = HTTPResource.JPEG_TYPEMIME;
+					break;
+				case FormatConfiguration.PNG:
+					mimeType = HTTPResource.PNG_TYPEMIME;
+					break;
+				case FormatConfiguration.TIFF:
+					mimeType = HTTPResource.TIFF_TYPEMIME;
+					break;
+				case FormatConfiguration.WEBP:
+					mimeType = HTTPResource.WEBP_TYPEMIME;
+					break;
 			}
 		}
 
 		if (mimeType == null) {
-			if (codecV != null) {
-				if ("matroska".equals(container) || "mkv".equals(container)) {
-					mimeType = HTTPResource.MATROSKA_TYPEMIME;
-				} else if ("ogg".equals(container)) {
-					mimeType = HTTPResource.OGG_TYPEMIME;
-				} else if ("3gp".equals(container)) {
-					mimeType = HTTPResource.THREEGPP_TYPEMIME;
-				} else if ("3g2".equals(container)) {
-					mimeType = HTTPResource.THREEGPP2_TYPEMIME;
-				} else if ("webm".equals(container)) {
-					mimeType = HTTPResource.WEBM_TYPEMIME;
-				} else if (container.startsWith("flash")) {
-					mimeType = HTTPResource.FLV_TYPEMIME;
-				} else if (codecV.equals("mjpeg") || "jpg".equals(container)) {
-					mimeType = HTTPResource.JPEG_TYPEMIME;
-				} else if ("png".equals(codecV) || "png".equals(container)) {
-					mimeType = HTTPResource.PNG_TYPEMIME;
-				} else if ("gif".equals(codecV) || "gif".equals(container)) {
-					mimeType = HTTPResource.GIF_TYPEMIME;
-				} else if ("tiff".equals(codecV) || "tiff".equals(container)) {
-					mimeType = HTTPResource.TIFF_TYPEMIME;
-				} else if ("bmp".equals(codecV) || "bmp".equals(container)) {
-					mimeType = HTTPResource.BMP_TYPEMIME;
-				} else if (codecV.startsWith("h264") || codecV.equals("h263") || codecV.equals("mpeg4") || codecV.equals("mp4")) {
-					mimeType = HTTPResource.MP4_TYPEMIME;
-				} else if (codecV.contains("mpeg") || codecV.contains("mpg")) {
-					mimeType = HTTPResource.MPEG_TYPEMIME;
-				}
-			} else if (codecV == null && codecA != null) {
-				if ("ogg".equals(container) || "oga".equals(container)) {
-					mimeType = HTTPResource.AUDIO_OGA_TYPEMIME;
-				} else if ("3gp".equals(container)) {
-					mimeType = HTTPResource.AUDIO_THREEGPPA_TYPEMIME;
-				} else if ("3g2".equals(container)) {
-					mimeType = HTTPResource.AUDIO_THREEGPP2A_TYPEMIME;
-				} else if ("adts".equals(container)) {
-					mimeType = HTTPResource.AUDIO_ADTS_TYPEMIME;
-				} else if ("matroska".equals(container) || "mkv".equals(container)) {
-					mimeType = HTTPResource.AUDIO_MKA_TYPEMIME;
-				} else if ("webm".equals(container)) {
-					mimeType = HTTPResource.AUDIO_WEBM_TYPEMIME;
-				} else if (codecA.contains("mp3")) {
-					mimeType = HTTPResource.AUDIO_MP3_TYPEMIME;
-				} else if (codecA.equals(FormatConfiguration.MPA)) {
-					mimeType = HTTPResource.AUDIO_MPA_TYPEMIME;
-				} else if (codecA.equals(FormatConfiguration.MP2)) {
-					mimeType = HTTPResource.AUDIO_MP2_TYPEMIME;
-				} else if (codecA.contains("flac")) {
-					mimeType = HTTPResource.AUDIO_FLAC_TYPEMIME;
-				} else if (codecA.contains("vorbis")) {
-					mimeType = HTTPResource.AUDIO_VORBIS_TYPEMIME;
-				} else if (codecA.contains("asf") || codecA.startsWith("wm")) {
-					mimeType = HTTPResource.AUDIO_WMA_TYPEMIME;
-				} else if (codecA.equals(FormatConfiguration.TRUEHD)) {
-					mimeType = HTTPResource.AUDIO_TRUEHD_TYPEMIME;
-				} else if (codecA.equals(FormatConfiguration.DTS)) {
-					mimeType = HTTPResource.AUDIO_DTS_TYPEMIME;
-				} else if (codecA.equals(FormatConfiguration.DTSHD)) {
-					mimeType = HTTPResource.AUDIO_DTSHD_TYPEMIME;
-				} else if (codecA.equals(FormatConfiguration.EAC3)) {
-					mimeType = HTTPResource.AUDIO_EAC3_TYPEMIME;
-				} else if (codecA.equals(FormatConfiguration.ADPCM)) {
-					mimeType = HTTPResource.AUDIO_ADPCM_TYPEMIME;
-				} else if (codecA.equals(FormatConfiguration.DFF)) {
-					mimeType = HTTPResource.AUDIO_DFF_TYPEMIME;
-				} else if (codecA.equals(FormatConfiguration.DSF)) {
-					mimeType = HTTPResource.AUDIO_DSF_TYPEMIME;
-				}
-			}
-
-			if (mimeType == null) {
-				mimeType = HTTPResource.getDefaultMimeType(getMediaType());
-			}
+			mimeType = HTTPResource.getDefaultMimeType(getMediaType());
 		}
 
 		MediaType mediaType = getMediaType();
@@ -1674,120 +1668,6 @@ public class DLNAMediaInfo implements Cloneable {
 		// Check for external subs here
 		if (f.getFile() != null && mediaType == MediaType.VIDEO && configuration.isAutoloadExternalSubtitles()) {
 			FileUtil.isSubtitlesExists(f.getFile(), this);
-		}
-	}
-
-	/**
-	 * Checks whether the video has too many reference frames per pixels for the
-	 * renderer.
-	 *
-	 * TODO move to PlayerUtil
-	 */
-	public boolean isVideoWithinH264LevelLimits(InputFile f, RendererConfiguration mediaRenderer) {
-		synchronized (videoWithinH264LevelLimitsLock) {
-			if (videoWithinH264LevelLimits == null) {
-				if (isH264()) {
-					videoWithinH264LevelLimits = true;
-					if (
-						container != null &&
-						(
-							container.equals("matroska") ||
-							container.equals("mkv") ||
-							container.equals("mov") ||
-							container.equals("mp4")
-						)
-					) { // Containers without h264_annexB
-						byte headers[][] = getAnnexBFrameHeader(f);
-						synchronized (ffmpeg_annexb_failureLock) {
-							if (ffmpeg_annexb_failure) {
-								LOGGER.info("Error parsing information from the file: " + f.getFilename());
-							}
-						}
-
-						if (headers != null) {
-							synchronized (h264_annexBLock) {
-								h264_annexB = headers[1];
-								if (h264_annexB != null) {
-									int skip = 5;
-									if (h264_annexB[2] == 1) {
-										skip = 4;
-									}
-									byte header[] = new byte[h264_annexB.length - skip];
-									System.arraycopy(h264_annexB, skip, header, 0, header.length);
-
-									avcLevelLock.readLock().lock();
-									referenceFrameCountLock.readLock().lock();
-									try {
-										if (
-											referenceFrameCount > -1 &&
-											(
-												"4.1".equals(avcLevel) ||
-												"4.2".equals(avcLevel) ||
-												"5".equals(avcLevel) ||
-												"5.0".equals(avcLevel) ||
-												"5.1".equals(avcLevel) ||
-												"5.2".equals(avcLevel)
-											) &&
-											width > 0 &&
-											height > 0
-										) {
-											int maxref;
-											if (mediaRenderer == null || mediaRenderer.isPS3()) {
-												/**
-												 * 2013-01-25: Confirmed maximum reference frames on PS3:
-												 *    - 4 for 1920x1080
-												 *    - 11 for 1280x720
-												 * Meaning this math is correct
-												 */
-												maxref = (int) Math.floor(10252743 / (double) (width * height));
-											} else {
-												/**
-												 * This is the math for level 4.1, which results in:
-												 *    - 4 for 1920x1080
-												 *    - 9 for 1280x720
-												 */
-												maxref = (int) Math.floor(8388608 / (double) (width * height));
-											}
-
-											if (referenceFrameCount > maxref) {
-												LOGGER.debug(
-													"The file \"{}\" is not compatible with this renderer because it " +
-													"can only take {} reference frames at this resolution while this " +
-													"file has {} reference frames",
-													f.getFilename(),
-													maxref, referenceFrameCount
-												);
-												videoWithinH264LevelLimits = false;
-											} else if (referenceFrameCount == -1) {
-												LOGGER.debug(
-													"The file \"{}\" may not be compatible with this renderer because " +
-													"we can't get its number of reference frames",
-													f.getFilename()
-												);
-												videoWithinH264LevelLimits = false;
-											}
-										}
-									} finally {
-										referenceFrameCountLock.readLock().unlock();
-										avcLevelLock.readLock().unlock();
-									}
-								} else {
-									LOGGER.debug(
-										"The H.264 stream inside the file \"{}\" is not compatible with this renderer",
-										f.getFilename()
-									);
-									videoWithinH264LevelLimits = false;
-								}
-							}
-						} else {
-							videoWithinH264LevelLimits = false;
-						}
-					}
-				} else {
-					videoWithinH264LevelLimits = false;
-				}
-			}
-			return videoWithinH264LevelLimits;
 		}
 	}
 
@@ -1818,7 +1698,14 @@ public class DLNAMediaInfo implements Cloneable {
 				result.append(", Video Bitrate Mode: ").append(bitRateMode);
 			}
 			result.append(", Video Tracks: ").append(getVideoTrackCount());
-			result.append(", Video Codec: ").append(getCodecV());
+			result.append(", codecV: ").append(getCodecV());
+			result.append(", Video Codec: ").append(getVideoCodec());
+			if (isNotBlank(videoProfile)) {
+				result.append(", Video Format Profile: ").append(videoProfile);
+			}
+			if (videoLevel != null) {
+				result.append(", Video Level: ").append(videoLevel.toString(false));
+			}
 			result.append(", Duration: ").append(getDurationString());
 			result.append(", Video Resolution: ").append(getWidth()).append(" x ").append(getHeight());
 			if (aspectRatioContainer != null) {
@@ -1859,12 +1746,6 @@ public class DLNAMediaInfo implements Cloneable {
 			if (isNotBlank(getMatrixCoefficients())) {
 				result.append(", Matrix Coefficients: ").append(getMatrixCoefficients());
 			}
-			if (isNotBlank(avcLevel)) {
-				result.append(", AVC Level: ").append(getAvcLevel());
-			}
-//			if (isNotBlank(getHevcLevel())) {
-//				result.append(", HEVC Level: ");
-//				result.append(getHevcLevel());
 			if (getVideoBitDepth() != 8) {
 				result.append(", Video Bit Depth: ").append(getVideoBitDepth());
 			}
@@ -2048,96 +1929,6 @@ public class DLNAMediaInfo implements Cloneable {
 		return container != null && container.equals("mpegts");
 	}
 
-	public byte[][] getAnnexBFrameHeader(InputFile f) {
-		String[] cmdArray = new String[14];
-		cmdArray[0] = PlayerFactory.getPlayerExecutable(StandardPlayerId.FFMPEG_VIDEO);
-		if (cmdArray[0] == null) {
-			LOGGER.warn("Cannot process Annex B Frame Header is FFmpeg executable is undefined");
-			return null;
-		}
-		cmdArray[1] = "-i";
-
-		if (f.getPush() == null && f.getFilename() != null) {
-			cmdArray[2] = f.getFilename();
-		} else {
-			cmdArray[2] = "-";
-		}
-
-		cmdArray[3] = "-vframes";
-		cmdArray[4] = "1";
-		cmdArray[5] = "-c:v";
-		cmdArray[6] = "copy";
-		cmdArray[7] = "-f";
-		cmdArray[8] = "h264";
-		cmdArray[9] = "-bsf";
-		cmdArray[10] = "h264_mp4toannexb";
-		cmdArray[11] = "-an";
-		cmdArray[12] = "-y";
-		cmdArray[13] = "pipe:";
-
-		byte[][] returnData = new byte[2][];
-		OutputParams params = new OutputParams(configuration);
-		params.maxBufferSize = 1;
-		params.stdin = f.getPush();
-
-		final ProcessWrapperImpl pw = new ProcessWrapperImpl(cmdArray, true, params);
-
-		Runnable r = new Runnable() {
-			@Override
-			public void run() {
-				try {
-					Thread.sleep(3000);
-					synchronized (ffmpeg_annexb_failureLock) {
-						ffmpeg_annexb_failure = true;
-					}
-				} catch (InterruptedException e) { }
-				pw.stopProcess();
-			}
-		};
-
-		Thread failsafe = new Thread(r, "FFMpeg AnnexB Frame Header Failsafe");
-		failsafe.start();
-		pw.runInSameThread();
-
-		synchronized (ffmpeg_annexb_failureLock) {
-			if (ffmpeg_annexb_failure) {
-				return null;
-			}
-		}
-
-		byte data[] = pw.getOutputByteArray().toByteArray();
-		returnData[0] = data;
-		int kf = 0;
-
-		for (int i = 3; i < data.length; i++) {
-			if (data[i - 3] == 1 && (data[i - 2] & 37) == 37 && (data[i - 1] & -120) == -120) {
-				kf = i - 2;
-				break;
-			}
-		}
-
-		int st = 0;
-		boolean found = false;
-
-		if (kf > 0) {
-			for (int i = kf; i >= 5; i--) {
-				if (data[i - 5] == 0 && data[i - 4] == 0 && data[i - 3] == 0 && (data[i - 2] & 1) == 1 && (data[i - 1] & 39) == 39) {
-					st = i - 5;
-					found = true;
-					break;
-				}
-			}
-		}
-
-		if (found) {
-			byte header[] = new byte[kf - st];
-			System.arraycopy(data, st, header, 0, kf - st);
-			returnData[1] = header;
-		}
-
-		return returnData;
-	}
-
 	@Override
 	protected DLNAMediaInfo clone() throws CloneNotSupportedException {
 		DLNAMediaInfo mediaCloned = (DLNAMediaInfo) super.clone();
@@ -2243,6 +2034,21 @@ public class DLNAMediaInfo implements Cloneable {
 	 */
 	public String getCodecV() {
 		return codecV;
+	}
+
+	/**
+	 * Gets the {@link VideoCodec} for this media.
+	 * <p>
+	 * <b>Note:</b> This is currently a "transitional method" which parses the
+	 * {@link VideoCodec} based on the old {@link String}-based video codec
+	 * value. If the parsing fails, {@code null} will be returned. That doesn't
+	 * necessarily mean that no {@code codecV} is set.
+	 *
+	 * @return The {@link VideoCodec} or {@code null}.
+	 */
+	@Nullable
+	public VideoCodec getVideoCodec() {
+		return codecV == null ? null : VideoCodec.typeOf(codecV);
 	}
 
 	/**
@@ -2671,12 +2477,7 @@ public class DLNAMediaInfo implements Cloneable {
 	 * @return The reference frame count for the video stream or {@code -1}.
 	 */
 	public int getReferenceFrameCount() {
-		referenceFrameCountLock.readLock().lock();
-		try {
-			return referenceFrameCount;
-		} finally {
-			referenceFrameCountLock.readLock().unlock();
-		}
+		return referenceFrameCount;
 	}
 
 	/**
@@ -2685,61 +2486,48 @@ public class DLNAMediaInfo implements Cloneable {
 	 * @param referenceFrameCount the reference frame count.
 	 */
 	public void setReferenceFrameCount(int referenceFrameCount) {
-		if (referenceFrameCount < -1) {
-			throw new IllegalArgumentException("referenceFrameCount must be >= -1.");
-		}
-		referenceFrameCountLock.writeLock().lock();
-		try {
-			this.referenceFrameCount = referenceFrameCount;
-		} finally {
-			referenceFrameCountLock.writeLock().unlock();
-		}
+		this.referenceFrameCount = referenceFrameCount < -1 ? -1 : referenceFrameCount;
 	}
 
 	/**
-	 * @return AVC level for video stream or {@code null} if not parsed.
+	 * @return The video level for the video stream or {@code null} if not
+	 *         parsed, known or relevant.
 	 */
-	public String getAvcLevel() {
-		avcLevelLock.readLock().lock();
-		try {
-			return avcLevel;
-		} finally {
-			avcLevelLock.readLock().unlock();
-		}
+	@Nullable
+	public VideoLevel getVideoLevel() {
+		return videoLevel;
 	}
 
 	/**
-	 * Sets AVC level for video stream or {@code null} if not parsed.
+	 * Sets the {@link VideoLevel} for the current video codec. Make sure that
+	 * the correct {@link VideoLevel} type/implementation for the
+	 * {@link VideoCodec} is used.
 	 *
-	 * @param avcLevel AVC level.
+	 * @param videoLevel the {@link VideoLevel} to set or {@code null} if
+	 *            unknown.
 	 */
-	public void setAvcLevel(String avcLevel) {
-		avcLevelLock.writeLock().lock();
-		try {
-			this.avcLevel = avcLevel;
-		} finally {
-			avcLevelLock.writeLock().unlock();
-		}
+	public void setVideoLevel(@Nullable VideoLevel videoLevel) {
+		this.videoLevel = videoLevel;
 	}
 
-	public int getAvcAsInt() {
-		try {
-			return Integer.parseInt(getAvcLevel().replaceAll("\\.", ""));
-		} catch (Exception e) {
-			return 0;
-		}
+	/**
+	 * Gets the video profile for the video stream or {@code null} if not
+	 * parsed/relevant.
+	 *
+	 * @return The video profile {@link String}.
+	 */
+	@Nullable
+	public String getVideoProfile() {
+		return videoProfile;
 	}
 
-	public String getH264Profile() {
-		synchronized (h264ProfileLock) {
-			return h264Profile;
-		}
-	}
-
-	public void setH264Profile(String s) {
-		synchronized (h264ProfileLock) {
-			h264Profile = s;
-		}
+	/**
+	 * Sets video profile for the video stream.
+	 *
+	 * @param videoProfile the video profile.
+	 */
+	public void setVideoProfile(@Nullable String videoProfile) {
+		this.videoProfile = videoProfile == null ? null : videoProfile.trim();
 	}
 
 	/**

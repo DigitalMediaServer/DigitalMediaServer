@@ -595,16 +595,17 @@ public class Request extends HTTPResource {
 				inputStream.read(b);
 				String s = new String(b, StandardCharsets.UTF_8);
 				s = s.replace("[uuid]", PMS.get().usn()); //.substring(0, PMS.get().usn().length()-2));
+				s = s.replace("[version]", PMS.getVersion());
 
 				if (PMS.get().getServer().getHost() != null) {
 					s = s.replace("[host]", PMS.get().getServer().getHost());
-					s = s.replace("[port]", "" + PMS.get().getServer().getPort());
+					s = s.replace("[port]", Integer.toString(PMS.get().getServer().getPort()));
 				}
 
 				if (xbox360) {
 					LOGGER.debug("DLNA changes for Xbox 360");
 					s = s.replace("Digital Media Server", configuration.getServerDisplayName() + " : Windows Media Connect");
-					s = s.replace("<modelName>DMS</modelName>", "<modelName>Windows Media Connect</modelName>");
+					s = s.replaceAll("<modelName>.*</modelName>", "<modelName>Windows Media Connect</modelName>");
 					s = s.replace("<serviceList>", "<serviceList>" + CRLF + "<service>" + CRLF +
 						"<serviceType>urn:microsoft.com:service:X_MS_MediaReceiverRegistrar:1</serviceType>" + CRLF +
 						"<serviceId>urn:microsoft.com:serviceId:X_MS_MediaReceiverRegistrar</serviceId>" + CRLF +

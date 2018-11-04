@@ -16,22 +16,23 @@
  * You should have received a copy of the GNU General Public License along with
  * this program. If not, see http://www.gnu.org/licenses/.
  */
-package net.pms.formats.audio;
+package net.pms.util;
 
-public class EAC3 extends AudioBase {
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import org.junit.Test;
+import net.pms.media.H265Level;
 
-	@Override
-	public Identifier getIdentifier() {
-		return Identifier.EAC3;
-	}
+public class H265LevelTest {
 
-	@Override
-	public String[] getSupportedExtensions() {
-		return new String[] {
-			"dd+",
-			"eb3",
-			"ec3",
-			"eac3"
-		};
+	@Test
+	public void testStaticInstances() {
+		assertNull(H265Level.typeOf("1b"));
+		assertEquals(H265Level.L2, H265Level.typeOf("2"));
+		assertEquals(H265Level.L2, H265Level.typeOf("2.0"));
+		assertEquals(H265Level.L3, H265Level.typeOf("3,0"));
+		assertEquals(H265Level.L4, H265Level.typeOf(" 4.0"));
+		assertEquals(H265Level.L4_1, H265Level.typeOf("  4.1  "));
+		assertEquals(H265Level.L5_1, H265Level.typeOf("5.1  "));
 	}
 }

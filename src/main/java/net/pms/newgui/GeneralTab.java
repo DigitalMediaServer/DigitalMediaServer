@@ -110,11 +110,9 @@ public class GeneralTab {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				LanguageSelection selectionDialog = new LanguageSelection(looksFrame, configuration.getLanguageLocale(), true);
-				if (selectionDialog != null) {
-					selectionDialog.show();
-					if (!selectionDialog.isAborted()) {
-						currentLanguage.setText(Messages.getString("Language." + configuration.getLanguageTag()));
-					}
+				selectionDialog.show();
+				if (!selectionDialog.isAborted()) {
+					currentLanguage.setText(Messages.getString("Language." + configuration.getLanguageTag()));
 				}
 			}
 		});
