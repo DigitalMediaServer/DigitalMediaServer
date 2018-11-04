@@ -1325,6 +1325,18 @@ public class DLNAMediaInfo implements Cloneable {
 							lang.setType(SubtitleType.TX3G);
 						} else if (line.contains("webvtt")) {
 							lang.setType(SubtitleType.WEBVTT);
+						} else if (line.contains("dvb_subtitle")) {
+							lang.setType(SubtitleType.DVBSUB);
+						} else if (line.contains("hdmv_pgs_subtitle")) {
+							lang.setType(SubtitleType.PGS);
+						} else if (line.contains("eia_608")) {
+							lang.setType(SubtitleType.EIA608);
+						} else if (line.contains("eia_708")) {
+							lang.setType(SubtitleType.EIA708);
+						} else if (line.contains("ttml")) {
+							lang.setType(SubtitleType.TTML);
+						} else if (line.contains("dvb_teletext")) {
+							lang.setType(SubtitleType.TELETEXT);
 						} else {
 							lang.setType(SubtitleType.UNKNOWN);
 						}

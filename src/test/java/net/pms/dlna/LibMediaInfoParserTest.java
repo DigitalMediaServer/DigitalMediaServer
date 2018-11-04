@@ -76,9 +76,11 @@ public class LibMediaInfoParserTest {
 	@Test
 	public void testGetSpecificID() throws Exception {
 		assertThat(LibMediaInfoParser.getSpecificID("256")).isEqualTo(256);
-		assertThat(LibMediaInfoParser.getSpecificID("189 (0xBD)-32 (0x80)")).isEqualTo(32);
-		assertThat(LibMediaInfoParser.getSpecificID("189 (0xBD)")).isEqualTo(189);
-		assertThat(LibMediaInfoParser.getSpecificID("189 (0xBD)-")).isEqualTo(189);
+		assertThat(LibMediaInfoParser.getSpecificID("189- 32 ")).isEqualTo(32);
+		assertThat(LibMediaInfoParser.getSpecificID(" 189 -32 ")).isEqualTo(32);
+		assertThat(LibMediaInfoParser.getSpecificID("189")).isEqualTo(189);
+		assertThat(LibMediaInfoParser.getSpecificID("189-")).isEqualTo(189);
+		assertThat(LibMediaInfoParser.getSpecificID("49-3")).isEqualTo(3);
 	}
 
 	@Test

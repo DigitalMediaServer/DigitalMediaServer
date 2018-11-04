@@ -280,7 +280,7 @@ public class LibMediaInfoParser {
 					if (isNotBlank(value) && value.startsWith("Windows Media Audio 10")) {
 						currentAudioTrack.setCodecA(FormatConfiguration.WMA10);
 					}
-					currentAudioTrack.setLang(getLang(MI.Get(StreamType.Audio, i, "Language/String")));
+					currentAudioTrack.setLang(getLang(MI.Get(StreamType.Audio, i, "Language")));
 					currentAudioTrack.setAudioTrackTitleFromMetadata(MI.Get(StreamType.Audio, i, "Title").trim());
 					currentAudioTrack.setNumberOfChannels(parseNumberOfChannels(MI.Get(StreamType.Audio, i, "Channel(s)_Original")));
 					if (currentAudioTrack.isNumberOfChannelsUnknown()) {
@@ -316,9 +316,9 @@ public class LibMediaInfoParser {
 					}
 
 					// Special check for OGM: MediaInfo reports specific Audio/Subs IDs (0xn) while mencoder does not
-					value = MI.Get(StreamType.Audio, i, "ID/String");
+					value = MI.Get(StreamType.Audio, i, "ID");
 					if (isNotBlank(value)) {
-						if (value.contains("(0x") && !FormatConfiguration.OGG.equals(media.getContainer())) {
+						if (!FormatConfiguration.OGG.equals(media.getContainer())) {
 							currentAudioTrack.setId(getSpecificID(value));
 						} else {
 							currentAudioTrack.setId(media.getAudioTracksList().size());
@@ -385,23 +385,45 @@ public class LibMediaInfoParser {
 			if (subTracks > 0) {
 				for (int i = 0; i < subTracks; i++) {
 					currentSubTrack = new DLNAMediaSubtitle();
-					currentSubTrack.setType(SubtitleType.valueOfLibMediaInfoCodec(MI.Get(StreamType.Text, i, "Format")));
-					currentSubTrack.setType(SubtitleType.valueOfLibMediaInfoCodec(MI.Get(StreamType.Text, i, "CodecID")));
-					currentSubTrack.setLang(getLang(MI.Get(StreamType.Text, i, "Language/String")));
+					value = MI.Get(StreamType.Text, i, "CodecID");
+					if (isNotBlank(value)) {
+						currentSubTrack.setType(SubtitleType.valueOfLibMediaInfoCodec(value));
+					} else {
+						currentSubTrack.setType(SubtitleType.valueOfLibMediaInfoCodec(MI.Get(StreamType.Text, i, "Format")));
+					}
+					currentSubTrack.setLang(getLang(MI.Get(StreamType.Text, i, "Language")));
 					currentSubTrack.setSubtitlesTrackTitleFromMetadata((MI.Get(StreamType.Text, i, "Title")).trim());
 					// Special check for OGM: MediaInfo reports specific Audio/Subs IDs (0xn) while mencoder does not
-					value = MI.Get(StreamType.Text, i, "ID/String");
-					if (isNotBlank(value)) {
-						if (value.contains("(0x") && !FormatConfiguration.OGG.equals(media.getContainer())) {
-							currentSubTrack.setId(getSpecificID(value));
-						} else {
-							currentSubTrack.setId(media.getSubtitleTracksList().size());
-						}
+					value = MI.Get(StreamType.Text, i, "ID");
+					if (isNotBlank(value) && value.contains("-") && !(value.contains("-CC") || value.contains("-T") || value.contains("-XDS"))) {
+						currentSubTrack.setId(getSpecificID(value));
+					} else {
+						currentSubTrack.setId(media.getSubtitleTracksList().size());
 					}
 
 					addSub(currentSubTrack, media);
 					if (parseLogger != null) {
-						parseLogger.logSubtitleTrackColumns(i, false);
+						parseLogger.logSubtitleTrackColumns(i, false); //TODO: (Nad) Parselogger new stuff
+					}
+				}
+			}
+
+			// Set Teletext subtitles
+			subTracks = MI.Count_Get(StreamType.Other);
+			if (subTracks > 0) { //TODO: (Nad) Handle if not supported...
+				for (int i = 0; i < subTracks; i++) {
+					value = MI.Get(StreamType.Other, i, "Format");
+					if (value != null && value.startsWith("Teletext")) {
+						currentSubTrack = new DLNAMediaSubtitle();
+						currentSubTrack.setType(SubtitleType.TELETEXT);
+						currentSubTrack.setLang(getLang(MI.Get(StreamType.Other, i, "Language")));
+						value = MI.Get(StreamType.Other, i, "ID");
+						if (isNotBlank(value) && value.contains("-")) { //TODO: (Nad) Why?
+							currentSubTrack.setId(getSpecificID(value));
+						} else {
+							currentSubTrack.setId(media.getSubtitleTracksList().size());
+						}
+						addSub(currentSubTrack, media);
 					}
 				}
 			}
@@ -1012,16 +1034,25 @@ public class LibMediaInfoParser {
 
 	public static int getSpecificID(String value) {
 		// If ID is given as 'streamID-substreamID' use the second (which is hopefully unique).
-		// For example in vob audio ID can be '189 (0xBD)-32 (0x80)' and text ID '189 (0xBD)-128 (0x20)'
-		int end = value.lastIndexOf("(0x");
-		if (end > -1) {
-			int start = value.lastIndexOf('-') + 1;
-			value = value.substring(start > end ? 0 : start, end);
+		// For example in VOB files, audio ID can be '189-128' and text ID '189-32'
+		if (isBlank(value)) {
+			return -1;
+		}
+		String[] parts = value.trim().split("\\s*-\\s*");
+		for (int i = parts.length - 1; i >= 0; i--) {
+			if (isNotBlank(parts[i])) {
+				value = parts[i];
+				break;
+			}
 		}
 
-		value = value.trim();
-		int id = Integer.parseInt(value);
-		return id;
+		try {
+			return Integer.parseInt(value);
+		} catch (NumberFormatException e) {
+			LOGGER.debug("Could not parse the stream ID \"{}\": {}", value, e.getMessage());
+			LOGGER.trace("", e);
+			return -1;
+		}
 	}
 
 	protected static int parseNumberOfChannels(String value) {

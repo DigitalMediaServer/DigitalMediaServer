@@ -208,6 +208,11 @@ public class DLNAMediaSubtitleTest {
 		sub4.setType(PGS);
 		sub4.setExternalFile(file_cp1251, null);
 		assertThat(sub4.getSubCharacterSet()).isNull();
+
+		DLNAMediaSubtitle sub5 = new DLNAMediaSubtitle();
+		sub5.setType(DVBSUB);
+		sub5.setExternalFile(file_cp1251, null);
+		assertThat(sub5.getSubCharacterSet()).isNull();
 	}
 
 	@Test
