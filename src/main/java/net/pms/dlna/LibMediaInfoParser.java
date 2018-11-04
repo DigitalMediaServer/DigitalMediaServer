@@ -655,7 +655,8 @@ public class LibMediaInfoParser {
 		) {
 			format = FormatConfiguration.WMV;
 		} else if (
-			value.startsWith("dvr")
+			value.startsWith("dvr") &&
+			media.getContainer().equals(FormatConfiguration.ASF)
 		) {
 			media.setContainer(FormatConfiguration.DVRMS);
 		} else if (
