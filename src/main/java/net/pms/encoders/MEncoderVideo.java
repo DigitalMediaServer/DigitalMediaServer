@@ -61,6 +61,9 @@ import net.pms.formats.FormatType;
 import net.pms.formats.ISOVOB;
 import net.pms.formats.v2.SubtitleType;
 import net.pms.io.*;
+import net.pms.media.H264Level;
+import net.pms.media.VideoCodec;
+import net.pms.media.VideoLevel;
 import net.pms.network.HTTPResource;
 import net.pms.newgui.GuiUtil;
 import net.pms.newgui.components.CustomJButton;
@@ -79,6 +82,7 @@ import org.slf4j.LoggerFactory;
 public class MEncoderVideo extends Player {
 	private static final Logger LOGGER = LoggerFactory.getLogger(MEncoderVideo.class);
 	public static final PlayerId ID = StandardPlayerId.MENCODER_VIDEO;
+	private static Rational ASPECT_16_9 = Rational.valueOf(16, 9);
 
 	/** The {@link Configuration} key for the custom MEncoder path. */
 	public static final String KEY_MENCODER_PATH = "mencoder_path";
@@ -742,7 +746,7 @@ public class MEncoderVideo extends Player {
 			 */
 			if ((mediaRenderer.isTranscodeToH264() || mediaRenderer.isTranscodeToH265()) && !isXboxOneWebVideo) {
 				if (
-					mediaRenderer.isH264Level41Limited() &&
+					mediaRenderer.getVideoLevelLimit(VideoCodec.H264) == H264Level.L4_1 &&
 					defaultMaxBitrates[0] > 31250
 				) {
 					defaultMaxBitrates[0] = 31250;
@@ -880,65 +884,98 @@ public class MEncoderVideo extends Player {
 		}
 
 		// Decide whether to defer to tsMuxeR or continue to use MEncoder
-		boolean deferToTsmuxer = true;
+		boolean deferToTsmuxer = PlayerFactory.isPlayerActive(TsMuxeRVideo.ID);
+		VideoLevel videoLevelLimit = params.mediaRenderer.getVideoLevelLimit(media.getVideoCodec());
 		String prependTraceReason = "Not muxing the video stream with tsMuxeR via MEncoder because ";
 		if (!configuration.isMencoderMuxWhenCompatible()) {
 			deferToTsmuxer = false;
 			LOGGER.trace(prependTraceReason + "the user setting is disabled");
+		} else if (!deferToTsmuxer) {
+			LOGGER.warn(
+				prependTraceReason + "tsMuxeR {}",
+				PlayerFactory.isPlayerAvailable(TsMuxeRVideo.ID) ? "is disabled" : "isn't available"
+			);
 		}
-		if (deferToTsmuxer == true && !configuration.getHideTranscodeEnabled() && dlna.isNoName() && (dlna.getParent() instanceof FileTranscodeVirtualFolder)) {
+		if (
+			deferToTsmuxer &&
+			!configuration.getHideTranscodeEnabled() &&
+			dlna.isNoName() &&
+			dlna.getParent() instanceof FileTranscodeVirtualFolder
+		) {
 			deferToTsmuxer = false;
 			LOGGER.trace(prependTraceReason + "the file is being played via a MEncoder entry in the transcode folder.");
 		}
-		if (deferToTsmuxer == true && !params.mediaRenderer.isMuxH264MpegTS()) {
+		if (deferToTsmuxer && !params.mediaRenderer.isMuxH264MpegTS()) {
 			deferToTsmuxer = false;
 			LOGGER.trace(prependTraceReason + "the renderer does not support H.264 inside MPEG-TS.");
 		}
-		if (deferToTsmuxer == true && params.sid != null) {
+		if (deferToTsmuxer && params.sid != null) {
 			deferToTsmuxer = false;
 			LOGGER.trace(prependTraceReason + "we need to burn subtitles.");
 		}
-		if (deferToTsmuxer == true && isDVD) {
+		if (deferToTsmuxer && isDVD) {
 			deferToTsmuxer = false;
 			LOGGER.trace(prependTraceReason + "this is a DVD track.");
 		}
-		if (deferToTsmuxer == true && avisynth()) {
+		if (deferToTsmuxer && avisynth()) {
 			deferToTsmuxer = false;
 			LOGGER.trace(prependTraceReason + "we are using AviSynth.");
 		}
-		if (deferToTsmuxer == true && params.mediaRenderer.isH264Level41Limited() && !media.isVideoWithinH264LevelLimits(newInput, params.mediaRenderer)) {
+		if (
+			deferToTsmuxer &&
+			videoLevelLimit != null &&
+			!videoLevelLimit.isGreaterThanOrEqualTo(media.getVideoLevel())
+		) {
 			deferToTsmuxer = false;
-			LOGGER.trace(prependTraceReason + "the video stream is not within H.264 level limits for this renderer.");
+			if (LOGGER.isTraceEnabled()) {
+				VideoLevel level = media.getVideoLevel();
+				if (level == null) {
+					LOGGER.trace(prependTraceReason + "the {} level is unknown", media.getVideoCodec());
+				} else {
+					LOGGER.trace(
+						prependTraceReason + "the {} level ({}) is above the limit ({}) for this renderer",
+						media.getVideoCodec(),
+						level.toString(false),
+						videoLevelLimit.toString(false)
+					);
+				}
+			}
 		}
-		if (deferToTsmuxer == true && !media.isMuxable(params.mediaRenderer)) {
+		if (deferToTsmuxer && !media.isMuxable(params.mediaRenderer)) {
 			deferToTsmuxer = false;
 			LOGGER.trace(prependTraceReason + "the video stream is not muxable to this renderer");
 		}
-		if (deferToTsmuxer == true && intOCW > 0 && intOCH > 0) {
+		if (deferToTsmuxer && intOCW > 0 && intOCH > 0) {
 			deferToTsmuxer = false;
 			LOGGER.trace(prependTraceReason + "we need to transcode to apply overscan compensation.");
 		}
-		if (deferToTsmuxer == true && !aspectRatiosMatch) {
+		if (deferToTsmuxer && !aspectRatiosMatch) {
 			deferToTsmuxer = false;
 			LOGGER.trace(prependTraceReason + "we need to transcode to apply the correct aspect ratio.");
 		}
 		if (
-			deferToTsmuxer == true &&
+			deferToTsmuxer &&
 			!params.mediaRenderer.isPS3() &&
 			media.isWebDl(filename, params)
 		) {
 			deferToTsmuxer = false;
 			LOGGER.trace(prependTraceReason + "the version of tsMuxeR supported by this renderer does not support WEB-DL files.");
 		}
-		if (deferToTsmuxer == true && "bt.601".equals(media.getMatrixCoefficients())) {
+		if (deferToTsmuxer && "bt.601".equals(media.getMatrixCoefficients())) {
 			deferToTsmuxer = false;
 			LOGGER.trace(prependTraceReason + "the colorspace probably isn't supported by the renderer.");
 		}
-		if (deferToTsmuxer == true && (params.mediaRenderer.isKeepAspectRatio() || params.mediaRenderer.isKeepAspectRatioTranscoding()) && !"16:9".equals(media.getAspectRatioContainer())) {
+		if (
+			deferToTsmuxer && (
+				params.mediaRenderer.isKeepAspectRatio() ||
+				params.mediaRenderer.isKeepAspectRatioTranscoding()
+			) &&
+			!ASPECT_16_9.equals(media.getAspectRatioContainer())
+		) {
 			deferToTsmuxer = false;
 			LOGGER.trace(prependTraceReason + "the renderer needs us to add borders so it displays the correct aspect ratio of " + media.getAspectRatioContainer() + ".");
 		}
-		if (deferToTsmuxer == true && !params.mediaRenderer.isResolutionCompatibleWithRenderer(media.getWidth(), media.getHeight())) {
+		if (deferToTsmuxer && !params.mediaRenderer.isResolutionCompatibleWithRenderer(media.getWidth(), media.getHeight())) {
 			deferToTsmuxer = false;
 			LOGGER.trace(prependTraceReason + "the resolution is incompatible with the renderer.");
 		}
@@ -1301,7 +1338,7 @@ public class MEncoderVideo extends Player {
 						params.mediaRenderer.isKeepAspectRatio() ||
 						params.mediaRenderer.isKeepAspectRatioTranscoding()
 					) &&
-					!"16:9".equals(media.getAspectRatioContainer())
+					!ASPECT_16_9.equals(media.getAspectRatioContainer())
 				) &&
 				!configuration.isMencoderScaler()
 			) {
@@ -1378,7 +1415,12 @@ public class MEncoderVideo extends Player {
 
 				encodeSettings = "-lavcopts " + aspectRatioLavcopts + vcodecString + acodec + abitrate +
 					":threads=" + configuration.getMencoderMaxThreads() +
-					":o=preset=superfast,crf=" + x264CRF + ",g=250,i_qfactor=0.71,qcomp=0.6,level=3.1,weightp=0,8x8dct=0,aq-strength=0,me_range=16";
+					":o=preset=superfast,crf=" + x264CRF + ",g=250,i_qfactor=0.71,qcomp=0.6,";
+				VideoLevel level = params.mediaRenderer.getVideoLevelLimit(VideoCodec.H264);
+				if (level != null) {
+					encodeSettings += "level=" + level.toString(false) + ",";
+				}
+				encodeSettings += "weightp=0,8x8dct=0,aq-strength=0,me_range=16";
 
 				encodeSettings = addMaximumBitrateConstraints(encodeSettings, media, "", params.mediaRenderer, audioType);
 			}
@@ -1729,7 +1771,13 @@ public class MEncoderVideo extends Player {
 		}
 
 		// Make MEncoder output framerate correspond to InterFrame
-		if (avisynth() && configuration.getAvisynthInterFrame() && !"60000/1001".equals(frameRateRatio) && !"50".equals(frameRateRatio) && !"60".equals(frameRateRatio)) {
+		if (
+			avisynth() &&
+			configuration.getAvisynthInterFrame() &&
+			frameRateRatio != null &&
+			!"60000/1001".equals(frameRateRatio) &&
+			!"50".equals(frameRateRatio) &&
+			!"60".equals(frameRateRatio)) {
 			switch (frameRateRatio) {
 				case "25":
 					ofps = "50";
@@ -1950,7 +1998,7 @@ public class MEncoderVideo extends Player {
 						params.mediaRenderer.isKeepAspectRatio() ||
 						params.mediaRenderer.isKeepAspectRatioTranscoding()
 					) &&
-					!"16:9".equals(media.getAspectRatioContainer())
+					!ASPECT_16_9.equals(media.getAspectRatioContainer())
 				)
 			) &&
 			!configuration.isMencoderScaler()
@@ -2190,7 +2238,7 @@ public class MEncoderVideo extends Player {
 			cmdList.add("" + params.timeend);
 		}
 
-		// Force srate because MEncoder doesn't like anything other than 48khz for AC-3
+		// Force sample rate because MEncoder doesn't like anything other than 48khz for AC-3
 		String rate = "" + params.mediaRenderer.getTranscodedVideoAudioSampleRate();
 		if (!pcm && !dtsRemux && !ac3Remux && !encodedAudioPassthrough) {
 			cmdList.add("-af");
@@ -2422,7 +2470,14 @@ public class MEncoderVideo extends Player {
 						timeshift = "timeshift=" + params.aid.getDelay() + "ms, ";
 					}
 
-					pwMux.println(videoType + ", \"" + ffVideoPipe.getOutputPipe() + "\", " + fps + "level=4.1, insertSEI, contSPS, track=1");
+					// XXX This is questionable, it's unclear of the codec is always H.264
+					// and what the consequence of omitting the "level" parameter is
+					VideoLevel level = params.mediaRenderer.getVideoLevelLimit(VideoCodec.H264);
+					pwMux.println(
+						videoType + ", \"" + ffVideoPipe.getOutputPipe() + "\", " + fps +
+						(level != null ? "level=" + level.toString(false) + ", " : "") +
+						"insertSEI, contSPS, track=1"
+					);
 					pwMux.println(audioType + ", \"" + ffAudioPipe.getOutputPipe() + "\", " + timeshift + "track=2");
 				}
 

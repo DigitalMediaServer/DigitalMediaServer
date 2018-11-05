@@ -19,12 +19,19 @@
 package net.pms.dlna;
 
 import static org.assertj.core.api.Assertions.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.LoggerFactory;
 import ch.qos.logback.classic.LoggerContext;
 import net.pms.PMS;
+import net.pms.configuration.FormatConfiguration;
+import net.pms.media.H264Level;
+import net.pms.media.H265Level;
+import net.pms.media.VC1Level;
+import net.pms.media.VP9Level;
 
 public class LibMediaInfoParserTest {
 
@@ -52,31 +59,6 @@ public class LibMediaInfoParserTest {
 		assertThat(LibMediaInfoParser.getReferenceFrameCount("")).isEqualTo(-1);
 		assertThat(LibMediaInfoParser.getReferenceFrameCount("strange1")).isEqualTo(-1);
 		assertThat(LibMediaInfoParser.getReferenceFrameCount("6ref")).isEqualTo(-1);
-	}
-
-	@Test
-	public void testGetAvcLevel() throws Exception {
-		assertThat(LibMediaInfoParser.getAvcLevel("Main@L2.0")).isEqualTo("2.0");
-		assertThat(LibMediaInfoParser.getAvcLevel("High@L3.0")).isEqualTo("3.0");
-		assertThat(LibMediaInfoParser.getAvcLevel("high@l4.0")).isEqualTo("4.0");
-		assertThat(LibMediaInfoParser.getAvcLevel("hIgH@L4.1")).isEqualTo("4.1");
-		assertThat(LibMediaInfoParser.getAvcLevel("5.1")).isNull();
-		assertThat(LibMediaInfoParser.getAvcLevel("level5")).isNull();
-	}
-
-	@Test
-	public void testGetAvcProfile() throws Exception {
-		assertThat(LibMediaInfoParser.getAvcProfile("Main@L2.0")).isEqualTo("main");
-		assertThat(LibMediaInfoParser.getAvcProfile("High@L3.0")).isEqualTo("high");
-		assertThat(LibMediaInfoParser.getAvcProfile("high@l4.0")).isEqualTo("high");
-		assertThat(LibMediaInfoParser.getAvcProfile("hIgH@L4.1")).isEqualTo("high");
-		assertThat(LibMediaInfoParser.getAvcProfile("LOW@L4.1")).isEqualTo("low");
-	}
-
-	@Test
-	public void testGetAvcProfileInvalidInput() throws Exception {
-		assertThat(LibMediaInfoParser.getAvcProfile("@L2.0")).isNull();
-		assertThat(LibMediaInfoParser.getAvcProfile("@l2.0")).isNull();
 	}
 
 	@Test
@@ -123,5 +105,225 @@ public class LibMediaInfoParserTest {
 		assertThat(LibMediaInfoParser.getLang("enUS")).isEqualTo("enUS");
 		assertThat(LibMediaInfoParser.getLang("ptBR (Brazil)")).isEqualTo("ptBR");
 		assertThat(LibMediaInfoParser.getLang("enUS/GB")).isEqualTo("enUS");
+	}
+
+	@Test
+	public void testVideoLevelH264() {
+		DLNAMediaInfo media = new DLNAMediaInfo();
+		media.setCodecV(FormatConfiguration.H264);
+
+		LibMediaInfoParser.setVideoProfileAndLevel(media, "");
+		assertNull(media.getVideoLevel());
+		assertNull(media.getVideoProfile());
+
+		LibMediaInfoParser.setVideoProfileAndLevel(media, "level");
+		assertNull(media.getVideoLevel());
+		assertEquals("level", media.getVideoProfile());
+
+		LibMediaInfoParser.setVideoProfileAndLevel(media, "low@L1b");
+		assertEquals(H264Level.L1b, media.getVideoLevel());
+		assertEquals("low", media.getVideoProfile());
+
+		LibMediaInfoParser.setVideoProfileAndLevel(media, "Main@L2.0");
+		assertEquals(H264Level.L2, media.getVideoLevel());
+		assertEquals("Main", media.getVideoProfile());
+
+		LibMediaInfoParser.setVideoProfileAndLevel(media, "High@L3.0");
+		assertEquals(H264Level.L3, media.getVideoLevel());
+		assertEquals("High", media.getVideoProfile());
+
+		LibMediaInfoParser.setVideoProfileAndLevel(media, "high@l4,0");
+		assertEquals(H264Level.L4, media.getVideoLevel());
+		assertEquals("high", media.getVideoProfile());
+
+		LibMediaInfoParser.setVideoProfileAndLevel(media, "hIgH@L4.1");
+		assertEquals(H264Level.L4_1, media.getVideoLevel());
+		assertEquals("hIgH", media.getVideoProfile());
+
+		LibMediaInfoParser.setVideoProfileAndLevel(media, "5");
+		assertNull(media.getVideoLevel());
+		assertEquals("5", media.getVideoProfile());
+
+		LibMediaInfoParser.setVideoProfileAndLevel(media, "LEVEL 5.1");
+		assertNull(media.getVideoLevel());
+		assertEquals("LEVEL 5.1", media.getVideoProfile());
+
+		LibMediaInfoParser.setVideoProfileAndLevel(media, "level5,2");
+		assertNull(media.getVideoLevel());
+		assertEquals("level5,2", media.getVideoProfile());
+	}
+
+	@Test
+	public void testVideoLevelH265() {
+		DLNAMediaInfo media = new DLNAMediaInfo();
+		media.setCodecV(FormatConfiguration.H265);
+
+		LibMediaInfoParser.setVideoProfileAndLevel(media, "");
+		assertNull(media.getVideoLevel());
+		assertNull(media.getVideoProfile());
+
+		LibMediaInfoParser.setVideoProfileAndLevel(media, "level");
+		assertNull(media.getVideoLevel());
+		assertEquals("level", media.getVideoProfile());
+
+		LibMediaInfoParser.setVideoProfileAndLevel(media, "low@L1b");
+		assertNull(media.getVideoLevel());
+		assertEquals("low", media.getVideoProfile());
+
+		LibMediaInfoParser.setVideoProfileAndLevel(media, "Main@L2.0@High");
+		assertEquals(H265Level.L2, media.getVideoLevel());
+		assertEquals("Main", media.getVideoProfile());
+
+		LibMediaInfoParser.setVideoProfileAndLevel(media, "High@L3.0");
+		assertEquals(H265Level.L3, media.getVideoLevel());
+		assertEquals("High", media.getVideoProfile());
+
+		LibMediaInfoParser.setVideoProfileAndLevel(media, "mAin@l4,0@maIN");
+		assertEquals(H265Level.L4, media.getVideoLevel());
+		assertEquals("mAin", media.getVideoProfile());
+
+		LibMediaInfoParser.setVideoProfileAndLevel(media, "hIgH@L4.1");
+		assertEquals(H265Level.L4_1, media.getVideoLevel());
+		assertEquals("hIgH", media.getVideoProfile());
+
+		LibMediaInfoParser.setVideoProfileAndLevel(media, "hIgH@L4.2@loW");
+		assertNull(media.getVideoLevel());
+		assertEquals("hIgH", media.getVideoProfile());
+
+		LibMediaInfoParser.setVideoProfileAndLevel(media, "5");
+		assertNull(media.getVideoLevel());
+		assertEquals("5", media.getVideoProfile());
+
+		LibMediaInfoParser.setVideoProfileAndLevel(media, "LEVEL 5.1");
+		assertNull(media.getVideoLevel());
+		assertEquals("LEVEL 5.1", media.getVideoProfile());
+
+		LibMediaInfoParser.setVideoProfileAndLevel(media, "level5,2");
+		assertNull(media.getVideoLevel());
+		assertEquals("level5,2", media.getVideoProfile());
+
+		LibMediaInfoParser.setVideoProfileAndLevel(media, "@l2.0");
+		assertEquals(H265Level.L2, media.getVideoLevel());
+		assertNull(media.getVideoProfile());
+
+		LibMediaInfoParser.setVideoProfileAndLevel(media, "@6,1");
+		assertEquals(H265Level.L6_1, media.getVideoLevel());
+		assertNull(media.getVideoProfile());
+	}
+
+	@Test
+	public void testVideoLevelVP9() {
+		DLNAMediaInfo media = new DLNAMediaInfo();
+		media.setCodecV(FormatConfiguration.VP9);
+
+		LibMediaInfoParser.setVideoProfileAndLevel(media, "");
+		assertNull(media.getVideoLevel());
+		assertNull(media.getVideoProfile());
+
+		LibMediaInfoParser.setVideoProfileAndLevel(media, "level");
+		assertNull(media.getVideoLevel());
+		assertEquals("level", media.getVideoProfile());
+
+		LibMediaInfoParser.setVideoProfileAndLevel(media, "low@L1b");
+		assertNull(media.getVideoLevel());
+		assertNull(media.getVideoProfile());
+
+		LibMediaInfoParser.setVideoProfileAndLevel(media, "Main@L2.0@High");
+		assertNull(media.getVideoLevel());
+		assertNull(media.getVideoProfile());
+
+		LibMediaInfoParser.setVideoProfileAndLevel(media, "High@L3.0");
+		assertEquals(VP9Level.L3, media.getVideoLevel());
+		assertEquals("High", media.getVideoProfile());
+
+		LibMediaInfoParser.setVideoProfileAndLevel(media, "mAin@l4,0@maIN");
+		assertNull(media.getVideoLevel());
+		assertNull(media.getVideoProfile());
+
+		LibMediaInfoParser.setVideoProfileAndLevel(media, "hIgH@L4.1");
+		assertEquals(VP9Level.L4_1, media.getVideoLevel());
+		assertEquals("hIgH", media.getVideoProfile());
+
+		LibMediaInfoParser.setVideoProfileAndLevel(media, "hIgH@L4.2@loW");
+		assertNull(media.getVideoLevel());
+		assertNull(media.getVideoProfile());
+
+		LibMediaInfoParser.setVideoProfileAndLevel(media, "5");
+		assertNull(media.getVideoLevel());
+		assertEquals("5", media.getVideoProfile());
+
+		LibMediaInfoParser.setVideoProfileAndLevel(media, "LEVEL 5.1");
+		assertNull(media.getVideoLevel());
+		assertEquals("LEVEL 5.1", media.getVideoProfile());
+
+		LibMediaInfoParser.setVideoProfileAndLevel(media, "level5,2");
+		assertNull(media.getVideoLevel());
+		assertEquals("level5,2", media.getVideoProfile());
+
+		LibMediaInfoParser.setVideoProfileAndLevel(media, "@l2.0");
+		assertEquals(VP9Level.L2, media.getVideoLevel());
+		assertNull(media.getVideoProfile());
+
+		LibMediaInfoParser.setVideoProfileAndLevel(media, "@6,2");
+		assertEquals(VP9Level.L6_2, media.getVideoLevel());
+		assertNull(media.getVideoProfile());
+	}
+
+	@Test
+	public void testVideoLevelVC1() {
+		DLNAMediaInfo media = new DLNAMediaInfo();
+		media.setCodecV(FormatConfiguration.VC1);
+
+		LibMediaInfoParser.setVideoProfileAndLevel(media, "");
+		assertNull(media.getVideoLevel());
+		assertNull(media.getVideoProfile());
+
+		LibMediaInfoParser.setVideoProfileAndLevel(media, "level");
+		assertNull(media.getVideoLevel());
+		assertEquals("level", media.getVideoProfile());
+
+		LibMediaInfoParser.setVideoProfileAndLevel(media, "low@L1b");
+		assertNull(media.getVideoLevel());
+		assertEquals("low", media.getVideoProfile());
+
+		LibMediaInfoParser.setVideoProfileAndLevel(media, "Main@L2.0@High");
+		assertNull(media.getVideoLevel());
+		assertEquals("Main", media.getVideoProfile());
+
+		LibMediaInfoParser.setVideoProfileAndLevel(media, "High@L3.0");
+		assertEquals(VC1Level.L3, media.getVideoLevel());
+		assertEquals("High", media.getVideoProfile());
+
+		LibMediaInfoParser.setVideoProfileAndLevel(media, "mAin@l4,0@maIN");
+		assertNull(media.getVideoLevel());
+		assertEquals("mAin", media.getVideoProfile());
+
+		LibMediaInfoParser.setVideoProfileAndLevel(media, "hIgH@Ll");
+		assertEquals(VC1Level.LOW, media.getVideoLevel());
+		assertEquals("hIgH", media.getVideoProfile());
+
+		LibMediaInfoParser.setVideoProfileAndLevel(media, "hIgH@L4.2@loW");
+		assertNull(media.getVideoLevel());
+		assertEquals("hIgH", media.getVideoProfile());
+
+		LibMediaInfoParser.setVideoProfileAndLevel(media, "5");
+		assertNull(media.getVideoLevel());
+		assertEquals("5", media.getVideoProfile());
+
+		LibMediaInfoParser.setVideoProfileAndLevel(media, "LEVEL 5.1");
+		assertNull(media.getVideoLevel());
+		assertEquals("LEVEL 5.1", media.getVideoProfile());
+
+		LibMediaInfoParser.setVideoProfileAndLevel(media, "level5,2");
+		assertNull(media.getVideoLevel());
+		assertEquals("level5,2", media.getVideoProfile());
+
+		LibMediaInfoParser.setVideoProfileAndLevel(media, "@l2.0");
+		assertEquals(VC1Level.L2, media.getVideoLevel());
+		assertNull(media.getVideoProfile());
+
+		LibMediaInfoParser.setVideoProfileAndLevel(media, "@hl");
+		assertEquals(VC1Level.HIGH, media.getVideoLevel());
+		assertNull(media.getVideoProfile());
 	}
 }
