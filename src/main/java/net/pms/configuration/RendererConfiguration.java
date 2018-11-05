@@ -28,6 +28,16 @@ import net.pms.formats.Format;
 import net.pms.formats.Format.Identifier;
 import net.pms.formats.FormatType;
 import net.pms.io.OutputParams;
+import net.pms.media.AV1Level;
+import net.pms.media.H262Level;
+import net.pms.media.H263Level;
+import net.pms.media.H264Level;
+import net.pms.media.H265Level;
+import net.pms.media.MPEG4VisualLevel;
+import net.pms.media.VC1Level;
+import net.pms.media.VP9Level;
+import net.pms.media.VideoCodec;
+import net.pms.media.VideoLevel;
 import net.pms.network.HTTPResource;
 import net.pms.network.SpeedStats;
 import net.pms.network.UPNPHelper;
@@ -146,7 +156,6 @@ public class RendererConfiguration extends UPNPHelper.Renderer {
 	protected static final String DLNA_TREE_HACK = "CreateDLNATreeFaster";
 	protected static final String EMBEDDED_SUBS_SUPPORTED = "InternalSubtitlesSupported";
 	protected static final String HALVE_BITRATE = "HalveBitrate";
-	protected static final String H264_L41_LIMITED = "H264Level41Limited";
 	protected static final String IGNORE_TRANSCODE_BYTE_RANGE_REQUEST = "IgnoreTranscodeByteRangeRequests";
 	protected static final String IMAGE = "Image";
 	protected static final String KEEP_ASPECT_RATIO = "KeepAspectRatio";
@@ -1239,10 +1248,36 @@ public class RendererConfiguration extends UPNPHelper.Renderer {
 	}
 
 	/**
-	 * @return whether to transcode H.264 video if it exceeds level 4.1
+	 * @return The video level limit for the specified {@link VideoCodec} or
+	 *         {@code null} in none is defined.
 	 */
-	public boolean isH264Level41Limited() {
-		return getBoolean(H264_L41_LIMITED, true);
+	@Nullable
+	public VideoLevel getVideoLevelLimit(@Nullable VideoCodec codec) {
+		if (codec == null) {
+			return null;
+		}
+
+		switch (codec) {
+			case AV1:
+				return AV1Level.typeOf(getString(codec.getLevelLimitKey(), null));
+			case H262:
+				return H262Level.typeOf(getString(codec.getLevelLimitKey(), null));
+			case H263:
+				return H263Level.typeOf(getString(codec.getLevelLimitKey(), null));
+			case H264:
+				return H264Level.typeOf(getString(codec.getLevelLimitKey(), null));
+			case H265:
+				return H265Level.typeOf(getString(codec.getLevelLimitKey(), null));
+			case MPEG4ASP:
+			case MPEG4SP:
+				return MPEG4VisualLevel.typeOf(getString(codec.getLevelLimitKey(), null));
+			case VC1:
+				return VC1Level.typeOf(getString(codec.getLevelLimitKey(), null));
+			case VP9:
+				return VP9Level.typeOf(getString(codec.getLevelLimitKey(), null));
+			default:
+				return null;
+		}
 	}
 
 	public boolean isTranscodeFastStart() {

@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package net.pms.util;
+package net.pms.media.parsing;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,10 +24,9 @@ import org.slf4j.LoggerFactory;
 /**
  * @author shagrath
  * Derived from the mpeg4ip project and the ToNMT tool
- *
- * @deprecated now we are using {@link net.pms.dlna.LibMediaInfoParser} for extracting AVC stream info.
+ * <p>
+ * Not currently used, but kept in case it becomes useful in the future.
  */
-@Deprecated
 public class AVCHeader {
 	private static final Logger LOGGER = LoggerFactory.getLogger(AVCHeader.class);
 
@@ -36,7 +35,7 @@ public class AVCHeader {
 	private int profile;
 	private int level;
 	private int ref_frames;
-	
+
 	/**
 	 *  Fix for ArrayOutOfBoundsException in getBit(); keeping an eye on the
 	 *  buffer size. This will be set to true when the buffer is smaller than
@@ -121,24 +120,23 @@ public class AVCHeader {
 		int pos = currentBit / 8;
 		int modulo = currentBit % 8;
 		currentBit++;
-		
+
 		if (buffer != null && pos < buffer.length) {
 			return (buffer[pos] & (1 << (7 - modulo))) >> (7 - modulo);
-		} else {
-			if (!parseFailed) {
-				LOGGER.debug("Cannot parse AVC header, buffer length is " + buffer.length);
-
-				// Do not log consecutive errors.
-				parseFailed = true;
-			}
-
-			return 0;
 		}
+		if (!parseFailed) {
+			LOGGER.debug("Cannot parse AVC header, buffer length is " + buffer.length);
+
+			// Do not log consecutive errors.
+			parseFailed = true;
+		}
+
+		return 0;
 	}
 
 	/**
 	 * Increase the bit counter field to skip a number of bits.
-	 * 
+	 *
 	 * @param number The number of bits to skip.
 	 */
 	private void skipBit(int number) {
@@ -171,12 +169,11 @@ public class AVCHeader {
 		while (getBit() == 0 && !parseFailed) {
 			bits++;
 		}
-		
+
 		if (bits > 0 && !parseFailed) {
 			return (1 << bits) - 1 + getValue(bits);
-		} else {
-			return 0;
 		}
+		return 0;
 	}
 
 	/**
@@ -190,7 +187,7 @@ public class AVCHeader {
 
 	/**
 	 * Returns the AVC compliancy level parsed from the header.
-	 * 
+	 *
 	 * @return The level.
 	 */
 	public int getLevel() {

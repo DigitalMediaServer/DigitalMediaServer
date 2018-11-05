@@ -29,6 +29,7 @@ import net.pms.formats.Format;
 import net.pms.formats.FormatType;
 import net.pms.formats.v2.SubtitleType;
 import net.pms.image.ImageInfo;
+import net.pms.media.VideoLevel;
 import net.pms.service.Services;
 import net.pms.util.Rational;
 import static org.apache.commons.lang3.StringUtils.*;
@@ -54,12 +55,12 @@ public class DLNAMediaDatabase implements Runnable {
 	 * The database version should be incremented when we change anything to
 	 * do with the database since the last released version.
 	 */
-	private final String latestVersion = "11";
+	private final String latestVersion = "12";
 
 	// Database column sizes
 	private final int SIZE_CODECV = 32;
 	private final int SIZE_FRAMERATE = 32;
-	private final int SIZE_AVC_LEVEL = 3;
+	private final int SIZE_VIDEO_PROFILE = 40;
 	private final int SIZE_CONTAINER = 32;
 	private final int SIZE_MATRIX_COEFFICIENTS = 16;
 	private final int SIZE_MUXINGMODE = 32;
@@ -162,7 +163,8 @@ public class DLNAMediaDatabase implements Runnable {
 					sb.append(", ASPECTRATIOCONTAINER    OTHER");
 					sb.append(", ASPECTRATIOVIDEOTRACK   OTHER");
 					sb.append(", REFRAMES                INT");
-					sb.append(", AVCLEVEL                VARCHAR2(").append(SIZE_AVC_LEVEL).append(')');
+					sb.append(", VIDEOPROFILE            VARCHAR2(").append(SIZE_VIDEO_PROFILE).append(')');
+					sb.append(", VIDEOLEVEL              OTHER");
 					sb.append(", IMAGEINFO               OTHER");
 					sb.append(", THUMB                   OTHER");
 					sb.append(", CONTAINER               VARCHAR2(").append(SIZE_CONTAINER).append(')');
@@ -358,7 +360,8 @@ public class DLNAMediaDatabase implements Runnable {
 					media.setAspectRatioContainer((Rational) rs.getObject("ASPECTRATIOCONTAINER"));
 					media.setAspectRatioVideoTrack((Rational) rs.getObject("ASPECTRATIOVIDEOTRACK"));
 					media.setReferenceFrameCount(rs.getInt("REFRAMES"));
-					media.setAvcLevel(rs.getString("AVCLEVEL"));
+					media.setVideoProfile(rs.getString("VIDEOPROFILE"));
+					media.setVideoLevel((VideoLevel) rs.getObject("VIDEOLEVEL"));
 					media.setImageInfo((ImageInfo) rs.getObject("IMAGEINFO"));
 					media.setThumb((DLNAThumbnail) rs.getObject("THUMB"));
 					media.setContainer(rs.getString("CONTAINER"));
@@ -605,8 +608,8 @@ public class DLNAMediaDatabase implements Runnable {
 			try (PreparedStatement ps = connection.prepareStatement(
 				"SELECT " +
 					"ID, FILENAME, MODIFIED, TYPE, DURATION, BITRATE, BITRATEMODE, WIDTH, HEIGHT, SIZE, CODECV, " +
-					"FRAMERATE, ASPECTRATIODVD, ASPECTRATIOCONTAINER, ASPECTRATIOVIDEOTRACK, REFRAMES, AVCLEVEL, " +
-					"IMAGEINFO, THUMB, CONTAINER, MUXINGMODE, FRAMERATEMODE, STEREOSCOPY, MATRIXCOEFFICIENTS, " +
+					"FRAMERATE, ASPECTRATIODVD, ASPECTRATIOCONTAINER, ASPECTRATIOVIDEOTRACK, REFRAMES, VIDEOPROFILE, " +
+					"VIDEOLEVEL, IMAGEINFO, THUMB, CONTAINER, MUXINGMODE, FRAMERATEMODE, STEREOSCOPY, MATRIXCOEFFICIENTS, " +
 					"TITLECONTAINER, TITLEVIDEOTRACK, VIDEOTRACKCOUNT, IMAGECOUNT, BITDEPTH, PIXELASPECTRATIO, " +
 					"SCANTYPE, SCANORDER " +
 				"FROM FILES " +
@@ -639,7 +642,8 @@ public class DLNAMediaDatabase implements Runnable {
 							updateSerialized(rs, media.getAspectRatioContainer(), "ASPECTRATIOCONTAINER");
 							updateSerialized(rs, media.getAspectRatioVideoTrack(), "ASPECTRATIOVIDEOTRACK");
 							rs.updateInt("REFRAMES", media.getReferenceFrameCount());
-							rs.updateString("AVCLEVEL", left(media.getAvcLevel(), SIZE_AVC_LEVEL));
+							rs.updateString("VIDEOPROFILE", left(media.getVideoProfile(), SIZE_VIDEO_PROFILE));
+							updateSerialized(rs, media.getVideoLevel(), "VIDEOLEVEL");
 							updateSerialized(rs, media.getImageInfo(), "IMAGEINFO");
 							updateSerialized(rs, media.getThumb(), "THUMB");
 							rs.updateString("CONTAINER", left(media.getContainer(), SIZE_CONTAINER));
@@ -668,10 +672,10 @@ public class DLNAMediaDatabase implements Runnable {
 				try (
 					PreparedStatement ps = connection.prepareStatement(
 						"INSERT INTO FILES (FILENAME, MODIFIED, TYPE, DURATION, BITRATE, BITRATEMODE, WIDTH, HEIGHT, SIZE, CODECV, " +
-						"FRAMERATE, ASPECTRATIODVD, ASPECTRATIOCONTAINER, ASPECTRATIOVIDEOTRACK, REFRAMES, AVCLEVEL, IMAGEINFO, " +
-						"THUMB, CONTAINER, MUXINGMODE, FRAMERATEMODE, STEREOSCOPY, MATRIXCOEFFICIENTS, TITLECONTAINER, " +
+						"FRAMERATE, ASPECTRATIODVD, ASPECTRATIOCONTAINER, ASPECTRATIOVIDEOTRACK, REFRAMES, VIDEOPROFILE, VIDEOLEVEL, " +
+						"IMAGEINFO, THUMB, CONTAINER, MUXINGMODE, FRAMERATEMODE, STEREOSCOPY, MATRIXCOEFFICIENTS, TITLECONTAINER, " +
 						"TITLEVIDEOTRACK, VIDEOTRACKCOUNT, IMAGECOUNT, BITDEPTH, PIXELASPECTRATIO, SCANTYPE, SCANORDER) VALUES " +
-						"(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+						"(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
 				) {
 					ps.setString(1, name);
 					ps.setTimestamp(2, new Timestamp(modified));
@@ -694,22 +698,23 @@ public class DLNAMediaDatabase implements Runnable {
 						insertSerialized(ps, media.getAspectRatioContainer(), 13);
 						insertSerialized(ps, media.getAspectRatioVideoTrack(), 14);
 						ps.setInt(15, media.getReferenceFrameCount());
-						ps.setString(16, left(media.getAvcLevel(), SIZE_AVC_LEVEL));
-						insertSerialized(ps, media.getImageInfo(), 17);
-						insertSerialized(ps, media.getThumb(), 18);
-						ps.setString(19, left(media.getContainer(), SIZE_CONTAINER));
-						ps.setString(20, left(media.getMuxingModeAudio(), SIZE_MUXINGMODE));
-						ps.setString(21, left(media.getFrameRateMode(), SIZE_FRAMERATE_MODE));
-						ps.setString(22, left(media.getStereoscopy(), SIZE_STEREOSCOPY));
-						ps.setString(23, left(media.getMatrixCoefficients(), SIZE_MATRIX_COEFFICIENTS));
-						ps.setString(24, left(media.getFileTitleFromMetadata(), SIZE_TITLE));
-						ps.setString(25, left(media.getVideoTrackTitleFromMetadata(), SIZE_TITLE));
-						ps.setInt(26, media.getVideoTrackCount());
-						ps.setInt(27, media.getImageCount());
-						ps.setInt(28, media.getVideoBitDepth());
-						insertSerialized(ps, media.getPixelAspectRatio(), 29);
-						insertSerialized(ps, media.getScanType(), 30);
-						insertSerialized(ps, media.getScanOrder(), 31);
+						ps.setString(16, left(media.getVideoProfile(), SIZE_VIDEO_PROFILE));
+						insertSerialized(ps, media.getVideoLevel(), 17);
+						insertSerialized(ps, media.getImageInfo(), 18);
+						insertSerialized(ps, media.getThumb(), 19);
+						ps.setString(20, left(media.getContainer(), SIZE_CONTAINER));
+						ps.setString(21, left(media.getMuxingModeAudio(), SIZE_MUXINGMODE));
+						ps.setString(22, left(media.getFrameRateMode(), SIZE_FRAMERATE_MODE));
+						ps.setString(23, left(media.getStereoscopy(), SIZE_STEREOSCOPY));
+						ps.setString(24, left(media.getMatrixCoefficients(), SIZE_MATRIX_COEFFICIENTS));
+						ps.setString(25, left(media.getFileTitleFromMetadata(), SIZE_TITLE));
+						ps.setString(26, left(media.getVideoTrackTitleFromMetadata(), SIZE_TITLE));
+						ps.setInt(27, media.getVideoTrackCount());
+						ps.setInt(28, media.getImageCount());
+						ps.setInt(29, media.getVideoBitDepth());
+						insertSerialized(ps, media.getPixelAspectRatio(), 30);
+						insertSerialized(ps, media.getScanType(), 31);
+						insertSerialized(ps, media.getScanOrder(), 32);
 					} else {
 						ps.setString(4, null);
 						ps.setInt(5, 0);
@@ -726,19 +731,20 @@ public class DLNAMediaDatabase implements Runnable {
 						ps.setNull(16, Types.VARCHAR);
 						ps.setNull(17, Types.OTHER);
 						ps.setNull(18, Types.OTHER);
-						ps.setNull(19, Types.VARCHAR);
+						ps.setNull(19, Types.OTHER);
 						ps.setNull(20, Types.VARCHAR);
 						ps.setNull(21, Types.VARCHAR);
 						ps.setNull(22, Types.VARCHAR);
 						ps.setNull(23, Types.VARCHAR);
 						ps.setNull(24, Types.VARCHAR);
 						ps.setNull(25, Types.VARCHAR);
-						ps.setInt(26, 0);
+						ps.setNull(26, Types.VARCHAR);
 						ps.setInt(27, 0);
 						ps.setInt(28, 0);
-						ps.setNull(29, Types.OTHER);
+						ps.setInt(29, 0);
 						ps.setNull(30, Types.OTHER);
 						ps.setNull(31, Types.OTHER);
+						ps.setNull(32, Types.OTHER);
 					}
 					ps.executeUpdate();
 					try (ResultSet rs = ps.getGeneratedKeys()) {

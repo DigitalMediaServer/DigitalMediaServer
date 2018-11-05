@@ -20,6 +20,7 @@ import net.pms.configuration.RendererConfiguration;
 import net.pms.configuration.WebRender;
 import net.pms.dlna.DLNAMediaInfo;
 import net.pms.dlna.Range;
+import net.pms.media.H264Level;
 import net.pms.newgui.LooksFrame;
 import net.pms.util.FileWatcher;
 import net.pms.util.Languages;
@@ -281,8 +282,13 @@ public class RemoteUtil {
 	}
 
 	public static boolean transMp4(String mime, DLNAMediaInfo media) {
-		LOGGER.debug("mp4 profile " + media.getH264Profile());
-		return mime.equals(MIME_MP4) && (PMS.getConfiguration().isWebMp4Trans() || media.getAvcAsInt() >= 40);
+		LOGGER.debug("MP4 profile {}", media.getVideoProfile());
+		return
+			mime.equals(MIME_MP4) &&
+			(
+				PMS.getConfiguration().isWebMp4Trans() ||
+				!H264Level.L4.isGreaterThan(media.getVideoLevel())
+			);
 	}
 
 	private static IpFilter bumpFilter = null;
