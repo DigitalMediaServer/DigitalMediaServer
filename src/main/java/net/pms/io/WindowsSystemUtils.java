@@ -20,11 +20,11 @@ package net.pms.io;
 
 import com.sun.jna.Library;
 import com.sun.jna.Native;
-import com.sun.jna.Platform;
 import com.sun.jna.WString;
 import com.sun.jna.platform.win32.Advapi32Util;
 import com.sun.jna.platform.win32.Kernel32Util;
 import com.sun.jna.platform.win32.Win32Exception;
+import com.sun.jna.platform.win32.WinDef.DWORD;
 import com.sun.jna.platform.win32.WinReg;
 import com.sun.jna.ptr.LongByReference;
 import java.awt.Toolkit;
@@ -75,6 +75,29 @@ public class WindowsSystemUtils extends BasicSystemUtils {
 		int GetACP();
 		int GetOEMCP();
 		int GetConsoleOutputCP();
+
+		/**
+		 * Returns the current version number of the operating system packed as
+		 * a {@link DWORD}.
+		 * <p>
+		 * <b>Note:</b> For Windows 8.1 and later, the returned value depends on
+		 * how the application is manifested and might lie. If the application
+		 * isn't manifested, the returned value is never higher than Windows 8
+		 * (6.2).
+		 * <p>
+		 * For all platforms, the low-order word contains the version number of
+		 * the operating system. The low-order byte of this word specifies the
+		 * major version number, in hexadecimal notation. The high-order byte
+		 * specifies the minor version (revision) number, in hexadecimal
+		 * notation. The high-order bit is zero, the next 7 bits represent the
+		 * build number, and the low-order byte is 5.
+		 *
+		 * @return If the function succeeds, the return value includes the major
+		 *         and minor version numbers of the operating system in the low
+		 *         order word, and information about the operating system
+		 *         platform in the high order word.
+		 */
+		DWORD GetVersion();
 	}
 
 	private final boolean kerio;
@@ -380,16 +403,12 @@ public class WindowsSystemUtils extends BasicSystemUtils {
 	}
 
 	@Override
-	@Nullable
-	public Double getWindowsVersion() {
-		if (!Platform.isWindows()) {
-			return null;
-		}
-		try {
-			return Double.valueOf(System.getProperty("os.version"));
-		} catch (NullPointerException | NumberFormatException e) {
-			return null;
-		}
+	@Nonnull
+	protected Version getOSVersionInternal() {
+		DWORD dword = Kernel32.INSTANCE.GetVersion();
+		int low = dword.getLow().intValue();
+		int high = dword.getHigh().intValue();
+		return new Version(low & 0xFF, low >> 8, 0, high >= 0 ? high : 0);
 	}
 
 	@Override

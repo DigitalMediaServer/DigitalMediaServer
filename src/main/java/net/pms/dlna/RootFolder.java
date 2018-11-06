@@ -65,6 +65,7 @@ import net.pms.util.FileUtil;
 import net.pms.util.FileWatcher;
 import net.pms.util.ProcessUtil;
 import net.pms.util.StringUtil;
+import net.pms.util.Version;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
@@ -374,8 +375,8 @@ public class RootFolder extends DLNAResource {
 				// Lazy initialization
 				defaultFolders = new ArrayList<Path>();
 				if (Platform.isWindows()) {
-					Double version = BasicSystemUtils.INSTANCE.getWindowsVersion();
-					if (version != null && version >= 6d) {
+					Version version = BasicSystemUtils.INSTANCE.getOSVersion();
+					if (version != null && version.isGreaterThanOrEqualTo(6)) {
 						ArrayList<GUID> knownFolders = new ArrayList<>(Arrays.asList(new GUID[]{
 							KnownFolders.FOLDERID_Desktop,
 							KnownFolders.FOLDERID_Downloads,
@@ -391,7 +392,7 @@ public class RootFolder extends DLNAResource {
 							KnownFolders.FOLDERID_SavedPictures,
 							KnownFolders.FOLDERID_Videos,
 						}));
-						if (version >= 6.2) { // Windows 8
+						if (version.isGreaterThanOrEqualTo(6, 2)) { // Windows 8
 							knownFolders.add(KnownFolders.FOLDERID_Screenshots);
 						}
 						for (GUID guid : knownFolders) {

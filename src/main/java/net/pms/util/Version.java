@@ -154,8 +154,100 @@ public final class Version implements Comparable<Version> {
 	}
 
 	/**
-	 * Checks if this {@link Version} is less than the specified {@link Version}
-	 * .
+	 * Creates a new instance using the specified values.
+	 *
+	 * @param major the major version value.
+	 * @param minor the minor version value.
+	 * @param revision the revision value.
+	 */
+	public Version(int major, int minor, int revision) {
+		elementValues = new int[] {major, minor, revision};
+		elements = new String[] {
+			Integer.toString(major),
+			Integer.toString(minor),
+			Integer.toString(revision)
+		};
+		versionString = StringUtils.join(elementValues, '.');
+		text = null;
+	}
+
+	/**
+	 * Creates a new instance using the specified values.
+	 *
+	 * @param major the major version value.
+	 * @param minor the minor version value.
+	 */
+	public Version(int major, int minor) {
+		elementValues = new int[] {major, minor};
+		elements = new String[] {Integer.toString(major), Integer.toString(minor)};
+		versionString = StringUtils.join(elementValues, '.');
+		text = null;
+	}
+
+	/**
+	 * Creates a new instance using the specified values.
+	 *
+	 * @param major the major version value.
+	 */
+	public Version(int major) {
+		elementValues = new int[] {major};
+		elements = new String[] {Integer.toString(major)};
+		versionString = StringUtils.join(elementValues, '.');
+		text = null;
+	}
+
+	/**
+	 * Checks if this {@link Version} is less than the specified version.
+	 *
+	 * @param major the first number in the version to compare with.
+	 * @param minor the second number in the version to compare with.
+	 * @param revision the third number in the version to compare with.
+	 * @param build the fourth number in the version to compare with.
+	 * @return {@code true} if this version is less than the specified version,
+	 *         {@code false} otherwise.
+	 */
+	public boolean isLessThan(int major, int minor, int revision, int build) {
+		return compareToElementValues(new int[] {major, minor, revision, build}) < 0;
+	}
+
+	/**
+	 * Checks if this {@link Version} is less than the specified version.
+	 *
+	 * @param major the first number in the version to compare with.
+	 * @param minor the second number in the version to compare with.
+	 * @param revision the third number in the version to compare with.
+	 * @return {@code true} if this version is less than the specified version,
+	 *         {@code false} otherwise.
+	 */
+	public boolean isLessThan(int major, int minor, int revision) {
+		return compareToElementValues(new int[] {major, minor, revision}) < 0;
+	}
+
+	/**
+	 * Checks if this {@link Version} is less than the specified version.
+	 *
+	 * @param major the first number in the version to compare with.
+	 * @param minor the second number in the version to compare with.
+	 * @return {@code true} if this version is less than the specified version,
+	 *         {@code false} otherwise.
+	 */
+	public boolean isLessThan(int major, int minor) {
+		return compareToElementValues(new int[] {major, minor}) < 0;
+	}
+
+	/**
+	 * Checks if this {@link Version} is less than the specified version.
+	 *
+	 * @param major the version to compare with.
+	 * @return {@code true} if this version is less than the specified version,
+	 *         {@code false} otherwise.
+	 */
+	public boolean isLessThan(int major) {
+		return compareToElementValues(new int[] {major}) < 0;
+	}
+
+	/**
+	 * Checks if this {@link Version} is less than the specified {@link Version}.
 	 *
 	 * @param other the {@link Version} to compare to.
 	 * @return {@code true} if this version is less than {@code other},
@@ -166,8 +258,7 @@ public final class Version implements Comparable<Version> {
 	}
 
 	/**
-	 * Checks if this {@link Version} is less than the specified {@link Version}
-	 * .
+	 * Checks if this {@link Version} is less than the specified {@link Version}.
 	 *
 	 * @param other the {@link Version} to compare to.
 	 * @param includeTextSuffix if {@code true} any trailing text is compared
@@ -177,6 +268,60 @@ public final class Version implements Comparable<Version> {
 	 */
 	public boolean isLessThan(Version other, boolean includeTextSuffix) {
 		return compareTo(other, includeTextSuffix) < 0;
+	}
+
+	/**
+	 * Checks if this {@link Version} is less than or equal to the specified
+	 * version.
+	 *
+	 * @param major the first number in the version to compare with.
+	 * @param minor the second number in the version to compare with.
+	 * @param revision the third number in the version to compare with.
+	 * @param build the fourth number in the version to compare with.
+	 * @return {@code true} if this version is less than or equal to the
+	 *         specified version, {@code false} otherwise.
+	 */
+	public boolean isLessThanOrEqualTo(int major, int minor, int revision, int build) {
+		return compareToElementValues(new int[] {major, minor, revision, build}) <= 0;
+	}
+
+	/**
+	 * Checks if this {@link Version} is less than or equal to the specified
+	 * version.
+	 *
+	 * @param major the first number in the version to compare with.
+	 * @param minor the second number in the version to compare with.
+	 * @param revision the third number in the version to compare with.
+	 * @return {@code true} if this version is less than or equal to the
+	 *         specified version, {@code false} otherwise.
+	 */
+	public boolean isLessThanOrEqualTo(int major, int minor, int revision) {
+		return compareToElementValues(new int[] {major, minor, revision}) <= 0;
+	}
+
+	/**
+	 * Checks if this {@link Version} is less than or equal to the specified
+	 * version.
+	 *
+	 * @param major the first number in the version to compare with.
+	 * @param minor the second number in the version to compare with.
+	 * @return {@code true} if this version is less than or equal to the
+	 *         specified version, {@code false} otherwise.
+	 */
+	public boolean isLessThanOrEqualTo(int major, int minor) {
+		return compareToElementValues(new int[] {major, minor}) <= 0;
+	}
+
+	/**
+	 * Checks if this {@link Version} is less than or equal to the specified
+	 * version.
+	 *
+	 * @param major the version to compare with.
+	 * @return {@code true} if this version is less than or equal to the
+	 *         specified version, {@code false} otherwise.
+	 */
+	public boolean isLessThanOrEqualTo(int major) {
+		return compareToElementValues(new int[] {major}) <= 0;
 	}
 
 	/**
@@ -206,6 +351,56 @@ public final class Version implements Comparable<Version> {
 	}
 
 	/**
+	 * Checks if this {@link Version} is greater than the specified version.
+	 *
+	 * @param major the first number in the version to compare with.
+	 * @param minor the second number in the version to compare with.
+	 * @param revision the third number in the version to compare with.
+	 * @param build the fourth number in the version to compare with.
+	 * @return {@code true} if this version is greater than the specified
+	 *         version, {@code false} otherwise.
+	 */
+	public boolean isGreaterThan(int major, int minor, int revision, int build) {
+		return compareToElementValues(new int[] {major, minor, revision, build}) > 0;
+	}
+
+	/**
+	 * Checks if this {@link Version} is greater than the specified version.
+	 *
+	 * @param major the first number in the version to compare with.
+	 * @param minor the second number in the version to compare with.
+	 * @param revision the third number in the version to compare with.
+	 * @return {@code true} if this version is greater than the specified
+	 *         version, {@code false} otherwise.
+	 */
+	public boolean isGreaterThan(int major, int minor, int revision) {
+		return compareToElementValues(new int[] {major, minor, revision}) > 0;
+	}
+
+	/**
+	 * Checks if this {@link Version} is greater than the specified version.
+	 *
+	 * @param major the first number in the version to compare with.
+	 * @param minor the second number in the version to compare with.
+	 * @return {@code true} if this version is greater than the specified
+	 *         version, {@code false} otherwise.
+	 */
+	public boolean isGreaterThan(int major, int minor) {
+		return compareToElementValues(new int[] {major, minor}) > 0;
+	}
+
+	/**
+	 * Checks if this {@link Version} is greater than the specified version.
+	 *
+	 * @param major the version to compare with.
+	 * @return {@code true} if this version is greater than the specified
+	 *         version, {@code false} otherwise.
+	 */
+	public boolean isGreaterThan(int major) {
+		return compareToElementValues(new int[] {major}) > 0;
+	}
+
+	/**
 	 * Checks if this {@link Version} is greater than the specified
 	 * {@link Version}.
 	 *
@@ -229,6 +424,60 @@ public final class Version implements Comparable<Version> {
 	 */
 	public boolean isGreaterThan(Version other, boolean includeTextSuffix) {
 		return compareTo(other, includeTextSuffix) > 0;
+	}
+
+	/**
+	 * Checks if this {@link Version} is greater than or equal to the specified
+	 * version.
+	 *
+	 * @param major the first number in the version to compare with.
+	 * @param minor the second number in the version to compare with.
+	 * @param revision the third number in the version to compare with.
+	 * @param build the fourth number in the version to compare with.
+	 * @return {@code true} if this version is greater than or equal to the
+	 *         specified version, {@code false} otherwise.
+	 */
+	public boolean isGreaterThanOrEqualTo(int major, int minor, int revision, int build) {
+		return compareToElementValues(new int[] {major, minor, revision, build}) >= 0;
+	}
+
+	/**
+	 * Checks if this {@link Version} is greater than or equal to the specified
+	 * version.
+	 *
+	 * @param major the first number in the version to compare with.
+	 * @param minor the second number in the version to compare with.
+	 * @param revision the third number in the version to compare with.
+	 * @return {@code true} if this version is greater than or equal to the
+	 *         specified version, {@code false} otherwise.
+	 */
+	public boolean isGreaterThanOrEqualTo(int major, int minor, int revision) {
+		return compareToElementValues(new int[] {major, minor, revision}) >= 0;
+	}
+
+	/**
+	 * Checks if this {@link Version} is greater than or equal to the specified
+	 * version.
+	 *
+	 * @param major the first number in the version to compare with.
+	 * @param minor the second number in the version to compare with.
+	 * @return {@code true} if this version is greater than or equal to the
+	 *         specified version, {@code false} otherwise.
+	 */
+	public boolean isGreaterThanOrEqualTo(int major, int minor) {
+		return compareToElementValues(new int[] {major, minor}) >= 0;
+	}
+
+	/**
+	 * Checks if this {@link Version} is greater than or equal to the specified
+	 * version.
+	 *
+	 * @param major the version to compare with.
+	 * @return {@code true} if this version is greater than or equal to the
+	 *         specified version, {@code false} otherwise.
+	 */
+	public boolean isGreaterThanOrEqualTo(int major) {
+		return compareToElementValues(new int[] {major}) >= 0;
 	}
 
 	/**
@@ -412,6 +661,11 @@ public final class Version implements Comparable<Version> {
 			}
 		}
 
+		// Always return at least one element
+		if (canonicalElementsLength == 0 && elementValues.length > 0) {
+			canonicalElementsLength = 1;
+		}
+
 		int[] result = new int[canonicalElementsLength];
 		if (canonicalElementsLength > 0) {
 			System.arraycopy(elementValues, 0, result, 0, canonicalElementsLength);
@@ -449,16 +703,9 @@ public final class Version implements Comparable<Version> {
 		if (other == null) {
 			return -1;
 		}
-		int maxIdx = Math.max(elementValues.length, other.elementValues.length);
-		for (int i = 0; i < maxIdx; i++) {
-			int thisValue = i < elementValues.length ? elementValues[i] : 0;
-			int otherValue = i < other.elementValues.length ? other.elementValues[i] : 0;
-			if (thisValue < otherValue) {
-				return -1;
-			}
-			if (thisValue > otherValue) {
-				return 1;
-			}
+		int result = compareToElementValues(other.elementValues);
+		if (result != 0) {
+			return result;
 		}
 
 		if (includeTextSuffix && (text != null || other.text != null)) {
@@ -469,6 +716,38 @@ public final class Version implements Comparable<Version> {
 				return 1;
 			}
 			return text.compareTo(other.text);
+		}
+		return 0;
+	}
+
+	/**
+	 * Compares the element values of this {@link Version} with the specified
+	 * element values. Returns a negative integer, zero, or a positive integer
+	 * as this instance is less than, equal to, or greater than the specified
+	 * element values.
+	 *
+	 * @param otherElementValues the element values to compare to.
+	 * @return A negative integer, zero, or a positive integer as this instance
+	 *         is less than, equal to, or greater than the specified element
+	 *         values.
+	 */
+	protected int compareToElementValues(@Nonnull int[] otherElementValues) {
+		if (elementValues.length == 0) {
+			return otherElementValues.length == 0 ? 0 : -1;
+		}
+		if (otherElementValues.length == 0) {
+			return 1;
+		}
+		int maxIdx = Math.max(elementValues.length, otherElementValues.length);
+		for (int i = 0; i < maxIdx; i++) {
+			int thisValue = i < elementValues.length ? elementValues[i] : 0;
+			int otherValue = i < otherElementValues.length ? otherElementValues[i] : 0;
+			if (thisValue < otherValue) {
+				return -1;
+			}
+			if (thisValue > otherValue) {
+				return 1;
+			}
 		}
 		return 0;
 	}

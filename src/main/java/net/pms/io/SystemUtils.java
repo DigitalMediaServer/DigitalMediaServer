@@ -79,11 +79,18 @@ public interface SystemUtils {
 	int getPingPacketFragments(int packetSize);
 
 	/**
-	 * @return The Windows (internal) version or {@code null} if the platform
-	 *         isn't Windows or the value could not be parsed.
+	 * Returns the operating system version. This might not be the same as the
+	 * "marketing version" or "distro version".
+	 * <p>
+	 * On Windows, the version returned is called the "internal" version, where
+	 * for example Windows 7 (marketing) returns 6.1. On Linux, the kernel
+	 * version will normally be returned, not the version number assigned by the
+	 * "distro".
+	 *
+	 * @return The OS {@link Version}.
 	 */
-	@Nullable
-	public Double getWindowsVersion();
+	@Nonnull
+	public Version getOSVersion();
 
 	/**
 	 * @return The locally resolvable name of the local computer or

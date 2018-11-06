@@ -80,7 +80,6 @@ import net.pms.newgui.components.WindowProperties.WindowPropertiesConfiguration;
 import net.pms.remote.RemoteWeb;
 import net.pms.service.Services;
 import net.pms.util.*;
-import net.pms.util.jna.macos.iokit.IOKitUtils;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.event.ConfigurationEvent;
 import org.apache.commons.configuration.event.ConfigurationListener;
@@ -1710,7 +1709,7 @@ public class PMS {
 		LOGGER.info("Encoding: {}", System.getProperty("file.encoding"));
 		LOGGER.info("");
 
-		if (Platform.isMac() && !IOKitUtils.isMacOsVersionEqualOrGreater(6, 0)) {
+		if (Platform.isMac() && BasicSystemUtils.INSTANCE.getOSVersion().isLessThan(10, 6)) {
 			// The binaries shipped with the Mac OS X version of DMS are being
 			// compiled against specific OS versions, making them incompatible
 			// with older versions. Warn the user about this when necessary.
