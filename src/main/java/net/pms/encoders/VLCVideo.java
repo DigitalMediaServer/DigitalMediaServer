@@ -283,7 +283,9 @@ public class VLCVideo extends Player {
 		args.put("threads", "" + configuration.getNumberOfCpuCores());
 
 		// Hardcode subtitles into video
-		args.put("soverlay", null);
+		if (!configuration.isDisableSubtitles() && params.sid != null) {
+			args.put("soverlay", null);
+		}
 
 		// Add extra args
 		args.putAll(codecConfig.extraTrans);
@@ -610,6 +612,11 @@ public class VLCVideo extends Player {
 
 			separator = ",";
 		}
+
+//		if (params.mediaRenderer.isTranscodeToMPEGTS()) {
+//			cmdList.add("--no-ts-trust-pcr");
+//			cmdList.add("--ts-seek-percent");
+//		}
 
 		// Add our transcode options
 		String transcodeSpec = String.format(
