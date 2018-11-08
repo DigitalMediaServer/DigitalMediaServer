@@ -29,7 +29,9 @@ import java.nio.file.FileSystemException;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.EnumSet;
+import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import javax.annotation.Nonnull;
@@ -333,6 +335,34 @@ public class FilePermissions {
 	}
 
 	/**
+	 * Checks if all the specified {@link FileFlag}s are satisfied.
+	 *
+	 * @param requireFlags the {@link Set} of {@link FileFlag}s to satisfy.
+	 * @return {@code true} if all the required {@link FileFlag} are satisfied,
+	 *         {@code false} otherwise.
+	 */
+	public boolean hasFlags(@Nullable Set<FileFlag> requireFlags) {
+		if (requireFlags == null || requireFlags.isEmpty()) {
+			return true;
+		}
+		return getFlags(requireFlags.toArray(new FileFlag[requireFlags.size()])).containsAll(requireFlags);
+	}
+
+	/**
+	 * Checks if all the specified {@link FileFlag}s are satisfied.
+	 *
+	 * @param requireFlags the {@link FileFlag}s to satisfy.
+	 * @return {@code true} if all the required {@link FileFlag} are satisfied,
+	 *         {@code false} otherwise.
+	 */
+	public boolean hasFlags(@Nullable FileFlag... requireFlags) {
+		if (requireFlags == null || requireFlags.length == 0) {
+			return true;
+		}
+		return getFlags(requireFlags).containsAll(Arrays.asList(requireFlags));
+	}
+
+	/**
 	 * Makes sure that the specified file permissions are evaluated and returns
 	 * an {@link EnumSet} containing the permissions and properties of the file
 	 * object. {@code checkFlag} isn't a filter but a way to make sure that only
@@ -342,7 +372,7 @@ public class FilePermissions {
 	 * <p>
 	 * If {@code checkFlag} is {@code null}, all permissions are evaluated.
 	 *
-	 * @param checkFlag the {@link Set} of {@link FileFlag}s indicating which
+	 * @param checkFlags the {@link Set} of {@link FileFlag}s indicating which
 	 *            permissions to check.
 	 * @return An {@link EnumSet} containing the permissions for the file object
 	 *         that are present and have been evaluated. There is no way to
@@ -351,11 +381,11 @@ public class FilePermissions {
 	 *         {@link EnumSet}.
 	 */
 	@Nonnull
-	public EnumSet<FileFlag> getFlags(@Nullable Set<FileFlag> checkFlag) {
-		if (checkFlag == null || checkFlag.isEmpty()) {
+	public EnumSet<FileFlag> getFlags(@Nullable Set<FileFlag> checkFlags) {
+		if (checkFlags == null || checkFlags.isEmpty()) {
 			return getFlags();
 		}
-		return getFlags(checkFlag.toArray(new FileFlag[checkFlag.size()]));
+		return getFlags(checkFlags.toArray(new FileFlag[checkFlags.size()]));
 	}
 
 	/**
@@ -368,7 +398,8 @@ public class FilePermissions {
 	 * <p>
 	 * If no {@code checkFlag} is specified, all permissions are evaluated.
 	 *
-	 * @param checkFlag the {@link FileFlag}s indicating which permissions to check.
+	 * @param checkFlags the {@link FileFlag}s indicating which permissions to
+	 *            check.
 	 * @return An {@link EnumSet} containing the permissions for the file object
 	 *         that are present and have been evaluated. There is no way to
 	 *         differentiate between a permission that isn't evaluated and one
@@ -376,14 +407,14 @@ public class FilePermissions {
 	 *         {@link EnumSet}.
 	 */
 	@Nonnull
-	public EnumSet<FileFlag> getFlags(@Nullable FileFlag... checkFlag) {
-		if (checkFlag == null) {
-			checkFlag = new FileFlag[0];
+	public EnumSet<FileFlag> getFlags(@Nullable FileFlag... checkFlags) {
+		if (checkFlags == null) {
+			checkFlags = new FileFlag[0];
 		}
-		boolean checkRead = checkFlag.length == 0;
-		boolean checkWrite = checkFlag.length == 0;
-		boolean checkExecute = checkFlag.length == 0;
-		for (FileFlag flag : checkFlag) {
+		boolean checkRead = checkFlags.length == 0;
+		boolean checkWrite = checkFlags.length == 0;
+		boolean checkExecute = checkFlags.length == 0;
+		for (FileFlag flag : checkFlags) {
 			switch (flag) {
 				case BROWSE:
 					checkRead = true;
@@ -519,6 +550,7 @@ public class FilePermissions {
 		File file = new File(
 			this.path.toFile(),
 			String.format(
+				Locale.ROOT,
 				"DMS_folder_write_test_%d_%d.tmp",
 				System.currentTimeMillis(),
 				Thread.currentThread().getId()
