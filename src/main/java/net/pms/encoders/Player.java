@@ -1128,9 +1128,7 @@ public abstract class Player {
 	@Nonnull
 	protected ExecutableInfo testExecutableFile(@Nonnull ExecutableInfo executableInfo) {
 		try {
-			FilePermissions permissions = new FilePermissions(executableInfo.getPath());
-			Set<FileFlag> flags = permissions.getFlags(FileFlag.FILE, FileFlag.EXECUTE, FileFlag.READ);
-			if (!flags.contains(FileFlag.FILE) || !flags.contains(FileFlag.READ) || !flags.contains(FileFlag.EXECUTE)) {
+			if (!new FilePermissions(executableInfo.getPath()).hasFlags(FileFlag.FILE, FileFlag.EXECUTE, FileFlag.READ)) {
 				LOGGER.warn(
 					"Insufficient permission to execute \"{}\" for transcoding engine {}",
 					executableInfo.getPath(),

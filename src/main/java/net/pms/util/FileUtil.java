@@ -7,20 +7,28 @@ import java.io.*;
 import java.lang.reflect.Field;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.ByteBuffer;
+import java.nio.channels.SeekableByteChannel;
 import java.nio.charset.Charset;
 import java.nio.charset.IllegalCharsetNameException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileStore;
+import java.nio.file.FileSystemLoopException;
+import java.nio.file.FileVisitOption;
+import java.nio.file.FileVisitResult;
+import java.nio.file.FileVisitor;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.PosixFileAttributes;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -1260,6 +1268,436 @@ public class FileUtil {
 	}
 
 	/**
+	 * Returns the specified path if it exists, otherwise {@code null} is
+	 * returned.
+	 *
+	 * @param path the path to evaluate.
+	 * @param options the {@link LinkOption}s to use when resolving.
+	 * @return The corresponding {@link Path} or {@code null} if {@code path}
+	 *         doesn't exist.
+	 */
+	@Nullable
+	public static Path existsOrNull(@Nullable String path, @Nullable LinkOption... options) {
+		if (path == null) {
+			return null;
+		}
+		try {
+			Path asPath = Paths.get(path);
+			return Files.exists(asPath, options) ? asPath : null;
+		} catch (InvalidPathException e) {
+			return null;
+		}
+	}
+
+	/**
+	 * Returns the specified path if it exists and satisfies the
+	 * specified {@link FileFlag}s, otherwise {@code null} is returned.
+	 *
+	 * @param path the path to evaluate.
+	 * @param requireFlags the {@link FileFlag}s that must be satisfied or none
+	 *            to do a simple existence check.
+	 * @return The corresponding {@link Path} or {@code null} if {@code path}
+	 *         doesn't exist or doesn't satisfy {@code requireFlags}.
+	 */
+	@Nullable
+	public static Path existsOrNull(@Nullable String path, @Nullable FileFlag... requireFlags) {
+		if (path == null) {
+			return null;
+		}
+		try {
+			Path asPath = Paths.get(path);
+			return exists(
+				asPath,
+				requireFlags == null ? EnumSet.noneOf(FileFlag.class) : EnumSet.copyOf(Arrays.asList(requireFlags))
+			) ? asPath : null;
+		} catch (InvalidPathException e) {
+			return null;
+		}
+	}
+
+	/**
+	 * Returns the specified path if it exists and satisfies the
+	 * specified {@link FileFlag}s, otherwise {@code null} is returned.
+	 *
+	 * @param path the path to evaluate.
+	 * @param requireFlags the {@link Set} of {@link FileFlag}s that must be
+	 *            satisfied or {@code null} to do a simple existence check.
+	 * @param options the {@link LinkOption}s to use when resolving.
+	 * @return The corresponding {@link Path} or {@code null} if {@code path}
+	 *         doesn't exist or doesn't satisfy {@code requireFlags}.
+	 */
+	@Nullable
+	public static Path existsOrNull(
+		@Nullable String path,
+		@Nullable Set<FileFlag> requireFlags,
+		@Nullable LinkOption... options
+	) {
+		if (path == null) {
+			return null;
+		}
+		try {
+			Path asPath = Paths.get(path);
+			return exists(asPath, requireFlags, options) ? asPath : null;
+		} catch (InvalidPathException e) {
+			return null;
+		}
+	}
+
+	/**
+	 * Tests whether the specified path exists.
+	 *
+	 * @param path the path to evaluate.
+	 * @param options the {@link LinkOption}s to use when resolving.
+	 * @return {@code true} if {@code path} exists, {@code false} otherwise.
+	 */
+	public static boolean exists(@Nullable String path, @Nullable LinkOption... options) {
+		if (path == null) {
+			return false;
+		}
+		try {
+			return Files.exists(Paths.get(path), options);
+		} catch (InvalidPathException e) {
+			return false;
+		}
+	}
+
+	/**
+	 * Tests whether the specified path exists and satisfies the specified
+	 * {@link FileFlag}s.
+	 *
+	 * @param path the path to evaluate.
+	 * @param requireFlags the {@link FileFlag}s that must be satisfied or none
+	 *            to do a simple existence check.
+	 * @return {@code true} if {@code path} exists and satisfies
+	 *         {@code requireFlags}, {@code false} otherwise.
+	 */
+	public static boolean exists(@Nullable String path, @Nullable FileFlag... requireFlags) {
+		if (path == null) {
+			return false;
+		}
+		try {
+			return exists(
+				Paths.get(path),
+				requireFlags == null ? EnumSet.noneOf(FileFlag.class) : EnumSet.copyOf(Arrays.asList(requireFlags))
+			);
+		} catch (InvalidPathException e) {
+			return false;
+		}
+	}
+
+	/**
+	 * Tests whether the specified path exists and satisfies the specified
+	 * {@link FileFlag}s.
+	 *
+	 * @param path the path to evaluate.
+	 * @param requireFlags the {@link Set} of {@link FileFlag}s that must be
+	 *            satisfied or {@code null} to do a simple existence check.
+	 * @param options the {@link LinkOption}s to use when resolving.
+	 * @return {@code true} if {@code path} exists and satisfies
+	 *         {@code requireFlags}, {@code false} otherwise.
+	 */
+	public static boolean exists(
+		@Nullable String path,
+		@Nullable Set<FileFlag> requireFlags,
+		@Nullable LinkOption... options
+	) {
+		if (path == null) {
+			return false;
+		}
+		try {
+			return exists(Paths.get(path), requireFlags, options);
+		} catch (InvalidPathException e) {
+			return false;
+		}
+	}
+
+	/**
+	 * Returns the specified {@link File} if it exists, otherwise {@code null}
+	 * is returned.
+	 *
+	 * @param file the {@link File} to evaluate.
+	 * @return The {@link File} or {@code null} if it doesn't exist.
+	 */
+	@Nullable
+	public static File existsOrNull(@Nullable File file) {
+		return exists(file) ? file : null;
+	}
+
+	/**
+	 * Returns the specified {@link File} if it exists and satisfies the
+	 * specified {@link FileFlag}s, otherwise {@code null} is returned.
+	 *
+	 * @param file the {@link File} to evaluate.
+	 * @param requireFlags the {@link FileFlag}s that must be satisfied or none
+	 *            to do a simple existence check.
+	 * @return The {@link File} or {@code null} if it doesn't exist or doesn't
+	 *         satisfy {@code requireFlags}.
+	 */
+	@Nullable
+	public static File existsOrNull(@Nullable File file, @Nullable FileFlag... requireFlags) {
+		return exists(
+			file,
+			requireFlags == null ? EnumSet.noneOf(FileFlag.class) : EnumSet.copyOf(Arrays.asList(requireFlags))
+		) ? file : null;
+	}
+
+	/**
+	 * Returns the specified {@link File} if it exists and satisfies the
+	 * specified {@link FileFlag}s, otherwise {@code null} is returned.
+	 *
+	 * @param file the {@link File} to evaluate.
+	 * @param requireFlags the {@link Set} of {@link FileFlag}s that must be
+	 *            satisfied or {@code null} to do a simple existence check.
+	 * @return The {@link File} or {@code null} if it doesn't exist or doesn't
+	 *         satisfy {@code requireFlags}.
+	 */
+	@Nullable
+	public static File existsOrNull(@Nullable File file, @Nullable Set<FileFlag> requireFlags) {
+		return exists(file, requireFlags) ? file : null;
+	}
+
+	/**
+	 * Tests whether the specified {@link File} exists, this is a simple forward
+	 * to {@link File#exists()}.
+	 *
+	 * @param file the {@link File} to evaluate.
+	 * @return {@code true} if {@code file} exists, {@code false} otherwise.
+	 */
+	public static boolean exists(@Nullable File file) {
+		return file == null ? false : file.exists();
+	}
+
+	/**
+	 * Tests whether the specified {@link File} exists and satisfies the
+	 * specified {@link FileFlag}s.
+	 *
+	 * @param file the {@link File} to evaluate.
+	 * @param requireFlags the {@link FileFlag}s that must be satisfied or none
+	 *            to do a simple existence check.
+	 * @return {@code true} if {@code file} exists and satisfies
+	 *         {@code requireFlags}, {@code false} otherwise.
+	 */
+	public static boolean exists(@Nullable File file, @Nullable FileFlag... requireFlags) {
+		return exists(
+			file,
+			requireFlags == null ? EnumSet.noneOf(FileFlag.class) : EnumSet.copyOf(Arrays.asList(requireFlags))
+		);
+	}
+
+	/**
+	 * Tests whether the specified {@link File} exists and satisfies the
+	 * specified {@link FileFlag}s.
+	 *
+	 * @param file the {@link File} to evaluate.
+	 * @param requireFlags the {@link Set} of {@link FileFlag}s that must be
+	 *            satisfied or {@code null} to do a simple existence check.
+	 * @return {@code true} if {@code file} exists and satisfies
+	 *         {@code requireFlags}, {@code false} otherwise.
+	 */
+	public static boolean exists(@Nullable File file, @Nullable Set<FileFlag> requireFlags) {
+		if (file == null) {
+			return false;
+		}
+		if (requireFlags != null && !requireFlags.isEmpty()) {
+			try {
+				return new FilePermissions(file).hasFlags(requireFlags);
+			} catch (FileNotFoundException e) {
+				return false;
+			}
+		}
+		return file.exists();
+	}
+
+	/**
+	 * Returns the specified {@link Path} if it exists, otherwise {@code null}
+	 * is returned.
+	 *
+	 * @param path the {@link Path} to evaluate.
+	 * @return The {@link Path} or {@code null} if it doesn't exist.
+	 */
+	@Nullable
+	public static Path existsOrNull(@Nullable Path path) {
+		return path == null ? null : Files.exists(path) ? path : null;
+	}
+
+	/**
+	 * Returns the specified {@link Path} if it exists and satisfies the
+	 * specified {@link FileFlag}s, otherwise {@code null} is returned.
+	 *
+	 * @param path the {@link Path} to evaluate.
+	 * @param requireFlags the {@link FileFlag}s that must be satisfied or none
+	 *            to do a simple existence check.
+	 * @return The {@link Path} or {@code null} if it doesn't exist or doesn't
+	 *         satisfy {@code requireFlags}.
+	 */
+	@Nullable
+	public static Path existsOrNull(@Nullable Path path, @Nullable FileFlag... requireFlags) {
+		return exists(
+			path,
+			requireFlags == null ? EnumSet.noneOf(FileFlag.class) : EnumSet.copyOf(Arrays.asList(requireFlags))
+		) ? path : null;
+	}
+
+	/**
+	 * Returns the specified {@link Path} if it exists and satisfies the
+	 * specified {@link FileFlag}s, otherwise {@code null} is returned.
+	 *
+	 * @param path the {@link Path} to evaluate.
+	 * @param requireFlags the {@link Set} of {@link FileFlag}s that must be
+	 *            satisfied or {@code null} to do a simple existence check.
+	 * @param options the {@link LinkOption}s to use when resolving.
+	 * @return The {@link Path} or {@code null} if it doesn't exist or doesn't
+	 *         satisfy {@code requireFlags}.
+	 */
+	@Nullable
+	public static Path existsOrNull(
+		@Nullable Path path,
+		@Nullable Set<FileFlag> requireFlags,
+		@Nullable LinkOption... options
+	) {
+		return exists(path, requireFlags, options) ? path : null;
+	}
+
+	/**
+	 * Tests whether the specified {@link Path} exists, this is a simple forward
+	 * to {@link Files#exists(Path, LinkOption...)}.
+	 *
+	 * @param path the {@link Path} to evaluate.
+	 * @param options the {@link LinkOption}s to use when resolving.
+	 * @return {@code true} if {@code path} exists, {@code false} otherwise.
+	 */
+	public static boolean exists(@Nullable Path path, @Nullable LinkOption... options) {
+		return path == null ? false : Files.exists(path, options);
+	}
+
+	/**
+	 * Tests whether the specified {@link Path} exists and satisfies the
+	 * specified {@link FileFlag}s.
+	 *
+	 * @param path the {@link Path} to evaluate.
+	 * @param requireFlags the {@link FileFlag}s that must be satisfied or none
+	 *            to do a simple existence check.
+	 * @return {@code true} if {@code path} exists and satisfies
+	 *         {@code requireFlags}, {@code false} otherwise.
+	 */
+	public static boolean exists(@Nullable Path path, @Nullable FileFlag... requireFlags) {
+		return exists(
+			path,
+			requireFlags == null ? EnumSet.noneOf(FileFlag.class) : EnumSet.copyOf(Arrays.asList(requireFlags))
+		);
+	}
+
+	/**
+	 * Tests whether the specified {@link Path} exists and satisfies the
+	 * specified {@link FileFlag}s.
+	 *
+	 * @param path the {@link Path} to evaluate.
+	 * @param requireFlags the {@link Set} of {@link FileFlag}s that must be
+	 *            satisfied or {@code null} to do a simple existence check.
+	 * @param options the {@link LinkOption}s to use when resolving.
+	 * @return {@code true} if {@code path} exists and satisfies
+	 *         {@code requireFlags}, {@code false} otherwise.
+	 */
+	public static boolean exists(
+		@Nullable Path path,
+		@Nullable Set<FileFlag> requireFlags,
+		@Nullable LinkOption... options
+	) {
+		if (path == null) {
+			return false;
+		}
+		if (requireFlags != null && !requireFlags.isEmpty()) {
+			try {
+				return new FilePermissions(path, options).hasFlags(requireFlags);
+			} catch (FileNotFoundException e) {
+				return false;
+			}
+		}
+		return Files.exists(path, options);
+	}
+
+	/**
+	 * Adds the specified {@link Path} to the specified {@link Collection} if
+	 * both are non-{@code null}.
+	 *
+	 * @param collection the {@link Collection} to add {@code path} to.
+	 * @param path the {@link Path} to add.
+	 */
+	public static void addPathIfNotNull(@Nullable Collection<Path> collection, @Nullable Path path) {
+		if (collection != null && path != null) {
+			collection.add(path);
+		}
+	}
+
+	/**
+	 * Enumerates and returns a {@link List} of the specified folder and all
+	 * subfolders where the current process has browse permission.
+	 *
+	 * @param startFolder the folder in which to start the enumeration.
+	 * @param followLinks if {@code true} links will be followed, if
+	 *            {@code false} links won't be followed. Be aware that if links
+	 *            are followed and a loop is encountered, a
+	 *            {@link FileSystemLoopException} will be logged and the
+	 *            returned {@link List} might be incomplete.
+	 * @return The {@link List} of the enumerated, browsable folders.
+	 */
+	@Nonnull
+	public static List<Path> findFoldersRecursively(@Nonnull Path startFolder, boolean followLinks) {
+		final List<Path> result = new ArrayList<>();
+		try {
+			if (
+				startFolder == null ||
+				!new FilePermissions(startFolder).hasFlags(FileFlag.FOLDER, FileFlag.BROWSE)
+			) {
+				return result;
+			}
+		} catch (FileNotFoundException e) {
+			return result;
+		}
+		try {
+			Files.walkFileTree(
+				startFolder,
+				followLinks ? EnumSet.of(FileVisitOption.FOLLOW_LINKS) : EnumSet.noneOf(FileVisitOption.class),
+				Integer.MAX_VALUE,
+				new FileVisitor<Path>() {
+
+					@Override
+					public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+						addPathIfNotNull(
+							result,
+							existsOrNull(dir, EnumSet.of(FileFlag.FOLDER, FileFlag.BROWSE))
+						);
+						return FileVisitResult.CONTINUE;
+					}
+
+					@Override
+					public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+						return FileVisitResult.CONTINUE;
+					}
+
+					@Override
+					public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
+						return FileVisitResult.CONTINUE;
+					}
+
+					@Override
+					public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
+						return FileVisitResult.CONTINUE;
+					}
+				}
+			);
+		} catch (IOException e) {
+			LOGGER.warn(
+				"An error occurred while trying enumerate subfolders of \"{}\": {}",
+				startFolder,
+				e.getMessage()
+			);
+			LOGGER.trace("", e);
+		}
+		return result;
+	}
+
+	/**
 	 * @deprecated Use {@link #isSubtitlesExists(File file, DLNAMediaInfo media)} instead.
 	 */
 	@Deprecated
@@ -2233,9 +2671,7 @@ public class FileUtil {
 						}
 					}
 					try {
-						FilePermissions permissions = new FilePermissions(result, options);
-						Set<FileFlag> flags = permissions.getFlags(requiredFlags);
-						if (flags.containsAll(Arrays.asList(requiredFlags))) {
+						if (new FilePermissions(result, options).hasFlags(requiredFlags)) {
 							if (LOGGER.isTraceEnabled()) {
 								LOGGER.trace("Resolved \"{}\" from \"{}\" using OS path", result, relativePath);
 							}
@@ -2257,6 +2693,225 @@ public class FileUtil {
 			LOGGER.trace("Failed to resolve \"{}\" using OS path", relativePath);
 		}
 		return null;
+	}
+
+	/**
+	 * Compares the content of two files and determines if they are identical or
+	 * not. This can be a slow operation for large files if they are equal or
+	 * the difference is towards the end.
+	 * <p>
+	 * This method aborts as soon as a difference is found, so it should
+	 * normally be quick when comparing unequal files.
+	 *
+	 * @param file1 the first file to compare.
+	 * @param file2 the second file to compare.
+	 * @param options the {@link LinkOption}s, if any.
+	 * @return {@code true} if the content of the files are identical, if the
+	 *         they both point to the same file or if both doesn't exist.
+	 *         {@code false} otherwise.
+	 * @throws IOException If either {@code file1} or {@code file2} isn't a
+	 *             file, or if an error occurs during reading.
+	 */
+	public static boolean isFileContentEqual(
+		@Nullable Path file1,
+		@Nullable Path file2,
+		LinkOption... options
+	) throws IOException {
+		if (file1 == file2) {
+			return true;
+		}
+		if (file1 == null || file2 == null) {
+			return false;
+		}
+		boolean exists1 = Files.exists(file1, options);
+		if (exists1 != Files.exists(file2, options)) {
+			return false;
+		}
+		if (!exists1) {
+			// Consider two non-existing files as equal
+			return true;
+		}
+		BasicFileAttributes attributes1 = Files.readAttributes(file1, BasicFileAttributes.class, options);
+		BasicFileAttributes attributes2 = Files.readAttributes(file2, BasicFileAttributes.class, options);
+		if (!attributes1.isRegularFile()) {
+			throw new IOException("\"" + file1.toAbsolutePath().toString() + "\" isn't a (regular) file");
+		}
+		if (!attributes2.isRegularFile()) {
+			throw new IOException("\"" + file2.toAbsolutePath().toString() + "\" isn't a (regular) file");
+		}
+
+		if (attributes1.size() != attributes2.size()) {
+			return false;
+		}
+
+		if (Files.isSameFile(file1, file2)) {
+			return true;
+		}
+
+		ByteBuffer buffer1 = ByteBuffer.allocate(4096);
+		ByteBuffer buffer2 = ByteBuffer.allocate(4096);
+		int count;
+		try (
+			SeekableByteChannel channel1 = Files.newByteChannel(file1, options);
+			SeekableByteChannel channel2 = Files.newByteChannel(file2, options);
+		) {
+			boolean eof = false;
+			while (!eof) {
+				while (buffer1.hasRemaining()) {
+					count = channel1.read(buffer1);
+					if (count == -1) {
+						eof = true;
+						break;
+					}
+				}
+
+				while (buffer2.hasRemaining()) {
+					count = channel2.read(buffer2);
+					if (count == -1) {
+						eof = true;
+						break;
+					}
+				}
+				buffer1.flip();
+				buffer2.flip();
+				if (buffer1.remaining() != buffer2.remaining()) {
+					return false;
+				}
+				if (!Arrays.equals(buffer1.array(), buffer2.array())) {
+					return false;
+				}
+				buffer1.clear();
+				buffer2.clear();
+			}
+		}
+		return true;
+	}
+
+	/**
+	 * Asserts that the specified {@link Path} exists, is of the specified
+	 * "type" and is readable.
+	 *
+	 * @param path the {@link Path} to assert is readable.
+	 * @param file {@code true} if {@code path} is a file, {@code false} of
+	 *            {@code path} is a folder.
+	 * @return {@code true} if {@code path} exists, is of the specified "type"
+	 *         and is readable, {@code false} otherwise..
+	 */
+	@Nonnull
+	public static boolean assertReadable(@Nullable Path path, boolean file) {
+		if (path == null) {
+			return false;
+		}
+
+		EnumSet<FileFlag> flags = file ?
+			EnumSet.of(FileFlag.FILE, FileFlag.READ) :
+			EnumSet.of(FileFlag.FOLDER, FileFlag.BROWSE);
+		return exists(path, flags);
+	}
+
+	/**
+	 * Asserts that the specified {@link Path} is writable, creating it and any
+	 * parent folders as necessary. The result of the operation is returned as
+	 * an {@link AssertResult}.
+	 *
+	 * @param path the {@link Path} to assert is writable.
+	 * @param file {@code true} if {@code path} is a file, {@code false} of
+	 *            {@code path} is a folder.
+	 * @return The {@link AssertResult}.
+	 */
+	@Nonnull
+	public static AssertResult assertWritable(@Nullable Path path, boolean file) {
+		if (path == null) {
+			return new AssertResult(false, false, false);
+		}
+
+		EnumSet<FileFlag> flags = file ?
+			EnumSet.of(FileFlag.FILE, FileFlag.READ, FileFlag.WRITE) :
+			EnumSet.of(FileFlag.FOLDER, FileFlag.BROWSE, FileFlag.WRITE);
+		try {
+			FilePermissions permissions = new FilePermissions(path);
+			return new AssertResult(
+				permissions.hasFlags(file ? FileFlag.FILE : FileFlag.FOLDER),
+				permissions.hasFlags(flags),
+				false
+			);
+		} catch (FileNotFoundException e) {
+			// Try to create
+			Path parent = path.toAbsolutePath().getParent();
+			if (parent == null) {
+				return new AssertResult(false, false, false);
+			}
+			AssertResult result = assertWritable(parent, false);
+			if (!result.writable) {
+				return new AssertResult(false, false, false);
+			}
+			try {
+				if (file) {
+					path = Files.createFile(parent.resolve(path.getFileName()));
+				} else {
+					path = Files.createDirectory(parent.resolve(path.getFileName()));
+				}
+				return new AssertResult(true, new FilePermissions(path).hasFlags(flags), true);
+			} catch (IOException e1) {
+				LOGGER.warn(
+					"Failed to create {} \"{}\": {}",
+					(file ? "file" : "folder"),
+					parent.resolve(path.getFileName()),
+					e1.getMessage()
+				);
+				LOGGER.trace("", e1);
+				return new AssertResult(false, false, false);
+			}
+		}
+	}
+
+	/**
+	 * A simple container for the the results of {@link FileUtil#assertWritable(Path)}.
+	 *
+	 * @author Nadahar
+	 */
+	public static class AssertResult {
+
+		/** {@code true} if the file or folder exists, {@code false} otherwise */
+		public final boolean exists;
+
+		/**
+		 * {@code true} if the file or folder is writable, {@code false}
+		 * otherwise
+		 */
+		public final boolean writable;
+
+		/**
+		 * {@code true} if the file or folder was created, {@code false}
+		 * otherwise
+		 */
+		public final boolean created;
+
+		/**
+		 * Creates a new instance using the specified values.
+		 *
+		 * @param exists {@code true} if the file or folder exists,
+		 *            {@code false} otherwise.
+		 * @param writable {@code true} if the file or folder is writable,
+		 *            {@code false} otherwise.
+		 * @param created {@code true} if the file or folder was created,
+		 *            {@code false} otherwise.
+		 */
+		public AssertResult(boolean exists, boolean writable, boolean created) {
+			this.exists = exists;
+			this.writable = writable;
+			this.created = created;
+		}
+
+		@Override
+		public String toString() {
+			StringBuilder builder = new StringBuilder();
+			builder
+				.append("CreateOrAssertResult [exists=").append(exists)
+				.append(", writable=").append(writable)
+				.append(", created=").append(created).append("]");
+			return builder.toString();
+		}
 	}
 
 	/**
