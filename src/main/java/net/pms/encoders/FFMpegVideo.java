@@ -70,6 +70,7 @@ import net.pms.util.ProcessUtil;
 import net.pms.util.Rational;
 import net.pms.util.StringUtil;
 import net.pms.util.SubtitleUtils;
+import net.pms.util.Version;
 import org.apache.commons.lang3.StringUtils;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
@@ -258,7 +259,7 @@ public class FFMpegVideo extends Player {
 				}
 			} else if (params.sid.getType().isPicture()) {
 				StringBuilder subsPictureFilter = new StringBuilder();
-				if (params.sid.getId() < 100) {
+				if (params.sid.getId() < 100 || params.sid.getId() > 200) {
 					// Embedded
 					subsPictureFilter.append("[0:V][0:s:").append(media.getSubtitleTracksList().indexOf(params.sid)).append("]overlay");
 					isSubsManualTiming = false;
@@ -828,6 +829,17 @@ public class FFMpegVideo extends Player {
 		return false;
 	}
 
+	/**
+	 * @return The {@link FFmpegExecutableInfo} instance for this
+	 *         {@link FFMpegVideo} instance or {@code null} if none is
+	 *         available.
+	 */
+	@Nullable
+	protected FFmpegExecutableInfo getFFmpegExecutableInfo() {
+		ExecutableInfo executableInfo = getExecutableInfo();
+		return executableInfo instanceof FFmpegExecutableInfo ? (FFmpegExecutableInfo) executableInfo : null;
+	}
+
 	@Override
 	public synchronized ProcessWrapper launchTranscode(
 		DLNAResource dlna,
@@ -842,6 +854,7 @@ public class FFMpegVideo extends Player {
 		PmsConfiguration prev = configuration;
 		configuration = (DeviceConfiguration) params.mediaRenderer;
 		RendererConfiguration renderer = params.mediaRenderer;
+		FFmpegExecutableInfo executableInfo = getFFmpegExecutableInfo();
 
 		/*
 		 * Check if the video track and the container report different aspect ratios
@@ -895,6 +908,7 @@ public class FFMpegVideo extends Player {
 		cmdList.add("-fflags");
 		cmdList.add("+genpts"); //https://trac.ffmpeg.org/ticket/1979
 
+		Version libAVCodecVersion = executableInfo != null ? executableInfo.getLibraryVersion("libavcodec") : null;
 		if (
 			Platform.isMac() &&
 			//noVM &&
@@ -904,7 +918,9 @@ public class FFMpegVideo extends Player {
 				!params.mediaRenderer.isTranscodeToH265()
 			) ||
 				BasicSystemUtils.INSTANCE.getOSVersion().isGreaterThanOrEqualTo(10, 13)
-			)
+			) &&
+			libAVCodecVersion != null &&
+			libAVCodecVersion.isGreaterThanOrEqualTo(58, 18)
 		) {
 			cmdList.add("-hwaccel");
 			cmdList.add("auto");

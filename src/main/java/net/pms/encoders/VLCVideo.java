@@ -49,6 +49,7 @@ import net.pms.formats.FormatType;
 import net.pms.io.*;
 import net.pms.media.H264Level;
 import net.pms.media.VideoCodec;
+import net.pms.media.VideoLevel;
 import net.pms.network.HTTPResource;
 import net.pms.newgui.GuiUtil;
 import net.pms.util.*;
@@ -448,16 +449,29 @@ public class VLCVideo extends Player {
 				x264CRF = x264CRF.substring(x264CRF.indexOf("/*"));
 			}
 
+			int maximumBitrate = defaultMaxBitrates[0];
 			if (x264CRF.contains("Automatic")) {
-				x264CRF = "16";
-
-				// Lower CRF for 720p+ content
-				if (media.getWidth() > 720) {
+				if (x264CRF.contains("Wireless") || maximumBitrate < 70) {
 					x264CRF = "19";
+					// Lower quality for 720p+ content
+					if (media.getWidth() > 1280) {
+						x264CRF = "23";
+					} else if (media.getWidth() > 720) {
+						x264CRF = "22";
+					}
+				} else {
+						x264CRF = "16";
+
+					// Lower CRF for 720p+ content
+					if (media.getWidth() > 720) {
+						x264CRF = "19";
+					}
 				}
 			}
-			videoBitrateOptions.add("--sout-x264-crf");
-			videoBitrateOptions.add(x264CRF);
+			if (isNotBlank(x264CRF)) {
+				videoBitrateOptions.add("--sout-x264-crf");
+				videoBitrateOptions.add(x264CRF);
+			}
 		}
 
 		return videoBitrateOptions;
@@ -492,25 +506,15 @@ public class VLCVideo extends Player {
 		cmdList.add("-I");
 		cmdList.add("dummy");
 
-		/**
-		 * Disable hardware acceleration which is enabled by default,
-		 * but for hardware acceleration, user must enable it in "VLC Preferences",
-		 * until they release documentation for new functionalities introduced in 2.1.4+
-		 */
-		if (BasicSystemUtils.INSTANCE.getVlcVersion() != null) {
-			Version requiredVersion = new Version("2.1.4");
-
-			if (BasicSystemUtils.INSTANCE.getVlcVersion().compareTo(requiredVersion) > 0) {
-				if (!configuration.isGPUAcceleration()) {
-					cmdList.add("--avcodec-hw=disabled");
-					LOGGER.trace("Disabled VLC's hardware acceleration.");
-				}
-			} else if (!configuration.isGPUAcceleration()) {
-				LOGGER.debug(
-					"Version {} of VLC is too low to handle the way we disable hardware acceleration.",
-					BasicSystemUtils.INSTANCE.getVlcVersion()
-				);
-			}
+		// Enable hardware acceleration
+		ExecutableInfo executableInfo = getExecutableInfo();
+		if (
+			executableInfo != null &&
+			executableInfo.getVersion() != null &&
+			executableInfo.getVersion().isGreaterThanOrEqualTo(3, 0, 3)
+		) {
+			cmdList.add("--avcodec-hw=any"); //Since VLC 2.1.0
+			cmdList.add("--avcodec-threads=1"); //https://lists.debian.org/debian-user/2018/06/msg00344.html
 		}
 
 		// Useful for the more esoteric codecs people use
@@ -521,10 +525,6 @@ public class VLCVideo extends Player {
 		// Stop the DOS box from appearing on windows
 		if (isWindows) {
 			cmdList.add("--dummy-quiet");
-		}
-
-		if (VLC >= 3.0.0) {
-			cmdList.add("--ffmpeg-hw");
 		}
 
 		// File needs to be given before sout, otherwise vlc complains
@@ -577,22 +577,19 @@ public class VLCVideo extends Player {
 				cmdList.add("--sub-" + disableSuffix);
 			}
 		} else {
-			cmdList.add("--sub-" + disableSuffix);
+			cmdList.add("--no-sub-autodetect-file");
+			cmdList.add("--no-spu");
+			cmdList.add("--no-osd");
 		}
 
 		// x264 options
 		if (videoRemux) {
-			cmdList.add("--sout-x264-preset");
-			cmdList.add("superfast");
-
-			/**
-			 * This option prevents VLC from speeding up transcoding by disabling certain
-			 * codec optimizations if the CPU is struggling to keep up.
-			 * It is already disabled by default so there is no reason to specify that here,
-			 * plus the option doesn't work on versions of VLC from 2.0.7 to 2.1.5.
-			 */
-			//cmdList.add("--no-sout-avcodec-hurry-up");
-
+			cmdList.add("--sout-x264-preset=" + "ultrafast");
+			cmdList.add("--sout-x264-tune=" + "zerolatency");
+			VideoLevel level = params.mediaRenderer.getVideoLevelLimit(VideoCodec.H264);
+			if (level != null) {
+				cmdList.add("--sout-x264-level=" + level);
+			}
 			cmdList.addAll(getVideoBitrateOptions(dlna, media, params));
 		}
 
@@ -617,10 +614,16 @@ public class VLCVideo extends Player {
 			separator = ",";
 		}
 
-//		if (params.mediaRenderer.isTranscodeToMPEGTS()) {
-//			cmdList.add("--no-ts-trust-pcr");
-//			cmdList.add("--ts-seek-percent");
-//		}
+		// https://bugs.launchpad.net/ubuntu/+source/libdvbpsi/+bug/1503998
+		if (
+			params.mediaRenderer.isTranscodeToMPEGTS() &&
+			executableInfo != null &&
+			executableInfo.getVersion() != null &&
+			executableInfo.getVersion().isGreaterThanOrEqualTo(2, 1, 0)
+		) {
+			cmdList.add("--no-ts-trust-pcr");
+			cmdList.add("--ts-seek-percent");
+		}
 
 		// Add our transcode options
 		String transcodeSpec = String.format(
