@@ -335,6 +335,7 @@ public class FFMpegVideo extends Player {
 		final String filename = dlna.getFileName();
 		final RendererConfiguration renderer = params.mediaRenderer;
 		final boolean vtb = Platform.isMac() && BasicSystemUtils.INSTANCE.getOSVersion().isGreaterThanOrEqualTo(10, 8);
+		final boolean vtbHevc = Platform.isMac() && BasicSystemUtils.INSTANCE.getOSVersion().isGreaterThanOrEqualTo(10, 13);
 		String customFFmpegOptions = renderer.getCustomFFmpegOptions();
 		ExecutableInfo executableInfo = getExecutableInfo();
 		Codec aacAt = ((FFmpegExecutableInfo) executableInfo).getCodecs().get("aac_at");
@@ -444,7 +445,7 @@ public class FFMpegVideo extends Player {
 						}
 					} else {
 						if (executableInfo instanceof FFmpegExecutableInfo) {
-							if (vtb && hevcVideotoolbox != null) {
+							if (vtbHevc && hevcVideotoolbox != null) {
 								transcodeOptions.add("hevc_videotoolbox");
 							} else {
 								transcodeOptions.add("libx265");
@@ -896,8 +897,14 @@ public class FFMpegVideo extends Player {
 
 		if (
 			Platform.isMac() &&
-			BasicSystemUtils.INSTANCE.getOSVersion().isGreaterThanOrEqualTo(10, 8)
-			//&& noVM
+			//noVM &&
+			((
+				BasicSystemUtils.INSTANCE.getOSVersion().isGreaterThanOrEqualTo(10, 8) &&
+				!media.getCodecV().equals("h265") &&
+				!params.mediaRenderer.isTranscodeToH265()
+			) ||
+				BasicSystemUtils.INSTANCE.getOSVersion().isGreaterThanOrEqualTo(10, 13)
+			)
 		) {
 			cmdList.add("-hwaccel");
 			cmdList.add("auto");

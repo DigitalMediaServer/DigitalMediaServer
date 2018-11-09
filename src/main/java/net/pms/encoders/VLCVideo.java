@@ -523,6 +523,10 @@ public class VLCVideo extends Player {
 			cmdList.add("--dummy-quiet");
 		}
 
+		if (VLC >= 3.0.0) {
+			cmdList.add("--ffmpeg-hw");
+		}
+
 		// File needs to be given before sout, otherwise vlc complains
 		cmdList.add(filename);
 
