@@ -924,6 +924,8 @@ public class FFMpegVideo extends Player {
 		) {
 			cmdList.add("-hwaccel");
 			cmdList.add("auto");
+			cmdList.add("-threads");
+			cmdList.add("1");
 		}
 
 		double start = Math.max(params.timeseek, 0.0);
@@ -955,7 +957,7 @@ public class FFMpegVideo extends Player {
 		}
 
 		// Decoder threads
-		if (nThreads > 0) {
+		if (nThreads > 0 && !cmdList.contains("-hwaccel")) {
 			cmdList.add("-threads");
 			cmdList.add(String.valueOf(nThreads));
 		}

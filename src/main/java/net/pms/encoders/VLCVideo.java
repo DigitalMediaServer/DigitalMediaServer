@@ -231,7 +231,6 @@ public class VLCVideo extends Player {
 
 		// Codecs to use
 		args.put("vcodec", codecConfig.videoCodec);
-		args.put("acodec", codecConfig.audioCodec);
 
 		/**
 		 * Bitrate in kbit/s
@@ -244,25 +243,27 @@ public class VLCVideo extends Player {
 			args.put("vb", "4096");
 		}
 
-		if (codecConfig.audioCodec.equals("mp4a")) {
-			args.put("ab", Math.min(configuration.getAudioBitrate(), 320));
-		} else {
-			args.put("ab", configuration.getAudioBitrate());
-		}
-
 		// Video scaling
 		args.put("scale", "1.0");
 
 		boolean isXboxOneWebVideo = params.mediaRenderer.isXboxOne() && purpose() == VIDEO_WEBSTREAM_PLAYER;
 
-		/**
-		 * Only output 6 audio channels for codecs other than AC-3 because as of VLC
-		 * 2.1.5, VLC screws up the channel mapping, making a rear channel go through
-		 * a front speaker.
-		 * Re-evaluate if they ever fix it.
-		 */
+		// Set audio channels
 		int channels = 2;
+		ExecutableInfo executableInfo = getExecutableInfo();
 		if (
+			params.aid != null &&
+			executableInfo != null &&
+			executableInfo.getVersion() != null &&
+			executableInfo.getVersion().isGreaterThanOrEqualTo(2, 2, 0) &&
+			!isXboxOneWebVideo
+		) {
+			if (params.aid.getNumberOfChannels() <= configuration.getAudioChannelCount()) {
+				channels = params.aid.getNumberOfChannels();
+			} else {
+				channels = configuration.getAudioChannelCount();
+			}
+		} else if (
 			!isXboxOneWebVideo &&
 			params.aid != null &&
 			params.aid.getNumberOfChannels() > 2 &&
@@ -271,14 +272,28 @@ public class VLCVideo extends Player {
 		) {
 			channels = 6;
 		}
-		args.put("channels", channels);
+		if (params.aid != null) {
+			args.put("acodec", codecConfig.audioCodec);
+			args.put("channels", channels);
+			if (codecConfig.audioCodec.equals("mp4a")) {
+				args.put("ab", Math.min(configuration.getAudioBitrate(), 320));
+			} else {
+				args.put("ab", configuration.getAudioBitrate());
+			}
 
-		// Static sample rate
-		// TODO: Does WMA still need a sample rate of 41000 for Xbox compatibility?
-		args.put("samplerate", "48000");
+			// Static sample rate
+			// TODO: Does WMA still need a sample rate of 44100 for Xbox compatibility?
+			args.put("samplerate", "48000");
+		}
 
-		// Recommended on VLC DVD encoding page
-		args.put("strict-rc", null);
+		// https://wiki.videolan.org/VLC_HowTo/Make_a_DVD/
+		if (
+			!params.mediaRenderer.isTranscodeToH264 &&
+			!params.mediaRenderer.isTranscodeToH265 &&
+			!params.mediaRenderer.isTranscodeToWMV
+		) {
+			args.put("strict-rc", null);
+		}
 
 		// Enable multi-threading
 		args.put("threads", "" + configuration.getNumberOfCpuCores());
@@ -287,6 +302,8 @@ public class VLCVideo extends Player {
 		if (!configuration.isDisableSubtitles() && params.sid != null) {
 			args.put("soverlay", null);
 		}
+
+
 
 		// Add extra args
 		args.putAll(codecConfig.extraTrans);
@@ -530,8 +547,6 @@ public class VLCVideo extends Player {
 		// File needs to be given before sout, otherwise vlc complains
 		cmdList.add(filename);
 
-		String disableSuffix = "track=-1";
-
 		// Handle audio language
 		if (params.aid != null) {
 			// User specified language at the client, acknowledge it
@@ -541,14 +556,10 @@ public class VLCVideo extends Player {
 			} else {
 				cmdList.add("--audio-language=" + params.aid.getLang());
 			}
-		} else {
-			// Not specified, use language from GUI
-			// FIXME: VLC does not understand "loc" or "und".
-			cmdList.add("--audio-language=" + configuration.getAudioLanguages());
 		}
 
 		// Handle subtitle language
-		if (params.sid != null) { // User specified language at the client, acknowledge it
+		if (params.sid != null && !configuration.isDisableSubtitles()) { // User specified language at the client, acknowledge it
 			if (params.sid.isExternal() && !params.sid.isStreamable() && !params.mediaRenderer.streamSubsForTranscodedVideo()) {
 				String externalSubtitlesFileName;
 
@@ -574,7 +585,7 @@ public class VLCVideo extends Player {
 			} else if (params.sid.getLang() != null && !params.sid.getLang().equals("und")) { // Load by ID (better)
 				cmdList.add("--sub-track=" + params.sid.getId());
 			} else { // VLC doesn't understand "und", but does understand a nonexistent track
-				cmdList.add("--sub-" + disableSuffix);
+				cmdList.add("--sub-track=-1");
 			}
 		} else {
 			cmdList.add("--no-sub-autodetect-file");
@@ -586,6 +597,7 @@ public class VLCVideo extends Player {
 		if (videoRemux) {
 			cmdList.add("--sout-x264-preset=" + "ultrafast");
 			cmdList.add("--sout-x264-tune=" + "zerolatency");
+			cmdList.add("--yuv-chroma=" + "I420");
 			VideoLevel level = params.mediaRenderer.getVideoLevelLimit(VideoCodec.H264);
 			if (level != null) {
 				cmdList.add("--sout-x264-level=" + level);
@@ -623,6 +635,17 @@ public class VLCVideo extends Player {
 		) {
 			cmdList.add("--no-ts-trust-pcr");
 			cmdList.add("--ts-seek-percent");
+		}
+
+		if (
+			media != null &&
+			media.isMediaparsed() &&
+			media.getHeight() != 0 &&
+			media.getWidth() != 0 &&
+			!params.mediaRenderer.isResolutionCompatibleWithRenderer(media.getWidth(), media.getHeight())
+		) {
+			cmdList.add("--sout-transcode-width=" + params.mediaRenderer.getMaxVideoWidth());
+			cmdList.add("--sout-transcode-height=" + params.mediaRenderer.getMaxVideoHeight());
 		}
 
 		// Add our transcode options
