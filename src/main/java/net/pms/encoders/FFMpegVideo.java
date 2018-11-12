@@ -905,6 +905,12 @@ public class FFMpegVideo extends Player {
 			cmdList.add("fatal");
 		}
 
+		// Double the default values to be able to better detect the audio and subtitles stream codecs
+		cmdList.add("-analyzeduration");
+		cmdList.add("12M");
+		cmdList.add("-probesize");
+		cmdList.add("12M");
+
 		cmdList.add("-fflags");
 		cmdList.add("+genpts"); //https://trac.ffmpeg.org/ticket/1979
 

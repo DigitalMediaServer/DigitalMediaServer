@@ -288,9 +288,9 @@ public class VLCVideo extends Player {
 
 		// https://wiki.videolan.org/VLC_HowTo/Make_a_DVD/
 		if (
-			!params.mediaRenderer.isTranscodeToH264 &&
-			!params.mediaRenderer.isTranscodeToH265 &&
-			!params.mediaRenderer.isTranscodeToWMV
+			!params.mediaRenderer.isTranscodeToH264() &&
+			!params.mediaRenderer.isTranscodeToH265() &&
+			!params.mediaRenderer.isTranscodeToWMV()
 		) {
 			args.put("strict-rc", null);
 		}
