@@ -115,13 +115,6 @@ public class FFmpegAudio extends FFMpegVideo {
 	}
 
 	@Override
-	@Deprecated
-	public String[] args() {
-		// unused: kept for backwards compatibility
-		return new String[] {"-f", "s16be", "-ar", "48000"};
-	}
-
-	@Override
 	public String mimeType() {
 		return HTTPResource.AUDIO_TRANSCODE;
 	}
@@ -137,7 +130,7 @@ public class FFmpegAudio extends FFMpegVideo {
 		configuration = (DeviceConfiguration)params.mediaRenderer;
 		final String filename = dlna.getFileName();
 		params.maxBufferSize = configuration.getMaxAudioBuffer();
-		params.waitbeforestart = 2000;
+		params.waitbeforestart = 1;
 		params.manageFastStart();
 
 		/*
@@ -193,21 +186,27 @@ public class FFmpegAudio extends FFMpegVideo {
 		// Decoder threads
 		if (nThreads > 0) {
 			cmdList.add("-threads");
-			cmdList.add("" + nThreads);
+			cmdList.add(String.valueOf(nThreads));
 		}
+
+		// Try to play broken media
+		cmdList.add("-err_detect");
+		cmdList.add("ignore_err");
+		cmdList.add("-ignore_unknown");
 
 		cmdList.add("-i");
 		cmdList.add(filename);
 
-		// Make sure FFmpeg doesn't try to encode embedded images into the stream
+		// Make sure FFmpeg doesn't try to encode or keep embedded image, data or sub
 		cmdList.add("-vn");
 		cmdList.add("-dn");
+		cmdList.add("-sn");
 
 
 		// Encoder threads
 		if (nThreads > 0) {
 			cmdList.add("-threads");
-			cmdList.add("" + nThreads);
+			cmdList.add(String.valueOf(nThreads));
 		}
 
 		if (params.mediaRenderer.isTranscodeToMP3()) {
@@ -227,6 +226,10 @@ public class FFmpegAudio extends FFMpegVideo {
 			cmdList.add("s16be");
 		}
 
+		// https://trac.ffmpeg.org/ticket/6375
+		cmdList.add("-max_muxing_queue_size");
+		cmdList.add("9999");
+
 		if (configuration.isAudioResample()) {
 			if (params.mediaRenderer.isTranscodeAudioTo441()) {
 				cmdList.add("-ar");
@@ -240,6 +243,9 @@ public class FFmpegAudio extends FFMpegVideo {
 				cmdList.add("2");
 			}
 		}
+
+		cmdList.add("-af");
+		cmdList.add("aresample=resampler=soxr:precision=32:cheby=1:dither_method=shibata");
 
 		cmdList.add("pipe:");
 

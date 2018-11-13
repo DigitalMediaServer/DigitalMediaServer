@@ -513,6 +513,10 @@ public class FFMpegVideo extends Player {
 				} else {
 					transcodeOptions.add("vob");
 				}
+
+				// https://trac.ffmpeg.org/ticket/6375
+				transcodeOptions.add("-max_muxing_queue_size");
+				transcodeOptions.add("9999");
 			}
 		}
 
@@ -885,9 +889,7 @@ public class FFMpegVideo extends Player {
 
 		List<String> cmdList = new ArrayList<>();
 		boolean avisynth = avisynth();
-		if (params.timeseek > 0) {
-			params.waitbeforestart = 1;
-		} else if (renderer.isTranscodeFastStart()){
+		if (renderer.isTranscodeFastStart()){
 			params.manageFastStart();
 		} else {
 			params.waitbeforestart = 1;
@@ -900,10 +902,8 @@ public class FFMpegVideo extends Player {
 		// Prevent FFmpeg timeout
 		cmdList.add("-y");
 
-		if (!LOGGER.isTraceEnabled()) {
-			cmdList.add("-loglevel");
-			cmdList.add("fatal");
-		}
+		cmdList.add("-loglevel");
+		cmdList.add(FFmpegProgramInfo.getFFmpegLogLevel());
 
 		// Double the default values to be able to better detect the audio and subtitles stream codecs
 		cmdList.add("-analyzeduration");
@@ -921,8 +921,11 @@ public class FFMpegVideo extends Player {
 			((
 				BasicSystemUtils.INSTANCE.getOSVersion().isGreaterThanOrEqualTo(10, 8) &&
 				!media.getCodecV().equals("h265") &&
-				!params.mediaRenderer.isTranscodeToH265()
+				!params.mediaRenderer.isTranscodeToH265() &&
+				H264Level.L5_1.isGreaterThanOrEqualTo(media.getVideoLevel()) &&
+				media.getVideoBitDepth() <= 8
 			) ||
+				// Resolution limitation for H.264 <= 4K and <= 8K for HEVC
 				BasicSystemUtils.INSTANCE.getOSVersion().isGreaterThanOrEqualTo(10, 13)
 			) &&
 			libAVCodecVersion != null &&
@@ -981,6 +984,7 @@ public class FFMpegVideo extends Player {
 			!avisynth() &&
 			renderer.isTranscodeToAC3() &&
 			!isXboxOneWebVideo &&
+			!isSubtitlesAndTimeseek &&
 			params.aid.getNumberOfChannels() <= configuration.getAudioChannelCount()
 		) {
 			// AC-3 remux takes priority
@@ -997,6 +1001,13 @@ public class FFMpegVideo extends Player {
 
 		String frameRateRatio = media.getValidFps(true);
 		String frameRateNumber = media.getValidFps(false);
+
+		// Try to play broken media
+		cmdList.add("-err_detect");
+		cmdList.add("ignore_err");
+		cmdList.add("-ec");
+		cmdList.add("guess_mvs+deblock+favor_inter");
+		cmdList.add("-ignore_unknown");
 
 		// Input filename
 		cmdList.add("-i");
