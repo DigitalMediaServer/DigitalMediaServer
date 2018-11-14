@@ -299,9 +299,7 @@ public class VLCVideo extends Player {
 		args.put("threads", "" + configuration.getNumberOfCpuCores());
 
 		// Hardcode subtitles into video
-		if (!configuration.isDisableSubtitles() && params.sid != null) {
-			args.put("soverlay", null);
-		}
+		args.put("soverlay", null);
 
 
 
@@ -559,7 +557,7 @@ public class VLCVideo extends Player {
 		}
 
 		// Handle subtitle language
-		if (params.sid != null && !configuration.isDisableSubtitles()) { // User specified language at the client, acknowledge it
+		if (params.sid != null) { // User specified language at the client, acknowledge it
 			if (params.sid.isExternal() && !params.sid.isStreamable() && !params.mediaRenderer.streamSubsForTranscodedVideo()) {
 				String externalSubtitlesFileName;
 
@@ -587,10 +585,6 @@ public class VLCVideo extends Player {
 			} else { // VLC doesn't understand "und", but does understand a nonexistent track
 				cmdList.add("--sub-track=-1");
 			}
-		} else {
-			cmdList.add("--no-sub-autodetect-file");
-			cmdList.add("--no-spu");
-			cmdList.add("--no-osd");
 		}
 
 		// x264 options
