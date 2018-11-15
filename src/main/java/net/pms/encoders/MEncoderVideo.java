@@ -560,6 +560,7 @@ public class MEncoderVideo extends Player {
 
 		defaultArgsList.add("-msglevel");
 		defaultArgsList.add("statusline=2");
+		defaultArgsList.add("-forceidx");
 
 		defaultArgsList.add("-oac");
 		if (ac3Remux || dtsRemux) {
