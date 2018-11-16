@@ -30,6 +30,7 @@ import net.pms.configuration.DeviceConfiguration;
 import net.pms.configuration.ExecutableInfo;
 import net.pms.configuration.FFmpegExecutableInfo;
 import net.pms.configuration.FFmpegExecutableInfo.ProtocolFlags;
+import net.pms.configuration.FFmpegProgramInfo;
 import net.pms.configuration.PmsConfiguration;
 import net.pms.configuration.RendererConfiguration;
 import net.pms.dlna.DLNAMediaInfo;
@@ -131,12 +132,7 @@ public class FFmpegWebVideo extends FFMpegVideo {
 		cmdList.add("-y");
 
 		cmdList.add("-loglevel");
-
-		if (LOGGER.isTraceEnabled()) { // Set -loglevel in accordance with LOGGER setting
-			cmdList.add("info"); // Could be changed to "verbose" or "debug" if "info" level is not enough
-		} else {
-			cmdList.add("warning");
-		}
+		cmdList.add(FFmpegProgramInfo.getFFmpegLogLevel());
 
 		/*
 		 * FFmpeg uses multithreading by default, so provided that the

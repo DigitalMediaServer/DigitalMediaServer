@@ -26,6 +26,7 @@ import java.util.*;
 import java.util.Map.Entry;
 import javax.annotation.Nullable;
 import net.pms.PMS;
+import net.pms.configuration.FFmpegProgramInfo;
 import net.pms.configuration.FormatConfiguration;
 import net.pms.configuration.PmsConfiguration;
 import net.pms.configuration.RendererConfiguration;
@@ -596,6 +597,8 @@ public class DLNAMediaInfo implements Cloneable {
 			}
 		}
 
+		args.add("-loglevel");
+		args.add(FFmpegProgramInfo.getFFmpegLogLevel());
 		args.add("-hide_banner");
 		args.add("-i");
 

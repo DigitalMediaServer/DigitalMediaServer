@@ -43,6 +43,7 @@ import net.pms.configuration.ExecutableInfo.ExecutableInfoBuilder;
 import net.pms.configuration.ExternalProgramInfo;
 import net.pms.configuration.FFmpegExecutableInfo;
 import net.pms.configuration.FFmpegExecutableInfo.FFmpegExecutableInfoBuilder;
+import net.pms.configuration.FFmpegProgramInfo;
 import net.pms.configuration.FormatConfiguration;
 import net.pms.configuration.PmsConfiguration;
 import net.pms.configuration.RendererConfiguration;
@@ -712,20 +713,6 @@ public class FFMpegVideo extends Player {
 		return FormatType.VIDEO;
 	}
 
-	// unused; return this array for backwards-compatibility
-	@Deprecated
-	protected String[] getDefaultArgs() {
-		List<String> defaultArgsList = new ArrayList<>();
-
-		defaultArgsList.add("-loglevel");
-		defaultArgsList.add("warning");
-
-		String[] defaultArgsArray = new String[defaultArgsList.size()];
-		defaultArgsList.toArray(defaultArgsArray);
-
-		return defaultArgsArray;
-	}
-
 	private static int[] getVideoBitrateConfig(String bitrate) {
 		int bitrates[] = new int[2];
 
@@ -749,7 +736,7 @@ public class FFMpegVideo extends Player {
 	@Override
 	@Deprecated
 	public String[] args() {
-		return getDefaultArgs(); // unused; return this array for for backwards compatibility
+		return null;
 	}
 
 	@Override
@@ -827,11 +814,7 @@ public class FFMpegVideo extends Player {
 		cmdList.add("-y");
 
 		cmdList.add("-loglevel");
-		if (LOGGER.isTraceEnabled()) { // Set -loglevel in accordance with LOGGER setting
-			cmdList.add("info"); // Could be changed to "verbose" or "debug" if "info" level is not enough
-		} else {
-			cmdList.add("fatal");
-		}
+		cmdList.add(FFmpegProgramInfo.getFFmpegLogLevel());
 
 		double start = Math.max(params.timeseek, 0.0);
 		double end = params.timeend > 0 ? params.timeend : Double.POSITIVE_INFINITY;

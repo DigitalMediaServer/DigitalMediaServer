@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import net.pms.PMS;
+import net.pms.configuration.FFmpegProgramInfo;
 import net.pms.configuration.PmsConfiguration;
 import net.pms.dlna.DLNAMediaInfo;
 import net.pms.dlna.DLNAMediaInfo.Mode3D;
@@ -320,11 +321,7 @@ public class SubtitleUtils {
 		cmdList.add(PlayerFactory.getPlayerExecutable(StandardPlayerId.FFMPEG_VIDEO));
 		cmdList.add("-y");
 		cmdList.add("-loglevel");
-		if (LOGGER.isTraceEnabled()) { // Set -loglevel in accordance with LOGGER setting
-			cmdList.add("info"); // Could be changed to "verbose" or "debug" if "info" level is not enough
-		} else {
-			cmdList.add("fatal");
-		}
+		cmdList.add(FFmpegProgramInfo.getFFmpegLogLevel());
 
 		// Try to specify input encoding if we have a non utf-8 external sub
 		if (params.sid.getId() >= 100 && !params.sid.isExternalFileUtf8()) {

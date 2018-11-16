@@ -70,6 +70,7 @@ import net.pms.formats.FormatType;
 import net.pms.io.*;
 import net.pms.logging.CacheLogger;
 import net.pms.logging.FrameAppender;
+import net.pms.logging.LogLevel;
 import net.pms.logging.LoggingConfig;
 import net.pms.network.ChromecastMgr;
 import net.pms.network.HTTPServer;
@@ -1444,7 +1445,7 @@ public class PMS {
 			 */
 
 			// Set root level from configuration here so that logging is available during renameOldLogFile();
-			LoggingConfig.setRootLevel(Level.toLevel(getConfiguration().getRootLogLevel()));
+			LoggingConfig.setRootLevel(getConfiguration().getRootLogLevel());
 			renameOldLogFile();
 
 			// Load the (optional) LogBack config file.
@@ -1453,7 +1454,7 @@ public class PMS {
 
 			// Check TRACE mode
 			if (traceMode == 2) {
-				LoggingConfig.setRootLevel(Level.TRACE);
+				LoggingConfig.setRootLevel(LogLevel.TRACE);
 				LOGGER.debug("Forcing debug level to TRACE");
 			} else {
 				// Remember whether logging level was TRACE/ALL at startup

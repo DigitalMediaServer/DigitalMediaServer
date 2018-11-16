@@ -48,7 +48,7 @@ public class DebugLogPropertyDefiner extends PropertyDefinerBase {
 				result = configuration.getDefaultLogFileFolder();
 				break;
 			case "rootLevel":
-				result = configuration.getRootLogLevel();
+				result = configuration.getRootLogLevel().name();
 				break;
 			case "logFileName":
 				result = configuration.getDefaultLogFileName();

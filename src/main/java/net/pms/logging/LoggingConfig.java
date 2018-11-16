@@ -268,7 +268,7 @@ public class LoggingConfig {
 		}
 
 		if (setConsole) {
-			Level level = configuration.getLoggingFilterConsole();
+			Level level = configuration.getLoggingFilterConsole().getLogbackLevel();
 			if (consoleLevel == null || consoleLevel != level) {
 				consoleLevel = level;
 			} else {
@@ -276,7 +276,7 @@ public class LoggingConfig {
 			}
 		}
 		if (setTraces) {
-			Level level = configuration.getLoggingFilterLogsTab();
+			Level level = configuration.getLoggingFilterLogsTab().getLogbackLevel();
 			if (tracesLevel == null || tracesLevel != level) {
 				tracesLevel = level;
 			} else {
@@ -529,14 +529,14 @@ public class LoggingConfig {
 	*
 	* Must be called after {@link #loadFile()}.
 	*
-	* @param level the new root logger level.
+	* @param level the new root logger {@link LogLevel}.
 	*/
-	public static synchronized void setRootLevel(Level level) {
+	public static synchronized void setRootLevel(LogLevel level) {
 		if (loggerContext == null && !setContextAndRoot()) {
 			LOGGER.error("Unknown loggerContext, aborting setRootLevel");
 			return;
 		}
-		rootLogger.setLevel(level);
+		rootLogger.setLevel(level.getLogbackLevel());
 	}
 
 	/**

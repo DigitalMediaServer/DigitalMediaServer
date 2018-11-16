@@ -191,6 +191,8 @@ public enum VideoCodec implements Codec {
 		switch (valueLower) {
 			case FormatConfiguration.CINEPAK:
 				return CINEPAK;
+			case "mpeg2":
+				return H262;
 			case FormatConfiguration.SORENSON:
 				return SVQ1;
 			default:

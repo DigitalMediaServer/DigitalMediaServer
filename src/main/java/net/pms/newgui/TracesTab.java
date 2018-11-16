@@ -39,6 +39,7 @@ import java.awt.event.MouseEvent;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -51,9 +52,11 @@ import javax.swing.text.Document;
 import net.pms.Messages;
 import net.pms.PMS;
 import net.pms.configuration.PmsConfiguration;
+import net.pms.logging.LogLevel;
 import net.pms.logging.LoggingConfig;
 import net.pms.newgui.components.*;
 import net.pms.util.FormLayoutUtil;
+import net.pms.util.KeyedComboBoxModel;
 import net.pms.util.ProcessUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -73,24 +76,6 @@ public class TracesTab {
 	private JSeparator jBufferSeparator;
 	private Component jBufferSpace1, jBufferSpace2, jBufferSpace3, jCSSpace, jRESpace, jMLSpace;
 	protected JScrollPane jListPane;
-	private final String[] levelStrings = {
-		Messages.getString("TracesTab.6"),
-		Messages.getString("TracesTab.7"),
-		Messages.getString("TracesTab.8"),
-		Messages.getString("TracesTab.9"),
-		Messages.getString("TracesTab.10"),
-		Messages.getString("TracesTab.15"),
-		Messages.getString("TracesTab.16")
-	};
-	private final Level[] logLevels = {
-		Level.ERROR,
-		Level.WARN,
-		Level.INFO,
-		Level.DEBUG,
-		Level.TRACE,
-		Level.ALL,
-		Level.OFF
-	};
 	private final String[] syslogFacilities = {
 		"AUTH", "AUTHPRIV", "DAEMON", "CRON", "FTP", "LPR", "KERN",
 		"MAIL", "NEWS", "SYSLOG", "USER", "UUCP", "LOCAL0",
@@ -187,15 +172,6 @@ public class TracesTab {
 		getList().append(msg);
 	}
 
-	private int findLevelsIdx(Level level) {
-		for (int i=0; i < logLevels.length; i++) {
-			if (logLevels[i] == level) {
-				return i;
-			}
-		}
-		return -1;
-	}
-
 	private void searchTraces() {
 		boolean found = false;
 		Matcher match = null;
@@ -272,17 +248,25 @@ public class TracesTab {
 		jSearchPanel.setLayout(new BoxLayout(jSearchPanel,BoxLayout.LINE_AXIS));
 		jSearchPanel.setBorder(BorderFactory.createEmptyBorder(5,5,5,5));
 
+		// Build LogLevel models
+		final KeyedComboBoxModel<LogLevel, String> tracesFilterModel = new KeyedComboBoxModel<>();
+		final KeyedComboBoxModel<LogLevel, String> rootLevelModel = new KeyedComboBoxModel<>();
+		for (LogLevel level : LogLevel.values()) {
+			tracesFilterModel.add(level, level.toString(true));
+			rootLevelModel.add(level, level.toString(true));
+		}
+
 		JLabel jFilterLabel = new JLabel(Messages.getString("TracesTab.24") + ":");
 		jFilterLabel.setDisplayedMnemonic(KeyEvent.VK_F);
 		jFilterLabel.setToolTipText(Messages.getString("TracesTab.33"));
-		jTracesFilter = new JComboBox<>(levelStrings);
-		jTracesFilter.setSelectedIndex(findLevelsIdx(configuration.getLoggingFilterLogsTab()));
+		jTracesFilter = new JComboBox<>(tracesFilterModel);
+		tracesFilterModel.setSelectedKey(configuration.getLoggingFilterLogsTab());
 		jFilterLabel.setLabelFor(jTracesFilter);
 		jTracesFilter.setToolTipText(Messages.getString("TracesTab.33"));
 		jTracesFilter.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				configuration.setLoggingFilterLogsTab(logLevels[jTracesFilter.getSelectedIndex()]);
+				configuration.setLoggingFilterLogsTab(tracesFilterModel.getSelectedKey());
 				LoggingConfig.setTracesFilter();
 			}
 		});
@@ -613,24 +597,19 @@ public class TracesTab {
 		rootLevelLabel.setDisplayedMnemonic(KeyEvent.VK_L);
 		rootLevelLabel.setToolTipText(Messages.getString("TracesTab.42"));
 
-		JComboBox<String> rootLevel = new JComboBox<>(levelStrings);
+		JComboBox<String> rootLevel = new JComboBox<>(rootLevelModel);
 		rootLevelLabel.setLabelFor(rootLevel);
-		rootLevel.setSelectedIndex(findLevelsIdx(rootLogger.getLevel()));
+		rootLevelModel.setSelectedKey(LogLevel.getLogLevel(rootLogger));
 		rootLevel.setToolTipText(Messages.getString("TracesTab.42"));
 		rootLevel.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				JComboBox<?> cb = (JComboBox<?>)e.getSource();
-				rootLogger.setLevel(logLevels[cb.getSelectedIndex()]);
-				Level newLevel = rootLogger.getLevel();
-				if (newLevel.toInt() > Level.INFO_INT) {
-					rootLogger.setLevel(Level.INFO);
-				}
-				LOGGER.info("Changed debug level to " + newLevel);
-				if (newLevel != rootLogger.getLevel()) {
-					rootLogger.setLevel(newLevel);
-				}
-				configuration.setRootLogLevel(newLevel);
+				LogLevel level = rootLevelModel.getSelectedKey();
+				String levelString = level.toString(false).toLowerCase(Locale.ROOT);
+				LOGGER.info("Changing log level to {}", levelString);
+				rootLogger.setLevel(level.getLogbackLevel());
+				configuration.setRootLogLevel(level);
+				LOGGER.info("Changed log level to {}", levelString);
 			}
 		});
 
