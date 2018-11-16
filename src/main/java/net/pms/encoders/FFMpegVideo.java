@@ -1400,7 +1400,7 @@ public class FFMpegVideo extends Player {
 
 			params.stdin = null;
 			try (PrintWriter pwMux = new PrintWriter(f)) {
-				pwMux.println("MUXOPT --no-pcr-on-video-pid --no-asyncio --new-audio-pes --vbr --vbv-len=500");
+				pwMux.println("MUXOPT --no-pcr-on-video-pid --new-audio-pes --vbr --vbv-len=500");
 				String videoType = "V_MPEG-2";
 
 				if (renderer.isTranscodeToH264()) {

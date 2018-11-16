@@ -98,7 +98,7 @@ public class AviDemuxerInputStream extends InputStream {
 					TsMuxeRVideo ts = (TsMuxeRVideo) PlayerFactory.getPlayer(StandardPlayerId.TSMUXER_VIDEO, false, false);
 					File f = new File(configuration.getTempFolder(), "dms-tsmuxer.meta");
 					try (PrintWriter pw = new PrintWriter(f)) {
-						pw.println("MUXOPT --no-pcr-on-video-pid --no-asyncio --new-audio-pes --vbr --vbv-len=500");
+						pw.println("MUXOPT --no-pcr-on-video-pid --new-audio-pes --vbr --vbv-len=500");
 						String videoType = "V_MPEG-2";
 
 						if (params.no_videoencode && params.forceType != null) {

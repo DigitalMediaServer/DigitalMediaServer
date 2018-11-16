@@ -2449,7 +2449,7 @@ public class MEncoderVideo extends Player {
 
 				params.stdin = null;
 				try (PrintWriter pwMux = new PrintWriter(f)) {
-					pwMux.println("MUXOPT --no-pcr-on-video-pid --no-asyncio --new-audio-pes --vbr --vbv-len=500");
+					pwMux.println("MUXOPT --no-pcr-on-video-pid --new-audio-pes --vbr --vbv-len=500");
 					String videoType = "V_MPEG-2";
 
 					if (params.no_videoencode && params.forceType != null) {
