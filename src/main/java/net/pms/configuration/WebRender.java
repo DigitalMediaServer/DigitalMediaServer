@@ -25,6 +25,7 @@ import com.google.gson.Gson;
 import java.io.File;
 import java.net.InetAddress;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -49,9 +50,9 @@ import net.pms.image.ImageFormat;
 import net.pms.io.OutputParams;
 import net.pms.remote.RemoteUtil;
 import net.pms.util.BasicPlayer;
+import net.pms.util.Language;
 import net.pms.util.StringUtil;
 import org.apache.commons.configuration.ConfigurationException;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.DurationFormatUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -68,7 +69,7 @@ public class WebRender extends DeviceConfiguration implements RendererConfigurat
 	private int screenWidth = 0;
 	private int screenHeight = 0;
 	private boolean isTouchDevice = false;
-	private String subLang;
+	private List<Language> subLanguages;
 	private Gson gson;
 	private static final PmsConfiguration pmsconfiguration = PMS.getConfiguration();
 	private static final Logger LOGGER = LoggerFactory.getLogger(WebRender.class);
@@ -106,7 +107,6 @@ public class WebRender extends DeviceConfiguration implements RendererConfigurat
 		String userFmt = pmsconfiguration.getWebTranscode();
 		defaultMime = userFmt != null ? ("video/" + userFmt) : RemoteUtil.transMime();
 		startStop = null;
-		subLang = "";
 		if (pmsConfiguration.useWebControl()) {
 			controls = BasicPlayer.PLAYCONTROL|BasicPlayer.VOLUMECONTROL;
 		}
@@ -553,15 +553,15 @@ public class WebRender extends DeviceConfiguration implements RendererConfigurat
 	}
 
 	@Override
-	public String getSubLanguage() {
-		if (!useWebSubLang() || StringUtils.isEmpty(subLang)) {
-			return super.getSubLanguage();
+	public List<Language> getSubLanguages() {
+		if (!useWebSubLang() || subLanguages == null || subLanguages.isEmpty()) {
+			return super.getSubLanguages();
 		}
-		return subLang;
+		return subLanguages;
 	}
 
-	public void setSubLang(String s) {
-		subLang = s;
+	public void setSubLang(Collection<? extends Language> languages) {
+		subLanguages = new ArrayList<>(languages);
 	}
 
 	private ArrayList<String[]> push;

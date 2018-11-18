@@ -12,6 +12,7 @@ import java.security.KeyStore;
 import java.security.PrivilegedAction;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -25,12 +26,14 @@ import net.pms.dlna.DLNAResource;
 import net.pms.dlna.DLNAThumbnailInputStream;
 import net.pms.dlna.RealFile;
 import net.pms.dlna.RootFolder;
+import net.pms.image.BufferedImageFilterChain;
 import net.pms.image.ImageFormat;
 import net.pms.io.BasicSystemUtils;
 import net.pms.network.HTTPResource;
 import net.pms.newgui.DbgPacker;
 import net.pms.util.FileUtil;
 import net.pms.util.FullyPlayed;
+import net.pms.util.ISO639;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -220,17 +223,24 @@ public class RemoteWeb {
 
 			root = new RootFolder();
 			try {
-				WebRender render = new WebRender(user);
-				root.setDefaultRenderer(render);
-				render.setRootFolder(root);
-				render.associateIP(t.getRemoteAddress().getAddress());
-				render.associatePort(t.getRemoteAddress().getPort());
+				WebRender renderer = new WebRender(user);
+				root.setDefaultRenderer(renderer);
+				renderer.setRootFolder(root);
+				renderer.associateIP(t.getRemoteAddress().getAddress());
+				renderer.associatePort(t.getRemoteAddress().getPort());
 				if (configuration.useWebSubLang()) {
-					render.setSubLang(StringUtils.join(RemoteUtil.getLangs(t), ","));
+					HashSet<ISO639> languages = new HashSet<>();
+					for (String bcp47Tag : RemoteUtil.getLangs(t)) {
+						ISO639 iso639 = ISO639.fromBCP47(bcp47Tag);
+						if (iso639 != null) {
+							languages.add(iso639);
+						}
+					}
+					renderer.setSubLang(languages);
 				}
 //				render.setUA(t.getRequestHeaders().getFirst("User-agent"));
-				render.setBrowserInfo(RemoteUtil.getCookie("DMSINFO", t), t.getRequestHeaders().getFirst("User-agent"));
-				PMS.get().setRendererFound(render);
+				renderer.setBrowserInfo(RemoteUtil.getCookie("DMSINFO", t), t.getRequestHeaders().getFirst("User-agent"));
+				PMS.get().setRendererFound(renderer);
 			} catch (ConfigurationException e) {
 				root.setDefaultRenderer(RendererConfiguration.getDefaultConf());
 			}
@@ -307,8 +317,13 @@ public class RemoteWeb {
 					r.checkThumbnail();
 					in = r.fetchThumbnailInputStream();
 				}
-				if (r instanceof RealFile && FullyPlayed.isFullyPlayedThumbnail(((RealFile) r).getFile())) {
-					in = FullyPlayed.addFullyPlayedOverlay(in);
+				BufferedImageFilterChain filterChain = null;
+				if (r instanceof RealFile && FullyPlayed.isFullyPlayedMark(((RealFile) r).getFile())) {
+					filterChain = new BufferedImageFilterChain(FullyPlayed.getOverlayFilter());
+				}
+				filterChain = r.addFlagFilters(filterChain);
+				if (filterChain != null) {
+					in = in.transcode(in.getDLNAImageProfile(), false, filterChain);
 				}
 				Headers hdr = t.getResponseHeaders();
 				hdr.add("Content-Type", ImageFormat.PNG.equals(in.getFormat()) ? HTTPResource.PNG_TYPEMIME : HTTPResource.JPEG_TYPEMIME);

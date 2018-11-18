@@ -21,21 +21,27 @@ package net.pms.util;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map.Entry;
 import java.util.Timer;
 import java.util.TimerTask;
 import org.apache.commons.lang3.StringUtils;
 import net.pms.PMS;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-public class TempFileMgr {
+public class TempFileMgr { //TODO: (Nad) Review/Evaluate if needed
+	private static final Logger LOGGER = LoggerFactory.getLogger(TempFileMgr.class);
 	private static final int DEFAULT_CLEAN_TIME = 14 * 24 * 3600 * 1000;
 	private static final int INTERVAL = 24 * 3600 * 1000;
-	HashMap<File, Integer> files;
+	private HashMap<File, Integer> files;
 
 	public TempFileMgr() {
 		files = new HashMap<>();
@@ -59,25 +65,38 @@ public class TempFileMgr {
 		try {
 			dumpFile();
 		} catch (IOException e) {
+			LOGGER.error(
+				"An error occurred while trying to add \"{}\" to temporary file management: {}",
+				f.getAbsolutePath(),
+				e.getMessage()
+			);
+			LOGGER.trace("", e);
 		}
 	}
 
 	private void scan() {
 		long now = System.currentTimeMillis();
-		for (Iterator<File> it = files.keySet().iterator(); it.hasNext();) {
-			File f = it.next();
-			if (!f.exists()) {
+		for (Iterator<Entry<File, Integer>> it = files.entrySet().iterator(); it.hasNext();) {
+			Entry<File, Integer> entry = it.next();
+			if (!entry.getKey().exists()) {
 				it.remove();
 				continue;
 			}
-			if ((now - f.lastModified()) > files.get(f)) {
+			if ((now - entry.getKey().lastModified()) > entry.getValue()) {
 				it.remove();
-				f.delete();
+				if (!entry.getKey().delete()) {
+					LOGGER.warn("Failed to delete temporary file \"{}\"", entry.getKey().getAbsolutePath());
+				}
 			}
 		}
 		try {
 			dumpFile();
 		} catch (IOException e) {
+			LOGGER.error(
+				"An error occurred while trying to write the temporary file management file: {}",
+				e.getMessage()
+			);
+			LOGGER.trace("", e);
 		}
 	}
 
@@ -92,8 +111,8 @@ public class TempFileMgr {
 		t.scheduleAtFixedRate(task, 0, INTERVAL);
 	}
 
-	private File cleanFile() {
-		return new File(PMS.getConfiguration().getDataFile("Digital Media Server.tmpmgr"));
+	private static File cleanFile() {
+		return new File(PMS.getConfiguration().getDataFile("DMS.tmpmgr"));
 	}
 
 	private void parseCleanFile() {
@@ -102,7 +121,7 @@ public class TempFileMgr {
 			return;
 		}
 		try {
-			try (BufferedReader in = new BufferedReader(new FileReader(f))) {
+			try (BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(f), StandardCharsets.UTF_8))) {
 				String str;
 
 				while ((str = in.readLine()) != null) {
@@ -118,6 +137,12 @@ public class TempFileMgr {
 				}
 			}
 		} catch (IOException e) {
+			LOGGER.error(
+				"An error occurred while trying to read the temporary file management file \"{}\": {}",
+				f.getAbsolutePath(),
+				e.getMessage()
+			);
+			LOGGER.trace("", e);
 		}
 	}
 
@@ -125,11 +150,11 @@ public class TempFileMgr {
 		try (FileOutputStream out = new FileOutputStream(cleanFile())) {
 			Date now = new Date();
 			String n = "## " + now.toString() + "\n";
-			out.write("#########\n".getBytes());
-			out.write(n.getBytes());
-			for (File f : files.keySet()) {
-				String str = f.getAbsolutePath() + "," + files.get(f) + "\n";
-				out.write(str.getBytes());
+			out.write("#########\n".getBytes(StandardCharsets.UTF_8));
+			out.write(n.getBytes(StandardCharsets.UTF_8));
+			for (Entry<File, Integer> entry : files.entrySet()) {
+				String str = entry.getKey().getAbsolutePath() + "," + entry.getValue() + "\n";
+				out.write(str.getBytes(StandardCharsets.UTF_8));
 			}
 			out.flush();
 		}

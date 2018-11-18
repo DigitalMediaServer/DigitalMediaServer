@@ -43,6 +43,7 @@ import javax.swing.table.TableColumn;
 import net.pms.Messages;
 import net.pms.PMS;
 import net.pms.configuration.PmsConfiguration;
+import net.pms.configuration.PmsConfiguration.SubtitlesInfoLevel;
 import net.pms.dlna.DLNAMediaDatabase;
 import net.pms.dlna.RootFolder;
 import net.pms.image.thumbnail.CoverSupplier;
@@ -118,6 +119,7 @@ public class NavigationShareTab {
 	private final AnimatedIcon scanBusyPressedIcon;
 	private final AnimatedIcon scanBusyDisabledIcon;
 	private final NavigationTabListenerRegistrar tabListenerRegistrar;
+	private JComboBox<String> addVideoSuffix;
 
 	private final PmsConfiguration configuration;
 	private final LooksFrame looksFrame;
@@ -164,10 +166,10 @@ public class NavigationShareTab {
 		+ "p,"                            //
 		+ "3dlu,"                         //
 		+ "p,"                            //
-		+ "9dlu,"                         //
-		+ "p,"                            // Virtual folders
 		+ "3dlu,"                         //
 		+ "p,"                            //
+		+ "9dlu,"                         //
+		+ "p,"                            // Virtual folders
 		+ "3dlu,"                         //
 		+ "p,"                            //
 		+ "3dlu,"                         //
@@ -230,16 +232,17 @@ public class NavigationShareTab {
 			builder.add(sortmethod,                                                 FormLayoutUtil.flip(cc.xyw(4, 11, 3), colSpec, orientation));
 			builder.add(GuiUtil.getPreferredSizeComponent(ignorethewordthe),        FormLayoutUtil.flip(cc.xyw(9, 11, 4), colSpec, orientation));
 
-			builder.add(GuiUtil.getPreferredSizeComponent(prettifyfilenames),       FormLayoutUtil.flip(cc.xyw(1, 13, 5), colSpec, orientation));
+			builder.add(GuiUtil.getPreferredSizeComponent(prettifyfilenames),       FormLayoutUtil.flip(cc.xyw(1, 13, 3), colSpec, orientation));
+			builder.add(GuiUtil.getPreferredSizeComponent(hideextensions),          FormLayoutUtil.flip(cc.xyw(4, 13, 3), colSpec, orientation));
 			builder.add(GuiUtil.getPreferredSizeComponent(episodeTitles),           FormLayoutUtil.flip(cc.xyw(9, 13, 4), colSpec, orientation));
 
-			cmp = builder.addSeparator(Messages.getString("NetworkTab.60"),         FormLayoutUtil.flip(cc.xyw(1, 15, 12), colSpec, orientation));
+			builder.addLabel(Messages.getString("FoldTab.addSubtitlesInfo"),        FormLayoutUtil.flip(cc.xyw(1, 15, 3), colSpec, orientation));
+			builder.add(addVideoSuffix,			                                    FormLayoutUtil.flip(cc.xyw(4, 15, 3), colSpec, orientation));
+			builder.add(GuiUtil.getPreferredSizeComponent(hideengines),             FormLayoutUtil.flip(cc.xyw(9, 15, 4), colSpec, orientation));
+
+			cmp = builder.addSeparator(Messages.getString("NetworkTab.60"),         FormLayoutUtil.flip(cc.xyw(1, 17, 12), colSpec, orientation));
 			cmp = (JComponent) cmp.getComponent(0);
 			cmp.setFont(cmp.getFont().deriveFont(Font.BOLD));
-
-			builder.add(GuiUtil.getPreferredSizeComponent(hideextensions),          FormLayoutUtil.flip(cc.xyw(1, 17, 3), colSpec, orientation));
-			builder.add(GuiUtil.getPreferredSizeComponent(hideengines),             FormLayoutUtil.flip(cc.xyw(4, 17, 3), colSpec, orientation));
-			builder.add(GuiUtil.getPreferredSizeComponent(hideemptyfolders),        FormLayoutUtil.flip(cc.xyw(9, 17, 4), colSpec, orientation));
 
 			builder.add(GuiUtil.getPreferredSizeComponent(itunes),                  FormLayoutUtil.flip(cc.xy(1, 19), colSpec, orientation));
 			builder.add(GuiUtil.getPreferredSizeComponent(iphoto),                  FormLayoutUtil.flip(cc.xyw(4, 19, 3), colSpec, orientation));
@@ -260,6 +263,7 @@ public class NavigationShareTab {
 
 			builder.add(GuiUtil.getPreferredSizeComponent(resume),                  FormLayoutUtil.flip(cc.xy(1, 27), colSpec, orientation));
 			builder.add(GuiUtil.getPreferredSizeComponent(recentlyplayedfolder),    FormLayoutUtil.flip(cc.xyw(4, 27, 3), colSpec, orientation));
+			builder.add(GuiUtil.getPreferredSizeComponent(hideemptyfolders),        FormLayoutUtil.flip(cc.xyw(9, 27, 4), colSpec, orientation));
 
 			builder.addLabel(Messages.getString("FoldTab.72"),                      FormLayoutUtil.flip(cc.xy (1,  29   ), colSpec, orientation));
 			builder.add(fullyPlayedAction,                                          FormLayoutUtil.flip(cc.xyw(4,  29, 3), colSpec, orientation));
@@ -494,13 +498,47 @@ public class NavigationShareTab {
 		});
 
 		// Hide transcoding engine names
-		hideengines = new JCheckBox(Messages.getString("FoldTab.8"), configuration.isHideEngineNames());
-		hideengines.setToolTipText(Messages.getString("FoldTab.46"));
+		hideengines = new JCheckBox(Messages.getString("FoldTab.showEngineNames"), !configuration.isHideEngineNames());
+		hideengines.setToolTipText(Messages.getString("FoldTab.showEngineNamesToolTip"));
 		hideengines.setContentAreaFilled(false);
 		hideengines.addItemListener(new ItemListener() {
 			@Override
 			public void itemStateChanged(ItemEvent e) {
-				configuration.setHideEngineNames((e.getStateChange() == ItemEvent.SELECTED));
+				configuration.setHideEngineNames((e.getStateChange() != ItemEvent.SELECTED));
+			}
+		});
+
+		// Add subtitles information to video names
+		final KeyedComboBoxModel<SubtitlesInfoLevel, String> videoSuffixKCBM = new KeyedComboBoxModel<>(
+			new SubtitlesInfoLevel[] {
+				SubtitlesInfoLevel.NONE,
+				SubtitlesInfoLevel.BASIC,
+				SubtitlesInfoLevel.FULL
+			},
+			new String[] {
+				Messages.getString("Generic.None"),
+				Messages.getString("Generic.Basic"),
+				Messages.getString("Generic.Full")
+			}
+		);
+
+		addVideoSuffix = new JComboBox<String>(videoSuffixKCBM);
+		addVideoSuffix.setEditable(false);
+		addVideoSuffix.setToolTipText(Messages.getString("FoldTab.addSubtitlesInfoToolTip"));
+
+		videoSuffixKCBM.setSelectedKey(configuration.getSubtitlesInfoLevel());
+
+		addVideoSuffix.addItemListener(new ItemListener() {
+			@Override
+			public void itemStateChanged(ItemEvent e) {
+				if (e.getStateChange() == ItemEvent.SELECTED) {
+					LOGGER.debug(
+						"Setting \"{}\" to \"{}\"",
+						Messages.getRootString("FoldTab.addSubtitlesInfo"),
+						videoSuffixKCBM.getSelectedValue()
+					);
+					configuration.setSubtitlesInfoLevel(videoSuffixKCBM.getSelectedKey());
+				}
 			}
 		});
 
@@ -1089,7 +1127,6 @@ public class NavigationShareTab {
 			return column == 1;
 		}
 
-		@SuppressWarnings({ "rawtypes", "unchecked" })
 		@Override
 		public void setValueAt(Object aValue, int row, int column) {
 			Vector rowVector = (Vector) dataVector.elementAt(row);

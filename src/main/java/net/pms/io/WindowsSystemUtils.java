@@ -30,6 +30,9 @@ import com.sun.jna.ptr.LongByReference;
 import java.awt.Toolkit;
 import java.io.File;
 import java.nio.CharBuffer;
+import java.nio.charset.Charset;
+import java.nio.charset.IllegalCharsetNameException;
+import java.nio.charset.UnsupportedCharsetException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import javax.annotation.Nonnull;
@@ -134,6 +137,9 @@ public class WindowsSystemUtils extends BasicSystemUtils {
 
 	@Override
 	public String getShortPathNameW(String longPathName) {
+		if (longPathName == null) {
+			return null;
+		}
 		boolean unicodeChars;
 		try {
 			byte b1[] = longPathName.getBytes("UTF-8");
@@ -150,8 +156,9 @@ public class WindowsSystemUtils extends BasicSystemUtils {
 				char test[] = new char[2 + pathname.length() * 2];
 				int r = Kernel32.INSTANCE.GetShortPathNameW(pathname, test, test.length);
 				if (r > 0) {
-					LOGGER.trace("Forcing short path name on " + pathname);
-					return Native.toString(test);
+					String result = Native.toString(test);
+					LOGGER.trace("Using short path name of \"{}\": \"{}\"", pathname, result);
+					return result;
 				}
 				LOGGER.debug("Can't find \"{}\"", pathname);
 				return null;
@@ -238,6 +245,25 @@ public class WindowsSystemUtils extends BasicSystemUtils {
 	 */
 	public static int getConsoleOutputCP() {
 		return Kernel32.INSTANCE.GetConsoleOutputCP();
+	}
+
+	/**
+	 * @return The result of {@link #getOEMCP()} converted to a {@link Charset}
+	 *         or {@code null} if it couldn't be converted.
+	 */
+	public static Charset getOEMCharset() {
+		int codepage = Kernel32.INSTANCE.GetOEMCP();
+		Charset result = null;
+		String[] aliases = {"cp" + codepage, "MS" + codepage};
+		for (String alias : aliases) {
+			try {
+				result = Charset.forName(alias);
+				break;
+			} catch (IllegalCharsetNameException | UnsupportedCharsetException e) {
+				result = null;
+			}
+		}
+		return result;
 	}
 
 	private static String charString2String(CharBuffer buf) {

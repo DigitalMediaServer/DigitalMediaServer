@@ -76,7 +76,7 @@ public class FilePermissions {
 	 * @param file the {@link File} for which to retrieve permissions.
 	 * @throws FileNotFoundException If {@code file} doesn't exist.
 	 */
-	public FilePermissions(File file) throws FileNotFoundException {
+	public FilePermissions(@Nonnull File file) throws FileNotFoundException {
 		if (file == null) {
 			throw new IllegalArgumentException("file cannot be null");
 		}
@@ -115,7 +115,7 @@ public class FilePermissions {
 	 *            .
 	 * @throws FileNotFoundException If {@code path} doesn't exist.
 	 */
-	public FilePermissions(Path path, LinkOption... options) throws FileNotFoundException {
+	public FilePermissions(@Nonnull Path path, @Nullable LinkOption... options) throws FileNotFoundException {
 		if (path == null) {
 			throw new IllegalArgumentException("Path argument cannot be null");
 		}

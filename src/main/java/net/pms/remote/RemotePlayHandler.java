@@ -188,7 +188,7 @@ public class RemotePlayHandler implements HttpHandler {
 			}
 			OutputParams params = new OutputParams(configuration);
 			params.sid = resource.getMediaSubtitle();
-			Player.setAudioAndSubs(resource.getName(), media, params);
+			Player.setAudioAndSubs(resource, params);
 			if (params.sid != null && params.sid.getType().isText()) {
 				try {
 					File subFile = SubtitleUtils.getSubtitles(resource, media, params, configuration, SubtitleType.WEBVTT);

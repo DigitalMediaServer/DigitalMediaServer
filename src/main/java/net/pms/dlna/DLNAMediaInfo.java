@@ -52,6 +52,7 @@ import net.pms.media.VideoCodec;
 import net.pms.media.VideoLevel;
 import net.pms.network.HTTPResource;
 import net.pms.util.FileUtil;
+import net.pms.util.ISO639;
 import net.pms.util.MpegUtil;
 import net.pms.util.ProcessUtil;
 import net.pms.util.Rational;
@@ -203,26 +204,6 @@ public class DLNAMediaInfo implements Cloneable {
 
 	private List<DLNAMediaAudio> audioTracks = new ArrayList<>();
 	private List<DLNAMediaSubtitle> subtitleTracks = new ArrayList<>();
-
-	private boolean externalSubsExist = false;
-
-	public void setExternalSubsExist(boolean exist) {
-		this.externalSubsExist = exist;
-	}
-
-	public boolean isExternalSubsExist() {
-		return externalSubsExist;
-	}
-
-	private boolean externalSubsParsed = false;
-
-	public void setExternalSubsParsed(boolean parsed) {
-		this.externalSubsParsed = parsed;
-	}
-
-	public boolean isExternalSubsParsed() {
-		return externalSubsParsed;
-	}
 
 	/**
 	 * @deprecated Use standard getter and setter to access this variable.
@@ -395,13 +376,6 @@ public class DLNAMediaInfo implements Cloneable {
 		}
 
 		return imageCount > 0 ? MediaType.IMAGE : null;
-	}
-
-	/**
-	 * @return true when there are subtitle tracks embedded in the media file.
-	 */
-	public boolean hasSubtitles() {
-		return subtitleTracks.size() > 0;
 	}
 
 	public boolean isImage() {
@@ -1169,11 +1143,11 @@ public class DLNAMediaInfo implements Cloneable {
 						int b = line.indexOf("):", a);
 						DLNAMediaAudio audio = new DLNAMediaAudio();
 						audio.setId(langId++);
+						ISO639 language = null;
 						if (a > -1 && b > a) {
-							audio.setLang(line.substring(a + 1, b));
-						} else {
-							audio.setLang(DLNAMediaLang.UND);
+							language = ISO639.get(line.substring(a + 1, b));
 						}
+						audio.setLang(language == null ? ISO639.UND : language);
 
 						// Get TS IDs
 						a = line.indexOf("[0x");
@@ -1337,11 +1311,11 @@ public class DLNAMediaInfo implements Cloneable {
 
 						int a = line.indexOf('(');
 						int b = line.indexOf("):", a);
+						ISO639 language = null;
 						if (a > -1 && b > a) {
-							lang.setLang(line.substring(a + 1, b));
-						} else {
-							lang.setLang(DLNAMediaLang.UND);
+							language = ISO639.get(line.substring(a + 1, b));
 						}
+						lang.setLang(language == null ? ISO639.UND : language);
 
 						lang.setId(subId++);
 						int FFmpegMetaDataNr = FFmpegMetaData.nextIndex();
@@ -1670,11 +1644,6 @@ public class DLNAMediaInfo implements Cloneable {
 		)) {
 			secondaryFormatValid = false;
 		}
-
-		// Check for external subs here
-		if (f.getFile() != null && mediaType == MediaType.VIDEO && configuration.isAutoloadExternalSubtitles()) {
-			FileUtil.isSubtitlesExists(f.getFile(), this);
-		}
 	}
 
 	public boolean isLossless(String codecA) {
@@ -1766,7 +1735,7 @@ public class DLNAMediaInfo implements Cloneable {
 				appendAudioTracks(result);
 			}
 
-			if (hasSubtitles()) {
+			if (subtitleTracks != null && !subtitleTracks.isEmpty()) {
 				appendSubtitleTracks(result);
 			}
 

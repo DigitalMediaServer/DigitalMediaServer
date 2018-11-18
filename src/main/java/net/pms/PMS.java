@@ -84,7 +84,7 @@ import net.pms.util.*;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.event.ConfigurationEvent;
 import org.apache.commons.configuration.event.ConfigurationListener;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.text.WordUtils;
 import org.slf4j.ILoggerFactory;
 import org.slf4j.Logger;
@@ -364,9 +364,6 @@ public class PMS {
 
 		dbgPack = new DbgPacker();
 		tfm = new TempFileMgr();
-
-		// This should be removed soon
-		OpenSubtitle.convert();
 
 		// Start this here to let the conversion work
 		tfm.schedule();
@@ -2054,6 +2051,9 @@ public class PMS {
 	private CredMgr credMgr;
 
 	public static CredMgr.Cred getCred(String owner) {
+		if (instance == null || instance.credMgr == null) {
+			return null;
+		}
 		return instance.credMgr.getCred(owner);
 	}
 

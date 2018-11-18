@@ -137,7 +137,7 @@ public class MediaMonitor extends VirtualFolder {
 
 		// The total video duration in seconds
 		double fileDuration = 0;
-		if (res.getMedia() != null && (res.getMedia().isAudio() || res.getMedia().isVideo())) {
+		if (res.getMedia() != null && (res.isAudio() || res.isVideo())) {
 			fileDuration = res.getMedia().getDurationInSeconds();
 		}
 
@@ -166,16 +166,12 @@ public class MediaMonitor extends VirtualFolder {
 			LOGGER.trace("   minimum play time needed: " + (fileDuration * configuration.getResumeBackFactor()));
 		}
 
-		/**
+		/*
 		 * Only mark the file as fully played if more than 92% (default) of
 		 * the duration has elapsed since it started playing.
 		 */
 		if (
-			(
-				res.getMedia() != null &&
-				res.getMedia().isImage()
-			) ||
-			(
+			res.isImage() || (
 				fileDuration > configuration.getMinimumWatchedPlayTimeSeconds() &&
 				elapsed >= (fileDuration * configuration.getResumeBackFactor())
 			)

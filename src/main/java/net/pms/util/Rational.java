@@ -68,7 +68,7 @@ import org.apache.commons.lang3.StringUtils;
  * <ul>
  * <li>http://introcs.cs.princeton.edu/java/32class/Rational.java.html</li>
  * <li>com.drew.lang.Rational</li>
- * <li>org.apache.commons.lang.math.Fraction</li>
+ * <li>org.apache.commons.lang3.math.Fraction</li>
  * <li>com.twelvemonkeys.imageio.metadata.exif.Rational</li>
  * <li>java.math.BigInteger</li>
  * <li>java.math.BigDecimal</li>
@@ -2384,7 +2384,7 @@ public class Rational extends Number implements Comparable<Rational> {
 	/**
 	 * Calculates the greatest common divisor for two {@link Long}s using
 	 * "binary GDC" with some optimizations borrowed from
-	 * {@link org.apache.commons.lang.math.Fraction#greatestCommonDivisor}.
+	 * {@link org.apache.commons.lang3.math.Fraction#greatestCommonDivisor}.
 	 *
 	 * @param u the first number.
 	 * @param v the second number.

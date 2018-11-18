@@ -24,6 +24,7 @@ import javax.annotation.Nullable;
 import net.pms.configuration.FormatConfiguration;
 import net.pms.dlna.DLNAMediaInfo.RateMode;
 import net.pms.formats.v2.AudioProperties;
+import net.pms.util.ISO639;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 /**
@@ -551,9 +552,9 @@ public class DLNAMediaAudio extends DLNAMediaLang implements Cloneable {
 	@Override
 	public String toString() {
 		StringBuilder result = new StringBuilder();
-		if (isNotBlank(getLang()) && !getLang().equals("und")) {
+		if (getLang() != null && getLang() != ISO639.UND) {
 			result.append("Id: ").append(getId());
-			result.append(", Language Code: ").append(getLang());
+			result.append(", Language: ").append(getLang());
 		}
 
 		if (isNotBlank(getAudioTrackTitleFromMetadata())) {

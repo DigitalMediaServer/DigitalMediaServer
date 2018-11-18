@@ -29,6 +29,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import net.pms.Messages;
 import net.pms.configuration.FormatConfiguration;
+import net.pms.configuration.PmsConfiguration;
 import net.pms.configuration.RendererConfiguration;
 import net.pms.formats.FormatFactory;
 import net.pms.formats.ISOVOB;
@@ -38,10 +39,11 @@ import net.pms.image.ImagesUtil.ScaleType;
 import net.pms.io.OutputParams;
 import net.pms.io.ProcessWrapperImpl;
 import net.pms.util.FileUtil;
-import net.pms.util.Iso639;
+import net.pms.util.ISO639;
 import net.pms.util.MPlayerDvdAudioStreamChannels;
 import net.pms.util.MPlayerDvdAudioStreamTypes;
 import net.pms.util.ProcessUtil;
+import net.pms.util.StringUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -406,8 +408,8 @@ public class DVDISOTitle extends DLNAResource {
 			audio.setNumberOfChannels(
 				MPlayerDvdAudioStreamChannels.typeOf(matcher.group("Channels")).getNumberOfChannels()
 			);
-			String languageCode = Iso639.getISOCode(matcher.group("Language"));
-			audio.setLang(isBlank(languageCode) ? DLNAMediaLang.UND : languageCode);
+			ISO639 language = ISO639.getCode(matcher.group("Language"));
+			audio.setLang(language == null ? ISO639.UND : language);
 			try {
 				audio.setId(Integer.parseInt(matcher.group("AID")));
 			} catch (NumberFormatException e) {
@@ -488,12 +490,28 @@ public class DVDISOTitle extends DLNAResource {
 				);
 				LOGGER.trace("", e);
 			}
-			String languageCode = Iso639.getISOCode(matcher.group("Language"));
-			subtitle.setLang(isBlank(languageCode) ? DLNAMediaLang.UND : languageCode);
+			ISO639 language = ISO639.get(matcher.group("Language"));
+			subtitle.setLang(language == null ? ISO639.UND : language);
 
 			return subtitle;
 		}
 		LOGGER.warn("Could not parse DVD subtitle stream \"{}\"", line);
 		return null;
+	}
+
+	@SuppressWarnings("deprecation")
+	@Override
+	protected String getDisplayNameSuffix(RendererConfiguration renderer, PmsConfiguration configuration) {
+		String nameSuffix = super.getDisplayNameSuffix(renderer, configuration);
+		if (
+			media != null &&
+			renderer != null &&
+			media.getDurationInSeconds() > 0 &&
+			renderer.isShowDVDTitleDuration()
+		) {
+			nameSuffix += " (" + StringUtil.convertTimeToString(media.getDurationInSeconds(), "%01d:%02d:%02.0f") + ")";
+		}
+
+		return nameSuffix;
 	}
 }

@@ -31,6 +31,7 @@ import net.pms.formats.v2.SubtitleType;
 import net.pms.image.ImageInfo;
 import net.pms.media.VideoLevel;
 import net.pms.service.Services;
+import net.pms.util.ISO639;
 import net.pms.util.Rational;
 import static org.apache.commons.lang3.StringUtils.*;
 import org.h2.api.ErrorCode;
@@ -73,6 +74,8 @@ public class DLNAMediaDatabase implements Runnable {
 	private final int SIZE_ARTIST = 255;
 	private final int SIZE_SONGNAME = 255;
 	private final int SIZE_GENRE = 64;
+	private final int SIZE_EXTERNALFILE = 1000;
+	private final int SIZE_CHARSET = 255;
 
 	/**
 	 * Initializes the database for use, performing checks and creating a new
@@ -219,7 +222,9 @@ public class DLNAMediaDatabase implements Runnable {
 					sb.append(", LANG     VARCHAR2(").append(SIZE_LANG).append(')');
 					sb.append(", TITLE    VARCHAR2(").append(SIZE_TITLE).append(')');
 					sb.append(", TYPE     INT");
-					sb.append(", constraint PKSUB primary key (FILEID, ID))");
+					sb.append(", EXTERNALFILE VARCHAR2(").append(SIZE_EXTERNALFILE).append(") NOT NULL");
+					sb.append(", CHARSET VARCHAR2(").append(SIZE_CHARSET).append(")");
+					sb.append(", constraint PKSUB primary key (FILEID, ID, EXTERNALFILE))");
 					if (trace) {
 						LOGGER.trace("Creating table SUBTRACKS with:\n\n{}\n", sb.toString());
 					}
@@ -384,7 +389,7 @@ public class DLNAMediaDatabase implements Runnable {
 						while (elements.next()) {
 							DLNAMediaAudio audio = new DLNAMediaAudio();
 							audio.setId(elements.getInt("ID"));
-							audio.setLang(elements.getString("LANG"));
+							audio.setLang(ISO639.get(elements.getString("LANG")));
 							audio.setAudioTrackTitleFromMetadata(elements.getString("TITLE"));
 							audio.setNumberOfChannels(elements.getInt("NRAUDIOCHANNELS"));
 							audio.setSampleFrequency(elements.getInt("SAMPLEFREQ"));
@@ -406,11 +411,19 @@ public class DLNAMediaDatabase implements Runnable {
 					subs.setInt(1, id);
 					try (ResultSet elements = subs.executeQuery()) {
 						while (elements.next()) {
+							String fileName = elements.getString("EXTERNALFILE");
+							File externalFile = isNotBlank(fileName) ? new File(fileName) : null;
+							if (externalFile != null && !externalFile.exists()) {
+								LOGGER.trace("Skipping cached external subtitles because \"{}\" doesn't exist", externalFile.getPath());
+								continue;
+							}
 							DLNAMediaSubtitle sub = new DLNAMediaSubtitle();
 							sub.setId(elements.getInt("ID"));
-							sub.setLang(elements.getString("LANG"));
+							sub.setLang(ISO639.get(elements.getString("LANG")));
 							sub.setSubtitlesTrackTitleFromMetadata(elements.getString("TITLE"));
 							sub.setType(SubtitleType.valueOfStableIndex(elements.getInt("TYPE")));
+							sub.setExternalFileOnly(externalFile);
+							sub.setSubCharacterSet(elements.getString("CHARSET"));
 							media.getSubtitleTracksList().add(sub);
 						}
 					}
@@ -440,43 +453,57 @@ public class DLNAMediaDatabase implements Runnable {
 			return;
 		}
 
-		/* XXX This is flawed, multiple subtitle tracks with the same language will
-		 * overwrite each other.
-		 */
 		try (
-			PreparedStatement updateStatment = connection.prepareStatement(
+			PreparedStatement updateStatement = connection.prepareStatement(
 				"SELECT " +
-					"FILEID, ID, LANG, TITLE, TYPE " +
+					"FILEID, ID, LANG, TITLE, TYPE, EXTERNALFILE, CHARSET " +
 				"FROM SUBTRACKS " +
 				"WHERE " +
-					"FILEID = ? AND ID = ?",
+					"FILEID = ? AND ID = ? AND EXTERNALFILE = ?",
 				ResultSet.TYPE_FORWARD_ONLY,
 				ResultSet.CONCUR_UPDATABLE
 			);
 			PreparedStatement insertStatement = connection.prepareStatement(
 				"INSERT INTO SUBTRACKS (" +
-					"FILEID, ID, LANG, TITLE, TYPE " +
+					"FILEID, ID, LANG, TITLE, TYPE, EXTERNALFILE, CHARSET " +
 				") VALUES (" +
-					"?, ?, ?, ?, ?" +
+					"?, ?, ?, ?, ?, ?, ?" +
 				")"
 			);
 		) {
 			for (DLNAMediaSubtitle subtitleTrack : media.getSubtitleTracksList()) {
-				updateStatment.setInt(1, fileId);
-				updateStatment.setInt(2, subtitleTrack.getId());
-				try (ResultSet rs = updateStatment.executeQuery()) {
+				updateStatement.setInt(1, fileId);
+				updateStatement.setInt(2, subtitleTrack.getId());
+				if (subtitleTrack.isExternal()) {
+					updateStatement.setString(3, subtitleTrack.getExternalFile().getPath());
+				} else {
+					updateStatement.setString(3, "");
+				}
+				try (ResultSet rs = updateStatement.executeQuery()) {
 					if (rs.next()) {
-						rs.updateString("LANG", left(subtitleTrack.getLang(), SIZE_LANG));
+						rs.updateString("LANG", left(subtitleTrack.getLang() != null ? subtitleTrack.getLang().getCode() : "", SIZE_LANG));
 						rs.updateString("TITLE", left(subtitleTrack.getSubtitlesTrackTitleFromMetadata(), SIZE_TITLE));
 						rs.updateInt("TYPE", subtitleTrack.getType().getStableIndex());
+						if (subtitleTrack.getExternalFile() != null) {
+							rs.updateString("EXTERNALFILE", left(subtitleTrack.getExternalFile().getPath(), SIZE_EXTERNALFILE));
+						} else {
+							rs.updateString("EXTERNALFILE", "");
+						}
+						rs.updateString("CHARSET", left(subtitleTrack.getSubCharacterSet(), SIZE_CHARSET));
 						rs.updateRow();
 					} else {
 						insertStatement.clearParameters();
 						insertStatement.setInt(1, fileId);
 						insertStatement.setInt(2, subtitleTrack.getId());
-						insertStatement.setString(3, left(subtitleTrack.getLang(), SIZE_LANG));
+						insertStatement.setString(3, left(subtitleTrack.getLang() != null ? subtitleTrack.getLang().getCode() : "", SIZE_LANG));
 						insertStatement.setString(4, left(subtitleTrack.getSubtitlesTrackTitleFromMetadata(), SIZE_TITLE));
 						insertStatement.setInt(5, subtitleTrack.getType().getStableIndex());
+						if (subtitleTrack.getExternalFile() != null) {
+							insertStatement.setString(6, left(subtitleTrack.getExternalFile().getPath(), SIZE_EXTERNALFILE));
+						} else {
+							insertStatement.setString(6, "");
+						}
+						insertStatement.setString(7, left(subtitleTrack.getSubCharacterSet(), SIZE_CHARSET));
 						insertStatement.executeUpdate();
 					}
 				}
@@ -492,9 +519,6 @@ public class DLNAMediaDatabase implements Runnable {
 			return;
 		}
 
-		/* XXX This is flawed, multiple audio tracks with the same language will
-		 * overwrite each other.
-		 */
 		try (
 			PreparedStatement updateStatment = connection.prepareStatement(
 				"SELECT " +
@@ -521,7 +545,7 @@ public class DLNAMediaDatabase implements Runnable {
 				updateStatment.setInt(2, audioTrack.getId());
 				try (ResultSet rs = updateStatment.executeQuery()) {
 					if (rs.next()) {
-						rs.updateString("LANG", left(audioTrack.getLang(), SIZE_LANG));
+						rs.updateString("LANG", left(audioTrack.getLang() != null ? audioTrack.getLang().getCode() : "", SIZE_LANG));
 						rs.updateString("TITLE", left(audioTrack.getAudioTrackTitleFromMetadata(), SIZE_TITLE));
 						rs.updateInt("NRAUDIOCHANNELS", audioTrack.getNumberOfChannelsRaw());
 						rs.updateInt("SAMPLEFREQ", audioTrack.getSampleFrequencyRaw());
@@ -542,7 +566,7 @@ public class DLNAMediaDatabase implements Runnable {
 						insertStatement.clearParameters();
 						insertStatement.setInt(1, fileId);
 						insertStatement.setInt(2, audioTrack.getId());
-						insertStatement.setString(3, left(audioTrack.getLang(), SIZE_LANG));
+						insertStatement.setString(3, left(audioTrack.getLang() != null ? audioTrack.getLang().getCode() : "", SIZE_LANG));
 						insertStatement.setString(4, left(audioTrack.getAudioTrackTitleFromMetadata(), SIZE_TITLE));
 						insertStatement.setInt(5, audioTrack.getNumberOfChannelsRaw());
 						insertStatement.setInt(6, audioTrack.getSampleFrequencyRaw());

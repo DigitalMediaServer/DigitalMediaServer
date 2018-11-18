@@ -417,7 +417,7 @@ public final class PlayerFactory {
 			return null;
 		}
 		LOGGER.trace("Getting player for resource \"{}\"", resource.getName());
-		boolean isImage = resource.getMedia() != null ? resource.getMedia().isImage() : false;
+		boolean isImage = resource.isImage();
 
 		PLAYERS_LOCK.readLock().lock();
 		try {

@@ -58,7 +58,7 @@ public class RemoteRawHandler implements HttpHandler {
 			String mime = null;
 			InputStream in;
 			Range.Byte range;
-			if (dlna.getMedia() != null && dlna.getMedia().isImage() && dlna.getMedia().getImageInfo() != null) {
+			if (dlna.getMedia() != null && dlna.isImage() && dlna.getMedia().getImageInfo() != null) {
 				boolean supported = false;
 				ImageInfo imageInfo = dlna.getMedia().getImageInfo();
 				if (root.getDefaultRenderer() instanceof WebRender) {

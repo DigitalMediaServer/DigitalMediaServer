@@ -22,9 +22,11 @@ package net.pms.util;
 import java.io.*;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.nio.charset.StandardCharsets;
 import java.text.Collator;
 import java.util.*;
-import java.util.List;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import net.pms.PMS;
 import net.pms.configuration.RendererConfiguration;
 import net.pms.dlna.*;
@@ -127,7 +129,7 @@ public class UMSUtils {
 				Collections.sort(files, new Comparator<File>() {
 					@Override
 					public int compare(File f1, File f2) {
-						return Long.valueOf(f1.lastModified()).compareTo(f2.lastModified());
+						return Long.compare(f1.lastModified(), f2.lastModified());
 					}
 				});
 				break;
@@ -135,7 +137,7 @@ public class UMSUtils {
 				Collections.sort(files, new Comparator<File>() {
 					@Override
 					public int compare(File f1, File f2) {
-						return Long.valueOf(f2.lastModified()).compareTo(f1.lastModified());
+						return Long.compare(f2.lastModified(), f1.lastModified());
 					}
 				});
 				break;
@@ -163,35 +165,12 @@ public class UMSUtils {
 		return pos + (pos.equals("0:00") ? "" : dur.equals("0:00") ? "" : (" / " + dur));
 	}
 
-	private static String iso639(String s) {
-		String[] tmp = s.split(",");
-		StringBuilder res = new StringBuilder();
-		String sep = "";
-		for (String tmp1 : tmp) {
-			res.append(sep).append(Iso639.getISO639_2Code(tmp1));
-			sep = ",";
+	@Nonnull
+	public static List<Language> getLangList(@Nullable RendererConfiguration renderer) {
+		if (renderer != null) {
+			return renderer.getSubLanguages();
 		}
-		if (StringUtils.isNotEmpty(res)) {
-			return res.toString();
-		}
-		return s;
-	}
-
-	public static String getLangList(RendererConfiguration r) {
-		return getLangList(r, false);
-	}
-
-	public static String getLangList(RendererConfiguration r, boolean three) {
-		String res;
-		if (r != null) {
-			res = r.getSubLanguage();
-		} else {
-			res = PMS.getConfiguration().getSubtitlesLanguages();
-		}
-		if (three) {
-			res = iso639(res);
-		}
-		return res;
+		return PMS.getConfiguration().getSubtitlesLanguages();
 	}
 
 	/**
@@ -283,7 +262,7 @@ public class UMSUtils {
 
 		public static void write(List<DLNAResource> playlist, File file) throws IOException {
 			Date now = new Date();
-			try (FileWriter out = new FileWriter(file)) {
+			try (OutputStreamWriter out = new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8)) {
 				StringBuilder sb = new StringBuilder();
 				sb.append("######\n");
 				sb.append("## __UPS__\n");
@@ -309,13 +288,24 @@ public class UMSUtils {
 						}
 						if (resource.getMediaSubtitle() != null) {
 							DLNAMediaSubtitle sub = resource.getMediaSubtitle();
-							if (sub.getLang() != null && sub.getId() != -1) {
+							if (
+								sub.getLang() != null &&
+								(
+									(
+										sub.isExternal() &&
+										sub.getExternalFile() != null
+									) || (
+										sub.isEmbedded() &&
+										sub.getId() != -1
+									)
+								)
+							) {
 								sb.append("sub");
-								sb.append(sub.getLang());
+								sb.append(sub.getLang().getPart2B());
 								sb.append(',');
 								if (sub.isExternal()) {
 									sb.append("file:");
-									sb.append(sub.getExternalFile().getAbsolutePath());
+									sb.append(sub.getExternalFile().getPath());
 								} else {
 									sb.append("id:");
 									sb.append("").append(sub.getId());
@@ -386,11 +376,11 @@ public class UMSUtils {
 			return null;
 		}
 
-		public static void read(List<DLNAResource> playlist, File f) throws IOException {
-			if (!f.exists()) {
+		public static void read(List<DLNAResource> playlist, File file) throws IOException {
+			if (!file.exists()) {
 				return;
 			}
-			try (BufferedReader in = new BufferedReader(new FileReader(f))) {
+			try (BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8))) {
 				String str;
 
 				while ((str = in.readLine()) != null) {
@@ -454,12 +444,11 @@ public class UMSUtils {
 								res.setMediaSubtitle(s);
 							}
 							String[] tmp = subData.split(",");
-							s.setLang(tmp[0]);
+							s.setLang(ISO639.getCode(tmp[0]));
 							subData = tmp[1];
 							if (subData.startsWith("file:")) {
 								String sFile = subData.substring(5);
-								s.setExternalFile(new File(sFile), null);
-								s.setId(100);
+								s.setExternalFile(new File(sFile));
 								SubtitleType t = SubtitleType.valueOfFileExtension(FileUtil.getExtension(sFile));
 								s.setType(t);
 							} else if (subData.startsWith("id:")) {

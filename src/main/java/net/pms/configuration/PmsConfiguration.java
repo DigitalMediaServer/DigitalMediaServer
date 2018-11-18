@@ -63,6 +63,8 @@ import net.pms.util.FileUtil;
 import net.pms.util.ConversionUtil.UnitPrefix;
 import net.pms.util.FileUtil.FileLocation;
 import net.pms.util.FullyPlayedAction;
+import net.pms.util.Language;
+import net.pms.util.Language.DefaultLangauge;
 import net.pms.util.Languages;
 import net.pms.util.LogSystemInformationMode;
 import net.pms.util.Pair;
@@ -199,7 +201,6 @@ public class PmsConfiguration extends RendererConfiguration {
 	protected static final String KEY_HIDE_MEDIA_LIBRARY_FOLDER = "hide_media_library_folder";
 	protected static final String KEY_HIDE_NEW_MEDIA_FOLDER = "hide_new_media_folder";
 	protected static final String KEY_HIDE_RECENTLY_PLAYED_FOLDER = "hide_recently_played_folder";
-	protected static final String KEY_HIDE_SUBS_INFO = "hide_subs_info";
 	protected static final String KEY_HIDE_TRANSCODE_FOLDER = "hide_transcode_folder";
 	protected static final String KEY_HIDE_VIDEO_SETTINGS = "hide_video_settings";
 	protected static final String KEY_HTTP_ENGINE_V2 = "http_engine_v2";
@@ -211,7 +212,6 @@ public class PmsConfiguration extends RendererConfiguration {
 	protected static final String KEY_LANGUAGE = "language";
 	protected static final String KEY_LIVE_SUBTITLES_KEEP = "live_subtitles_keep";
 	protected static final String KEY_LIVE_SUBTITLES_LIMIT = "live_subtitles_limit";
-	protected static final String KEY_LIVE_SUBTITLES_TMO = "live_subtitles_timeout";
 	protected static final String KEY_LOG_SYSTEM_INFO = "log_system_info";
 	protected static final String KEY_LOGGING_LOGFILE_NAME = "logging_logfile_name";
 	protected static final String KEY_LOGGING_BUFFERED = "logging_buffered";
@@ -301,6 +301,7 @@ public class PmsConfiguration extends RendererConfiguration {
 	protected static final String KEY_SERVER_PORT = "port";
 	protected static final String KEY_SHARES = "shares";
 	protected static final String KEY_SHOW_APERTURE_LIBRARY = "show_aperture_library";
+	protected static final String KEY_SUBS_INFO_LEVEL = "subs_info_level";
 	protected static final String KEY_SHOW_IPHOTO_LIBRARY = "show_iphoto_library";
 	protected static final String KEY_SHOW_ITUNES_LIBRARY = "show_itunes_library";
 	protected static final String KEY_SHOW_SPLASH_SCREEN = "show_splash_screen";
@@ -411,7 +412,6 @@ public class PmsConfiguration extends RendererConfiguration {
 			KEY_HIDE_EXTENSIONS,
 			KEY_HIDE_LIVE_SUBTITLES_FOLDER,
 			KEY_HIDE_MEDIA_LIBRARY_FOLDER,
-			KEY_HIDE_SUBS_INFO,
 			KEY_HIDE_TRANSCODE_FOLDER,
 			KEY_HIDE_VIDEO_SETTINGS,
 			KEY_IGNORE_THE_WORD_A_AND_THE,
@@ -425,6 +425,7 @@ public class PmsConfiguration extends RendererConfiguration {
 			KEY_SHOW_APERTURE_LIBRARY,
 			KEY_SHOW_IPHOTO_LIBRARY,
 			KEY_SHOW_ITUNES_LIBRARY,
+			KEY_SUBS_INFO_LEVEL,
 			KEY_SORT_METHOD,
 			KEY_USE_CACHE,
 			KEY_USE_DEFAULT_FOLDERS
@@ -1537,84 +1538,302 @@ public class PmsConfiguration extends RendererConfiguration {
 		return getString(KEY_FONT, "");
 	}
 
+	private List<Language> audioLanguages;
+	private final Object audioLanguagesLock = new Object();
+
 	/**
-	 * Returns the audio language priority as a comma separated
-	 * string. For example: <code>"eng,fre,jpn,ger,und"</code>, where "und"
-	 * stands for "undefined".
-	 * Can be a blank string.
-	 * Default value is "loc,eng,fre,jpn,ger,und".
-	 *
-	 * @return The audio language priority string.
+	 * @return An {@link ArrayList} of configured audio {@link Language}s
+	 *         ordered by priority.
 	 */
-	public String getAudioLanguages() {
-		String result = getString(KEY_AUDIO_LANGUAGES, null);
-		return (isBlank(result)) ? Messages.getString("MEncoderVideo.126") : result;
+	@Nonnull
+	public ArrayList<Language> getAudioLanguages() {
+		synchronized (audioLanguagesLock) {
+			if (audioLanguages != null) {
+				return new ArrayList<>(audioLanguages);
+			}
+
+			String languages = getString(KEY_AUDIO_LANGUAGES, null);
+			if (isBlank(languages)) {
+				languages =  Messages.getString("MEncoderVideo.126");
+			}
+			audioLanguages = DefaultLangauge.parseLanguages(languages);
+			return new ArrayList<>(audioLanguages);
+		}
 	}
 
 	/**
-	 * Returns the subtitle language priority as a comma-separated
-	 * string. For example: <code>"eng,fre,jpn,ger,und"</code>, where "und"
-	 * stands for "undefined".
-	 * Can be a blank string.
-	 * Default value is a localized list (e.g. "eng,fre,jpn,ger,und").
+	 * Sets the audio language priorities as a comma-separated {@link String}.
+	 * Example: {@code "eng,fre,jpn,ger,und"}, where "und" means "undefined".
 	 *
-	 * @return The subtitle language priority string.
+	 * @param languages The audio language priorities {@link String}.
 	 */
-	public String getSubtitlesLanguages() {
-		String result = getString(KEY_SUBTITLES_LANGUAGES, null);
-		return (isBlank(result)) ? Messages.getString("MEncoderVideo.127") : result;
+	public void setAudioLanguages(@Nullable String languages) {
+		if (isBlank(languages)) {
+			setAudioLanguages((List<Language>) null);
+			return;
+		}
+		List<Language> languagesList = DefaultLangauge.parseLanguages(languages);
+		setAudioLanguages(languagesList);
 	}
 
 	/**
-	 * Returns the ISO 639 language code for the subtitle language that should
-	 * be forced.
-	 * Can be a blank string.
-	 * @return The subtitle language code.
+	 * Sets the audio language priorities as an ordered {@link List} of
+	 * {@link Language}s.
+	 *
+	 * @param languages the {@link List} of {@link Language}s.
 	 */
-	public String getForcedSubtitleLanguage() {
-		return configurationReader.getPossiblyBlankConfigurationString(
+	public void setAudioLanguages(@Nullable List<Language> languages) {
+		synchronized (audioLanguagesLock) {
+			if (languages == null || languages.isEmpty()) {
+				configuration.setProperty(KEY_AUDIO_LANGUAGES, "");
+				audioLanguages = new ArrayList<>();
+				return;
+			}
+			ArrayList<Language> mutableLanguages = new ArrayList<Language>(languages);
+			StringBuilder sb = new StringBuilder();
+			boolean first = true;
+			for (Iterator<Language> iterator = mutableLanguages.iterator(); iterator.hasNext();) {
+				Language language = iterator.next();
+				if (language == null || isBlank(language.getCode())) {
+					iterator.remove();
+				} else {
+					if (first) {
+						first = false;
+					} else {
+						sb.append(",");
+					}
+					sb.append(language.getCode());
+				}
+			}
+			configuration.setProperty(KEY_AUDIO_LANGUAGES, sb);
+			audioLanguages = mutableLanguages;
+		}
+	}
+
+	private List<Language> subtitlesLanguages;
+	private final Object subtitlesLanguagesLock = new Object();
+
+	/**
+	 * @return An {@link ArrayList} of configured subtitles {@link Language}s
+	 *         ordered by priority.
+	 */
+	@Nonnull
+	public ArrayList<Language> getSubtitlesLanguages() {
+		synchronized (subtitlesLanguagesLock) {
+			if (subtitlesLanguages != null) {
+				return new ArrayList<>(subtitlesLanguages);
+			}
+
+			String languages = getString(KEY_SUBTITLES_LANGUAGES, null);
+			if (isBlank(languages)) {
+				languages =  Messages.getString("MEncoderVideo.127");
+			}
+			subtitlesLanguages = DefaultLangauge.parseLanguages(languages);
+			return new ArrayList<>(subtitlesLanguages);
+		}
+	}
+
+	/**
+	 * Sets the subtitles language priorities as a comma-separated
+	 * {@link String}. Example: {@code "eng,fre,jpn,ger,und"}, where "und" means
+	 * "undefined".
+	 *
+	 * @param languages The subtitles language priorities {@link String}.
+	 */
+	public void setSubtitlesLanguages(@Nullable String languages) {
+		if (isBlank(languages)) {
+			setSubtitlesLanguages((List<Language>) null);
+			return;
+		}
+		List<Language> languagesList = DefaultLangauge.parseLanguages(languages);
+		setSubtitlesLanguages(languagesList);
+	}
+
+	/**
+	 * Sets the subtitles language priorities as an ordered {@link List} of
+	 * {@link Language}s.
+	 *
+	 * @param languages the {@link List} of {@link Language}s.
+	 */
+	public void setSubtitlesLanguages(@Nullable List<Language> languages) {
+		synchronized (subtitlesLanguagesLock) {
+			if (languages == null || languages.isEmpty()) {
+				configuration.setProperty(KEY_SUBTITLES_LANGUAGES, "");
+				subtitlesLanguages = new ArrayList<>();
+				return;
+			}
+			ArrayList<Language> mutableLanguages = new ArrayList<Language>(languages);
+			StringBuilder sb = new StringBuilder();
+			boolean first = true;
+			for (Iterator<Language> iterator = mutableLanguages.iterator(); iterator.hasNext();) {
+				Language language = iterator.next();
+				if (language == null || isBlank(language.getCode())) {
+					iterator.remove();
+				} else {
+					if (first) {
+						first = false;
+					} else {
+						sb.append(",");
+					}
+					sb.append(language.getCode());
+				}
+			}
+			configuration.setProperty(KEY_SUBTITLES_LANGUAGES, sb);
+			subtitlesLanguages = mutableLanguages;
+		}
+	}
+
+	/**
+	 * Returns the subtitles {@link Language} that should be forced.
+	 *
+	 * @return The {@link Language} or {@code null}.
+	 */
+	@Nullable
+	public Language getForcedSubtitleLanguage() {
+		String forcedLanguage = configurationReader.getPossiblyBlankConfigurationString(
 				KEY_FORCED_SUBTITLE_LANGUAGE,
 				PMS.getLocale().getLanguage()
 		);
+		return DefaultLangauge.parseLanguage(forcedLanguage);
 	}
 
 	/**
-	 * Returns the tag string that identifies the subtitle language that
-	 * should be forced.
-	 * @return The tag string.
+	 * Sets the subtitles {@link Language} that should be forced.
+	 *
+	 * @param value The {@link Language}.
+	 */
+	public void setForcedSubtitleLanguage(@Nullable Language value) {
+		if (value == null) {
+			configuration.setProperty(KEY_FORCED_SUBTITLE_LANGUAGE, "");
+		} else {
+			configuration.setProperty(KEY_FORCED_SUBTITLE_LANGUAGE, value.getCode());
+		}
+	}
+
+	/**
+	 * Returns the tag string that identifies the subtitle language that should
+	 * be forced.
+	 *
+	 * @return The tag {@link String}.
 	 */
 	public String getForcedSubtitleTags() {
 		return getString(KEY_FORCED_SUBTITLE_TAGS, "forced");
 	}
 
 	/**
-	 * Returns a string of audio language and subtitle language pairs
-	 * ordered by priority to try to match. Audio language
-	 * and subtitle language should be comma-separated as a pair,
-	 * individual pairs should be semicolon separated. "*" can be used to
-	 * match any language. Subtitle language can be defined as "off".
-	 * Default value is <code>"*,*"</code>.
+	 * Sets the tag string that identifies the subtitle language that should be
+	 * forced.
 	 *
-	 * @return The audio and subtitle languages priority string.
+	 * @param value the tag {@link String}.
 	 */
-	public String getAudioSubLanguages() {
-		String result = getString(KEY_AUDIO_SUB_LANGS, null);
-		return (isBlank(result)) ? Messages.getString("MEncoderVideo.128") : result;
+	public void setForcedSubtitleTags(String value) {
+		configuration.setProperty(KEY_FORCED_SUBTITLE_TAGS, value);
+	}
+
+	private List<Pair<Language, Language>> audioSubLanguages;
+	private final Object audioSubLanguagesLock = new Object();
+
+	/**
+	 * @return An {@link ArrayList} of configured audio and subtitles
+	 *         {@link Language} combinations ordered by priority.
+	 */
+	@Nonnull
+	public ArrayList<Pair<Language, Language>> getAudioSubLanguages() {
+		synchronized (audioSubLanguagesLock) {
+			if (audioSubLanguages != null) {
+				return new ArrayList<>(audioSubLanguages);
+			}
+
+			String languageMatrix = getString(KEY_AUDIO_SUB_LANGS, null);
+			if (isBlank(languageMatrix)) {
+				languageMatrix =  Messages.getString("MEncoderVideo.128");
+			}
+			audioSubLanguages = stringToAudioSubLanguages(languageMatrix);
+			return new ArrayList<>(audioSubLanguages);
+		}
 	}
 
 	/**
-	 * Sets a string of audio language and subtitle language pairs
-	 * ordered by priority to try to match. Audio language
-	 * and subtitle language should be comma-separated as a pair,
-	 * individual pairs should be semicolon separated. "*" can be used to
-	 * match any language. Subtitle language can be defined as "off".
+	 * Sets the audio and subtitles language combination priorities as a
+	 * semicolon-separated {@link String}. Example:
+	 * {@code "en,off;jpn,eng;*,eng;*,*"}, where "off" means no subtitles and
+	 * "*" means any language.
 	 *
-	 * Example: <code>"en,off;jpn,eng;*,eng;*;*"</code>.
-	 *
-	 * @param value The audio and subtitle languages priority string.
+	 * @param languageMatrix The audio and subtitles language combination
+	 *            priorities {@link String}.
 	 */
-	public void setAudioSubLanguages(String value) {
-		configuration.setProperty(KEY_AUDIO_SUB_LANGS, value);
+	public void setAudioSubLanguages(@Nullable String languageMatrix) {
+		if (isBlank(languageMatrix)) {
+			setAudioSubLanguages((List<Pair<Language, Language>>) null);
+			return;
+		}
+		ArrayList<Pair<Language, Language>> matrix = stringToAudioSubLanguages(languageMatrix);
+		setAudioSubLanguages(matrix);
+	}
+
+	/**
+	 * Sets the audio and subtitles language combination priorities as an
+	 * ordered {@link List} of {@link Language} {@link Pair}s.
+	 *
+	 * @param languageMatrix the {@link List} of {@link Language} {@link Pair}s.
+	 */
+	public void setAudioSubLanguages(@Nullable List<Pair<Language, Language>> languageMatrix) {
+		synchronized (audioSubLanguagesLock) {
+			if (languageMatrix == null || languageMatrix.isEmpty()) {
+				configuration.setProperty(KEY_AUDIO_SUB_LANGS, "");
+				audioSubLanguages = new ArrayList<>();
+				return;
+			}
+			StringBuilder sb = new StringBuilder();
+			boolean first = true;
+			ArrayList<Pair<Language, Language>> mutableLanguageMatrix = new ArrayList<>(languageMatrix);
+			for (Iterator<Pair<Language, Language>> iterator = mutableLanguageMatrix.iterator(); iterator.hasNext();) {
+				Pair<Language, Language> pair = iterator.next();
+				if (
+					pair.getFirst() == null ||
+					isBlank(pair.getFirst().getCode()) ||
+					pair.getSecond() == null ||
+					isBlank(pair.getSecond().getCode())
+				) {
+					iterator.remove();
+				} else {
+					if (first) {
+						first = false;
+					} else {
+						sb.append(";");
+					}
+					sb.append(pair.getFirst().getCode()).append(",").append(pair.getSecond().getCode());
+				}
+			}
+			configuration.setProperty(KEY_AUDIO_SUB_LANGS, sb);
+			audioSubLanguages = mutableLanguageMatrix;
+		}
+	}
+
+	@Nonnull
+	private static ArrayList<Pair<Language, Language>> stringToAudioSubLanguages(@Nullable String languageMatrix) {
+		ArrayList<Pair<Language, Language>> result = new ArrayList<>();
+		if (languageMatrix == null) {
+			return result;
+		}
+		String[] pairs = StringUtil.SEMICOLON.split(languageMatrix.trim().toLowerCase(Locale.ROOT));
+		for (String pair : pairs) {
+			String[] languages = StringUtil.COMMA.split(pair);
+			if (languages.length != 2) {
+				LOGGER.warn("Ignoring invalid audio/subtitle language configuration \"{}\"", pair);
+				continue;
+			}
+			Pair<Language, Language> languagePair = new Pair<>(
+				DefaultLangauge.parseLanguage(languages[0]),
+				DefaultLangauge.parseLanguage(languages[1])
+			);
+			if (languagePair.getFirst() == null || languagePair.getSecond() == null) {
+				LOGGER.warn("Ignoring invalid audio/subtitle language configuration \"{}\"", pair);
+				continue;
+			}
+			result.add(languagePair);
+		}
+		return result;
 	}
 
 	/**
@@ -1667,48 +1886,6 @@ public class PmsConfiguration extends RendererConfiguration {
 	 */
 	public boolean isMencoderForceFps() {
 		return getBoolean(KEY_MENCODER_FORCE_FPS, false);
-	}
-
-	/**
-	 * Sets the audio language priority as a comma separated
-	 * string. For example: <code>"eng,fre,jpn,ger,und"</code>, where "und"
-	 * stands for "undefined".
-	 * @param value The audio language priority string.
-	 */
-	public void setAudioLanguages(String value) {
-		configuration.setProperty(KEY_AUDIO_LANGUAGES, value);
-	}
-
-	/**
-	 * Sets the subtitle language priority as a comma-separated string.
-	 *
-	 * Example: <code>"eng,fre,jpn,ger,und"</code>, where "und" stands for
-	 * "undefined".
-	 *
-	 * @param value The subtitle language priority string.
-	 */
-	public void setSubtitlesLanguages(String value) {
-		configuration.setProperty(KEY_SUBTITLES_LANGUAGES, value);
-	}
-
-	/**
-	 * Sets the ISO 639 language code for the subtitle language that should
-	 * be forced.
-	 *
-	 * @param value The subtitle language code.
-	 */
-	public void setForcedSubtitleLanguage(String value) {
-		configuration.setProperty(KEY_FORCED_SUBTITLE_LANGUAGE, value);
-	}
-
-	/**
-	 * Sets the tag string that identifies the subtitle language that
-	 * should be forced.
-	 *
-	 * @param value The tag string.
-	 */
-	public void setForcedSubtitleTags(String value) {
-		configuration.setProperty(KEY_FORCED_SUBTITLE_TAGS, value);
 	}
 
 	/**
@@ -3233,6 +3410,25 @@ public class PmsConfiguration extends RendererConfiguration {
 		configuration.setProperty(KEY_HIDE_ENGINENAMES, value);
 	}
 
+	/**
+	 * @return The current {@link SubtitlesInfoLevel}.
+	 */
+	@Nonnull
+	public SubtitlesInfoLevel getSubtitlesInfoLevel() {
+		SubtitlesInfoLevel subtitlesInfoLevel = SubtitlesInfoLevel.typeOf(getString(KEY_SUBS_INFO_LEVEL, null));
+		return subtitlesInfoLevel == null ? SubtitlesInfoLevel.BASIC : subtitlesInfoLevel;
+	}
+
+	/**
+	 * Sets the new {@link SubtitlesInfoLevel}. Use {@code null} to set to
+	 * default.
+	 *
+	 * @param value the new {@link SubtitlesInfoLevel}.
+	 */
+	public void setSubtitlesInfoLevel(@Nullable SubtitlesInfoLevel value) {
+		configuration.setProperty(KEY_SUBS_INFO_LEVEL, value == null ? "" : value.toString());
+	}
+
 	public boolean isHideExtensions() {
 		return getBoolean(KEY_HIDE_EXTENSIONS, true);
 	}
@@ -4156,27 +4352,29 @@ public class PmsConfiguration extends RendererConfiguration {
 	}
 
 	public boolean isHideLiveSubtitlesFolder() {
-		return getBoolean(KEY_HIDE_LIVE_SUBTITLES_FOLDER, true);
+		return getBoolean(KEY_HIDE_LIVE_SUBTITLES_FOLDER, false);
 	}
 
 	public void setHideLiveSubtitlesFolder(boolean value) {
 		configuration.setProperty(KEY_HIDE_LIVE_SUBTITLES_FOLDER, value);
 	}
 
-	public int liveSubtitlesLimit() {
+	public int getLiveSubtitlesLimit() {
 		return getInt(KEY_LIVE_SUBTITLES_LIMIT, 20);
 	}
 
+	public void setLiveSubtitlesLimit(int value) {
+		if (value > 0) {
+			configuration.setProperty(KEY_LIVE_SUBTITLES_LIMIT, value);
+		}
+	}
+
 	public boolean isLiveSubtitlesKeep() {
-		return getBoolean(KEY_LIVE_SUBTITLES_KEEP, false);
+		return getBoolean(KEY_LIVE_SUBTITLES_KEEP, true);
 	}
 
-	public int getLiveSubtitlesTimeout() {
-		return getInt(KEY_LIVE_SUBTITLES_TMO, 0) * 24 * 3600 * 1000;
-	}
-
-	public void setLiveSubtitlesTimeout(int t) {
-		configuration.setProperty(KEY_LIVE_SUBTITLES_TMO, t);
+	public void setLiveSubtitlesKeep(boolean value) {
+		configuration.setProperty(KEY_LIVE_SUBTITLES_KEEP, value);
 	}
 
 	public boolean getLoggingBuffered() {
@@ -4467,10 +4665,6 @@ public class PmsConfiguration extends RendererConfiguration {
 
 	public int getResumeKeepTime() {
 		return getInt(KEY_RESUME_KEEP_TIME, 0);
-	}
-
-	public boolean hideSubsInfo() {
-		return getBoolean(KEY_HIDE_SUBS_INFO, false);
 	}
 
 	/**
@@ -4778,6 +4972,68 @@ public class PmsConfiguration extends RendererConfiguration {
 
 	public int getAliveDelay() {
 		return getInt(KEY_ALIVE_DELAY, 0);
+	}
+
+	/**
+	 * This {@code enum} represents the available "levels" for subtitles
+	 * information that is to be appended to the video name.
+	 */
+	public static enum SubtitlesInfoLevel {
+
+		/** Don't show subtitles information */
+		NONE,
+
+		/** Show only basic subtitles information */
+		BASIC,
+
+		/** Show full subtitles information */
+		FULL;
+
+		@Override
+		public String toString() {
+			switch (this) {
+				case BASIC:
+					return "basic";
+				case FULL:
+					return "full";
+				case NONE:
+					return "none";
+				default:
+					throw new AssertionError("Missing implementation of SubtitlesInfoLevel \"" + name() + "\"");
+			}
+		}
+
+		/**
+		 * Tries to parse the specified {@link String} and return the
+		 * corresponding {@link SubtitlesInfoLevel}.
+		 *
+		 * @param infoLevelString the {@link String} to parse.
+		 * @return The corresponding {@link SubtitlesInfoLevel} or {@code null}
+		 *         if the parsing failed.
+		 */
+		@Nullable
+		public static SubtitlesInfoLevel typeOf(@Nullable String infoLevelString) {
+			if (isBlank(infoLevelString)) {
+				return null;
+			}
+			infoLevelString = infoLevelString.trim().toLowerCase(Locale.ROOT);
+			switch (infoLevelString) {
+				case "off":
+				case "none":
+				case "0":
+					return NONE;
+				case "basic":
+				case "simple":
+				case "1":
+					return BASIC;
+				case "full":
+				case "advanced":
+				case "2":
+					return FULL;
+				default:
+					return null;
+			}
+		}
 	}
 
 	public static enum GUICloseAction {

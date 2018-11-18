@@ -1,5 +1,7 @@
 package net.pms.remote;
 
+import static org.apache.commons.lang3.StringUtils.isBlank;
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import com.samskivert.mustache.Mustache;
 import com.samskivert.mustache.Template;
 import com.sun.net.httpserver.Headers;
@@ -12,6 +14,7 @@ import java.net.URLClassLoader;
 import java.net.URLConnection;
 import java.nio.charset.Charset;
 import java.util.*;
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import net.pms.Messages;
 import net.pms.PMS;
@@ -24,6 +27,7 @@ import net.pms.media.H264Level;
 import net.pms.newgui.LooksFrame;
 import net.pms.util.FileWatcher;
 import net.pms.util.Languages;
+import net.pms.util.StringUtil;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -320,23 +324,26 @@ public class RemoteUtil {
 		return null;
 	}
 
-	public static LinkedHashSet<String> getLangs(HttpExchange t) {
+	@Nonnull
+	public static List<String> getLangs(HttpExchange t) {
 		String hdr = t.getRequestHeaders().getFirst("Accept-language");
-		LinkedHashSet<String> result = new LinkedHashSet<>();
-		if (StringUtils.isEmpty(hdr)) {
+		ArrayList<String> result = new ArrayList<>();
+		if (isBlank(hdr)) {
 			return result;
 		}
 
-		String[] tmp = hdr.split(",");
-		for (String language : tmp) {
-			String[] l1 = language.split(";");
-			result.add(l1[0]);
+		String[] languages = StringUtil.COMMA.split(hdr);
+		for (String language : languages) {
+			String[] parts = StringUtil.SEMICOLON.split(language);
+			if (isNotBlank(parts[0])) {
+				result.add(parts[0]);
+			}
 		}
 		return result;
 	}
 
 	public static String getFirstSupportedLanguage(HttpExchange t) {
-		LinkedHashSet<String> languages = getLangs(t);
+		List<String> languages = getLangs(t);
 		for (String language : languages) {
 			String code = Languages.toLanguageTag(language);
 			if (code != null) {
@@ -433,7 +440,7 @@ public class RemoteUtil {
 		 */
 		public File getFile(String hash) {
 			try {
-				int h = Integer.valueOf(hash);
+				int h = Integer.parseInt(hash);
 				for (File f : files) {
 					if (f.hashCode() == h) {
 						return f;

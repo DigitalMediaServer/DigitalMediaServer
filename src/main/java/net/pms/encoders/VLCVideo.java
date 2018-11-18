@@ -468,7 +468,7 @@ public class VLCVideo extends Player {
 		configuration = (DeviceConfiguration) params.mediaRenderer;
 		final String filename = dlna.getFileName();
 		boolean isWindows = Platform.isWindows();
-		setAudioAndSubs(filename, media, params);
+		setAudioAndSubs(dlna, params);
 
 		// Make sure we can play this
 		CodecConfig config = genConfig(params.mediaRenderer);
@@ -529,43 +529,56 @@ public class VLCVideo extends Player {
 		// Handle audio language
 		if (params.aid != null) {
 			// User specified language at the client, acknowledge it
-			if (params.aid.getLang() == null || params.aid.getLang().equals("und")) {
+			if (params.aid.getLang() == null || params.aid.getLang() == ISO639.UND) {
 				// VLC doesn't understand "und", so try to get audio track by ID
 				cmdList.add("--audio-track=" + params.aid.getId());
 			} else {
-				cmdList.add("--audio-language=" + params.aid.getLang());
+				if (
+					params.aid.getLang() == null ||
+					params.aid.getLang() == ISO639.UND
+				) {
+					cmdList.add("--audio-track=-1");
+				} else {
+					cmdList.add("--audio-language=" + params.aid.getLang().getCode());
+				}
 			}
 		} else {
-			// Not specified, use language from GUI
-			// FIXME: VLC does not understand "loc" or "und".
-			cmdList.add("--audio-language=" + configuration.getAudioLanguages());
+			cmdList.add("--audio-track=-1");
 		}
 
 		// Handle subtitle language
 		if (params.sid != null) { // User specified language at the client, acknowledge it
-			if (params.sid.isExternal() && !params.sid.isStreamable() && !params.mediaRenderer.streamSubsForTranscodedVideo()) {
-				String externalSubtitlesFileName;
+			if (params.sid.isExternal()) {
+				if (params.sid.getExternalFile() == null) {
+					cmdList.add("--sub-" + disableSuffix);
+					LOGGER.error("External subtitles file \"{}\" is unavailable", params.sid.getName());
+				} else if (
+					!params.mediaRenderer.streamSubsForTranscodedVideo() ||
+					!params.mediaRenderer.isExternalSubtitlesFormatSupported(params.sid, media)
+				) {
+					String externalSubtitlesFileName;
 
-				// External subtitle file
-				if (params.sid.isExternalFileUtf16()) {
-					try {
-						// Convert UTF-16 -> UTF-8
-						File convertedSubtitles = new File(configuration.getTempFolder(), "utf8_" + params.sid.getExternalFile().getName());
-						FileUtil.convertFileFromUtf16ToUtf8(params.sid.getExternalFile(), convertedSubtitles);
-						externalSubtitlesFileName = ProcessUtil.getShortFileNameIfWideChars(convertedSubtitles.getAbsolutePath());
-					} catch (IOException e) {
-						LOGGER.debug("Error converting file from UTF-16 to UTF-8", e);
-						externalSubtitlesFileName = ProcessUtil.getShortFileNameIfWideChars(params.sid.getExternalFile().getAbsolutePath());
+					// External subtitle file
+					if (params.sid.isExternalFileUtf16()) {
+						try {
+							// Convert UTF-16 -> UTF-8
+							File convertedSubtitles = new File(configuration.getTempFolder(), "utf8_" + params.sid.getName());
+							FileUtil.convertFileFromUtf16ToUtf8(params.sid.getExternalFile(), convertedSubtitles);
+							externalSubtitlesFileName = ProcessUtil.getShortFileNameIfWideChars(convertedSubtitles.getAbsolutePath());
+						} catch (IOException e) {
+							LOGGER.debug("Error converting file from UTF-16 to UTF-8", e);
+							externalSubtitlesFileName = ProcessUtil.getShortFileNameIfWideChars(params.sid.getExternalFile());
+						}
+					} else {
+						externalSubtitlesFileName = ProcessUtil.getShortFileNameIfWideChars(params.sid.getExternalFile());
 					}
-				} else {
-					externalSubtitlesFileName = ProcessUtil.getShortFileNameIfWideChars(params.sid.getExternalFile().getAbsolutePath());
-				}
 
-				if (externalSubtitlesFileName != null) {
-					cmdList.add("--sub-file");
-					cmdList.add(externalSubtitlesFileName);
+					if (externalSubtitlesFileName != null) {
+						cmdList.add("--sub-file");
+						cmdList.add(externalSubtitlesFileName);
+					}
 				}
-			} else if (params.sid.getLang() != null && !params.sid.getLang().equals("und")) { // Load by ID (better)
+			} else if (params.sid.getLang() != null && params.sid.getLang() != ISO639.UND) { // Load by ID (better)
 				cmdList.add("--sub-track=" + params.sid.getId());
 			} else { // VLC doesn't understand "und", but does understand a nonexistent track
 				cmdList.add("--sub-" + disableSuffix);

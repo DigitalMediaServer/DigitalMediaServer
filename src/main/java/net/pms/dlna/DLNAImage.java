@@ -142,15 +142,15 @@ public class DLNAImage extends Image {
 	/**
 	 * Creates a new {@link DLNAImage} instance.
 	 *
-	 * @param bytes the source image in either GIF, JPEG or PNG format
-	 *            adhering to the DLNA restrictions for color space and
-	 *            compression.
+	 * @param bytes the source image in either GIF, JPEG or PNG format adhering
+	 *            to the DLNA restrictions for color space and compression.
 	 * @param format the {@link ImageFormat} the source image is in.
 	 * @param bufferedImage the {@link BufferedImage} to get non-
 	 *            {@link Metadata} metadata from.
 	 * @param metadata the {@link Metadata} instance describing the source
 	 *            image.
-	 * @param profile the {@link DLNAImageProfile} to use.
+	 * @param profile the {@link DLNAImageProfile} this {@link DLNAImage}
+	 *            adheres to.
 	 * @param copy whether this instance should be copied or shared.
 	 * @throws DLNAProfileException if the profile compliance check fails.
 	 * @throws ParseException if {@code format} is {@code null} and parsing the
@@ -254,7 +254,8 @@ public class DLNAImage extends Image {
 			inputImage,
 			outputProfile,
 			false,
-			padToSize
+			padToSize,
+			null
 		);
 	}
 
@@ -292,7 +293,8 @@ public class DLNAImage extends Image {
 			inputStream,
 			outputProfile,
 			false,
-			padToSize
+			padToSize,
+			null
 		);
 	}
 
@@ -327,7 +329,8 @@ public class DLNAImage extends Image {
 			inputByteArray,
 			outputProfile,
 			false,
-			padToSize
+			padToSize,
+			null
 		);
 	}
 
@@ -370,7 +373,8 @@ public class DLNAImage extends Image {
 			outputFormat,
 			true,
 			false,
-			padToSize
+			padToSize,
+			null
 		);
 	}
 
@@ -416,7 +420,8 @@ public class DLNAImage extends Image {
 			outputFormat,
 			true,
 			false,
-			padToSize
+			padToSize,
+			null
 		);
 	}
 
@@ -455,7 +460,8 @@ public class DLNAImage extends Image {
 			outputFormat,
 			true,
 			false,
-			padToSize
+			padToSize,
+			null
 		);
 	}
 
@@ -484,7 +490,8 @@ public class DLNAImage extends Image {
 			this,
 			outputProfile,
 			dlnaThumbnail,
-			padToSize
+			padToSize,
+			null
 		);
 	}
 
@@ -568,10 +575,9 @@ public class DLNAImage extends Image {
 	}
 
 	/**
-	 * Checks this {@link DLNAImage} for DLNA compliance.
+	 * Verifies that this {@link DLNAImage} is DLNA compliant.
 	 *
-	 * @throws DLNAProfileException If this {@link DLNAImage} isn't DLNA
-	 *             compliant.
+	 * @throws DLNAProfileException If non-compliance is found.
 	 */
 	protected void checkCompliance() throws DLNAProfileException {
 		DLNAComplianceResult result = profile.checkCompliance(imageInfo);

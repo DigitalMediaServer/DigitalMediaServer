@@ -121,6 +121,7 @@ public class FileUtilTest {
 		// Video of a movie
 		assertThat(FileUtil.getFileNamePrettified("Digital.Media.Server.2015.720p.mkv")).isEqualTo("Digital Media Server (2015)");
 		//assertThat(FileUtil.getFileNamePrettified("Digital_Media_Server_(2015)_[720p,BluRay,flac,x264]_-_FANSUBBERS.mkv")).isEqualTo("Digital Media Server (2015)");
+		assertThat(FileUtil.getFileNamePrettified("Digital_Media_Server_(2018)_[720p,BluRay,flac,x264]_-_FANSUBBERS.mkv", null)).isEqualTo("Digital Media Server (2018)");
 
 		// Video of a special edition of a movie
 		assertThat(FileUtil.getFileNamePrettified("Digital.Media.Server.Special.Edition.2015.720p.mkv")).isEqualTo("Digital Media Server (2015) (Special Edition)");
@@ -318,22 +319,10 @@ public class FileUtilTest {
 
 	@Test
 	public void testGetFilePermissions() throws FileNotFoundException {
-		File file = null;
-		String path = null;
-		try {
-			FileUtil.getFilePermissions(file);
-			Fail.fail("Expected IllegalArgumentException");
-		} catch (IllegalArgumentException e) {
-			// As expected
-		}
-		try {
-			FileUtil.getFilePermissions(path);
-			Fail.fail("Expected IllegalArgumentException");
-		} catch (IllegalArgumentException e) {
-			// As expected
-		}
-		assertNull("NullIsNull", FileUtil.getFilePermissionsNoThrow(file));
-		assertNull("NullIsNull", FileUtil.getFilePermissionsNoThrow(path));
+		assertNull(FileUtil.getFilePermissions((File) null));
+		assertNull(FileUtil.getFilePermissions((String) null));
+		assertNull("NullIsNull", FileUtil.getFilePermissionsNoThrow((File) null));
+		assertNull("NullIsNull", FileUtil.getFilePermissionsNoThrow((String) null));
 		assertTrue("CurrentFolderIsFolder", FileUtil.getFilePermissions(new File("")).isFolder());
 		assertTrue("CurrentFolderIsReadable", FileUtil.getFilePermissions(new File("")).isReadable());
 		assertTrue("CurrentFolderIsBrowsable", FileUtil.getFilePermissions(new File("")).isBrowsable());
@@ -346,7 +335,7 @@ public class FileUtilTest {
 		}
 		assertNull("NoSuchFileIsNull", FileUtil.getFilePermissionsNoThrow("No such file"));
 
-		file = FileUtils.toFile(CLASS.getResource("english-utf8-with-bom.srt"));
+		File file = FileUtils.toFile(CLASS.getResource("english-utf8-with-bom.srt"));
 		assertTrue("FileIsReadable", FileUtil.getFilePermissions(file).isReadable());
 		assertTrue("FileIsWritable", FileUtil.getFilePermissions(file).isWritable());
 		assertFalse("FileIsNotFolder", FileUtil.getFilePermissions(file).isFolder());
@@ -361,7 +350,7 @@ public class FileUtilTest {
 		}
 		assertNull("NoSuchFileIsNull", FileUtil.getFilePermissionsNoThrow(new File(file.getParentFile(),"No such file")));
 
-		path = String.format("DMS_temp_writable_file_%d.tmp", new Random().nextInt(10000));
+		String path = String.format("DMS_temp_writable_file_%d.tmp", new Random().nextInt(10000));
 		file = new File(System.getProperty("java.io.tmpdir"), path);
 		try {
 			if (file.createNewFile()) {

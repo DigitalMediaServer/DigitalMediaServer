@@ -582,12 +582,26 @@ public class MapFile extends DLNAResource {
 
 	@Override
 	public String toString() {
-		StringBuilder sb = new StringBuilder(getClass().getSimpleName())
-			.append(" [name=").append(getName())
-			.append(", id=").append(getResourceId())
-			.append(", format=").append(getFormat())
-			.append(", children=").append(getChildren()).append("]");
-		return sb.toString();
+		StringBuilder result = new StringBuilder();
+		result.append(getClass().getSimpleName());
+		result.append(" [id=").append(getResourceId());
+		result.append(", name=").append(getName());
+		result.append(", format=").append(getFormat());
+		result.append(", discovered=").append(isDiscovered());
+		if (getMediaAudio() != null) {
+			result.append(", selected audio=[").append(getMediaAudio()).append("]");
+		}
+		if (getMediaSubtitle() != null) {
+			result.append(", selected subtitles=[").append(getMediaSubtitle()).append("]");
+		}
+		if (getPlayer() != null) {
+			result.append(", player=").append(getPlayer());
+		}
+		if (getChildren() != null && !getChildren().isEmpty()) {
+			result.append(", children=").append(getChildren());
+		}
+		result.append(']');
+		return result.toString();
 	}
 
 	/**

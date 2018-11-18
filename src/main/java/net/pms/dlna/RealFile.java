@@ -25,6 +25,8 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import net.pms.PMS;
+import net.pms.configuration.FormatConfiguration;
+import net.pms.configuration.PmsConfiguration;
 import net.pms.formats.FormatFactory;
 import net.pms.formats.FormatType;
 import net.pms.io.BasicSystemUtils;
@@ -36,19 +38,15 @@ import org.slf4j.LoggerFactory;
 public class RealFile extends MapFile {
 	private static final Logger LOGGER = LoggerFactory.getLogger(RealFile.class);
 
-	private boolean useSuperThumb;
-
 	public RealFile(File file) {
 		getConf().getFiles().add(file);
 		setLastModified(file.lastModified());
-		useSuperThumb = false;
 	}
 
 	public RealFile(File file, String name) {
 		getConf().getFiles().add(file);
 		getConf().setName(name);
 		setLastModified(file.lastModified());
-		useSuperThumb = false;
 	}
 
 	@Override
@@ -69,15 +67,10 @@ public class RealFile extends MapFile {
 			// we need to resolve the DLNA resource now
 			run();
 
-			MediaType mediaType = getMediaType();
-			if (mediaType == MediaType.VIDEO && configuration.isAutoloadExternalSubtitles() && file.getName().length() > 4) {
-				setHasExternalSubtitles(FileUtil.isSubtitlesExists(file, null));
-			}
-
 			// Given that here getFormat() has already matched some (possibly plugin-defined) format:
 			//    Format.UNKNOWN + bad parse = inconclusive
 			//    known types    + bad parse = bad/encrypted file
-			if (mediaType != null && getMedia() != null && (getMedia().isEncrypted() || getMedia().getContainer() == null || getMedia().getContainer().equals(DLNAMediaLang.UND))) {
+			if (getMediaType() != null && getMedia() != null && (getMedia().isEncrypted() || getMedia().getContainer() == null || getMedia().getContainer().equals(FormatConfiguration.UND))) {
 				valid = false;
 				if (getMedia().isEncrypted()) {
 					LOGGER.info("The file {} is encrypted. It will be hidden", file.getAbsolutePath());
@@ -186,6 +179,7 @@ public class RealFile extends MapFile {
 
 						if (medias.size() == 1) {
 							setMedia(medias.get(0));
+							setExternalSubtitlesParsed();
 							getMedia().postParse(input);
 							found = true;
 						} else if (medias.size() > 1) {
@@ -218,9 +212,6 @@ public class RealFile extends MapFile {
 
 				if (getFormat() != null) {
 					getFormat().parse(getMedia(), input, parent == null ? null : parent.getDefaultRenderer());
-					if (getMedia() != null && getMedia().isSLS()) {
-						setFormat(getMedia().getAudioVariantFormat());
-					}
 				} else {
 					// Don't think that will ever happen
 					getMedia().parse(input, getFormat(), false, isResume(), parent == null ? null : parent.getDefaultRenderer());
@@ -231,6 +222,15 @@ public class RealFile extends MapFile {
 
 					if (database != null) {
 						try {
+							/*
+							 * Even though subtitles will be resolved later in
+							 * DLNAResource.syncResolve, we must make sure that
+							 * they are resolved before insertion into the
+							 * database
+							 */
+							if (isVideo()) {
+								registerExternalSubtitles(false);
+							}
 							database.insertOrUpdateData(fileName, file.lastModified(), getFormat() == null ? null : getFormat().getType(), getMedia());
 						} catch (SQLException e) {
 							LOGGER.error(
@@ -251,14 +251,14 @@ public class RealFile extends MapFile {
 					}
 				}
 			}
+			if (getMedia() != null && getMedia().isSLS()) {
+				setFormat(getMedia().getAudioVariantFormat());
+			}
 		}
 	}
 
 	@Override
 	public DLNAThumbnailInputStream getThumbnailInputStream() throws IOException {
-		if (useSuperThumb || getParent() instanceof FileTranscodeVirtualFolder && (getMediaSubtitle() != null || getMediaAudio() != null)) {
-			return super.getThumbnailInputStream();
-		}
 
 		File file = getFile();
 		File cachedThumbnail = null;
@@ -336,7 +336,48 @@ public class RealFile extends MapFile {
 		return getName() + ">" + getFile().getAbsolutePath();
 	}
 
-	public void ignoreThumbHandling() {
-		useSuperThumb = true;
+	private volatile String baseNamePrettified;
+	private volatile String baseNameWithoutExtension;
+	private final Object displayNameBaseLock = new Object();
+
+	@SuppressWarnings("deprecation")
+	@Override
+	protected String getDisplayNameBase(PmsConfiguration configuration) {
+		if (parent instanceof SubSelFile && media_subtitle instanceof DLNAMediaOnDemandSubtitle) {
+			return ((DLNAMediaOnDemandSubtitle) media_subtitle).getName();
+		}
+		if (isFolder()) {
+			return super.getDisplayNameBase(configuration);
+		}
+		if (isAudio()) {
+			DLNAMediaAudio firstAudioTrack = media != null ? media.getFirstAudioTrack() : null;
+			if (firstAudioTrack != null && isNotBlank(firstAudioTrack.getSongname())) {
+				return firstAudioTrack.getSongname();
+			}
+		}
+
+		if (configuration.isPrettifyFilenames() && isVideo()) {
+			// Double-checked locking
+			if (baseNamePrettified == null) {
+				synchronized (displayNameBaseLock) {
+					if (baseNamePrettified == null) {
+						baseNamePrettified = FileUtil.getFileNamePrettified(super.getDisplayNameBase(configuration), getFile());
+					}
+				}
+			}
+			return baseNamePrettified;
+		} else if (configuration.isHideExtensions()) {
+			// Double-checked locking
+			if (baseNameWithoutExtension == null) {
+				synchronized (displayNameBaseLock) {
+					if (baseNameWithoutExtension == null) {
+						baseNameWithoutExtension = FileUtil.getFileNameWithoutExtension(super.getDisplayNameBase(configuration));
+					}
+				}
+			}
+			return baseNameWithoutExtension;
+		}
+
+		return super.getDisplayNameBase(configuration);
 	}
 }
