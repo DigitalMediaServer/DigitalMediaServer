@@ -3494,7 +3494,7 @@ public class PmsConfiguration extends RendererConfiguration {
 	}
 
 	public boolean isFFmpegMuxWithTsMuxerWhenCompatible() {
-		return getBoolean(KEY_FFMPEG_MUX_TSMUXER_COMPATIBLE, false);
+		return getBoolean(KEY_FFMPEG_MUX_TSMUXER_COMPATIBLE, true);
 	}
 
 	/**

@@ -1071,10 +1071,9 @@ public class FFMpegVideo extends Player {
 			configuration.isFFmpegDeferToMEncoderForProblematicSubtitles() &&
 			params.sid.isEmbedded() &&
 			(
-				(
-					params.sid.getType().isText() &&
-					params.sid.getType() != SubtitleType.ASS
-				) ||
+				params.sid.getType() != SubtitleType.SUBRIP &&
+				params.sid.getType() != SubtitleType.PGS &&
+				params.sid.getType() != SubtitleType.ASS ||
 				params.sid.getType() == SubtitleType.VOBSUB
 			)
 		) {
@@ -1111,7 +1110,12 @@ public class FFMpegVideo extends Player {
 				deferToTsmuxer = false;
 				LOGGER.trace(prependTraceReason + "the renderer does not support H.264 inside MPEG-TS.");
 			}
-			if (deferToTsmuxer && params.sid != null) {
+			if (
+				deferToTsmuxer &&
+				params.sid != null &&
+				params.sid.getType() != SubtitleType.SUBRIP &&
+				params.sid.getType() != SubtitleType.PGS
+			) {
 				deferToTsmuxer = false;
 				LOGGER.trace(prependTraceReason + "we need to burn subtitles.");
 			}
