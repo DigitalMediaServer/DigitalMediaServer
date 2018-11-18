@@ -64,7 +64,7 @@ public class BufferedOutputFileImpl extends OutputStream implements BufferedOutp
 	private static final int MARGIN_MEDIUM = 2000000;
 	private static final int MARGIN_SMALL = 600000;
 	private static final int CHECK_INTERVAL = 500;
-	private static final int CHECK_END_OF_PROCESS = 2500; // must be superior to CHECK_INTERVAL
+	private static final int CHECK_END_OF_PROCESS = 30000; // must be superior to CHECK_INTERVAL
 	private int minMemorySize;
 	private int maxMemorySize;
 	private int bufferOverflowWarning;

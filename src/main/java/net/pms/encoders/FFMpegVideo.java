@@ -339,6 +339,7 @@ public class FFMpegVideo extends Player {
 		final boolean vtbHevc = Platform.isMac() && BasicSystemUtils.INSTANCE.getOSVersion().isGreaterThanOrEqualTo(10, 13);
 		String customFFmpegOptions = renderer.getCustomFFmpegOptions();
 		ExecutableInfo executableInfo = getExecutableInfo();
+		Version libAVCodecVersion = executableInfo != null ? ((FFmpegExecutableInfo) executableInfo).getLibraryVersion("libavcodec") : null;
 		Codec aacAt = ((FFmpegExecutableInfo) executableInfo).getCodecs().get("aac_at");
 		Codec aacLibfdk = ((FFmpegExecutableInfo) executableInfo).getCodecs().get("libfdk_aac");
 		Codec ac3At = ((FFmpegExecutableInfo) executableInfo).getCodecs().get("ac3_at");
@@ -394,6 +395,27 @@ public class FFMpegVideo extends Player {
 					transcodeOptions.add("-c:a");
 					transcodeOptions.add("copy");
 				}
+			} else if (
+				libAVCodecVersion != null &&
+				libAVCodecVersion.isGreaterThanOrEqualTo(57, 89) &&
+				params.aid != null &&
+				params.aid.isEAC3() &&
+				(
+					//If E-AC-3 is not compatible for that format by the renderer
+					configuration.isAudioRemuxAC3() ||
+					renderer.isTranscodeToAC3()
+				) &&
+				params.aid.getNumberOfChannels() > 6 &&
+				configuration.getAudioChannelCount() >= 6 &&
+				!avisynth() &&
+				!isXboxOneWebVideo &&
+				!isSubtitlesAndTimeseek
+			) {
+				transcodeOptions.add("-c:a");
+				transcodeOptions.add("copy");
+				transcodeOptions.add("-bsf:a eac3_core");
+				transcodeOptions.add("-fflags");
+				transcodeOptions.add("+bitexact");
 			} else {
 				if (dtsRemux) {
 					// Audio is added in a separate process later
