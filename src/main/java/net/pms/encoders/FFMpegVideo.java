@@ -1397,14 +1397,12 @@ public class FFMpegVideo extends Player {
 				cmdListDTS.add("1");
 			}
 
-			cmdListDTS.add("-ac");
-			cmdListDTS.add("2");
-
-			cmdListDTS.add("-f");
-			cmdListDTS.add("dts");
-
 			cmdListDTS.add("-c:a");
 			cmdListDTS.add("copy");
+			cmdListDTS.add("-bsf:a");
+			cmdListDTS.add("dca_core");
+			cmdListDTS.add("-f");
+			cmdListDTS.add("dts");
 
 			cmdListDTS.add(ffAudioPipe.getInputPipe());
 
