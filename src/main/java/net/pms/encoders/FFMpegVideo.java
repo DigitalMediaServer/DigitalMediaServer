@@ -933,8 +933,17 @@ public class FFMpegVideo extends Player {
 		cmdList.add("-probesize");
 		cmdList.add("12M");
 
-		cmdList.add("-fflags");
-		cmdList.add("+genpts"); //https://trac.ffmpeg.org/ticket/1979
+		if (params.mediaRenderer.isTranscodeToMPEGTS()) {
+			cmdList.add("-seek_timestamp");
+			cmdList.add("1");
+		}
+
+		if (params.mediaRenderer.streamSubsForTranscodedVideo() && params.sid.isStreamable()) {
+			cmdList.add("-copyts");
+		} else {
+			cmdList.add("-fflags");
+			cmdList.add("+genpts"); //https://trac.ffmpeg.org/ticket/1979
+		}
 
 		Version libAVCodecVersion = executableInfo != null ? executableInfo.getLibraryVersion("libavcodec") : null;
 		if (
@@ -995,6 +1004,7 @@ public class FFMpegVideo extends Player {
 
 		final boolean isTsMuxeRVideoEngineActive = PlayerFactory.isPlayerActive(TsMuxeRVideo.ID);
 		final boolean isXboxOneWebVideo = params.mediaRenderer.isXboxOne() && purpose() == VIDEO_WEBSTREAM_PLAYER;
+		boolean isSubtitlesAndTimeseek = !isDisableSubtitles(params) && params.timeseek > 0;
 
 		ac3Remux = false;
 		dtsRemux = false;
