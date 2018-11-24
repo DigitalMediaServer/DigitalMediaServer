@@ -394,6 +394,15 @@ public class FFMpegVideo extends Player {
 				if (!Pattern.compile("-(?:c:a|codec:a|acodec)\\b").matcher(customFFmpegOptions).find()) {
 					transcodeOptions.add("-c:a");
 					transcodeOptions.add("copy");
+					transcodeOptions.add("-copyts");
+					if (params.mediaRenderer.isTranscodeToMPEGTS()) {
+						transcodeOptions.add("-muxdelay");
+						transcodeOptions.add("0");
+						transcodeOptions.add("-muxpreload");
+						transcodeOptions.add("0");
+						transcodeOptions.add("-output_ts_offset");
+						transcodeOptions.add("0"); //params.aid.getAudioProperties().getAudioDelay()
+					}
 				}
 			} else if (
 				libAVCodecVersion != null &&
@@ -413,6 +422,15 @@ public class FFMpegVideo extends Player {
 			) {
 				transcodeOptions.add("-c:a");
 				transcodeOptions.add("copy");
+				transcodeOptions.add("-copyts");
+				if (params.mediaRenderer.isTranscodeToMPEGTS()) {
+					transcodeOptions.add("-muxdelay");
+					transcodeOptions.add("0");
+					transcodeOptions.add("-muxpreload");
+					transcodeOptions.add("0");
+					transcodeOptions.add("-output_ts_offset");
+					transcodeOptions.add("0");
+				}
 				transcodeOptions.add("-bsf:a eac3_core");
 				transcodeOptions.add("-fflags");
 				transcodeOptions.add("+bitexact");
@@ -938,9 +956,11 @@ public class FFMpegVideo extends Player {
 			cmdList.add("1");
 		}
 
-		if (params.mediaRenderer.streamSubsForTranscodedVideo() && params.sid.isStreamable()) {
-			cmdList.add("-copyts");
-		} else {
+		if !(
+			params.mediaRenderer.streamSubsForTranscodedVideo() &&
+			params.sid != null &&
+			params.sid.isStreamable()
+		) {
 			cmdList.add("-fflags");
 			cmdList.add("+genpts"); //https://trac.ffmpeg.org/ticket/1979
 		}
@@ -1413,6 +1433,7 @@ public class FFMpegVideo extends Player {
 
 			cmdListDTS.add("-c:a");
 			cmdListDTS.add("copy");
+			cmdListDTS.add("-copyts");
 			cmdListDTS.add("-bsf:a");
 			cmdListDTS.add("dca_core");
 			cmdListDTS.add("-f");
