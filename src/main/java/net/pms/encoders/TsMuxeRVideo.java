@@ -623,30 +623,30 @@ public class TsMuxeRVideo extends Player {
 								)
 							)
 						) && params.mediaRenderer.isLPCMPlayable();
-					String type = "A_AC3";
+					String audioType = "A_AC3";
 					if (ac3Remux) {
 						// AC-3 remux takes priority
-						type = "A_AC3";
+						audioType = "A_AC3";
 					} else if (aacTranscode) {
-						type = "A_AAC";
+						audioType = "A_AAC";
 					} else {
 						if (pcm || this instanceof TsMuxeRAudio) {
-							type = "A_LPCM";
+							audioType = "A_LPCM";
 						}
 						if (encodedAudioPassthrough || this instanceof TsMuxeRAudio) {
-							type = "A_LPCM";
+							audioType = "A_LPCM";
 						}
 						if (dtsRemux || this instanceof TsMuxeRAudio) {
-							type = "A_LPCM";
+							audioType = "A_LPCM";
 							if (params.mediaRenderer.isMuxDTSToMpeg()) {
-								type = "A_DTS";
+								audioType = "A_DTS";
 							}
 						}
 					}
 					if (params.aid != null && params.aid.getAudioProperties().getAudioDelay() != 0 && params.timeseek == 0) {
 						timeshift = "timeshift=" + params.aid.getAudioProperties().getAudioDelay() + "ms, ";
 					}
-					pw.println(type + ", \"" + ffAudioPipe[0].getOutputPipe() + "\", " + timeshift + "track=2");
+					pw.println(audioType + ", \"" + ffAudioPipe[0].getOutputPipe() + "\", " + timeshift + "track=2");
 				} else {
 					for (int i = 0; i < media.getAudioTracksList().size(); i++) {
 						DLNAMediaAudio lang = media.getAudioTracksList().get(i);
@@ -678,21 +678,21 @@ public class TsMuxeRVideo extends Player {
 									)
 								)
 							) && params.mediaRenderer.isLPCMPlayable();
-						String type = "A_AC3";
+						String audioType = "A_AC3";
 						if (ac3Remux) {
 							// AC-3 remux takes priority
-							type = "A_AC3";
+							audioType = "A_AC3";
 						} else {
 							if (pcm) {
-								type = "A_LPCM";
+								audioType = "A_LPCM";
 							}
 							if (encodedAudioPassthrough) {
-								type = "A_LPCM";
+								audioType = "A_LPCM";
 							}
 							if (dtsRemux) {
-								type = "A_LPCM";
+								audioType = "A_LPCM";
 								if (params.mediaRenderer.isMuxDTSToMpeg()) {
-									type = "A_DTS";
+									audioType = "A_DTS";
 								}
 							}
 						}
@@ -844,8 +844,11 @@ public class TsMuxeRVideo extends Player {
 
 		// Check whether the subtitle actually has a language defined,
 		// uninitialized DLNAMediaSubtitle objects have a null language.
-		if (subtitle != null && subtitle.getLang() != null) {
-			// The resource needs a subtitle, but DMS does not support subtitles for tsMuxeR.
+		if (
+			subtitle != null && subtitle.getLang() != null &&
+			params.sid.getType() != SubtitleType.SUBRIP &&
+			params.sid.getType() != SubtitleType.PGS
+		) {
 			return false;
 		}
 
