@@ -23,9 +23,11 @@ import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -77,6 +79,12 @@ public class FFmpegExecutableInfo extends ExecutableInfo {
 	protected final Map<String, EnumSet<ProtocolFlags>> protocols;
 
 	/**
+	 * The {@link Set} of names of supported bitstream filters.
+	 */
+	@Nonnull
+	protected final Set<String> bitstreamFilters;
+
+	/**
 	 * The {@link Map} of libraries in lower-case and their corresponding
 	 * {@link Version}s.
 	 */
@@ -104,6 +112,8 @@ public class FFmpegExecutableInfo extends ExecutableInfo {
 	 * @param protocols a {@link Map} of protocol name and {@link Set} of
 	 *            {@link ProtocolFlags} pairs for the supported protocols for
 	 *            this executable.
+	 * @param bitstreamFilters a {@link Set} of supported bitstream filter names
+	 *            for this executable.
 	 * @param libraryVersions a {@link Map} of libraries in lower-case and their
 	 *            corresponding {@link Version}s.
 	 */
@@ -116,6 +126,7 @@ public class FFmpegExecutableInfo extends ExecutableInfo {
 		@Nullable Map<String, EnumSet<FormatFlags>> formats,
 		@Nullable Map<String, Codec> codecs,
 		@Nullable Map<String, EnumSet<ProtocolFlags>> protocols,
+		@Nullable Set<String> bitstreamFilters,
 		@Nullable Map<String, Version> libraryVersions
 	) {
 		super(available, path, version, errorType, errorText);
@@ -130,6 +141,11 @@ public class FFmpegExecutableInfo extends ExecutableInfo {
 		this.protocols = Collections.unmodifiableMap(
 			protocols == null ? new HashMap<String, EnumSet<ProtocolFlags>>() : new HashMap<>(protocols)
 		);
+
+		this.bitstreamFilters = Collections.unmodifiableSet(
+			bitstreamFilters == null ? new HashSet<String>() : new HashSet<>(bitstreamFilters)
+		);
+
 		this.libraryVersions = Collections.unmodifiableMap(
 			libraryVersions == null ? new HashMap<String, Version>() : new HashMap<>(libraryVersions)
 		);
@@ -184,6 +200,14 @@ public class FFmpegExecutableInfo extends ExecutableInfo {
 	@Nonnull
 	public Map<String, EnumSet<ProtocolFlags>> getProtocols() {
 		return protocols;
+	}
+
+	/**
+	 * @return The {@link Set} of names of supported bitstream filters.
+	 */
+	@Nonnull
+	public Set<String> getBitstreamFilters() {
+		return bitstreamFilters;
 	}
 
 	/**
@@ -674,6 +698,53 @@ public class FFmpegExecutableInfo extends ExecutableInfo {
 	}
 
 	/**
+	 * Gathers information about supported bitstream filters and stores the
+	 * results in the specified {@link FFmpegExecutableInfoBuilder}.
+	 *
+	 * @param builder the {@link FFmpegExecutableInfoBuilder}.
+	 * @throws InterruptedException If interrupted during execution.
+	 */
+	public static void determineBitstreamFilters(@Nonnull FFmpegExecutableInfoBuilder builder) throws InterruptedException {
+		ListProcessWrapperResult output = SimpleProcessWrapper.runProcessListOutput(
+			30000,
+			1000,
+			builder.executablePath().toString(),
+			"-hide_banner",
+			"-bsfs"
+		);
+		if (output.getError() != null) {
+			LOGGER.error(
+				"Failed to determine supported bitstream filters for \"{}\": {}",
+				builder.executablePath(),
+				output.getError().getMessage()
+			);
+			LOGGER.trace("", output.getError());
+			return;
+		}
+		if (output.getExitCode() != 0) {
+			LOGGER.error(
+				"Failed to determine supported bitstream filters for \"{}\" with exit code {}",
+				builder.executablePath(),
+				output.getExitCode()
+			);
+			return;
+		}
+		builder.bitstreamFilters(new HashSet<String>());
+
+		boolean filters = false;
+		for (String line : output.getOutput()) {
+			if (isBlank(line)) {
+				continue;
+			}
+			if ("Bitstream filters:".equals(line)) {
+				filters = true;
+			} else if (filters) {
+				builder.bitstreamFilters.add(line.trim());
+			}
+		}
+	}
+
+	/**
 	 * Checks if a particular library is {@code FFmpeg} or {@code libav} based
 	 * on its {@link Version}.
 	 *
@@ -756,7 +827,7 @@ public class FFmpegExecutableInfo extends ExecutableInfo {
 	 * @return The resulting {@link String}.
 	 */
 	@Nonnull
-	public static String toCodecsStringBuilder(@Nullable Map<String, CodecBuilder> codecs) {
+	public static String toCodecsBuilderString(@Nullable Map<String, CodecBuilder> codecs) {
 		if (codecs == null || codecs.isEmpty()) {
 			return "None";
 		}
@@ -806,14 +877,29 @@ public class FFmpegExecutableInfo extends ExecutableInfo {
 	}
 
 	/**
-	 * Sorts and combines a {@link List} of strings into one comma-separated
-	 * string.
+	 * Creates a sorted, combined string from the specified {@link Set} of names
+	 * of supported bitstream filters.
 	 *
-	 * @param list the {@link List}.
+	 * @param bitstreamFilters the {@link Set} of bitstream filter names.
 	 * @return The resulting {@link String}.
 	 */
 	@Nonnull
-	protected static String sortAndCombine(@Nonnull List<String> list) {
+	public static String toBitstreamFiltersString(@Nullable Set<String> bitstreamFilters) {
+		return bitstreamFilters == null || bitstreamFilters.isEmpty() ?
+			"None" :
+			sortAndCombine(bitstreamFilters);
+	}
+
+	/**
+	 * Sorts and combines a {@link Collection} of strings into one
+	 * comma-separated string.
+	 *
+	 * @param collection the {@link Collection}.
+	 * @return The resulting {@link String}.
+	 */
+	@Nonnull
+	protected static String sortAndCombine(@Nonnull Collection<String> collection) {
+		List<String> list = collection instanceof List ? (List<String>) collection : new ArrayList<String>(collection);
 		Collections.sort(list);
 		StringBuilder sb = new StringBuilder();
 		boolean first = true;
@@ -855,6 +941,12 @@ public class FFmpegExecutableInfo extends ExecutableInfo {
 		 */
 		@Nullable
 		protected Map<String, EnumSet<ProtocolFlags>> protocols;
+
+		/**
+		 * The {@link Set} of names of supported bitstream filters.
+		 */
+		@Nullable
+		protected Set<String> bitstreamFilters;
 
 		/**
 		 * The {@link Map} of libraries in lower-case and their corresponding
@@ -921,6 +1013,7 @@ public class FFmpegExecutableInfo extends ExecutableInfo {
 				formats,
 				builtCodecs,
 				protocols,
+				bitstreamFilters,
 				libraryVersions
 			);
 		}
@@ -1027,6 +1120,27 @@ public class FFmpegExecutableInfo extends ExecutableInfo {
 		@Nonnull
 		public FFmpegExecutableInfoBuilder protocols(@Nullable Map<String, EnumSet<ProtocolFlags>> protocols) {
 			this.protocols = protocols;
+			return this;
+		}
+
+		/**
+		 * @return The {@link Set} of names of supported bitstream filters.
+		 */
+		@Nullable
+		public Set<String> bitstreamFilters() {
+			return this.bitstreamFilters;
+		}
+
+		/**
+		 * Sets the supported bitstream filters.
+		 *
+		 * @param bitstreamFilters the {@link Set} of bitstream filter names to
+		 *            set.
+		 * @return This {@link FFmpegExecutableInfoBuilder} instance.
+		 */
+		@Nonnull
+		public FFmpegExecutableInfoBuilder bitstreamFilters(@Nullable Set<String> bitstreamFilters) {
+			this.bitstreamFilters = bitstreamFilters;
 			return this;
 		}
 

@@ -1597,8 +1597,21 @@ public class FFMpegVideo extends Player {
 						LOGGER.debug(
 							"{} supported codecs: {}",
 							executableInfo.getPath(),
-							FFmpegExecutableInfo.toCodecsStringBuilder(builder.codecs())
+							FFmpegExecutableInfo.toCodecsBuilderString(builder.codecs())
 						);
+					}
+
+					FFmpegExecutableInfo.determineBitstreamFilters(builder);
+					if (LOGGER.isDebugEnabled()) {
+						if (builder.bitstreamFilters() == null || builder.bitstreamFilters().isEmpty()) {
+							LOGGER.debug("No bitstream filters parsed for \"{}\"", executableInfo.getPath());
+						} else {
+							LOGGER.debug(
+								"{} supported bitstream filters: {}",
+								executableInfo.getPath(),
+								FFmpegExecutableInfo.toBitstreamFiltersString(builder.bitstreamFilters())
+							);
+						}
 					}
 				} else {
 					LOGGER.error("Could not determine FFmpeg details because of an internal error");
