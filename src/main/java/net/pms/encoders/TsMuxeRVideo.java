@@ -55,12 +55,14 @@ import net.pms.configuration.RendererConfiguration;
 import net.pms.dlna.*;
 import net.pms.formats.Format;
 import net.pms.formats.FormatType;
+import net.pms.formats.v2.SubtitleType;
 import net.pms.io.*;
 import net.pms.media.VideoLevel;
 import net.pms.newgui.GuiUtil;
 import net.pms.platform.windows.NTStatus;
 import net.pms.util.CodecUtil;
 import net.pms.util.FormLayoutUtil;
+import net.pms.util.Rational;
 import net.pms.util.Version;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -100,6 +102,8 @@ public class TsMuxeRVideo extends Player {
 			&& !extension.equals("m2v")
 			&& !extension.equals("mts")
 			&& !extension.equals("mov");
+			&& !extension.equals("srt");
+			&& !extension.equals("sup");
 	}
 
 	@Override
@@ -699,9 +703,52 @@ public class TsMuxeRVideo extends Player {
 						if (lang.getAudioProperties().getAudioDelay() != 0 && params.timeseek == 0) {
 							timeshift = "timeshift=" + lang.getAudioProperties().getAudioDelay() + "ms, ";
 						}
-						pw.println(type + ", \"" + ffAudioPipe[i].getOutputPipe() + "\", " + timeshift + "track=" + (2 + i));
+						pw.println(audioType + ", \"" + ffAudioPipe[i].getOutputPipe() + "\", " + timeshift + "track=" + (2 + i));
 					}
 				}
+			}
+
+			DLNAResource resource;
+			DLNAMediaSubtitle subtitle = resource.getMediaSubtitle();
+			if (
+				!configuration.isDisableSubtitles() &&
+				params.sid != null &&
+				params.sid.getType() == SubtitleType.SUBRIP &&
+				params.sid.getType() == SubtitleType.PGS &&
+				subtitle != null
+			) {
+				String subtitleType = "";
+				if (params.sid.getType() == SubtitleType.PGS) {
+					subtitleType = "S_HDMV/PGS";
+				} else if (params.sid.getType() == SubtitleType.SUBRIP) {
+					subtitleType = "S_TEXT/UTF8";
+				}
+				String fontName = "";
+				if (isNotBlank(configuration.getFont())) {
+					fontName = CodecUtil.isFontRegisteredInOS(configuration.getFont());
+				}
+				String subtitlePath = "";
+				if (params.sid.isExternal()) {
+					subtitlePath = params.sid.getExternalFile().getAbsolutePath();
+				} else if (params.sid.isEmbedded()) {
+					subtitlePath = dlna.getFileName();
+				}
+				double fontSize = 15 * Double.parseDouble(configuration.getAssScale());
+				int subtitleBottomOffset = 0;
+				if (media.getAspectRatioVideoTrack() != null) {
+					if (media.getAspectRatioVideoTrack().compareTo(Rational.valueOf(51, 20)) >= 0) {
+						subtitleBottomOffset = 172;
+					} else if (media.getAspectRatioVideoTrack().compareTo(Rational.valueOf(12, 5)) >= 0) {
+						subtitleBottomOffset = 154;
+					} else if (media.getAspectRatioVideoTrack().compareTo(Rational.valueOf(37, 20)) >= 0) {
+						subtitleBottomOffset = 48;
+					} else if (media.getAspectRatioVideoTrack().compareTo(Rational.valueOf(4, 3)) >= 0) {
+						subtitleBottomOffset = 36;
+					} else {
+						subtitleBottomOffset = Integer.valueOf(configuration.getAssMargin());
+					}
+				}
+				pw.println(subtitleType + ", \"" + subtitlePath + "\", " + (fontName != null ? ("font-name=" + fontName + ", ") : "") + (fontSize > 0 ? ("font-size=" + fontSize + ", ") : "") + (configuration.getSubsColor().getASSv4StylesHexValue() != null ? ("font-color=" + configuration.getSubsColor().getASSv4StylesHexValue() + ", ") : "") + (subtitleBottomOffset > 0 ? ("bottom-offset=" + subtitleBottomOffset + ", ") : "") + "font-border=1, text-align=center, "  + (fps != null ? ("fps=" + fps + ", ") : "") + (width != -1 ? ("video-width=" + width + ", ") : "") + (height != -1 ? ("video-height=" + height + ", ") : "") + "track=3" + (subtitle.getLang() != null ? (", lang=" + subtitle.getLang()) : "")); //", mplsFile=00000"
 			}
 		}
 
@@ -841,13 +888,17 @@ public class TsMuxeRVideo extends Player {
 	@Override
 	public boolean isCompatible(DLNAResource resource) {
 		DLNAMediaSubtitle subtitle = resource.getMediaSubtitle();
+		OutputParams params;
 
 		// Check whether the subtitle actually has a language defined,
 		// uninitialized DLNAMediaSubtitle objects have a null language.
 		if (
-			subtitle != null && subtitle.getLang() != null &&
-			params.sid.getType() != SubtitleType.SUBRIP &&
-			params.sid.getType() != SubtitleType.PGS
+			!configuration.isDisableSubtitles() &&
+			params.sid != null &&
+			(
+				params.sid.getType() != SubtitleType.SUBRIP ||
+				params.sid.getType() != SubtitleType.PGS
+			)
 		) {
 			return false;
 		}

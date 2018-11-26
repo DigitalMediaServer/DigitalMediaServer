@@ -956,10 +956,12 @@ public class FFMpegVideo extends Player {
 			cmdList.add("1");
 		}
 
-		if !(
-			params.mediaRenderer.streamSubsForTranscodedVideo() &&
-			params.sid != null &&
-			params.sid.isStreamable()
+		if (
+			!(
+				params.mediaRenderer.streamSubsForTranscodedVideo() &&
+				params.sid != null &&
+				params.sid.isStreamable()
+			)
 		) {
 			cmdList.add("-fflags");
 			cmdList.add("+genpts"); //https://trac.ffmpeg.org/ticket/1979
