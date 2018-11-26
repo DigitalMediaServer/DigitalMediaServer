@@ -414,6 +414,7 @@ public class FFMpegVideo extends Player {
 					configuration.isAudioRemuxAC3() ||
 					renderer.isTranscodeToAC3()
 				) &&
+				((FFmpegExecutableInfo) executableInfo).getBitstreamFilters().contains("eac3_core") &&
 				params.aid.getNumberOfChannels() > 6 &&
 				configuration.getAudioChannelCount() >= 6 &&
 				!avisynth() &&
@@ -431,12 +432,10 @@ public class FFMpegVideo extends Player {
 					transcodeOptions.add("-output_ts_offset");
 					transcodeOptions.add("0");
 				}
-				if (((FFmpegExecutableInfo) executableInfo).getBitstreamFilters().contains("eac3_core")) {
 					transcodeOptions.add("-bsf:a");
 					transcodeOptions.add("eac3_core");
 					transcodeOptions.add("-fflags");
 					transcodeOptions.add("+bitexact");
-				}
 			} else {
 				if (dtsRemux) {
 					// Audio is added in a separate process later
@@ -557,9 +556,11 @@ public class FFMpegVideo extends Player {
 					transcodeOptions.add("vob");
 				}
 
-				// https://trac.ffmpeg.org/ticket/6375
-				transcodeOptions.add("-max_muxing_queue_size");
-				transcodeOptions.add("9999");
+				if (libAVCodecVersion != null && libAVCodecVersion.isGreaterThanOrEqualTo(57, 89)) {
+					// https://trac.ffmpeg.org/ticket/6375
+					transcodeOptions.add("-max_muxing_queue_size");
+					transcodeOptions.add("9999");
+				}
 			}
 		}
 

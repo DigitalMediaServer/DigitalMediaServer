@@ -708,8 +708,7 @@ public class TsMuxeRVideo extends Player {
 				}
 			}
 
-			DLNAResource resource;
-			DLNAMediaSubtitle subtitle = resource.getMediaSubtitle();
+			DLNAMediaSubtitle subtitle = dlna.getMediaSubtitle();
 			if (
 				!configuration.isDisableSubtitles() &&
 				params.sid != null &&
@@ -888,16 +887,15 @@ public class TsMuxeRVideo extends Player {
 	@Override
 	public boolean isCompatible(DLNAResource resource) {
 		DLNAMediaSubtitle subtitle = resource.getMediaSubtitle();
-		OutputParams params;
 
 		// Check whether the subtitle actually has a language defined,
 		// uninitialized DLNAMediaSubtitle objects have a null language.
 		if (
 			!configuration.isDisableSubtitles() &&
-			params.sid != null &&
+			subtitle != null &&
 			(
-				params.sid.getType() != SubtitleType.SUBRIP ||
-				params.sid.getType() != SubtitleType.PGS
+				subtitle.getType() != SubtitleType.SUBRIP ||
+				subtitle.getType() != SubtitleType.PGS
 			)
 		) {
 			return false;
