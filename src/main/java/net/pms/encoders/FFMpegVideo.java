@@ -431,9 +431,12 @@ public class FFMpegVideo extends Player {
 					transcodeOptions.add("-output_ts_offset");
 					transcodeOptions.add("0");
 				}
-				transcodeOptions.add("-bsf:a eac3_core");
-				transcodeOptions.add("-fflags");
-				transcodeOptions.add("+bitexact");
+				if (((FFmpegExecutableInfo) executableInfo).getBitstreamFilters().contains("eac3_core")) {
+					transcodeOptions.add("-bsf:a");
+					transcodeOptions.add("eac3_core");
+					transcodeOptions.add("-fflags");
+					transcodeOptions.add("+bitexact");
+				}
 			} else {
 				if (dtsRemux) {
 					// Audio is added in a separate process later
@@ -1436,8 +1439,10 @@ public class FFMpegVideo extends Player {
 			cmdListDTS.add("-c:a");
 			cmdListDTS.add("copy");
 			cmdListDTS.add("-copyts");
-			cmdListDTS.add("-bsf:a");
-			cmdListDTS.add("dca_core");
+			if (executableInfo.getBitstreamFilters().contains("dca_core")) {
+				cmdListDTS.add("-bsf:a");
+				cmdListDTS.add("dca_core");
+			}
 			cmdListDTS.add("-f");
 			cmdListDTS.add("dts");
 

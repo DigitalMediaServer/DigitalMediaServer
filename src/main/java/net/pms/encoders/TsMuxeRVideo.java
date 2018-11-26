@@ -101,8 +101,8 @@ public class TsMuxeRVideo extends Player {
 			&& !extension.equals("vob")
 			&& !extension.equals("m2v")
 			&& !extension.equals("mts")
-			&& !extension.equals("mov");
-			&& !extension.equals("srt");
+			&& !extension.equals("mov")
+			&& !extension.equals("srt")
 			&& !extension.equals("sup");
 	}
 
