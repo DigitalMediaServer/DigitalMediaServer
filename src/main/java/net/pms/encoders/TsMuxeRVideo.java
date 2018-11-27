@@ -747,7 +747,7 @@ public class TsMuxeRVideo extends Player {
 						subtitleBottomOffset = Integer.valueOf(configuration.getAssMargin());
 					}
 				}
-				pw.println(subtitleType + ", \"" + subtitlePath + "\", " + (fontName != null ? ("font-name=" + fontName + ", ") : "") + (fontSize > 0 ? ("font-size=" + fontSize + ", ") : "") + (configuration.getSubsColor().getASSv4StylesHexValue() != null ? ("font-color=" + configuration.getSubsColor().getASSv4StylesHexValue() + ", ") : "") + (subtitleBottomOffset > 0 ? ("bottom-offset=" + subtitleBottomOffset + ", ") : "") + "font-border=1, text-align=center, "  + (fps != null ? ("fps=" + fps + ", ") : "") + (width != -1 ? ("video-width=" + width + ", ") : "") + (height != -1 ? ("video-height=" + height + ", ") : "") + "track=3" + (subtitle.getLang() != null ? (", lang=" + subtitle.getLang()) : "")); //", mplsFile=00000"
+				pw.println(subtitleType + ", \"" + subtitlePath + "\", " + (fontName != null ? ("font-name=" + fontName + ", ") : "") + (fontSize > 0 ? ("font-size=" + fontSize + ", ") : "") + (configuration.getSubsColor().getASSv4StylesHexValue() != null ? ("font-color=" + configuration.getSubsColor().getASSv4StylesHexValue() + ", ") : "") + (subtitleBottomOffset > 0 ? ("bottom-offset=" + subtitleBottomOffset + ", ") : "") + (configuration.getAssOutline() != null ? ("font-border=" + configuration.getAssOutline() + ", ") : "") + "text-align=center, "  + (fps != null ? ("fps=" + fps + ", ") : "") + (width != -1 ? ("video-width=" + width + ", ") : "") + (height != -1 ? ("video-height=" + height + ", ") : "") + "track=3" + (subtitle.getLang() != null ? (", lang=" + subtitle.getLang()) : "")); //", mplsFile=00000"
 			}
 		}
 

@@ -66,11 +66,13 @@ import net.pms.network.HTTPResource;
 import net.pms.newgui.GuiUtil;
 import net.pms.platform.windows.NTStatus;
 import net.pms.util.CodecUtil;
+import net.pms.util.FileUtil;
 import net.pms.util.ProcessUtil;
 import net.pms.util.Rational;
 import net.pms.util.StringUtil;
 import net.pms.util.SubtitleUtils;
 import net.pms.util.Version;
+import net.pms.util.StringUtil.LetterCase;
 import org.apache.commons.lang3.StringUtils;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
@@ -338,14 +340,14 @@ public class FFMpegVideo extends Player {
 		final boolean vtb = Platform.isMac() && BasicSystemUtils.INSTANCE.getOSVersion().isGreaterThanOrEqualTo(10, 8);
 		final boolean vtbHevc = Platform.isMac() && BasicSystemUtils.INSTANCE.getOSVersion().isGreaterThanOrEqualTo(10, 13);
 		String customFFmpegOptions = renderer.getCustomFFmpegOptions();
-		ExecutableInfo executableInfo = getExecutableInfo();
-		Version libAVCodecVersion = executableInfo != null ? ((FFmpegExecutableInfo) executableInfo).getLibraryVersion("libavcodec") : null;
-		Codec aacAt = ((FFmpegExecutableInfo) executableInfo).getCodecs().get("aac_at");
-		Codec aacLibfdk = ((FFmpegExecutableInfo) executableInfo).getCodecs().get("libfdk_aac");
-		Codec ac3At = ((FFmpegExecutableInfo) executableInfo).getCodecs().get("ac3_at");
-		Codec h264Videotoolbox = ((FFmpegExecutableInfo) executableInfo).getCodecs().get("h264_videotoolbox");
-		Codec hevcVideotoolbox = ((FFmpegExecutableInfo) executableInfo).getCodecs().get("hevc_videotoolbox");
-		Codec mpeg2Videotoolbox = ((FFmpegExecutableInfo) executableInfo).getCodecs().get("mpeg2_videotoolbox");
+		FFmpegExecutableInfo executableInfo = getFFmpegExecutableInfo();
+		Version libAVCodecVersion = executableInfo != null ? executableInfo.getLibraryVersion("libavcodec") : null;
+		Codec aacAt = executableInfo == null ? null : executableInfo.getCodecs().get("aac_at");
+		Codec aacLibfdk = executableInfo == null ? null : executableInfo.getCodecs().get("libfdk_aac");
+		Codec ac3At = executableInfo == null ? null : executableInfo.getCodecs().get("ac3_at");
+		Codec h264Videotoolbox = executableInfo == null ? null : executableInfo.getCodecs().get("h264_videotoolbox");
+		Codec hevcVideotoolbox = executableInfo == null ? null : executableInfo.getCodecs().get("hevc_videotoolbox");
+		Codec mpeg2Videotoolbox = executableInfo == null ? null : executableInfo.getCodecs().get("mpeg2_videotoolbox");
 
 		if (
 			(
@@ -382,10 +384,29 @@ public class FFMpegVideo extends Player {
 				params.aid.getNumberOfChannels() <= configuration.getAudioChannelCount() &&
 				!isXboxOneWebVideo &&
 				!isSubtitlesAndTimeseek;
+			eac3Remux = libAVCodecVersion != null &&
+				libAVCodecVersion.isGreaterThanOrEqualTo(57, 89) &&
+				params.aid != null &&
+				params.aid.isEAC3() &&
+				(
+					//If E-AC-3 is not compatible for that format by the renderer
+					configuration.isAudioRemuxAC3() ||
+					renderer.isTranscodeToAC3()
+				) &&
+				executableInfo != null &&
+				executableInfo.getBitstreamFilters().contains("eac3_core") &&
+				params.aid.getNumberOfChannels() > 6 &&
+				configuration.getAudioChannelCount() >= 6 &&
+				!avisynth() &&
+				!isXboxOneWebVideo &&
+				!isSubtitlesAndTimeseek;
 			dtsRemux = isTsMuxeRVideoEngineActive &&
 				configuration.isAudioEmbedDtsInPcm() &&
 				params.aid != null &&
-				params.aid.isDTS() &&
+				(
+					params.aid.isDTS() ||
+					params.aid.isDTSHD()
+				) &&
 				!avisynth() &&
 				renderer.isDTSPlayable();
 
@@ -404,26 +425,12 @@ public class FFMpegVideo extends Player {
 						transcodeOptions.add("0"); //params.aid.getAudioProperties().getAudioDelay()
 					}
 				}
-			} else if (
-				libAVCodecVersion != null &&
-				libAVCodecVersion.isGreaterThanOrEqualTo(57, 89) &&
-				params.aid != null &&
-				params.aid.isEAC3() &&
-				(
-					//If E-AC-3 is not compatible for that format by the renderer
-					configuration.isAudioRemuxAC3() ||
-					renderer.isTranscodeToAC3()
-				) &&
-				((FFmpegExecutableInfo) executableInfo).getBitstreamFilters().contains("eac3_core") &&
-				params.aid.getNumberOfChannels() > 6 &&
-				configuration.getAudioChannelCount() >= 6 &&
-				!avisynth() &&
-				!isXboxOneWebVideo &&
-				!isSubtitlesAndTimeseek
-			) {
+			} else if (eac3Remux) {
 				transcodeOptions.add("-c:a");
 				transcodeOptions.add("copy");
 				transcodeOptions.add("-copyts");
+				transcodeOptions.add("-bsf:a");
+				transcodeOptions.add("eac3_core");
 				if (params.mediaRenderer.isTranscodeToMPEGTS()) {
 					transcodeOptions.add("-muxdelay");
 					transcodeOptions.add("0");
@@ -432,10 +439,6 @@ public class FFMpegVideo extends Player {
 					transcodeOptions.add("-output_ts_offset");
 					transcodeOptions.add("0");
 				}
-					transcodeOptions.add("-bsf:a");
-					transcodeOptions.add("eac3_core");
-					transcodeOptions.add("-fflags");
-					transcodeOptions.add("+bitexact");
 			} else {
 				if (dtsRemux) {
 					// Audio is added in a separate process later
@@ -444,24 +447,20 @@ public class FFMpegVideo extends Player {
 					// Skip
 				} else if (!Pattern.compile("-(?:c:a|codec:a|acodec)\\b").matcher(customFFmpegOptions).find()) {
 					if (renderer.isTranscodeToAAC()) {
-						if (executableInfo instanceof FFmpegExecutableInfo) {
-							transcodeOptions.add("-c:a");
-							if (vtb && aacLibfdk != null) {
-								transcodeOptions.add("libfdk_aac");
-							} else if (vtb && aacAt != null) {
-								transcodeOptions.add("aac_at");
-							} else {
-								transcodeOptions.add("aac");
-							}
+						transcodeOptions.add("-c:a");
+						if (vtb && aacLibfdk != null) {
+							transcodeOptions.add("libfdk_aac");
+						} else if (vtb && aacAt != null) {
+							transcodeOptions.add("aac_at");
+						} else {
+							transcodeOptions.add("aac");
 						}
 					} else {
-						if (executableInfo instanceof FFmpegExecutableInfo) {
-							transcodeOptions.add("-c:a");
-							if (vtb && ac3At != null) {
-								transcodeOptions.add("ac3_at");
-							} else {
-								transcodeOptions.add("ac3");
-							}
+						transcodeOptions.add("-c:a");
+						if (vtb && ac3At != null) {
+							transcodeOptions.add("ac3_at");
+						} else {
+							transcodeOptions.add("ac3");
 						}
 					}
 				}
@@ -479,20 +478,16 @@ public class FFMpegVideo extends Player {
 				if (!Pattern.compile("-(?:c:v|codec:v|vcodec)\\b").matcher(customFFmpegOptions).find()) {
 					transcodeOptions.add("-c:v");
 					if (renderer.isTranscodeToH264()) {
-						if (executableInfo instanceof FFmpegExecutableInfo) {
-							if (vtb && h264Videotoolbox != null) {
-								transcodeOptions.add("h264_videotoolbox");
-							} else {
-								transcodeOptions.add("libx264");
-							}
+						if (vtb && h264Videotoolbox != null) {
+							transcodeOptions.add("h264_videotoolbox");
+						} else {
+							transcodeOptions.add("libx264");
 						}
 					} else {
-						if (executableInfo instanceof FFmpegExecutableInfo) {
-							if (vtbHevc && hevcVideotoolbox != null) {
-								transcodeOptions.add("hevc_videotoolbox");
-							} else {
-								transcodeOptions.add("libx265");
-							}
+						if (vtbHevc && hevcVideotoolbox != null) {
+							transcodeOptions.add("hevc_videotoolbox");
+						} else {
+							transcodeOptions.add("libx265");
 						}
 					}
 					if (!transcodeOptions.contains(" h264_") && !transcodeOptions.contains(" hevc_")) {
@@ -521,18 +516,16 @@ public class FFMpegVideo extends Player {
 				}
 			} else if (!dtsRemux) {
 				if (!Pattern.compile("-(?:c:v|codec:v|vcodec)\\b").matcher(customFFmpegOptions).find()) {
-					if (executableInfo instanceof FFmpegExecutableInfo) {
-						transcodeOptions.add("-c:v");
-						if (vtb && mpeg2Videotoolbox != null) {
-							transcodeOptions.add("mpeg2_videotoolbox");
-						} else {
-							transcodeOptions.add("mpeg2video");
-						}
+					transcodeOptions.add("-c:v");
+					if (vtb && mpeg2Videotoolbox != null) {
+						transcodeOptions.add("mpeg2_videotoolbox");
+					} else {
+						transcodeOptions.add("mpeg2video");
 					}
 				}
 			}
 
-			if (params.aid == null && !filename.toLowerCase().endsWith(".wtv")) {
+			if (params.aid == null && "wtv".equals(FileUtil.getExtension(filename, LetterCase.LOWER, null))) {
 				transcodeOptions.add("-shortest");
 			}
 
@@ -783,6 +776,7 @@ public class FFMpegVideo extends Player {
 
 	protected boolean dtsRemux;
 	protected boolean ac3Remux;
+	protected boolean eac3Remux;
 
 	@Override
 	public int purpose() {
@@ -1277,7 +1271,7 @@ public class FFMpegVideo extends Player {
 			String customFFmpegOptions = renderer.getCustomFFmpegOptions();
 
 			// Audio channels, bitrate and sampling rate
-			if (!ac3Remux && !dtsRemux && !(type() == FormatType.AUDIO)) {
+			if (!ac3Remux && !dtsRemux && !(type() == FormatType.AUDIO) && !eac3Remux) {
 				int channels = 0;
 				if (
 					(
@@ -1440,7 +1434,7 @@ public class FFMpegVideo extends Player {
 			cmdListDTS.add("-c:a");
 			cmdListDTS.add("copy");
 			cmdListDTS.add("-copyts");
-			if (executableInfo.getBitstreamFilters().contains("dca_core")) {
+			if (executableInfo != null && executableInfo.getBitstreamFilters().contains("dca_core")) {
 				cmdListDTS.add("-bsf:a");
 				cmdListDTS.add("dca_core");
 			}
