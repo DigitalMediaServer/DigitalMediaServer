@@ -60,6 +60,8 @@ public class FormatConfiguration {
 	public static final String ALS = "als";
 	public static final String AMR = "amr";
 	public static final String ASF = "asf";
+	/** @deprecated Not in use until multi-level parsing is implemented */
+	@Deprecated
 	public static final String ATMOS = "atmos";
 	public static final String ATRAC = "atrac";
 	public static final String AU = "au";

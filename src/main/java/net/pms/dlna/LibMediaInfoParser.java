@@ -798,8 +798,15 @@ public class LibMediaInfoParser {
 			format = FormatConfiguration.MLP;
 		} else if (value.contains("truehd") || value.contains("mlp fba") && !value.contains("mlp fba 16-ch")) {
 			format = FormatConfiguration.TRUEHD;
-		} else if (value.contains("atmos") || value.startsWith("e-ac-3 joc") || value.contains("mlp fba 16-ch") || value.equals("131")) {
-			format = FormatConfiguration.ATMOS;
+
+		/*
+		 * XXX: Atmos is disabled until multi-level parsing is implemented,
+		 * because it's more useful to know the underlying codec.
+		 */
+
+		//} else if (value.contains("atmos") || value.startsWith("e-ac-3 joc") || value.contains("mlp fba 16-ch") || value.equals("131")) {
+		//	format = FormatConfiguration.ATMOS;
+
 		} else if (value.startsWith("cook")) {
 			format = FormatConfiguration.COOK;
 		} else if (value.startsWith("qdesign")) {
