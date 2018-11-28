@@ -638,8 +638,6 @@ public class LibMediaInfoParser {
 			} else {
 				format = FormatConfiguration.LPCM;
 			}
-		} else if (value.contains("atmos") || value.equals("131")) {
-			format = FormatConfiguration.ATMOS;
 		} else if (value.contains("ogg")) {
 			format = FormatConfiguration.OGG;
 		} else if (value.contains("opus")) {
@@ -795,13 +793,13 @@ public class LibMediaInfoParser {
 			value.equals("2000")
 		) {
 			format = FormatConfiguration.AC3;
-		} else if (value.equals("e-ac-3")) {
+		} else if (value.startsWith("e-ac-3") && !value.startsWith("e-ac-3 joc")) {
 			format = FormatConfiguration.EAC3;
 		} else if (value.equals("mlp")) {
 			format = FormatConfiguration.MLP;
 		} else if (value.contains("truehd") || value.contains("mlp fba") && !value.contains("mlp fba 16-ch")) {
 			format = FormatConfiguration.TRUEHD;
-		} else if (value.contains("atmos") || value.contains("mlp fba 16-ch") || value.equals("131")) {
+		} else if (value.contains("atmos") || value.startsWith("e-ac-3 joc") || value.contains("mlp fba 16-ch") || value.equals("131")) {
 			format = FormatConfiguration.ATMOS;
 		} else if (value.startsWith("cook")) {
 			format = FormatConfiguration.COOK;
