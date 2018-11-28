@@ -172,14 +172,6 @@ public class FormatConfigurationRegressionTest0 {
 	}
 
 	@Test
-	public void testATMOS() throws Throwable {
-		String str0 = FormatConfiguration.ATMOS;
-
-		// Regression assertion (captures the current behavior of the code)
-		assertTrue("'" + str0 + "' != '" + "atmos"+ "'", str0.equals("atmos"));
-	}
-
-	@Test
 	public void testWMAPRO() throws Throwable {
 		String str0 = FormatConfiguration.WMAPRO;
 

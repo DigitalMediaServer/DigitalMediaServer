@@ -792,14 +792,12 @@ public class LibMediaInfoParser {
 			value.equals("2000")
 		) {
 			format = FormatConfiguration.AC3;
-		} else if (value.startsWith("e-ac-3") && !value.startsWith("e-ac-3 joc")) {
+		} else if (value.startsWith("e-ac-3")) {
 			format = FormatConfiguration.EAC3;
 		} else if (value.equals("mlp")) {
 			format = FormatConfiguration.MLP;
-		} else if (value.contains("truehd") || value.contains("mlp fba") && !value.contains("mlp fba 16-ch")) {
+		} else if (value.contains("truehd") || value.contains("mlp fba")) {
 			format = FormatConfiguration.TRUEHD;
-		} else if (value.contains("atmos") || value.startsWith("e-ac-3 joc") || value.contains("mlp fba 16-ch") || value.equals("131")) {
-			format = FormatConfiguration.ATMOS;
 		} else if (value.startsWith("cook")) {
 			format = FormatConfiguration.COOK;
 		} else if (value.startsWith("qdesign")) {

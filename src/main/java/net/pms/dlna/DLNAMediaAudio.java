@@ -171,13 +171,6 @@ public class DLNAMediaAudio extends DLNAMediaLang implements Cloneable {
 	}
 
 	/**
-	 * @return True if the audio codec is Atmos.
-	 */
-	public boolean isAtmos() {
-		return FormatConfiguration.ATMOS.equalsIgnoreCase(getCodecA());
-	}
-
-	/**
 	 * @return True if the audio codec is ATRAC.
 	 */
 	public boolean isATRAC() {
@@ -433,7 +426,7 @@ public class DLNAMediaAudio extends DLNAMediaLang implements Cloneable {
 	 * @return True if the audio codec is AC-3, DTS, DTS-HD or TrueHD.
 	 */
 	public boolean isNonPCMEncodedAudio() {
-		return isAC3() || isAtmos() || isDTS() || isTrueHD() || isDTSHD(); // isAAC() || isEAC3()
+		return isAC3() || isDTS() || isTrueHD() || isDTSHD(); // isAAC() || isEAC3()
 	}
 
 	/**
@@ -467,8 +460,6 @@ public class DLNAMediaAudio extends DLNAMediaLang implements Cloneable {
 			return "ALAC";
 		} else if (isALS()) {
 			return "ALS";
-		} else if (isAtmos()) {
-			return "Atmos";
 		} else if (isATRAC()) {
 			return "ATRAC";
 		} else if (isCook()) {
