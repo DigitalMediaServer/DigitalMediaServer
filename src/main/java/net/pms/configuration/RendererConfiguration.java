@@ -109,26 +109,13 @@ public class RendererConfiguration extends UPNPHelper.Renderer {
 	protected int lineWidth, lineHeight, indent;
 	protected String inset, dots;
 
-	// property values
+	// Property values
 	protected static final String LPCM = "LPCM";
 	protected static final String MP3 = "MP3";
 	protected static final String WAV = "WAV";
 	protected static final String WMV = "WMV";
 
-	// Old video transcoding options
-	@Deprecated
-	protected static final String DEPRECATED_MPEGAC3 = "MPEGAC3";
-
-	@Deprecated
-	protected static final String DEPRECATED_MPEGPSAC3 = "MPEGPSAC3";
-
-	@Deprecated
-	protected static final String DEPRECATED_MPEGTSAC3 = "MPEGTSAC3";
-
-	@Deprecated
-	protected static final String DEPRECATED_H264TSAC3 = "H264TSAC3";
-
-	// Current video transcoding options
+	// Video transcoding options
 	protected static final String MPEGTSH264AAC = "MPEGTS-H264-AAC";
 	protected static final String MPEGTSH264AC3 = "MPEGTS-H264-AC3";
 	protected static final String MPEGTSH265AAC = "MPEGTS-H265-AAC";
@@ -136,7 +123,7 @@ public class RendererConfiguration extends UPNPHelper.Renderer {
 	protected static final String MPEGPSMPEG2AC3 = "MPEGPS-MPEG2-AC3";
 	protected static final String MPEGTSMPEG2AC3 = "MPEGTS-MPEG2-AC3";
 
-	// property names
+	// Property names
 	protected static final String ACCURATE_DLNA_ORGPN = "AccurateDLNAOrgPN";
 	protected static final String AUDIO = "Audio";
 	protected static final String AUTO_PLAY_TMO = "AutoPlayTmo";
@@ -1165,17 +1152,17 @@ public class RendererConfiguration extends UPNPHelper.Renderer {
 
 	public boolean isTranscodeToMPEGPSMPEG2AC3() {
 		String videoTranscode = getVideoTranscode();
-		return videoTranscode.equals(MPEGPSMPEG2AC3) || videoTranscode.equals(DEPRECATED_MPEGAC3) || videoTranscode.equals(DEPRECATED_MPEGPSAC3);
+		return videoTranscode.equals(MPEGPSMPEG2AC3);
 	}
 
 	public boolean isTranscodeToMPEGTSMPEG2AC3() {
 		String videoTranscode = getVideoTranscode();
-		return videoTranscode.equals(MPEGTSMPEG2AC3) || videoTranscode.equals(DEPRECATED_MPEGTSAC3);
+		return videoTranscode.equals(MPEGTSMPEG2AC3);
 	}
 
 	public boolean isTranscodeToMPEGTSH264AC3() {
 		String videoTranscode = getVideoTranscode();
-		return videoTranscode.equals(MPEGTSH264AC3) || videoTranscode.equals(DEPRECATED_H264TSAC3);
+		return videoTranscode.equals(MPEGTSH264AC3);
 	}
 
 	public boolean isTranscodeToMPEGTSH264AAC() {
