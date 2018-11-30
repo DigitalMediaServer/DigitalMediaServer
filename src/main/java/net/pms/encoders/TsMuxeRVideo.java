@@ -171,6 +171,8 @@ public class TsMuxeRVideo extends Player {
 		String videoType = "V_MPEG4/ISO/AVC";
 		if (media.getCodecV() != null && media.getCodecV().startsWith("mpeg2")) {
 			videoType = "V_MPEG-2";
+		} else if (media.getCodecV() != null && media.getCodecV().startsWith("hevc")) {
+			videoType = "V_MPEGH/ISO/HEVC";
 		}
 
 		boolean aacTranscode = false;
@@ -881,7 +883,7 @@ public class TsMuxeRVideo extends Player {
 
 	@Override
 	public boolean isPlayerCompatible(RendererConfiguration mediaRenderer) {
-		return mediaRenderer != null && mediaRenderer.isMuxH264MpegTS();
+		return mediaRenderer != null && (mediaRenderer.isMuxH264MpegTS() || mediaRenderer.isMuxH265MpegTS());
 	}
 
 	@Override

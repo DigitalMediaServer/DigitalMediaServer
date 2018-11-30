@@ -422,8 +422,8 @@ public class DLNAMediaInfo implements Cloneable {
 	 * @return
 	 */
 	public boolean isMuxable(RendererConfiguration mediaRenderer) {
-		// Make sure the file is H.264 video
-		if (!isH264()) {
+		// Make sure the file have H.264 or HEVC video stream
+		if (!isH264() || !isH265()) {
 			return false;
 		}
 

@@ -171,6 +171,7 @@ public class RendererConfiguration extends UPNPHelper.Renderer {
 	protected static final String MIME_TYPES_CHANGES = "MimeTypesChanges";
 	protected static final String MUX_DTS_TO_MPEG = "MuxDTSToMpeg";
 	protected static final String MUX_H264_WITH_MPEGTS = "MuxH264ToMpegTS";
+	protected static final String MUX_H265_WITH_MPEGTS = "MuxH265ToMpegTS";
 	protected static final String MUX_LPCM_TO_MPEG = "MuxLPCMToMpeg";
 	protected static final String MUX_NON_MOD4_RESOLUTION = "MuxNonMod4Resolution";
 	protected static final String NOT_AGGRESSIVE_BROWSING = "NotAggressiveBrowsing";
@@ -1757,6 +1758,22 @@ public class RendererConfiguration extends UPNPHelper.Renderer {
 		boolean muxCompatible = getBoolean(MUX_H264_WITH_MPEGTS, true);
 		if (muxCompatible && isUseMediaInfo()) {
 			muxCompatible = getFormatConfiguration().match(FormatConfiguration.MPEGTS, FormatConfiguration.H264, null) != null;
+		}
+
+		if (muxCompatible) {
+			Player tsMuxeR = PlayerFactory.getPlayer(StandardPlayerId.TSMUXER_VIDEO, false, false);
+			if (tsMuxeR == null || !tsMuxeR.isActive()) {
+				muxCompatible = false;
+			}
+		}
+
+		return muxCompatible;
+	}
+
+	public boolean isMuxH265MpegTS() {
+		boolean muxCompatible = getBoolean(MUX_H265_WITH_MPEGTS, false);
+		if (muxCompatible && isUseMediaInfo()) {
+			muxCompatible = getFormatConfiguration().match(FormatConfiguration.MPEGTS, FormatConfiguration.H265, null) != null;
 		}
 
 		if (muxCompatible) {

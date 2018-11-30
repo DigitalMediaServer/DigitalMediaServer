@@ -2256,7 +2256,10 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 								media != null &&
 								media.getDvdtrack() == 0 &&
 								isMuxableResult &&
-								mediaRenderer.isMuxH264MpegTS()
+								(
+									mediaRenderer.isMuxH264MpegTS() ||
+									mediaRenderer.isMuxH265MpegTS()
+								)
 							) {
 								isFileMPEGTS = true;
 							}
@@ -2274,6 +2277,16 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 									dlnaOrgPnFlags = "DLNA.ORG_PN=AVC_TS_HP_HD_AAC";
 								}
 							}
+							if (
+								media.isH265() &&
+								!VideoLanVideoStreaming.ID.equals(player.id()) &&
+								isMuxableResult
+							) {
+								dlnaOrgPnFlags = "DLNA.ORG_PN=MPEG_TS_HD_NA_ISO";
+								if (mediaRenderer.isTranscodeToMPEGTSH264AAC()) {
+									dlnaOrgPnFlags = "DLNA.ORG_PN=MPEG_TS_JP_T";
+								}
+							}
 						}
 					} else if (media != null) {
 						if (media.isMpegTS()) {
@@ -2282,6 +2295,12 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 								dlnaOrgPnFlags = "DLNA.ORG_PN=AVC_TS_HD_50_AC3";
 								if (mediaRenderer.isTranscodeToMPEGTSH264AAC()) {
 									dlnaOrgPnFlags = "DLNA.ORG_PN=AVC_TS_HP_HD_AAC";
+								}
+							}
+							if (media.isH265()) {
+								dlnaOrgPnFlags = "DLNA.ORG_PN=MPEG_TS_HD_NA_ISO";
+								if (mediaRenderer.isTranscodeToMPEGTSH264AAC()) {
+									dlnaOrgPnFlags = "DLNA.ORG_PN=MPEG_TS_JP_T";
 								}
 							}
 						}

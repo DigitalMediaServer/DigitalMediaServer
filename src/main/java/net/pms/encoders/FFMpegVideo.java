@@ -1084,7 +1084,7 @@ public class FFMpegVideo extends Player {
 			!(
 				!configuration.getHideTranscodeEnabled() &&
 				dlna.isNoName() &&
-				(dlna.getParent() instanceof FileTranscodeVirtualFolder)
+				dlna.getParent() instanceof FileTranscodeVirtualFolder
 			) &&
 			configuration.isFFmpegDeferToMEncoderForProblematicSubtitles() &&
 			params.sid.isEmbedded() &&
@@ -1124,9 +1124,9 @@ public class FFMpegVideo extends Player {
 				deferToTsmuxer = false;
 				LOGGER.trace(prependTraceReason + "the file is being played via a FFmpeg entry in the transcode folder.");
 			}
-			if (deferToTsmuxer && !params.mediaRenderer.isMuxH264MpegTS()) {
+			if (deferToTsmuxer && !(params.mediaRenderer.isMuxH264MpegTS() || params.mediaRenderer.isMuxH265MpegTS())) {
 				deferToTsmuxer = false;
-				LOGGER.trace(prependTraceReason + "the renderer does not support H.264 inside MPEG-TS.");
+				LOGGER.trace(prependTraceReason + "the renderer does not support this codec inside MPEG-TS.");
 			}
 			if (
 				deferToTsmuxer &&
