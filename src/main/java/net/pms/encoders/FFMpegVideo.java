@@ -152,7 +152,7 @@ public class FFMpegVideo extends Player {
 		// Make sure the aspect ratio is 16/9 if the renderer needs it.
 		boolean keepAR = (renderer.isKeepAspectRatio() || renderer.isKeepAspectRatioTranscoding()) &&
 				!media.is3dFullSbsOrOu() &&
-				!ASPECT_16_9.equals(media.getAspectRatioContainer());
+				!ASPECT_16_9.equals(media.getAspectRatioVideoTrack());
 
 		// Scale and pad the video if necessary
 		if (isResolutionTooHighForRenderer || (!renderer.isRescaleByRenderer() && renderer.isMaximumResolutionSpecified() && media.getWidth() < 720)) { // Do not rescale for SD video and higher
@@ -899,18 +899,6 @@ public class FFMpegVideo extends Player {
 		FFmpegExecutableInfo executableInfo = getFFmpegExecutableInfo();
 
 		/*
-		 * Check if the video track and the container report different aspect ratios
-		 */
-		boolean aspectRatiosMatch = true;
-		if (
-			media.getAspectRatioContainer() != null &&
-			media.getAspectRatioVideoTrack() != null &&
-			!media.getAspectRatioContainer().equals(media.getAspectRatioVideoTrack())
-		) {
-			aspectRatiosMatch = false;
-		}
-
-		/*
 		 * FFmpeg uses multithreading by default, so provided that the
 		 * user has not disabled FFmpeg multithreading and has not
 		 * chosen to use more or less threads than are available, do not
@@ -1177,10 +1165,6 @@ public class FFMpegVideo extends Player {
 				deferToTsmuxer = false;
 				LOGGER.trace(prependTraceReason + "the video stream is not muxable to this renderer");
 			}
-			if (deferToTsmuxer && !aspectRatiosMatch) {
-				deferToTsmuxer = false;
-				LOGGER.trace(prependTraceReason + "we need to transcode to apply the correct aspect ratio.");
-			}
 			if (
 				deferToTsmuxer &&
 				!params.mediaRenderer.isPS3() &&
@@ -1198,10 +1182,10 @@ public class FFMpegVideo extends Player {
 					params.mediaRenderer.isKeepAspectRatio() ||
 					params.mediaRenderer.isKeepAspectRatioTranscoding()
 				) &&
-				!ASPECT_16_9.equals(media.getAspectRatioContainer())
+				!ASPECT_16_9.equals(media.getAspectRatioVideoTrack())
 			) {
 				deferToTsmuxer = false;
-				LOGGER.trace(prependTraceReason + "the renderer needs us to add borders so it displays the correct aspect ratio of " + media.getAspectRatioContainer() + ".");
+				LOGGER.trace(prependTraceReason + "the renderer needs us to add borders so it displays the correct aspect ratio of " + media.getAspectRatioVideoTrack() + ".");
 			}
 			if (deferToTsmuxer && !params.mediaRenderer.isResolutionCompatibleWithRenderer(media.getWidth(), media.getHeight())) {
 				deferToTsmuxer = false;
