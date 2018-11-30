@@ -47,7 +47,6 @@ public class MKV extends MPG {
 			"h265",
 			"hdmov",
 			"hdm",
-			"m2v",
 			"mk3d",
 			"mkv",
 			"mov",
