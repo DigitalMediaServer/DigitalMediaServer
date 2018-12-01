@@ -1088,10 +1088,7 @@ public class FFMpegVideo extends Player {
 			) &&
 			configuration.isFFmpegDeferToMEncoderForProblematicSubtitles() &&
 			params.sid.isEmbedded() &&
-			(
-				params.sid.getType() != SubtitleType.ASS ||
-				params.sid.getType() == SubtitleType.VOBSUB
-			)
+			params.sid.getType() != SubtitleType.ASS
 		) {
 			LOGGER.trace("Switching from FFmpeg to MEncoder to transcode subtitles because the user setting is enabled.");
 			MEncoderVideo mv = (MEncoderVideo) PlayerFactory.getPlayer(MEncoderVideo.ID,  false, false);
@@ -1196,6 +1193,8 @@ public class FFMpegVideo extends Player {
 				if (media.getCodecV() != null) {
 					if (media.isH264()) {
 						params.forceType = "V_MPEG4/ISO/AVC";
+					} else if (media.isH265()) {
+						params.forceType = "V_MPEGH/ISO/HEVC";
 					} else if (media.getCodecV().startsWith("mpeg2")) {
 						params.forceType = "V_MPEG-2";
 					} else if (media.getCodecV().equals("vc1")) {
@@ -1467,9 +1466,10 @@ public class FFMpegVideo extends Player {
 					}
 				}
 
-				// XXX This is questionable, it's unclear of the codec is always H.264
-				// and what the consequence of omitting the "level" parameter is
 				VideoLevel level = params.mediaRenderer.getVideoLevelLimit(VideoCodec.H264);
+				if (media.isH265()) {
+					level = params.mediaRenderer.getVideoLevelLimit(VideoCodec.H265);
+				}
 				pwMux.println(
 					videoType + ", \"" + ffVideoPipe.getOutputPipe() + "\", " + fps +
 					(level != null ? "level=" + level.toString(false) + ", " : "") +

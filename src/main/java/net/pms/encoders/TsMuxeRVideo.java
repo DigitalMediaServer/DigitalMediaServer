@@ -161,18 +161,13 @@ public class TsMuxeRVideo extends Player {
 
 		String fps = media.getValidFps(false);
 
-		int width  = media.getWidth();
-		int height = media.getHeight();
-		if (width < 320 || height < 240) {
-			width  = -1;
-			height = -1;
-		}
-
 		String videoType = "V_MPEG4/ISO/AVC";
-		if (media.getCodecV() != null && media.getCodecV().startsWith("mpeg2")) {
+		if (FormatConfiguration.MPEG2.equals(media.getCodecV())) {
 			videoType = "V_MPEG-2";
-		} else if (media.getCodecV() != null && media.getCodecV().startsWith("hevc")) {
+		} else if (FormatConfiguration.H265.equals(media.getCodecV())) {
 			videoType = "V_MPEGH/ISO/HEVC";
+		} else if (FormatConfiguration.VC1.equals(media.getCodecV())) {
+			videoType = "V_MS/VFW/WVC1";
 		}
 
 		boolean aacTranscode = false;
@@ -202,8 +197,6 @@ public class TsMuxeRVideo extends Player {
 				"-y",
 				ffVideoPipe.getInputPipe()
 			};
-
-			videoType = "V_MPEG4/ISO/AVC";
 
 			OutputParams ffparams = new OutputParams(configuration);
 			ffparams.maxBufferSize = 1;
@@ -282,25 +275,6 @@ public class TsMuxeRVideo extends Player {
 			InputFile newInput = new InputFile();
 			newInput.setFilename(filename);
 			newInput.setPush(params.stdin);
-
-			VideoLevel videoLevelLimit = params.mediaRenderer.getVideoLevelLimit(media.getVideoCodec());
-			VideoLevel videoLevel = media.getVideoLevel();
-			if (
-				videoLevelLimit != null &&
-				!videoLevelLimit.isGreaterThanOrEqualTo(videoLevel)
-			) {
-				if (videoLevel == null) {
-					LOGGER.warn("This video might not play properly because the {} level is unknown", media.getVideoCodec());
-				} else {
-					LOGGER.warn(
-						"The video probably won't play properly because the {} level ({}) " +
-						"is above the limit ({}) for this renderer",
-						media.getVideoCodec(),
-						videoLevel.toString(false),
-						videoLevelLimit.toString(false)
-					);
-				}
-			}
 
 			// The code below is commented out until it can be fully understood what it's intended to do.
 			// It seems to cause broken pipes as it is, and the Annex B header isn't usually parsed.
@@ -590,14 +564,14 @@ public class TsMuxeRVideo extends Player {
 			) {
 				sei = "forceSEI";
 			}
-			String videoparams = "level=4.1, " + sei + ", contSPS, track=1";
+			String videoparams = sei + ", contSPS, track=" + "1"; //params.vid.getId()
 			if (this instanceof TsMuxeRAudio) {
 				videoparams = "track=224";
 			}
 			if (configuration.isFix25FPSAvMismatch()) {
 				fps = "25";
 			}
-			pw.println(videoType + ", \"" + ffVideoPipe.getOutputPipe() + "\", " + (fps != null ? ("fps=" + fps + ", ") : "") + (width != -1 ? ("video-width=" + width + ", ") : "") + (height != -1 ? ("video-height=" + height + ", ") : "") + videoparams);
+			pw.println(videoType + ", \"" + filename + "\", " + (fps != null ? ("fps=" + fps + ", ") : "") + "video-width=" + media.getWidth() + ", video-height=" + media.getHeight() + ", " + videoparams);
 
 			if (ffAudioPipe != null) {
 				if (ffAudioPipe.length == 1) {
@@ -649,10 +623,14 @@ public class TsMuxeRVideo extends Player {
 							}
 						}
 					}
-					if (params.aid != null && params.aid.getAudioProperties().getAudioDelay() != 0 && params.timeseek == 0) {
+					if (
+						params.aid != null &&
+						params.aid.getAudioProperties().getAudioDelay() > 0 &&
+						params.timeseek == 0
+					) {
 						timeshift = "timeshift=" + params.aid.getAudioProperties().getAudioDelay() + "ms, ";
 					}
-					pw.println(audioType + ", \"" + ffAudioPipe[0].getOutputPipe() + "\", " + timeshift + "track=2");
+					pw.println(audioType + ", \"" + filename + "\", " + timeshift + "track=" + params.aid.getId());
 				} else {
 					for (int i = 0; i < media.getAudioTracksList().size(); i++) {
 						DLNAMediaAudio lang = media.getAudioTracksList().get(i);
@@ -714,15 +692,14 @@ public class TsMuxeRVideo extends Player {
 			if (
 				!configuration.isDisableSubtitles() &&
 				params.sid != null &&
-				params.sid.getType() == SubtitleType.SUBRIP &&
-				params.sid.getType() == SubtitleType.PGS &&
-				subtitle != null
+				(
+					params.sid.getType() == SubtitleType.SUBRIP ||
+					params.sid.getType() == SubtitleType.PGS
+				)
 			) {
-				String subtitleType = "";
+				String subtitleType = "S_TEXT/UTF8";
 				if (params.sid.getType() == SubtitleType.PGS) {
 					subtitleType = "S_HDMV/PGS";
-				} else if (params.sid.getType() == SubtitleType.SUBRIP) {
-					subtitleType = "S_TEXT/UTF8";
 				}
 				String fontName = "";
 				if (isNotBlank(configuration.getFont())) {
@@ -734,7 +711,7 @@ public class TsMuxeRVideo extends Player {
 				} else if (params.sid.isEmbedded()) {
 					subtitlePath = dlna.getFileName();
 				}
-				double fontSize = 15 * Double.parseDouble(configuration.getAssScale());
+				int fontSize = 15 * Integer.parseInt(configuration.getAssScale());
 				int subtitleBottomOffset = 0;
 				if (media.getAspectRatioVideoTrack() != null) {
 					if (media.getAspectRatioVideoTrack().compareTo(Rational.valueOf(51, 20)) >= 0) {
@@ -749,7 +726,8 @@ public class TsMuxeRVideo extends Player {
 						subtitleBottomOffset = Integer.valueOf(configuration.getAssMargin());
 					}
 				}
-				pw.println(subtitleType + ", \"" + subtitlePath + "\", " + (fontName != null ? ("font-name=" + fontName + ", ") : "") + (fontSize > 0 ? ("font-size=" + fontSize + ", ") : "") + (configuration.getSubsColor().getASSv4StylesHexValue() != null ? ("font-color=" + configuration.getSubsColor().getASSv4StylesHexValue() + ", ") : "") + (subtitleBottomOffset > 0 ? ("bottom-offset=" + subtitleBottomOffset + ", ") : "") + (configuration.getAssOutline() != null ? ("font-border=" + configuration.getAssOutline() + ", ") : "") + "text-align=center, "  + (fps != null ? ("fps=" + fps + ", ") : "") + (width != -1 ? ("video-width=" + width + ", ") : "") + (height != -1 ? ("video-height=" + height + ", ") : "") + "track=3" + (subtitle.getLang() != null ? (", lang=" + subtitle.getLang()) : "")); //", mplsFile=00000"
+				String subColor = configuration.getSubsColor().getASSv4StylesHexValue().replaceFirst("&H", "0x");
+				pw.println(subtitleType + ", \"" + subtitlePath + "\", " + (subtitleType == "S_TEXT/UTF8" ? ((fontName != null ? ("font-name=\"" + fontName + "\", ") : "") + (fontSize > 0 ? ("font-size=" + fontSize + ", ") : "") + (subColor != null ? ("font-color=" + subColor + ", ") : "") + (subtitleBottomOffset > 0 ? ("bottom-offset=" + subtitleBottomOffset + ", ") : "") + (configuration.getAssOutline() != null ? ("font-border=" + configuration.getAssOutline() + ", ") : "") + "text-align=center, ") : "")  + "fps=" + fps + ", video-width=" + media.getWidth() + ", video-height=" + media.getHeight() + ", track=" + params.sid.getId() + (subtitle.getLang() != null ? (", lang=" + subtitle.getLang()) : "")); //", mplsFile=00000"
 			}
 		}
 
@@ -889,32 +867,33 @@ public class TsMuxeRVideo extends Player {
 	@Override
 	public boolean isCompatible(DLNAResource resource) {
 		DLNAMediaSubtitle subtitle = resource.getMediaSubtitle();
+		DLNAMediaInfo media = resource.getMedia();
+//		DLNAMediaInfo mediaInfo = new DLNAMediaInfo();
+//		VideoLevel videoLevelLimit = params.mediaRenderer.getVideoLevelLimit(mediaInfo.getVideoCodec());
+//		VideoLevel videoLevel = mediaInfo.getVideoLevel();
+//		int width  = mediaInfo.getWidth();
+//		int height = mediaInfo.getHeight();
+//		if (width < 320 || height < 240) {
+//			return false;
+//		}
+
+//		if (
+//			videoLevelLimit != null &&
+//			!videoLevelLimit.isGreaterThanOrEqualTo(videoLevel)
+//		) {
+//			return false;
+//		}
 
 		// Check whether the subtitle actually has a language defined,
 		// uninitialized DLNAMediaSubtitle objects have a null language.
+		// Check whether the subtitle is supported by tsMuxeR.
 		if (
 			!configuration.isDisableSubtitles() &&
 			subtitle != null &&
-			(
-				subtitle.getType() != SubtitleType.SUBRIP ||
-				subtitle.getType() != SubtitleType.PGS
-			)
+			subtitle.getType() != SubtitleType.SUBRIP &&
+			subtitle.getType() != SubtitleType.PGS
 		) {
 			return false;
-		}
-
-		try {
-			String audioTrackName = resource.getMediaAudio().toString();
-			String defaultAudioTrackName = resource.getMedia().getAudioTracksList().get(0).toString();
-
-			if (!audioTrackName.equals(defaultAudioTrackName)) {
-				// DMS only supports playback of the default audio track for tsMuxeR
-				return false;
-			}
-		} catch (NullPointerException e) {
-			LOGGER.trace("tsMuxeR cannot determine compatibility based on audio track for " + resource.getSystemName());
-		} catch (IndexOutOfBoundsException e) {
-			LOGGER.trace("tsMuxeR cannot determine compatibility based on default audio track for " + resource.getSystemName());
 		}
 
 		if (!resource.matches(
@@ -922,14 +901,13 @@ public class TsMuxeRVideo extends Player {
 			FormatConfiguration.MKV,
 			FormatConfiguration.MOV,
 			FormatConfiguration.MP4,
-			FormatConfiguration.MPEG1,
 			FormatConfiguration.MPEG2,
 			FormatConfiguration.MPEGPS,
 			FormatConfiguration.MPEGTS
 		)) {
 			return false;
 		}
-		DLNAMediaInfo media = resource.getMedia();
+
 		if (media == null || isBlank(media.getCodecV())) {
 			return false;
 		}
@@ -951,14 +929,12 @@ public class TsMuxeRVideo extends Player {
 			}
 			switch (audio.getCodecA()) {
 				case FormatConfiguration.AAC_LC:
-				case FormatConfiguration.AAC_LTP:
-				case FormatConfiguration.AAC_MAIN:
-				case FormatConfiguration.AAC_SSR:
 				case FormatConfiguration.AC3:
-				case FormatConfiguration.EAC3:
 				case FormatConfiguration.DTS:
 				case FormatConfiguration.DTSHD:
+				case FormatConfiguration.EAC3:
 				case FormatConfiguration.HE_AAC:
+				case FormatConfiguration.TRUEHD:
 					break;
 				default:
 					return false;
