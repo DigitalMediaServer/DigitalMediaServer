@@ -921,4 +921,12 @@ public class FormatConfigurationRegressionTest0 {
 		// Regression assertion (captures the current behavior of the code)
 		assertTrue("'" + str0 + "' != '" + "mjp2"+ "'", str0.equals("mjp2"));
 	}
+
+	@Test
+	public void testSUDS() throws Throwable {
+		String str0 = net.pms.configuration.FormatConfiguration.SUDS;
+
+		// Regression assertion (captures the current behavior of the code)
+		assertTrue("'" + str0 + "' != '" + "suds"+ "'", str0.equals("suds"));
+	}
 }

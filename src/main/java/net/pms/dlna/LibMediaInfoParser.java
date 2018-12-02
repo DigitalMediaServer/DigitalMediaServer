@@ -575,7 +575,7 @@ public class LibMediaInfoParser {
 			return;
 		}
 
-		value = value.toLowerCase(Locale.ROOT);
+		value = value.trim().toLowerCase(Locale.ROOT);
 		String format = null;
 
 		if (isBlank(value)) {
@@ -713,7 +713,7 @@ public class LibMediaInfoParser {
 			format = FormatConfiguration.MACE3;
 		} else if (value.equals("mac6")) {
 			format = FormatConfiguration.MACE6;
-		} else if (streamType == StreamType.Video && value.startsWith("tga")) {
+		} else if (streamType == StreamType.Video && value.equals("tga")) {
 			format = FormatConfiguration.TGA;
 		} else if (value.equals("ffv1")) {
 			format = FormatConfiguration.FFV1;
@@ -721,6 +721,8 @@ public class LibMediaInfoParser {
 			format = FormatConfiguration.CELP;
 		} else if (value.equals("qcelp")) {
 			format = FormatConfiguration.QCELP;
+		} else if (value.equals("suds")) {
+			format = FormatConfiguration.SUDS;
 		} else if (value.matches("(?i)(dv)|(cdv.?)|(dc25)|(dcap)|(dvc.?)|(dvs.?)|(dvrs)|(dv25)|(dv50)|(dvan)|(dvh.?)|(dvis)|(dvl.?)|(dvnm)|(dvp.?)|(mdvf)|(pdvc)|(r411)|(r420)|(sdcc)|(sl25)|(sl50)|(sldv)")) {
 			format = FormatConfiguration.DV;
 		} else if (value.contains("mpeg video")) {

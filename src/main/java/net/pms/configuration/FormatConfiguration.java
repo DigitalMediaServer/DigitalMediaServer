@@ -156,6 +156,7 @@ public class FormatConfiguration {
 	public static final String SIPRO = "sipro";
 	public static final String SLS = "sls";
 	public static final String SORENSON = "sor";
+	public static final String SUDS = "suds";
 	public static final String TGA = "tga";
 	public static final String THEORA = "theora";
 	public static final String TIFF = "tiff";
