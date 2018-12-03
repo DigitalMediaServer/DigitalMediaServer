@@ -603,11 +603,18 @@ public class TsMuxeRVideo extends Player {
 								)
 							)
 						) && params.mediaRenderer.isLPCMPlayable();
-					String audioType = "A_AC3";
+					String audioType = "";
 					if (ac3Remux) {
 						// AC-3 remux takes priority
 						audioType = "A_AC3";
-					} else if (aacTranscode) {
+					} else if (
+						aacTranscode || //TODO: aacRemux
+						params.mediaRenderer.isTranscodeToAAC() &&
+						(
+							params.aid.isAACLC() ||
+							params.aid.isHEAAC()
+						)
+					) {
 						audioType = "A_AAC";
 					} else {
 						if (pcm || this instanceof TsMuxeRAudio) {
@@ -630,7 +637,9 @@ public class TsMuxeRVideo extends Player {
 					) {
 						timeshift = "timeshift=" + params.aid.getAudioProperties().getAudioDelay() + "ms, ";
 					}
-					pw.println(audioType + ", \"" + filename + "\", " + timeshift + "track=" + params.aid.getId());
+					if (audioType != "") {
+						pw.println(audioType + ", \"" + filename + "\", " + timeshift + "track=" + params.aid.getId());
+					}
 				} else {
 					for (int i = 0; i < media.getAudioTracksList().size(); i++) {
 						DLNAMediaAudio lang = media.getAudioTracksList().get(i);

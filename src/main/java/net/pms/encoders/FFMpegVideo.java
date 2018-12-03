@@ -1440,9 +1440,10 @@ public class FFMpegVideo extends Player {
 			try (PrintWriter pwMux = new PrintWriter(f)) {
 				pwMux.println("MUXOPT --no-pcr-on-video-pid --new-audio-pes --vbr --vbv-len=500");
 				String videoType = "V_MPEG-2";
-
 				if (renderer.isTranscodeToH264()) {
 					videoType = "V_MPEG4/ISO/AVC";
+				} else if (renderer.isTranscodeToH265()) {
+					videoType = "V_MPEGH/ISO/HEVC";
 				}
 
 				if (params.no_videoencode && params.forceType != null) {
@@ -1455,8 +1456,18 @@ public class FFMpegVideo extends Player {
 					fps.append("fps=").append(params.forceFps).append(", ");
 				}
 
-				String audioType = "A_AC3";
-				if (dtsRemux) {
+				String audioType = "";
+				if (ac3Remux) {
+					audioType = "A_AC3";
+				} else if (
+					renderer.isTranscodeToAAC() &&  //TODO: aacRemux
+					(
+						params.aid.isAACLC() ||
+						params.aid.isHEAAC()
+					)
+				) {
+					audioType = "A_AAC";
+				} else if (dtsRemux) {
 					if (params.mediaRenderer.isMuxDTSToMpeg()) {
 						// Renderer can play proper DTS track
 						audioType = "A_DTS";
@@ -1472,10 +1483,11 @@ public class FFMpegVideo extends Player {
 				}
 				pwMux.println(
 					videoType + ", \"" + ffVideoPipe.getOutputPipe() + "\", " + fps +
-					(level != null ? "level=" + level.toString(false) + ", " : "") +
-					"insertSEI, contSPS, track=1"
+					"insertSEI, contSPS, track=" + "1"
 				);
-				pwMux.println(audioType + ", \"" + ffAudioPipe.getOutputPipe() + "\", track=2");
+				if (audioType != "") {
+					pwMux.println(audioType + ", \"" + ffAudioPipe.getOutputPipe() + "\", track=" + "2");
+				}
 			}
 
 			ProcessWrapper pipe_process = pipe.getPipeProcess();
