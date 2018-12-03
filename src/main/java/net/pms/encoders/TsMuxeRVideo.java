@@ -311,7 +311,7 @@ public class TsMuxeRVideo extends Player {
 
 					encodedAudioPassthrough = configuration.isEncodedAudioPassthrough() && params.aid.isNonPCMEncodedAudio() && params.mediaRenderer.isWrapEncodedAudioIntoPCM();
 					ac3Remux = params.aid.isAC3() && configuration.isAudioRemuxAC3() && !encodedAudioPassthrough && !params.mediaRenderer.isTranscodeToAAC();
-					dtsRemux = configuration.isAudioEmbedDtsInPcm() && params.aid.isDTS() && params.mediaRenderer.isDTSPlayable() && !encodedAudioPassthrough;
+					dtsRemux = configuration.isAudioEmbedDtsInPcm() && (params.aid.isDTS()  || params.aid.isDTSHD()) && params.mediaRenderer.isDTSPlayable() && !encodedAudioPassthrough;
 
 					pcm = configuration.isAudioUsePCM() &&
 						media.isValidForLPCMTranscoding() &&
@@ -336,7 +336,7 @@ public class TsMuxeRVideo extends Player {
 					if (ac3Remux) {
 						channels = params.aid.getNumberOfChannels(); // AC-3 remux
 					} else if (dtsRemux || encodedAudioPassthrough) {
-						channels = 2;
+						channels = params.aid.getNumberOfChannels();
 					} else if (pcm) {
 						channels = params.aid.getNumberOfChannels();
 					} else {
@@ -420,7 +420,7 @@ public class TsMuxeRVideo extends Player {
 
 						encodedAudioPassthrough = configuration.isEncodedAudioPassthrough() && params.aid.isNonPCMEncodedAudio() && params.mediaRenderer.isWrapEncodedAudioIntoPCM();
 						ac3Remux = audio.isAC3() && configuration.isAudioRemuxAC3() && !encodedAudioPassthrough && !params.mediaRenderer.isTranscodeToAAC();
-						dtsRemux = configuration.isAudioEmbedDtsInPcm() && audio.isDTS() && params.mediaRenderer.isDTSPlayable() && !encodedAudioPassthrough;
+						dtsRemux = configuration.isAudioEmbedDtsInPcm() && (audio.isDTS() || audio.isDTSHD()) && params.mediaRenderer.isDTSPlayable() && !encodedAudioPassthrough;
 
 						pcm = configuration.isAudioUsePCM() &&
 							media.isValidForLPCMTranscoding() &&
@@ -445,7 +445,7 @@ public class TsMuxeRVideo extends Player {
 						if (ac3Remux) {
 							channels = audio.getNumberOfChannels(); // AC-3 remux
 						} else if (dtsRemux || encodedAudioPassthrough) {
-							channels = 2;
+							channels = params.aid.getNumberOfChannels();
 						} else if (pcm) {
 							channels = audio.getNumberOfChannels();
 						} else {
@@ -573,7 +573,7 @@ public class TsMuxeRVideo extends Player {
 			}
 			pw.println(videoType + ", \"" + filename + "\", " + (fps != null ? ("fps=" + fps + ", ") : "") + "video-width=" + media.getWidth() + ", video-height=" + media.getHeight() + ", " + videoparams);
 
-			if (ffAudioPipe != null) {
+			if (ffAudioPipe != null || params.aid != null) {
 				if (ffAudioPipe.length == 1) {
 					String timeshift = "";
 					boolean ac3Remux;
@@ -583,8 +583,7 @@ public class TsMuxeRVideo extends Player {
 
 					encodedAudioPassthrough = configuration.isEncodedAudioPassthrough() && params.aid.isNonPCMEncodedAudio() && params.mediaRenderer.isWrapEncodedAudioIntoPCM();
 					ac3Remux = params.aid.isAC3() && configuration.isAudioRemuxAC3() && !encodedAudioPassthrough && !params.mediaRenderer.isTranscodeToAAC();
-					dtsRemux = configuration.isAudioEmbedDtsInPcm() && params.aid.isDTS() && params.mediaRenderer.isDTSPlayable() && !encodedAudioPassthrough;
-
+					dtsRemux = configuration.isAudioEmbedDtsInPcm() && (params.aid.isDTS()  || params.aid.isDTSHD()) && params.mediaRenderer.isDTSPlayable() && !encodedAudioPassthrough;
 					pcm = configuration.isAudioUsePCM() &&
 						media.isValidForLPCMTranscoding() &&
 						(
@@ -603,6 +602,7 @@ public class TsMuxeRVideo extends Player {
 								)
 							)
 						) && params.mediaRenderer.isLPCMPlayable();
+
 					String audioType = "";
 					if (ac3Remux) {
 						// AC-3 remux takes priority
@@ -616,20 +616,15 @@ public class TsMuxeRVideo extends Player {
 						)
 					) {
 						audioType = "A_AAC";
-					} else {
-						if (pcm || this instanceof TsMuxeRAudio) {
-							audioType = "A_LPCM";
+					} else if (dtsRemux) {
+						audioType = "A_LPCM";
+						if (params.mediaRenderer.isMuxDTSToMpeg()) {
+							audioType = "A_DTS";
 						}
-						if (encodedAudioPassthrough || this instanceof TsMuxeRAudio) {
-							audioType = "A_LPCM";
-						}
-						if (dtsRemux || this instanceof TsMuxeRAudio) {
-							audioType = "A_LPCM";
-							if (params.mediaRenderer.isMuxDTSToMpeg()) {
-								audioType = "A_DTS";
-							}
-						}
+					} else if (pcm || encodedAudioPassthrough || this instanceof TsMuxeRAudio) {
+						audioType = "A_LPCM";
 					}
+
 					if (
 						params.aid != null &&
 						params.aid.getAudioProperties().getAudioDelay() > 0 &&
@@ -638,7 +633,13 @@ public class TsMuxeRVideo extends Player {
 						timeshift = "timeshift=" + params.aid.getAudioProperties().getAudioDelay() + "ms, ";
 					}
 					if (audioType != "") {
-						pw.println(audioType + ", \"" + filename + "\", " + timeshift + "track=" + params.aid.getId());
+						int audioTrack = 2;
+						if (params.aid != null && params.aid.getId() == 0 && media.getAudioTracksList() != null) {
+							audioTrack = media.getAudioTracksList().size() + 1;
+						} else if (params.aid != null) {
+							audioTrack = params.aid.getId();
+						}
+						pw.println(audioType + ", \"" + filename + "\", " + timeshift + "track=" + audioTrack);
 					}
 				} else {
 					for (int i = 0; i < media.getAudioTracksList().size(); i++) {
@@ -650,8 +651,8 @@ public class TsMuxeRVideo extends Player {
 						boolean pcm;
 
 						encodedAudioPassthrough = configuration.isEncodedAudioPassthrough() && params.aid.isNonPCMEncodedAudio() && params.mediaRenderer.isWrapEncodedAudioIntoPCM();
-						ac3Remux = lang.isAC3() && configuration.isAudioRemuxAC3() && !encodedAudioPassthrough;
-						dtsRemux = configuration.isAudioEmbedDtsInPcm() && lang.isDTS() && params.mediaRenderer.isDTSPlayable() && !encodedAudioPassthrough;
+						ac3Remux = params.aid.isAC3() && configuration.isAudioRemuxAC3() && !encodedAudioPassthrough;
+						dtsRemux = configuration.isAudioEmbedDtsInPcm() && (params.aid.isDTS() || params.aid.isDTSHD()) && params.mediaRenderer.isDTSPlayable() && !encodedAudioPassthrough;
 
 						pcm = configuration.isAudioUsePCM() &&
 							media.isValidForLPCMTranscoding() &&
