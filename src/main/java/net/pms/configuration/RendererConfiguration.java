@@ -1778,10 +1778,6 @@ public class RendererConfiguration extends UPNPHelper.Renderer {
 	}
 
 	public boolean isMuxDTSToMpeg() {
-		if (isUseMediaInfo()) {
-			return getFormatConfiguration().isDTSSupported();
-		}
-
 		return getBoolean(MUX_DTS_TO_MPEG, false);
 	}
 

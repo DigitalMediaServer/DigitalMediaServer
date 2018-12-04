@@ -571,10 +571,10 @@ public class TsMuxeRVideo extends Player {
 			if (configuration.isFix25FPSAvMismatch()) {
 				fps = "25";
 			}
-			pw.println(videoType + ", \"" + filename + "\", " + (fps != null ? ("fps=" + fps + ", ") : "") + "video-width=" + media.getWidth() + ", video-height=" + media.getHeight() + ", " + videoparams);
+			pw.println(videoType + ", \"" + dlna.getFileName() + "\", " + (fps != null ? ("fps=" + fps + ", ") : "") + "video-width=" + media.getWidth() + ", video-height=" + media.getHeight() + ", " + videoparams);
 
 			if (ffAudioPipe != null || params.aid != null) {
-				if (ffAudioPipe.length == 1) {
+				if (ffAudioPipe.length == 1 || media.getAudioTracksList().size() < 2) {
 					String timeshift = "";
 					boolean ac3Remux;
 					boolean dtsRemux;
@@ -616,13 +616,13 @@ public class TsMuxeRVideo extends Player {
 						)
 					) {
 						audioType = "A_AAC";
+					} else if (pcm || encodedAudioPassthrough || this instanceof TsMuxeRAudio) {
+						audioType = "A_LPCM";
 					} else if (dtsRemux) {
 						audioType = "A_LPCM";
 						if (params.mediaRenderer.isMuxDTSToMpeg()) {
 							audioType = "A_DTS";
 						}
-					} else if (pcm || encodedAudioPassthrough || this instanceof TsMuxeRAudio) {
-						audioType = "A_LPCM";
 					}
 
 					if (
@@ -639,7 +639,7 @@ public class TsMuxeRVideo extends Player {
 						} else if (params.aid != null) {
 							audioTrack = params.aid.getId();
 						}
-						pw.println(audioType + ", \"" + filename + "\", " + timeshift + "track=" + audioTrack);
+						pw.println(audioType + ", \"" + dlna.getFileName() + "\", " + timeshift + "track=" + audioTrack);
 					}
 				} else {
 					for (int i = 0; i < media.getAudioTracksList().size(); i++) {
@@ -676,6 +676,15 @@ public class TsMuxeRVideo extends Player {
 						if (ac3Remux) {
 							// AC-3 remux takes priority
 							audioType = "A_AC3";
+						} else if (
+							aacTranscode || //TODO: aacRemux
+							params.mediaRenderer.isTranscodeToAAC() &&
+							(
+								params.aid.isAACLC() ||
+								params.aid.isHEAAC()
+							)
+						) {
+							audioType = "A_AAC";
 						} else {
 							if (pcm) {
 								audioType = "A_LPCM";
@@ -878,14 +887,14 @@ public class TsMuxeRVideo extends Player {
 	public boolean isCompatible(DLNAResource resource) {
 		DLNAMediaSubtitle subtitle = resource.getMediaSubtitle();
 		DLNAMediaInfo media = resource.getMedia();
-//		DLNAMediaInfo mediaInfo = new DLNAMediaInfo();
+		DLNAMediaInfo mediaInfo = new DLNAMediaInfo();
 //		VideoLevel videoLevelLimit = params.mediaRenderer.getVideoLevelLimit(mediaInfo.getVideoCodec());
 //		VideoLevel videoLevel = mediaInfo.getVideoLevel();
-//		int width  = mediaInfo.getWidth();
-//		int height = mediaInfo.getHeight();
-//		if (width < 320 || height < 240) {
-//			return false;
-//		}
+		int width  = mediaInfo.getWidth();
+		int height = mediaInfo.getHeight();
+		if (width < 320 || height < 240) {
+			return false;
+		}
 
 //		if (
 //			videoLevelLimit != null &&
@@ -906,7 +915,12 @@ public class TsMuxeRVideo extends Player {
 			return false;
 		}
 
-		if (!resource.matches(
+		if (
+			(
+				media == null ||
+				isBlank(media.getCodecV())
+			) ||
+			!resource.matches(
 			MediaType.VIDEO,
 			FormatConfiguration.MKV,
 			FormatConfiguration.MOV,
@@ -918,9 +932,6 @@ public class TsMuxeRVideo extends Player {
 			return false;
 		}
 
-		if (media == null || isBlank(media.getCodecV())) {
-			return false;
-		}
 		switch (media.getCodecV().trim().toLowerCase(Locale.ROOT)) {
 			case FormatConfiguration.H264:
 			case FormatConfiguration.H265:
@@ -930,24 +941,25 @@ public class TsMuxeRVideo extends Player {
 			default:
 				return false;
 		}
-		if (media.getAudioTrackCount() < 1) {
-			return true;
-		}
-		for (DLNAMediaAudio audio : media.getAudioTracksList()) {
-			if (isBlank(audio.getCodecA())) {
-				return false;
-			}
-			switch (audio.getCodecA()) {
-				case FormatConfiguration.AAC_LC:
-				case FormatConfiguration.AC3:
-				case FormatConfiguration.DTS:
-				case FormatConfiguration.DTSHD:
-				case FormatConfiguration.EAC3:
-				case FormatConfiguration.HE_AAC:
-				case FormatConfiguration.TRUEHD:
-					break;
-				default:
+
+		if (media.getAudioTracksList().size() > 0) {
+			for (DLNAMediaAudio audio : media.getAudioTracksList()) {
+				if (isBlank(audio.getCodecA())) {
 					return false;
+				}
+				switch (audio.getCodecA()) {
+					case FormatConfiguration.AAC_LC:
+					case FormatConfiguration.AC3:
+					case FormatConfiguration.DTS:
+					case FormatConfiguration.DTSHD:
+					case FormatConfiguration.EAC3:
+					case FormatConfiguration.HE_AAC:
+					case FormatConfiguration.LPCM:
+					case FormatConfiguration.TRUEHD:
+						break;
+					default:
+						return false;
+				}
 			}
 		}
 		return true;
