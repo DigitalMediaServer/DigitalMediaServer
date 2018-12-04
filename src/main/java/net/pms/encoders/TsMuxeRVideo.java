@@ -916,10 +916,8 @@ public class TsMuxeRVideo extends Player {
 		}
 
 		if (
-			(
-				media == null ||
-				isBlank(media.getCodecV())
-			) ||
+			media == null ||
+			isBlank(media.getCodecV()) ||
 			!resource.matches(
 			MediaType.VIDEO,
 			FormatConfiguration.MKV,

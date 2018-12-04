@@ -532,7 +532,9 @@ public class FFMpegVideo extends Player {
 			if (
 				!ac3Remux &&
 				!dtsRemux &&
-				!Pattern.compile("(-af|-filter:a|aresample)\\b").matcher(customFFmpegOptions).find()
+				!Pattern.compile("(-af|-filter:a|aresample)\\b").matcher(customFFmpegOptions).find() &&
+				!Pattern.compile("(:a copy|-acodec copy)\\b").matcher(customFFmpegOptions).find() &&
+				!transcodeOptions.contains("-c:a copy")
 			) {
 				transcodeOptions.add("-af");
 				transcodeOptions.add("aresample=resampler=soxr:precision=32:cheby=1:dither_method=shibata");
