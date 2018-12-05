@@ -1794,10 +1794,6 @@ public class RendererConfiguration extends UPNPHelper.Renderer {
 	}
 
 	public boolean isMuxLPCMToMpeg() {
-		if (isUseMediaInfo()) {
-			return getFormatConfiguration().isLPCMSupported();
-		}
-
 		return getBoolean(MUX_LPCM_TO_MPEG, true);
 	}
 

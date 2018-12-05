@@ -564,7 +564,15 @@ public class TsMuxeRVideo extends Player {
 			) {
 				sei = "forceSEI";
 			}
-			String videoparams = sei + ", contSPS, track=" + "1"; //params.vid.getId()
+			String vidTrack = "1";
+			if ( //TODO: isMPEGPS()
+				filename.toLowerCase().endsWith(".vob") ||
+				filename.toLowerCase().endsWith(".mpg") ||
+				filename.toLowerCase().endsWith(".mpeg")
+			) {
+				vidTrack = "224";
+			}
+			String videoparams = sei + ", contSPS, track=" + vidTrack; //TODO: params.vid.getId()
 			if (this instanceof TsMuxeRAudio) {
 				videoparams = "track=224";
 			}
@@ -604,23 +612,29 @@ public class TsMuxeRVideo extends Player {
 						) && params.mediaRenderer.isLPCMPlayable();
 
 					String audioType = "";
-					if (ac3Remux) {
+					if (ac3Remux) { // (lang.isEAC3() || lang.isTRUEHD()) && isSupported
 						// AC-3 remux takes priority
 						audioType = "A_AC3";
 					} else if (
 						aacTranscode || //TODO: aacRemux
-						params.mediaRenderer.isTranscodeToAAC() &&
+//						params.mediaRenderer.isTranscodeToAAC() &&
 						(
 							params.aid.isAACLC() ||
 							params.aid.isHEAAC()
 						)
 					) {
 						audioType = "A_AAC";
-					} else if (pcm || encodedAudioPassthrough || this instanceof TsMuxeRAudio) {
+					} else if (
+						pcm ||
+						encodedAudioPassthrough ||
+						this instanceof TsMuxeRAudio ||
+						params.mediaRenderer.isLPCMPlayable() &&
+						params.aid.isPCM()
+					) {
 						audioType = "A_LPCM";
 					} else if (dtsRemux) {
 						audioType = "A_LPCM";
-						if (params.mediaRenderer.isMuxDTSToMpeg()) {
+						if (params.mediaRenderer.isMuxDTSToMpeg() && !params.aid.isPCM()) {
 							audioType = "A_DTS";
 						}
 					}
@@ -678,7 +692,7 @@ public class TsMuxeRVideo extends Player {
 							audioType = "A_AC3";
 						} else if (
 							aacTranscode || //TODO: aacRemux
-							params.mediaRenderer.isTranscodeToAAC() &&
+//							params.mediaRenderer.isTranscodeToAAC() &&
 							(
 								params.aid.isAACLC() ||
 								params.aid.isHEAAC()
@@ -686,10 +700,7 @@ public class TsMuxeRVideo extends Player {
 						) {
 							audioType = "A_AAC";
 						} else {
-							if (pcm) {
-								audioType = "A_LPCM";
-							}
-							if (encodedAudioPassthrough) {
+							if (pcm || encodedAudioPassthrough) {
 								audioType = "A_LPCM";
 							}
 							if (dtsRemux) {
@@ -708,17 +719,10 @@ public class TsMuxeRVideo extends Player {
 			}
 
 			DLNAMediaSubtitle subtitle = dlna.getMediaSubtitle();
-			if (
-				!configuration.isDisableSubtitles() &&
-				params.sid != null &&
-				(
-					params.sid.getType() == SubtitleType.SUBRIP ||
-					params.sid.getType() == SubtitleType.PGS
-				)
-			) {
-				String subtitleType = "S_TEXT/UTF8";
-				if (params.sid.getType() == SubtitleType.PGS) {
-					subtitleType = "S_HDMV/PGS";
+			if (!configuration.isDisableSubtitles() && params.sid != null) {
+				String subtitleKind = "S_TEXT/UTF8";
+				if (subtitle.getType() == SubtitleType.PGS) {
+					subtitleKind = "S_HDMV/PGS";
 				}
 				String fontName = "";
 				if (isNotBlank(configuration.getFont())) {
@@ -730,7 +734,7 @@ public class TsMuxeRVideo extends Player {
 				} else if (params.sid.isEmbedded()) {
 					subtitlePath = dlna.getFileName();
 				}
-				int fontSize = 15 * Integer.parseInt(configuration.getAssScale());
+				int fontSize = (int)Math.round(15 * Double.parseDouble(configuration.getAssScale()));
 				int subtitleBottomOffset = 0;
 				if (media.getAspectRatioVideoTrack() != null) {
 					if (media.getAspectRatioVideoTrack().compareTo(Rational.valueOf(51, 20)) >= 0) {
@@ -745,8 +749,20 @@ public class TsMuxeRVideo extends Player {
 						subtitleBottomOffset = Integer.valueOf(configuration.getAssMargin());
 					}
 				}
+
 				String subColor = configuration.getSubsColor().getASSv4StylesHexValue().replaceFirst("&H", "0x");
-				pw.println(subtitleType + ", \"" + subtitlePath + "\", " + (subtitleType == "S_TEXT/UTF8" ? ((fontName != null ? ("font-name=\"" + fontName + "\", ") : "") + (fontSize > 0 ? ("font-size=" + fontSize + ", ") : "") + (subColor != null ? ("font-color=" + subColor + ", ") : "") + (subtitleBottomOffset > 0 ? ("bottom-offset=" + subtitleBottomOffset + ", ") : "") + (configuration.getAssOutline() != null ? ("font-border=" + configuration.getAssOutline() + ", ") : "") + "text-align=center, ") : "")  + "fps=" + fps + ", video-width=" + media.getWidth() + ", video-height=" + media.getHeight() + ", track=" + params.sid.getId() + (subtitle.getLang() != null ? (", lang=" + subtitle.getLang()) : "")); //", mplsFile=00000"
+				int subTrack = 3;
+				if (params.sid.getId() > 99 && !params.sid.isExternal()) {
+					subTrack = params.sid.getId();
+				} else if (params.sid.getId() >= 0 && params.sid.getId() < 100) {
+					subTrack = params.sid.getId() + 3;
+					if (params.aid == null) {
+						subTrack = subTrack - 1;
+					}
+				} else if (params.sid.isExternal()) {
+					subTrack = 1;
+				}
+				pw.println(subtitleKind + ", \"" + subtitlePath + "\", " + (subtitleKind == "S_TEXT/UTF8" ? ((fontName != null ? ("font-name=\"" + fontName + "\", ") : "") + (fontSize > 0 ? ("font-size=" + fontSize + ", ") : "") + (subColor != null ? ("font-color=" + subColor + ", ") : "") + (subtitleBottomOffset > 0 ? ("bottom-offset=" + subtitleBottomOffset + ", ") : "") + (configuration.getAssOutline() != null ? ("font-border=" + configuration.getAssOutline() + ", ") : "") + "text-align=center, ") : "")  + (fps != null ? ("fps=" + fps + ", ") : "") + "video-width=" + media.getWidth() + ", video-height=" + media.getHeight() + ", track=" + subTrack + (subtitle.getLang() != null ? (", lang=" + subtitle.getLang()) : "")); //", mplsFile=00000"
 			}
 		}
 
@@ -893,7 +909,7 @@ public class TsMuxeRVideo extends Player {
 		int width  = mediaInfo.getWidth();
 		int height = mediaInfo.getHeight();
 		if (width < 320 || height < 240) {
-			return false;
+//			return false;
 		}
 
 //		if (
@@ -911,6 +927,7 @@ public class TsMuxeRVideo extends Player {
 			subtitle != null &&
 			subtitle.getType() != SubtitleType.SUBRIP &&
 			subtitle.getType() != SubtitleType.PGS
+			//TODO: add an exception for the case of no subtitle line in the TRANSCODE folder
 		) {
 			return false;
 		}

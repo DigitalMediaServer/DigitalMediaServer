@@ -440,7 +440,7 @@ public class FFMpegVideo extends Player {
 					transcodeOptions.add("0");
 				}
 			} else {
-				if (dtsRemux) {
+				if (dtsRemux) { //TODO: rework DTS to be remuxed by FFmpeg.
 					// Audio is added in a separate process later
 					transcodeOptions.add("-an");
 				} else if (type() == FormatType.AUDIO) {
