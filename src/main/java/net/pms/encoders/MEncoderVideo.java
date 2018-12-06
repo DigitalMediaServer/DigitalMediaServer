@@ -1183,11 +1183,11 @@ public class MEncoderVideo extends Player {
 
 		int channels;
 		if (ac3Remux) {
-			channels = params.aid.getNumberOfChannels(); // AC-3 remux
+			channels = params.aid == null ? 2 : params.aid.getNumberOfChannels(); // AC-3 remux
 		} else if (dtsRemux || encodedAudioPassthrough || (!params.mediaRenderer.isXbox360() && wmv)) {
 			channels = 2;
 		} else if (pcm) {
-			channels = params.aid.getNumberOfChannels();
+			channels = params.aid == null ? 2 : params.aid.getNumberOfChannels();
 		} else {
 			/**
 			 * Note: MEncoder will output 2 audio channels if the input video had 2 channels
@@ -2121,6 +2121,10 @@ public class MEncoderVideo extends Player {
 						++i;
 						break;
 					case "-quality":
+						if (i == expertOptions.length - 1) {
+							LOGGER.error("MEncoder -quality option must have an argument");
+							break;
+						}
 						// XXX like the old (cmdArray) code, this clobbers the old -lavcopts value
 						String lavcopts = String.format(
 							"autoaspect=1:vcodec=%s:acodec=%s:abitrate=%s:threads=%d:%s",
@@ -2149,16 +2153,28 @@ public class MEncoderVideo extends Player {
 						++i;
 						break;
 					case "-mpegopts":
+						if (i == expertOptions.length - 1) {
+							LOGGER.error("MEncoder -mpegopts option must have an argument");
+							break;
+						}
 						mergeCmdListOption.put("-mpegopts", "%s:" + expertOptions[i + 1].replace("%", "%%"));
 						// merge if cmdList already contains -mpegopts, but don't append if it doesn't (parity with the old (cmdArray) version)
 						expertOptions[i] = expertOptions[i + 1] = REMOVE_OPTION;
 						++i;
 						break;
 					case "-vf":
+						if (i == expertOptions.length - 1) {
+							LOGGER.error("MEncoder -vf option must have an argument");
+							break;
+						}
 						mergeCmdListOption.put("-vf", "%s," + expertOptions[i + 1].replace("%", "%%"));
 						++i;
 						break;
 					case "-af":
+						if (i == expertOptions.length - 1) {
+							LOGGER.error("MEncoder -af option must have an argument");
+							break;
+						}
 						mergeCmdListOption.put("-af", "%s," + expertOptions[i + 1].replace("%", "%%"));
 						++i;
 						break;

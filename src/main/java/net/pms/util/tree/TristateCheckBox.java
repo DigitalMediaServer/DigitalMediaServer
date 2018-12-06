@@ -82,7 +82,7 @@ public class TristateCheckBox extends JCheckBox {
 	 * No one may add mouse listeners, not even Swing!
 	 */
 	@Override
-	public void addMouseListener(MouseListener l) {
+	public synchronized void addMouseListener(MouseListener l) {
 	}
 
 	/**

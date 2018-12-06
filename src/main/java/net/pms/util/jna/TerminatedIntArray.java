@@ -84,6 +84,6 @@ public abstract class TerminatedIntArray extends TerminatedArray<Integer> {
 
 	@Override
 	protected void writeTerminator() {
-		getPointer().setInt(buffer.size() * SIZE, getTerminator());
+		getPointer().setInt((long) buffer.size() * SIZE, getTerminator());
 	}
 }

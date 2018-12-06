@@ -230,7 +230,7 @@ public class FixedCharArrayByReference extends FixedArrayByReference<Byte> {
 	protected Byte[] getElements() {
 		Byte[] result = new Byte[(int) size];
 		for (int i = 0; i < size; i++) {
-			result[i] = Byte.valueOf(getPointer().getByte(i * getElementSize()));
+			result[i] = Byte.valueOf(getPointer().getByte((long) i * getElementSize()));
 		}
 		return result;
 	}
@@ -238,7 +238,7 @@ public class FixedCharArrayByReference extends FixedArrayByReference<Byte> {
 	@Override
 	protected void setElements(Byte[] array) {
 		for (int i = 0; i < size; i++) {
-			getPointer().setByte(i * getElementSize(), array[i].byteValue());
+			getPointer().setByte((long) i * getElementSize(), array[i].byteValue());
 		}
 	}
 

@@ -101,11 +101,11 @@ public class FileTranscodeVirtualFolder extends VirtualFolder {
 
 		@Override
 		public int compare(DLNAResource dlna1, DLNAResource dlna2) {
-			Integer playerIndex1 = players.indexOf(dlna1.getPlayer());
-			Integer playerIndex2 = players.indexOf(dlna2.getPlayer());
+			int playerIndex1 = players.indexOf(dlna1.getPlayer());
+			int playerIndex2 = players.indexOf(dlna2.getPlayer());
 
-			if (!playerIndex1.equals(playerIndex2)) {
-				return playerIndex1.compareTo(playerIndex2);
+			if (playerIndex1 != playerIndex2) {
+				return playerIndex1 - playerIndex2;
 			}
 
 			int cmpAudioLang = compareLanguage(

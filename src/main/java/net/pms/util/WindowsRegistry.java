@@ -38,7 +38,7 @@ public class WindowsRegistry {
 		try {
 			// Run reg query, then read output with StreamReader (internal class)
 			String query = "reg query " + '"' + location + "\" /v \"" + key + '"';
-			Process process = Runtime.getRuntime().exec(query);
+			Process process = Runtime.getRuntime().exec(query); // lgtm [java/concatenated-command-line]
 
 			StreamReader reader = new StreamReader(process.getInputStream(), System.getProperty("file.encoding"));
 			reader.start();

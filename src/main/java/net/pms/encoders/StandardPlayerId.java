@@ -115,8 +115,8 @@ public class StandardPlayerId extends PlayerId {
 	/**
 	 * Not to be instantiated, use the static instances instead.
 	 *
-	 * @param the name of the {@link PlayerId} used for {@link #getName()} and
-	 *            {@link #toString()}.
+	 * @param playerIdName the name of the {@link PlayerId} used for
+	 *            {@link #getName()} and {@link #toString()}.
 	 */
 	private StandardPlayerId(String playerIdName) {
 		this.playerIdName = playerIdName;
