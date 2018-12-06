@@ -159,7 +159,7 @@ public class TsMuxeRVideo extends Player {
 		PipeIPCProcess ffAudioPipe[] = null;
 		ProcessWrapperImpl ffAudio[] = null;
 
-		String fps = media.getValidFps(false);
+		String fps = media.getValidFps(false); //TODO: sometime it fail to give value
 
 		String videoType = "V_MPEG4/ISO/AVC";
 		if (FormatConfiguration.MPEG2.equals(media.getCodecV())) {
@@ -576,6 +576,9 @@ public class TsMuxeRVideo extends Player {
 			if (this instanceof TsMuxeRAudio) {
 				videoparams = "track=224";
 			}
+			if (fps == null) {
+				fps = "23.976"; //Ugly hack for testing
+			}
 			if (configuration.isFix25FPSAvMismatch()) {
 				fps = "25";
 			}
@@ -843,7 +846,7 @@ public class TsMuxeRVideo extends Player {
 	public FormatType type() {
 		return FormatType.VIDEO;
 	}
-	private JCheckBox tsmuxerforcefps;
+	private JCheckBox tsmuxerforcefps; //TODO: Should use by default the data from the database
 	private JCheckBox muxallaudiotracks;
 
 	@Override
