@@ -51,6 +51,7 @@ public class MKV extends MPG {
 			"mkv",
 			"mov",
 			"mxf",
+			"qt",
 			"rmv",
 			"rmvb",
 			"rm",

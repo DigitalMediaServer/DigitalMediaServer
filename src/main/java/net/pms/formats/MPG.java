@@ -37,6 +37,7 @@ public class MPG extends Format {
 	@Override
 	public String[] getSupportedExtensions() {
 		return new String[] {
+			"avc",
 			"avi",
 			"div",
 			"divx",
@@ -60,6 +61,7 @@ public class MPG extends Format {
 			"mpgv",
 			"mpv",
 			"mts",
+			"mvc",
 			"s4ud",
 			"svi",
 			"tivo",
@@ -67,13 +69,15 @@ public class MPG extends Format {
 			"tp",
 			"ts",
 			"tsv",
+			"tts",
 			"ty",
 			"vdr",
 			"vob",
 			"vro",
 			"wm",
 			"wmv",
-			"wtv"
+			"wtv",
+			"xvid"
 		};
 	}
 }
