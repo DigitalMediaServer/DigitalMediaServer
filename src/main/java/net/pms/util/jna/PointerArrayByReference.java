@@ -79,7 +79,7 @@ public class PointerArrayByReference extends ArrayByReference<Pointer> {
 	@Override
 	protected void setElements(Pointer[] array) {
 		for (int i = 0; i < size; i++) {
-			getPointer().setPointer(i * getElementSize(), array[i]);
+			getPointer().setPointer((long) i * getElementSize(), array[i]);
 		}
 	}
 }

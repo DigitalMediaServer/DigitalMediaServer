@@ -139,20 +139,19 @@ public class BufferedOutputFileImpl extends OutputStream implements BufferedOutp
 				// A copy would be smaller in size, shrinking instead of growing the buffer.
 				// Better to return the original and retain its size.
 				return buffer;
-			} else {
-				try {
-					// Try to allocate the realistic alternative size
-					copy = new byte[(int) realisticSize];
-				} catch (OutOfMemoryError e2) {
-					LOGGER.debug("Cannot grow buffer size from " + formatter.format(buffer.length) + " bytes to " + formatter.format(realisticSize) + " bytes either.");
-					LOGGER.trace("freeMemory: " + formatter.format(Runtime.getRuntime().freeMemory()));
-					LOGGER.trace("totalMemory: " + formatter.format(Runtime.getRuntime().totalMemory()));
-					LOGGER.trace("maxMemory: " + formatter.format(Runtime.getRuntime().maxMemory()));
-					LOGGER.debug("Error given: " + e2);
+			}
+			try {
+				// Try to allocate the realistic alternative size
+				copy = new byte[(int) realisticSize];
+			} catch (OutOfMemoryError e2) {
+				LOGGER.debug("Cannot grow buffer size from " + formatter.format(buffer.length) + " bytes to " + formatter.format(realisticSize) + " bytes either.");
+				LOGGER.trace("freeMemory: " + formatter.format(Runtime.getRuntime().freeMemory()));
+				LOGGER.trace("totalMemory: " + formatter.format(Runtime.getRuntime().totalMemory()));
+				LOGGER.trace("maxMemory: " + formatter.format(Runtime.getRuntime().maxMemory()));
+				LOGGER.debug("Error given: " + e2);
 
-					// Cannot allocate memory, no other option than to return the original.
-					return buffer;
-				}
+				// Cannot allocate memory, no other option than to return the original.
+				return buffer;
 			}
 		}
 
@@ -722,10 +721,9 @@ public class BufferedOutputFileImpl extends OutputStream implements BufferedOutp
 				LOGGER.trace("endOF - mb - cut: " + (endOF - mb - cut));
 			}
 			return endOF - mb;
-		} else {
-			System.arraycopy(buffer, mb, buf, off, len - cut);
-			return len;
 		}
+		System.arraycopy(buffer, mb, buf, off, len - cut);
+		return len;
 	}
 
 	@Override

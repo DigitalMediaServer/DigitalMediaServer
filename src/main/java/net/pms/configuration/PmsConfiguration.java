@@ -1236,7 +1236,7 @@ public class PmsConfiguration extends RendererConfiguration {
 
 	/**
 	 * Sets the preferred language for the DMS user interface.
-	 * @param value The {@link java.net.Locale}.
+	 * @param locale The {@link java.net.Locale}.
 	 */
 	public void setLanguage(Locale locale) {
 		if (locale != null) {

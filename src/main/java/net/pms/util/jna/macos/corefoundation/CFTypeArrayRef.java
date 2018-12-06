@@ -140,7 +140,7 @@ public class CFTypeArrayRef extends ArrayByReference<CFTypeRef> {
 	protected CFTypeRef[] getElements() {
 		CFTypeRef[] result = new CFTypeRef[(int) size];
 		for (int i = 0; i < size; i++) {
-			result[i] = new CFTypeRef(getPointer().getPointer(i * getElementSize()));
+			result[i] = new CFTypeRef(getPointer().getPointer((long) i * getElementSize()));
 		}
 		return result;
 	}
@@ -148,7 +148,7 @@ public class CFTypeArrayRef extends ArrayByReference<CFTypeRef> {
 	@Override
 	protected void setElements(CFTypeRef[] array) {
 		for (int i = 0; i < size; i++) {
-			getPointer().setPointer(i * getElementSize(), array[i].getPointer());
+			getPointer().setPointer((long) i * getElementSize(), array[i].getPointer());
 		}
 	}
 

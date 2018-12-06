@@ -69,7 +69,7 @@ public class SearchableMutableTreeNode extends DefaultMutableTreeNode {
 	/**
 	 * Search the node's immediate children.
 	 *
-	 * @param searchObject the object to search for.
+	 * @param searchName the object to search for.
 	 * @return the found node or {@code null}.
 	 * @throws IllegalChildException If a child that doesn't implement
 	 *             {@link SearchableMutableTreeNode} is encountered.
@@ -82,7 +82,7 @@ public class SearchableMutableTreeNode extends DefaultMutableTreeNode {
 	/**
 	 * Search the node's children recursively.
 	 *
-	 * @param searchObject the object to search for.
+	 * @param searchName the object to search for.
 	 * @return The found node or {@code null}.
 	 * @throws IllegalChildException If a child that doesn't implement
 	 *             {@link SearchableMutableTreeNode} is encountered.

@@ -144,7 +144,7 @@ public class BufferedOutputByteArrayImpl extends ByteArrayOutputStream implement
 	 */
 	@Deprecated
 	@Override
-	public void reset() {
+	public synchronized void reset() {
 	}
 
 	/**

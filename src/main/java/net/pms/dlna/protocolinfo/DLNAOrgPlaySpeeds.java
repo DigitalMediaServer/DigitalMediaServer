@@ -27,6 +27,7 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import javax.annotation.Nonnull;
 import net.pms.dlna.protocolinfo.ProtocolInfoAttributeName.KnownProtocolInfoAttributeName;
 import net.pms.util.Rational;
 
@@ -53,6 +54,7 @@ public class DLNAOrgPlaySpeeds implements ProtocolInfoAttribute {
 	public static final ProtocolInfoAttributeName NAME = KnownProtocolInfoAttributeName.DLNA_ORG_PS;
 
 	/** The {@link Set} of {@link Rational} play speeds */
+	@Nonnull
 	protected final SortedSet<Rational> speeds;
 
 	/** The cached {@link String} representation. */
@@ -68,9 +70,11 @@ public class DLNAOrgPlaySpeeds implements ProtocolInfoAttribute {
 	 */
 	private DLNAOrgPlaySpeeds(Rational... speeds) {
 		TreeSet<Rational> speedSet = new TreeSet<>();
-		for (Rational speed : speeds) {
-			if (speed != null && !Rational.ONE.equals(speed)) {
-				speedSet.add(speed);
+		if (speeds != null && speeds.length > 0) {
+			for (Rational speed : speeds) {
+				if (speed != null && !Rational.ONE.equals(speed)) {
+					speedSet.add(speed);
+				}
 			}
 		}
 		this.speeds = Collections.unmodifiableSortedSet(speedSet);
@@ -81,7 +85,7 @@ public class DLNAOrgPlaySpeeds implements ProtocolInfoAttribute {
 	/**
 	 * For internal use only, use {@link #FACTORY} to create new instances.
 	 *
-	 * @param speeds the play-speed values.
+	 * @param speedSet the play-speed values.
 	 */
 	private DLNAOrgPlaySpeeds(SortedSet<Rational> speedSet) {
 		TreeSet<Rational> newSpeedsSet = new TreeSet<>();
@@ -146,9 +150,7 @@ public class DLNAOrgPlaySpeeds implements ProtocolInfoAttribute {
 			return false;
 		}
 		DLNAOrgPlaySpeeds other = (DLNAOrgPlaySpeeds) object;
-		if (speeds == null) {
-			return other.speeds == null;
-		} else if (speeds.size() != other.speeds.size()) {
+		if (speeds.size() != other.speeds.size()) {
 			return false;
 		}
 		// Using the cached hashCode for performance
@@ -183,13 +185,9 @@ public class DLNAOrgPlaySpeeds implements ProtocolInfoAttribute {
 	protected int calculateHashCode() {
 		final int prime = 31;
 		int result = 1;
-		if (speeds == null) {
-			result = prime * result;
-		} else {
-			for (Rational speed : speeds) {
-				if (speed != null) {
-					result = prime * result + speed.hashCode();
-				}
+		for (Rational speed : speeds) {
+			if (speed != null) {
+				result = prime * result + speed.hashCode();
 			}
 		}
 		return result;

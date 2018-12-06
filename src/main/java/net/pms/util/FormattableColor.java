@@ -101,11 +101,10 @@ public class FormattableColor extends Color {
 	}
 
 	/**
-	 * Tries to create a {@link FormattableColor} instance from {@code color}.
+	 * Creates a {@link FormattableColor} instance from {@code color}.
 	 * Hexadecimal notations must be prefixed with one of:
-	 * {@code x', %, #, 0x, \x, %x, $, h', 16#, 16r, #x, #16r, &h} or
-	 * {@code 0h} .<br>
-	 * <br>
+	 * {@code x', %, #, 0x, \x, %x, $, h', 16#, 16r, #x, #16r, &h} or {@code 0h}.
+	 * <p>
 	 * Supported formats are:
 	 *
 	 * <ul>
@@ -116,11 +115,11 @@ public class FormattableColor extends Color {
 	 * <li>{@code ARGB}</li>
 	 * <li>{@code <color name>} (Red, Yellow etc.)</li>
 	 * <li>{@code <integer system property name>}</li>
+	 * </ul>
 	 *
 	 * If the parsing fails, an {@link InvalidArgumentException} is thrown.
 	 *
 	 * @param color the {@link String} to attempt to parse.
-	 * @return A newly created {@link FormattableColor}.
 	 * @throws InvalidArgumentException if {@code color} cannot be resolved to a
 	 *             color value.
 	 */
@@ -202,10 +201,10 @@ public class FormattableColor extends Color {
 					a > -1 && a < 256
 				) {
 					return
-			        	(a << 24) |
-			        	(r << 16) |
-			        	(g << 8)  |
-			            b;
+						(a << 24) |
+						(r << 16) |
+						(g << 8)  |
+						b;
 				}
 			}
 
@@ -222,20 +221,20 @@ public class FormattableColor extends Color {
 		int[] rgb = getNamedColorValues(color);
 		if (rgb != null && rgb.length == 3) {
 			return
-	        	(0xFF000000) |
-	        	((rgb[0] & 0xFF) << 16) |
-	        	((rgb[1] & 0xFF) << 8)  |
-	            (rgb[2] & 0xFF);
+				(0xFF000000) |
+				((rgb[0] & 0xFF) << 16) |
+				((rgb[1] & 0xFF) << 8)  |
+				(rgb[2] & 0xFF);
 
 		}
 		// Try to parse as system property
 		Color colorInstance = Color.getColor(color);
 		if (colorInstance != null) {
 			return
-	        	((colorInstance.getAlpha() & 0xFF) << 24) |
-	        	((colorInstance.getRed() & 0xFF) << 16) |
-	        	((colorInstance.getGreen() & 0xFF) << 8)  |
-	            (colorInstance.getBlue() & 0xFF);
+				((colorInstance.getAlpha() & 0xFF) << 24) |
+				((colorInstance.getRed() & 0xFF) << 16) |
+				((colorInstance.getGreen() & 0xFF) << 8)  |
+				(colorInstance.getBlue() & 0xFF);
 		}
 
 		// Parsing failed
@@ -245,11 +244,10 @@ public class FormattableColor extends Color {
 				color,
 				ne.getMessage()
 			), ne);
-		} else {
-			throw new InvalidArgumentException(String.format(
-				Locale.ROOT, "Could not parse subtitle color \"%s\"", color
-			));
 		}
+		throw new InvalidArgumentException(String.format(
+			Locale.ROOT, "Could not parse subtitle color \"%s\"", color
+		));
 	}
 
 
@@ -301,48 +299,48 @@ public class FormattableColor extends Color {
 		String blue = upperCase ?
 			Integer.toHexString(getBlue()).toUpperCase(Locale.ROOT) :
 			Integer.toHexString(getBlue());
-		Integer a = invertAlpha ? 0xFF - getAlpha() : getAlpha();
+		int a = invertAlpha ? 0xFF - getAlpha() : getAlpha();
 		String alpha = upperCase ?
 			Integer.toHexString(a).toUpperCase(Locale.ROOT) :
 			Integer.toHexString(a);
 
 		pattern = pattern.toUpperCase(Locale.ROOT);
 		for (int i = 0; i < pattern.length(); i++) {
-			if ("RR".equals(pattern.substring(i, i+2))) {
+			if ("RR".equals(pattern.substring(i, i + 2))) {
 				if (red.length() < 2) {
 					sb.append("0").append(red);
 				} else {
 					sb.append(red);
 				}
 				i++;
-			} else if ("R".equals(pattern.substring(i, i+1))) {
+			} else if ("R".equals(pattern.substring(i, i + 1))) {
 				sb.append(red);
-			} else if ("GG".equals(pattern.substring(i, i+2))) {
+			} else if ("GG".equals(pattern.substring(i, i + 2))) {
 				if (green.length() < 2) {
 					sb.append("0").append(green);
 				} else {
 					sb.append(green);
 				}
 				i++;
-			} else if ("G".equals(pattern.substring(i, i+1))) {
+			} else if ("G".equals(pattern.substring(i, i + 1))) {
 				sb.append(green);
-			} else if ("BB".equals(pattern.substring(i, i+2))) {
+			} else if ("BB".equals(pattern.substring(i, i + 2))) {
 				if (blue.length() < 2) {
 					sb.append("0").append(blue);
 				} else {
 					sb.append(blue);
 				}
 				i++;
-			} else if ("B".equals(pattern.substring(i, i+1))) {
+			} else if ("B".equals(pattern.substring(i, i + 1))) {
 				sb.append(blue);
-			} else if ("AA".equals(pattern.substring(i, i+2))) {
+			} else if ("AA".equals(pattern.substring(i, i + 2))) {
 				if (alpha.length() < 2) {
 					sb.append("0").append(alpha);
 				} else {
 					sb.append(alpha);
 				}
 				i++;
-			} else if ("A".equals(pattern.substring(i, i+1))) {
+			} else if ("A".equals(pattern.substring(i, i + 1))) {
 				sb.append(alpha);
 			}
 		}
@@ -354,32 +352,30 @@ public class FormattableColor extends Color {
 	}
 
 	@Override
-    public String toString() {
-        return
-        	getClass().getSimpleName() +
-        	"[r=" + getHexValue("0x", "RR", null, true, false) +
-        	", g=" + getHexValue("0x", "GG", null, true, false) +
-        	", b=" + getHexValue("0x", "BB", null, true, false) +
-        	", a=" + getHexValue("0x", "AA", null, true, false) +
-        	"]";
-    }
+	public String toString() {
+		return
+			getClass().getSimpleName() +
+			"[r=" + getHexValue("0x", "RR", null, true, false) +
+			", g=" + getHexValue("0x", "GG", null, true, false) +
+			", b=" + getHexValue("0x", "BB", null, true, false) +
+			", a=" + getHexValue("0x", "AA", null, true, false) +
+			"]";
+	}
 
 	protected static String extractHexString(String s) {
 		Matcher matcher = hexPattern.matcher(s);
 		if (matcher.find()) {
 			return matcher.group(1).toUpperCase(Locale.ROOT);
-		} else {
-			return null;
 		}
+		return null;
 	}
 
 	protected static String extractDecString(String s) {
 		Matcher matcher = decPattern.matcher(s);
 		if (matcher.find()) {
 			return matcher.group(1);
-		} else {
-			return null;
 		}
+		return null;
 	}
 
 	/**

@@ -417,7 +417,7 @@ public class DVDISOTitle extends DLNAResource {
 			if (audio.getId() >= MPlayerDvdAudioStreamTypes.FIRST_LPCM_AID) {
 				if (!FormatConfiguration.LPCM.equals(audio.getCodecA())) {
 					LOGGER.warn(
-						"Unexpected error parsing DVD audio stream codec. AID dictates LPCM while codec is {}",
+						"Unexpected error parsing DVD audio stream codec. AID {} dictates LPCM while codec is {}",
 						audio.getId(),
 						audio.getCodecA()
 					);
@@ -425,7 +425,7 @@ public class DVDISOTitle extends DLNAResource {
 			} else if (audio.getId() >= MPlayerDvdAudioStreamTypes.FIRST_DTS_AID) {
 				if (!FormatConfiguration.DTS.equals(audio.getCodecA())) {
 					LOGGER.warn(
-						"Unexpected error parsing DVD audio stream codec. AID dictates DTS while codec is {}",
+						"Unexpected error parsing DVD audio stream codec. AID {} dictates DTS while codec is {}",
 						audio.getId(),
 						audio.getCodecA()
 					);
@@ -433,14 +433,14 @@ public class DVDISOTitle extends DLNAResource {
 			} else if (audio.getId() >= MPlayerDvdAudioStreamTypes.FIRST_AC3_AID) {
 				if (!FormatConfiguration.AC3.equals(audio.getCodecA())) {
 					LOGGER.warn(
-						"Unexpected error parsing DVD audio stream codec. AID dictates AC3 while codec is {}",
+						"Unexpected error parsing DVD audio stream codec. AID {} dictates AC3 while codec is {}",
 						audio.getId(),
 						audio.getCodecA()
 					);
 				}
 			} else if (!FormatConfiguration.MP2.equals(audio.getCodecA())) {
 				LOGGER.warn(
-					"Unexpected error parsing DVD audio stream codec. AID dictates MP2 while codec is {}",
+					"Unexpected error parsing DVD audio stream codec. AID {} dictates MP2 while codec is {}",
 					audio.getId(),
 					audio.getCodecA()
 				);

@@ -521,7 +521,7 @@ public class UPNPControl {
 		String uuid = getUUID(d);
 		if (rendererMap.containsKey(uuid)) {
 			if (rendererMap.get(uuid, "0").needsRenewal()) {
-				LOGGER.debug("Renewing subscriptions to ", getFriendlyName(d));
+				LOGGER.debug("Renewing subscriptions to {}", getFriendlyName(d));
 				subscribeAll(d, uuid);
 			}
 			rendererMap.mark(uuid, ACTIVE, true);
@@ -669,11 +669,11 @@ public class UPNPControl {
 			if (x != null) {
 				ActionInvocation a = new ActionInvocation(x);
 				a.setInput("InstanceID", instanceID);
-				for (int i = 0; i < args.length; i += 2) {
+				for (int i = 0; i < args.length - 1; i += 2) {
 					a.setInput(args[i], args[i + 1]);
 				}
 				if (log) {
-					LOGGER.debug("Sending upnp {}.{} {} to {}[{}]", service, action, args, name, instanceID);
+					LOGGER.debug("Sending upnp {}.{} {} to {}[{}]", service, action, Arrays.toString(args), name, instanceID);
 				}
 				new ActionCallback(a, upnpService.getControlPoint()) {
 					@Override

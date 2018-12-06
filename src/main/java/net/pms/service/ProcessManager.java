@@ -919,7 +919,7 @@ public class ProcessManager implements Service {
 					);
 				} catch (Throwable e1) {
 					LOGGER.error(
-						"Unexpected error in ProcessTerminator while shutting down, terminating without terminating managed processes",
+						"Unexpected error {} in ProcessTerminator while shutting down, terminating without terminating managed processes",
 						e.getClass().getSimpleName()
 					);
 				}
@@ -1057,7 +1057,7 @@ public class ProcessManager implements Service {
 									}
 								} else if (LOGGER.isDebugEnabled()) {
 									LOGGER.debug(
-										"ProcessTerminator: No matching {} process found to reschedule for immediate shutdown"
+										"ProcessTerminator: No matching process found to reschedule for immediate shutdown"
 									);
 								}
 							} else {

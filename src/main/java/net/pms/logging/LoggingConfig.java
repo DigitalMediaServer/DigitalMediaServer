@@ -448,7 +448,7 @@ public class LoggingConfig {
 					syslogDetachedAppenders.add(appender);
 					// If syslog is disabled later and this appender reactivated, append to the file instead of truncate
 					((FileAppender<ILoggingEvent>) appender).setAppend(true);
-				} else if (action == ActionType.STOP && appender == syslog) {
+				} else if (action == ActionType.STOP && appender == syslog && syslog != null) {
 					if (CacheLogger.isActive()) {
 						CacheLogger.removeAppender(syslog);
 					} else {

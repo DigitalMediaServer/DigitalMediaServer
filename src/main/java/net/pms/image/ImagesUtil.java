@@ -357,8 +357,7 @@ public class ImagesUtil {
 	 * it is scaled to {@code scaleWidth} width and {@code scaleHeight} height
 	 * while preserving aspect ratio.
 	 *
-	 * @param actualWidth the width of the source image.
-	 * @param actualHeight the height of the source image.
+	 * @param imageInfo The {@link ImageInfo} instance describing the image.
 	 * @param scaleType the {@link ScaleType} to use when scaling.
 	 * @param scaleWidth the width to scale to.
 	 * @param scaleHeight the height to scale to.
@@ -464,6 +463,7 @@ public class ImagesUtil {
 		if (inputStream instanceof ByteArrayInputStream) {
 			byte[] bytes = retrieveByteArray((ByteArrayInputStream) inputStream);
 			if (bytes != null) {
+				inputStream.close(); // A no-op to silence static analyzers
 				return bytes;
 			}
 			// Reflection failed, use IOUtils to read the stream instead
@@ -1148,9 +1148,9 @@ public class ImagesUtil {
 			return null;
 		}
 		if (
-			(inputByteArray != null & inputImage != null) ||
-			(inputByteArray != null & inputStream != null) ||
-			(inputImage != null & inputStream != null)
+			(inputByteArray != null && inputImage != null) ||
+			(inputByteArray != null && inputStream != null) ||
+			(inputImage != null && inputStream != null)
 		) {
 			throw new IllegalArgumentException("Use either inputByteArray, inputImage or inputStream");
 		}
@@ -1764,7 +1764,7 @@ public class ImagesUtil {
 
 			return parseImageRequest(fileName, DLNAImageProfile.JPEG_TN);
 		}
-		LOGGER.warn("Could not parse thumbnail DLNAImageProfile from \"{}\"");
+		LOGGER.warn("Could not parse thumbnail DLNAImageProfile from \"{}\"", fileName);
 		return DLNAImageProfile.JPEG_TN;
 	}
 

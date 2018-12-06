@@ -354,6 +354,6 @@ public class CueFolder extends DLNAResource {
 	}
 
 	private static double getTime(Position p) {
-		return p.getMinutes() * 60 + p.getSeconds() + ((double) p.getFrames() / 100);
+		return p.getMinutes() * 60.0 + p.getSeconds() + ((double) p.getFrames() / 100);
 	}
 }

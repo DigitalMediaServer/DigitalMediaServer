@@ -2587,7 +2587,7 @@ public class RendererConfiguration extends UPNPHelper.Renderer {
 						return String.valueOf(speed.get());
 					}
 					try {
-						Integer i = Integer.parseInt(max);
+						int i = Integer.valueOf(max);
 						if (speed.get() > i && i > 0) {
 							return max;
 						}

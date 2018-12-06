@@ -552,8 +552,6 @@ public class FileUtil {
 
 	/**
 	 * Remove group name from the beginning of the filename
-	 *
-	 * @param fileNameWithoutExtension
 	 */
 	private static String removeGroupNameFromBeginning(String formattedName) {
 		if (!"".equals(formattedName) && formattedName.startsWith("[")) {
@@ -1313,11 +1311,12 @@ public class FileUtil {
 	 */
 	@Nonnull
 	public static CharsetMatch getFileCharsetMatch(@Nonnull File file) throws IOException {
-		InputStream in = new BufferedInputStream(new FileInputStream(file));
-		CharsetDetector detector = new CharsetDetector();
-		detector.setText(in);
-		// Results are sorted on descending confidence, so we're only after the first one.
-		return detector.detectAll()[0];
+		try (InputStream in = new BufferedInputStream(new FileInputStream(file))) {
+			CharsetDetector detector = new CharsetDetector();
+			detector.setText(in);
+			// Results are sorted on descending confidence, so we're only after the first one.
+			return detector.detectAll()[0];
+		}
 	}
 
 	/**
@@ -1408,7 +1407,7 @@ public class FileUtil {
 	/**
 	 * Tests if charset is UTF-8.
 	 *
-	 * @param charset charset name to test
+	 * @param charsetName charset name to test
 	 * @return True if charset is UTF-8, false otherwise.
 	 */
 	public static boolean isCharsetUTF8(String charsetName) {
@@ -1843,10 +1842,9 @@ public class FileUtil {
 					LOGGER.trace("isAdmin: Executing \"{}\"", command);
 					Process p = Runtime.getRuntime().exec(command);
 					InputStream is = p.getInputStream();
-					InputStreamReader isr = new InputStreamReader(is, StandardCharsets.US_ASCII);
 					int exitValue;
 					String exitLine;
-					try (BufferedReader br = new BufferedReader(isr)) {
+					try (BufferedReader br = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8))) {
 						p.waitFor();
 						exitValue = p.exitValue();
 						exitLine = br.readLine();

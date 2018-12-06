@@ -1357,7 +1357,7 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 	/**
 	 * Recursive function that searches for a given ID.
 	 *
-	 * @param searchId ID to search for.
+	 * @param searchIds IDs to search for.
 	 * @param renderer
 	 * @return Item found, or null otherwise.
 	 * @see #getId()
@@ -4153,8 +4153,8 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 	 * @param children The list of children to set.
 	 * @since 1.50
 	 */
-	protected void setChildren(List<DLNAResource> children) {
-		this.children = (DLNAList) children;
+	protected void setChildren(DLNAList children) {
+		this.children = children;
 	}
 
 	/**

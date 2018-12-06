@@ -34,19 +34,27 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import javax.annotation.Nonnull;
 import net.pms.exception.InvalidFileSystemException;
 import net.pms.util.FileUtil.UnixMountPoint;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
+
+/**
+ * This is a utility class for handling the "trash bin" according to the
+ * freedesktop.org specification.
+ *
+ * @author Nadahar
+ */
 public class FreedesktopTrash {
 	private static final Logger LOGGER = LoggerFactory.getLogger(FreedesktopTrash.class);
 	private static Path homeFolder = null;
 	private static Object homeFolderLock = new Object();
 	private static final String INFO = "info";
 	private static final String FILES = "files";
-	private static final SecureRandom random = new SecureRandom();
+	private static final SecureRandom RANDOM = new SecureRandom();
 
 	private static String generateRandomFileName(String fileName) {
 		if (fileName.contains("/") || fileName.contains("\\")) {
@@ -64,10 +72,16 @@ public class FreedesktopTrash {
 			suffix = "";
 		}
 
-		long n = random.nextLong();
+		long n = RANDOM.nextLong();
 		n = (n == Long.MIN_VALUE) ? 0 : Math.abs(n);
 		String newName = prefix + Long.toString(n) + suffix;
 		return newName;
+	}
+
+	/**
+	 * Not to be instantiated.
+	 */
+	private FreedesktopTrash() {
 	}
 
 	private static Path getVerifiedPath(String location) {
@@ -141,12 +155,12 @@ public class FreedesktopTrash {
 		} catch (InvalidFileSystemException e) {
 			throw new InvalidFileSystemException("Invalid file system for file: " + path.toAbsolutePath(), e);
 		}
-		Path homeFolder = getHomeFolder();
+		Path homeFolderInst = getHomeFolder();
 		Path trashFolder;
-		if (homeFolder != null) {
+		if (homeFolderInst != null) {
 			UnixMountPoint homeMountPoint = null;
 			try {
-				homeMountPoint = FileUtil.getMountPoint(homeFolder);
+				homeMountPoint = FileUtil.getMountPoint(homeFolderInst);
 			} catch (InvalidFileSystemException e) {
 				LOGGER.trace(e.getMessage(), e);
 				// homeMountPoint == null is ok, fails on .equals()
@@ -154,10 +168,10 @@ public class FreedesktopTrash {
 			if (pathMountPoint.equals(homeMountPoint)) {
 				// The file is on the same partition as the home folder,
 				// use home folder Trash
-				trashFolder = Paths.get(homeFolder.toString(), ".Trash");
+				trashFolder = Paths.get(homeFolderInst.toString(), ".Trash");
 				if (!Files.exists(trashFolder)) {
 					// This is outside specification but follows convention
-					trashFolder = Paths.get(homeFolder.toString(), ".local/share/Trash");
+					trashFolder = Paths.get(homeFolderInst.toString(), ".local/share/Trash");
 				}
 				if (verifyTrashFolder(trashFolder, true)) {
 					return trashFolder;
@@ -193,7 +207,7 @@ public class FreedesktopTrash {
 					LOGGER.trace("Could not determine sticky bit for trash folder \"" + trashFolder + "\", trying next option", e);
 				}
 			} else {
-				LOGGER.trace("Trash folder \"{}\" is a symbolic link, trying next option");
+				LOGGER.trace("Trash folder \"{}\" is a symbolic link, trying next option", trashFolder);
 			}
 		} else {
 			LOGGER.trace("Trash folder \"{}\" doesn't exist, trying next option", trashFolder);
@@ -217,12 +231,34 @@ public class FreedesktopTrash {
 		return verifyTrashFolder(Paths.get(trashLocation, INFO), true) && verifyTrashFolder(Paths.get(trashLocation, FILES), true);
 	}
 
-	public static void moveToTrash(Path path) throws InvalidFileSystemException, IOException {
+	/**
+	 * Moves the specified {@link File} to the trash bin.
+	 *
+	 * @param file the {@link File} to move to the trash bin.
+	 * @throws InvalidFileSystemException If the file system doesn't support the
+	 *             operation.
+	 * @throws IOException If an error occurs during the operation.
+	 * @throws NullPointerException If {@code file} is {@code null}.
+	 */
+	public static void moveToTrash(@Nonnull File file) throws InvalidFileSystemException, IOException {
+		moveToTrash(file.toPath());
+	}
+
+	/**
+	 * Moves the specified {@link Path} to the trash bin.
+	 *
+	 * @param path the {@link Path} to move to the trash bin.
+	 * @throws InvalidFileSystemException If the file system doesn't support the
+	 *             operation.
+	 * @throws IOException If an error occurs during the operation.
+	 * @throws NullPointerException If {@code path} is {@code null}.
+	 */
+	public static void moveToTrash(@Nonnull Path path) throws InvalidFileSystemException, IOException {
 		if (path == null) {
 			throw new NullPointerException("path cannot be null");
 		}
 
-		final int LIMIT = 10;
+		final int limit = 10;
 		path = path.toAbsolutePath();
 		FilePermissions pathPermissions = new FilePermissions(path);
 		if (!pathPermissions.isReadable() || !pathPermissions.isWritable()) {
@@ -250,7 +286,7 @@ public class FreedesktopTrash {
 		String fileName = infoFile != null ? infoFile.toString() : "";
 		int count = 0;
 		boolean created = false;
-		while (!created && count < LIMIT) {
+		while (!created && count < limit) {
 			infoFile = infoFolder.resolve(fileName + ".trashinfo");
 			try {
 				Files.write(infoFile, infoContent, Charset.defaultCharset(), StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE);
@@ -280,10 +316,6 @@ public class FreedesktopTrash {
 		}
 	}
 
-	public static void moveToTrash(File file) throws InvalidFileSystemException, IOException {
-		moveToTrash(file.toPath());
-	}
-
 	/**
 	 * Tries to determine if FreeDesktop.org Trash specification is
 	 * applicable for the given {@link Path}. Support can vary between
@@ -309,18 +341,17 @@ public class FreedesktopTrash {
 	}
 
 	/**
-	 * Tries to determine if FreeDesktop.org Trash specification is
-	 * applicable for the given {@link File}. Support can vary between
-	 * partitions on the same computer. Please note that this check will
-	 * look for or try to create the necessary folder structure, so this can
-	 * be an expensive operation.
-	 *
+	 * Tries to determine if FreeDesktop.org Trash specification is applicable
+	 * for the given {@link File}. Support can vary between partitions on the
+	 * same computer. Please note that this check will look for or try to create
+	 * the necessary folder structure, so this can be an expensive operation.
+	 * <p>
 	 * The check could be used to evaluate a systems general ability, but a
-	 * better strategy is to attempt {@link #moveToTrash(File)} and handle
-	 * the {@link Exception} if it fails.
+	 * better strategy is to attempt {@link #moveToTrash(File)} and handle the
+	 * {@link Exception} if it fails.
 	 *
-	 * @param path the path for which to evaluate trash bin support
-	 * @return The evaluation result
+	 * @param file the {@link File} for which to evaluate trash bin support.
+	 * @return The evaluation result.
 	 */
 	public static boolean hasTrash(File file) {
 		return hasTrash(file.toPath());
@@ -332,12 +363,11 @@ public class FreedesktopTrash {
 	 * on the same computer. Please note that this check will look for or
 	 * try to create the necessary folder structure, so this can be an
 	 * expensive operation.
-	 *
+	 * <p>
 	 * The check could be used to evaluate a systems general ability, but a
 	 * better strategy is to attempt {@link #moveToTrash(File)} and handle
 	 * the {@link Exception} if it fails.
 	 *
-	 * @param path the path for which to evaluate trash bin support
 	 * @return The evaluation result
 	 */
 	@SuppressFBWarnings("DMI_HARDCODED_ABSOLUTE_FILENAME")

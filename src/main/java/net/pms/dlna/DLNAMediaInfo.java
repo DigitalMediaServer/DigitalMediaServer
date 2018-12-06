@@ -584,7 +584,7 @@ public class DLNAMediaInfo implements Cloneable {
 
 		args.add(PlayerFactory.getPlayerExecutable(StandardPlayerId.FFMPEG_VIDEO));
 		if (args.get(0) == null) {
-			LOGGER.warn("Cannot generate thumbnail for {} since the FFmpeg executable is undefined");
+			LOGGER.warn("Cannot generate thumbnail for \"{}\" since the FFmpeg executable is undefined", media.getFilename());
 			return null;
 		}
 
@@ -1255,7 +1255,7 @@ public class DLNAMediaInfo implements Cloneable {
 								String frameRateDoubleString = token.substring(0, token.indexOf("tb")).trim();
 								try {
 									if (!frameRateDoubleString.equals(frameRate)) {// tbc taken into account only if different than tbr
-										Double frameRateDouble = Double.parseDouble(frameRateDoubleString);
+										double frameRateDouble = Double.valueOf(frameRateDoubleString);
 										frameRate = String.format(Locale.ENGLISH, "%.2f", frameRateDouble / 2);
 									}
 								} catch (NumberFormatException nfe) {
@@ -2207,7 +2207,7 @@ public class DLNAMediaInfo implements Cloneable {
 	/**
 	 * Sets the {@link ScanOrder}.
 	 *
-	 * @param scanType the {@link ScanOrder} to set.
+	 * @param scanOrder the {@link ScanOrder} to set.
 	 */
 	public void setScanOrder(@Nullable ScanOrder scanOrder) {
 		this.scanOrder = scanOrder;

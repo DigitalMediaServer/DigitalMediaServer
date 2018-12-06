@@ -323,10 +323,12 @@ public final class GuiUtil {
 						active = s;
 					}
 				}
-				g2.setColor(active.color);
-				String label = active.label.replace("{}", "" + total);
-				int label_w = (int)g.getFontMetrics().getStringBounds(label, g).getWidth();
-				g2.drawString(label, x - label_w - 2, g2.getFontMetrics().getAscent());
+				if (active != null) {
+					g2.setColor(active.color);
+					String label = active.label.replace("{}", "" + total);
+					int label_w = (int)g.getFontMetrics().getStringBounds(label, g).getWidth();
+					g2.drawString(label, x - label_w - 2, g2.getFontMetrics().getAscent());
+				}
 			}
 		}
 
@@ -378,6 +380,7 @@ public final class GuiUtil {
 	// the laf's default ProgressBarUI as a result of future
 	// invocations of JProgressBar.UpdateUI()
 	public static class CustomUIProgressBar extends JProgressBar {
+		private static final long serialVersionUID = 1L;
 		private ProgressBarUI ui;
 
 		public CustomUIProgressBar(int min, int max, ProgressBarUI ui) {
@@ -559,7 +562,7 @@ public final class GuiUtil {
 			dim.height += rowHeight;
 		}
 	}
-	
+
 	public static void enableContainer(Container c, boolean enable) {
 		for (Component component : c.getComponents()) {
 			component.setEnabled(enable);

@@ -285,7 +285,7 @@ public class Tables extends Table {
 		try (Statement statement = connection.createStatement()) {
 			int result = statement.executeUpdate("DELETE FROM TABLES WHERE NAME = " + sqlQuote(tableId.toString()));
 			if (result < 0) {
-				LOGGER.trace("Table version for database table \"{}\" isn't set, nothing to remove");
+				LOGGER.trace("Table version for database table \"{}\" isn't set, nothing to remove", tableId);
 			} else if (result > 1) {
 				throw new AssertionError(
 					"Tables.removeTableVersion removed more than one row with the name \"" + tableId + "\""

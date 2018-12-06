@@ -133,7 +133,7 @@ public class FFMpegVideo extends Player {
 		ArrayList<String> scalePadFilterChain = new ArrayList<>();
 		final RendererConfiguration renderer = params.mediaRenderer;
 
-		boolean isMediaValid = media != null && media.isMediaparsed() && media.getHeight() != 0;
+		boolean isMediaValid = media.isMediaparsed() && media.getHeight() != 0;
 		boolean isResolutionTooHighForRenderer = isMediaValid && !params.mediaRenderer.isResolutionCompatibleWithRenderer(media.getWidth(), media.getHeight());
 
 		int scaleWidth = 0;
@@ -1326,7 +1326,7 @@ public class FFMpegVideo extends Player {
 		try {
 			Thread.sleep(200);
 		} catch (InterruptedException e) {
-			LOGGER.error("Thread interrupted while waiting for transcode to start", e.getMessage());
+			LOGGER.error("Thread interrupted while waiting for transcode to start");
 			LOGGER.trace("", e);
 		}
 		configuration = prev;

@@ -250,7 +250,6 @@ public class RequestV2 extends HTTPResource {
 	 * See <a href="http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html">RFC-2616</a>
 	 * for HTTP header field definitions.
 	 *
-	 * @param ctx
 	 * @param output The {@link HttpResponse} object that will be used to construct the response.
 	 * @param event The {@link MessageEvent} object used to communicate with the client that sent
 	 * 			the request.

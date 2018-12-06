@@ -1311,7 +1311,7 @@ public class PMS {
 							break;
 						}
 					}
-					LOGGER.warn("Ignoring blank profile", argument);
+					LOGGER.warn("Ignoring blank profile");
 					break;
 				default:
 					LOGGER.warn("Ignoring unknown argument \"{}\"", argument);

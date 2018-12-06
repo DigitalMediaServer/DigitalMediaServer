@@ -72,8 +72,8 @@ public final class PlayerFactory {
 
 		@Override
 		public int compare(Player player1, Player player2) {
-			Integer index1 = configuration.getEnginePriority(player1);
-			Integer index2 = configuration.getEnginePriority(player2);
+			int index1 = configuration.getEnginePriority(player1);
+			int index2 = configuration.getEnginePriority(player2);
 
 			// Not being in the priority list will sort the player as last.
 			if (index1 == -1) {
@@ -84,7 +84,7 @@ public final class PlayerFactory {
 				index2 = 999;
 			}
 
-			return index1.compareTo(index2);
+			return index1 - index2;
 		}
 	}
 

@@ -224,7 +224,7 @@ public class ConfigurationReader {
 	 * Return the <code>Object</code> value for a custom configuration key.
 	 * Returns an object if the key exists, or <code>null</code> otherwise.
 	 *
-	 * @param key The key to look up.
+	 * @param property The key to look up.
 	 * @return The value configured for the key or null if no value is set.
 	 */
 	Object getCustomProperty(String property) {
@@ -239,7 +239,6 @@ public class ConfigurationReader {
 	 * Otherwise return the supplied default value.
 	 * The value is returned with leading and trailing whitespace removed in both cases.
 	 *
-	 * @param configuration The configuration to look up the key in.
 	 * @param key The key to look up.
 	 * @param def The default value to return when no value is set for the key.
 	 * @return The value configured for the key.

@@ -533,7 +533,7 @@ public class UPNPHelper extends UPNPControl {
 						bindErrorReported = true;
 						sleep(5000);
 					} catch (IOException e) {
-						LOGGER.error("UPnP network exception: ", e.getMessage());
+						LOGGER.error("UPnP network exception: {}", e.getMessage());
 						LOGGER.trace("", e);
 						sleep(1000);
 					} finally {
@@ -543,7 +543,7 @@ public class UPNPHelper extends UPNPControl {
 								InetAddress upnpAddress = getUPNPAddress();
 								multicastSocket.leaveGroup(upnpAddress);
 							} catch (IOException e) {
-								LOGGER.trace("Final UPnP network exception: ", e.getMessage());
+								LOGGER.trace("Final UPnP network exception: {}", e.getMessage());
 								LOGGER.trace("", e);
 							}
 

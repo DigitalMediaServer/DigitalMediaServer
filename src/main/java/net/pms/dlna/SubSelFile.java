@@ -81,8 +81,8 @@ public class SubSelFile extends VirtualFolder {
 			if (langs == null) {
 				return 0;
 			}
-			Integer index1 = langs.indexOf(OpenSubtitle.getLang(key1));
-			Integer index2 = langs.indexOf(OpenSubtitle.getLang(key2));
+			int index1 = langs.indexOf(OpenSubtitle.getLang(key1));
+			int index2 = langs.indexOf(OpenSubtitle.getLang(key2));
 
 			if (index1 == -1) {
 				index1 = 999;
@@ -92,7 +92,7 @@ public class SubSelFile extends VirtualFolder {
 				index2 = 999;
 			}
 
-			return index1.compareTo(index2);
+			return index1 - index2;
 		}
 	}
 }
