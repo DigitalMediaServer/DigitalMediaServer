@@ -911,7 +911,12 @@ public class TsMuxeRVideo extends Player {
 //		VideoLevel videoLevel = mediaInfo.getVideoLevel();
 		int width  = mediaInfo.getWidth();
 		int height = mediaInfo.getHeight();
-		if (width < 320 || height < 240) {
+		if (
+			width < 320 ||
+			height < 240 ||
+			width > 1920 ||
+			height > 1088
+		) {
 //			return false;
 		}
 
@@ -953,6 +958,9 @@ public class TsMuxeRVideo extends Player {
 		switch (media.getCodecV().trim().toLowerCase(Locale.ROOT)) {
 			case FormatConfiguration.H264:
 			case FormatConfiguration.H265:
+				if (media.getVideoBitDepth() > 8) {
+					return false;
+				}
 			case FormatConfiguration.MPEG2:
 			case FormatConfiguration.VC1:
 				break;
