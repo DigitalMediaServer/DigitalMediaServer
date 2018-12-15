@@ -20,8 +20,9 @@ package net.pms.util;
 
 import java.io.Serializable;
 import java.util.Map;
+import java.util.Objects;
+import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
-import com.google.common.base.Objects;
 
 
 /**
@@ -44,6 +45,10 @@ public class Pair<K, V> implements Map.Entry<K, V>, Comparable<Pair<K, V>>, Seri
 
 	private static final long serialVersionUID = 1L;
 
+	/** The static, raw, empty {@link Pair} */
+	@SuppressWarnings({"rawtypes", "unchecked"})
+	public static final Pair EMPTY_PAIR = new Pair(null, null);
+
 	/** The first {@link Object} */
 	protected final K first;
 
@@ -59,6 +64,22 @@ public class Pair<K, V> implements Map.Entry<K, V>, Comparable<Pair<K, V>>, Seri
 	public Pair(K first, V second) {
 		this.first = first;
 		this.second = second;
+	}
+
+	/**
+	 * Creates a new instance using the key and the value from the specified
+	 * {@link Map.Entry}.
+	 *
+	 * @param entry the {@link Map.Entry} to copy from.
+	 */
+	public Pair(@Nullable Map.Entry<K, V> entry) {
+		if (entry == null) {
+			this.first = null;
+			this.second = null;
+		} else {
+			this.first = entry.getKey();
+			this.second = entry.getValue();
+		}
 	}
 
 	/**
@@ -114,31 +135,34 @@ public class Pair<K, V> implements Map.Entry<K, V>, Comparable<Pair<K, V>>, Seri
 	@SuppressWarnings("unchecked")
 	@Override
 	public int compareTo(Pair<K, V> o) {
-		if (first == null) {
-			if (o.first != null) {
+		if (first != null || o.first != null) {
+			if (first == null) {
 				return 1;
+			} else if (o.first == null) {
+				return -1;
 			}
-		} else if (o.first == null) {
-			return -1;
+			if (!(first instanceof Comparable<?>) || !(o.first instanceof Comparable<?>)) {
+				throw new UnsupportedOperationException("K must implement Comparable");
+			}
+			int result = ((Comparable<K>) first).compareTo(o.first);
+			if (result != 0) {
+				return result;
+			}
 		}
-		if (!(first instanceof Comparable<?>) || !(o.first instanceof Comparable<?>)) {
-			throw new UnsupportedOperationException("K must implement Comparable");
-		}
-		int result = ((Comparable<K>) first).compareTo(o.first);
-		if (result != 0) {
-			return result;
-		}
-		if (second == null) {
-			if (o.second != null) {
+
+		if (second != null || o.second != null) {
+			if (second == null) {
 				return 1;
+			} else if (o.second == null) {
+				return -1;
 			}
-		} else if (o.second == null) {
-			return -1;
+			if (!(second instanceof Comparable<?>) || !(o.second instanceof Comparable<?>)) {
+				throw new UnsupportedOperationException("V must implement Comparable");
+			}
+			return ((Comparable<V>) second).compareTo(o.second);
 		}
-		if (!(second instanceof Comparable<?>) || !(o.second instanceof Comparable<?>)) {
-			throw new UnsupportedOperationException("V must implement Comparable");
-		}
-		return ((Comparable<V>) second).compareTo(o.second);
+
+		return 0;
 	}
 
 	@Override
@@ -161,7 +185,7 @@ public class Pair<K, V> implements Map.Entry<K, V>, Comparable<Pair<K, V>>, Seri
 			return false;
 		}
 		Map.Entry<?, ?> other = (Map.Entry<?, ?>) obj;
-		return Objects.equal(getKey(), other.getKey()) && Objects.equal(getValue(), other.getValue());
+		return Objects.equals(getKey(), other.getKey()) && Objects.equals(getValue(), other.getValue());
 	}
 
 	@Override
@@ -185,5 +209,14 @@ public class Pair<K, V> implements Map.Entry<K, V>, Comparable<Pair<K, V>>, Seri
 		}
 		sb.append("]");
 		return sb.toString();
+	}
+
+	/**
+	 * @return A type-safe, static {@link Pair} instance where both values are
+	 *         {@code null}.
+	 */
+	@SuppressWarnings("unchecked")
+	public static final <K, V> Pair<K, V> emptyPair() {
+		return EMPTY_PAIR;
 	}
 }

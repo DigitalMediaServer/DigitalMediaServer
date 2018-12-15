@@ -21,25 +21,20 @@ package net.pms.util;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 
 public class PairTest {
 
-	@Rule
-	public ExpectedException exception = ExpectedException.none();
-
 	@Test
-	public void testPair() {
-		// Test constructor, getters
+	public void getTest() {
 		Pair<String, Double> pair = new Pair<>("Pair", Double.valueOf(99.9));
 		Pair<String, Double> pair2 = new Pair<>("Another pair", Double.valueOf(99.9));
 		Pair<String, Double> pair3 = new Pair<>("Pair", Double.valueOf(10d));
@@ -71,8 +66,26 @@ public class PairTest {
 		assertEquals(Double.valueOf(10.0), pair3.getValue());
 		assertEquals(Double.valueOf(10.0), pair3.getRight());
 		assertEquals(Double.valueOf(10.0), pair3.getLast());
+	}
 
-		// Test equals
+	@Test
+	public void hashCodeTest() {
+		Integer key = Integer.valueOf(3);
+		String value = "value";
+
+		assertEquals(key.hashCode(), new Pair<>(key, null).hashCode());
+		assertEquals(value.hashCode(), new Pair<>(null, value).hashCode());
+		assertEquals(key.hashCode() ^ value.hashCode(), new Pair<>(key, value).hashCode());
+	}
+
+	@Test
+	public void equalsTest() {
+		Pair<String, Double> pair = new Pair<>("Pair", Double.valueOf(99.9));
+		Pair<String, Double> pair2 = new Pair<>("Another pair", Double.valueOf(99.9));
+		Pair<String, Double> pair3 = new Pair<>("Pair", Double.valueOf(10d));
+
+		assertFalse(pair.equals(null));
+		assertFalse(pair.equals("null"));
 		assertFalse(pair.equals(pair2));
 		assertFalse(pair.equals(pair3));
 		assertFalse(pair2.equals(pair));
@@ -84,16 +97,15 @@ public class PairTest {
 		assertTrue(pair3.equals(pair3));
 		assertTrue(pair.equals(new Pair<String, Double>("Pair", Double.valueOf(99.9))));
 		assertFalse(pair.equals(new Pair<String, Float>("Pair", Float.valueOf(99.9f))));
+	}
 
-		// Test Map.Entry interface
-		Map<String, Double> map = new HashMap<>();
-		map.put("Pair", Double.valueOf(99.9));
-		for (Entry<String, Double> entry : map.entrySet()) {
-			assertTrue(pair.equals(entry));
-			assertTrue(entry.equals(pair));
-		}
+	@SuppressWarnings({"unchecked", "rawtypes"})
+	@Test
+	public void compareToTest() {
+		Pair<String, Double> pair = new Pair<>("Pair", Double.valueOf(99.9));
+		Pair<String, Double> pair2 = new Pair<>("Another pair", Double.valueOf(99.9));
+		Pair<String, Double> pair3 = new Pair<>("Pair", Double.valueOf(10d));
 
-		// Test Comparable interface
 		List<Pair<String, Double>> list = new ArrayList<>();
 		list.add(pair);
 		list.add(pair2);
@@ -103,20 +115,75 @@ public class PairTest {
 		assertEquals(pair3, list.get(1));
 		assertEquals(pair, list.get(2));
 
-		// Test toString()
+		assertEquals(0, new Pair<String, Double>(null, null).compareTo(new Pair<String, Double>(null, null)));
+		assertEquals(-1, pair.compareTo(new Pair<String, Double>(null, null)));
+		assertEquals(1, new Pair<String, Double>(null, null).compareTo(pair));
+		assertEquals(-1, pair.compareTo(new Pair<String, Double>("Pair", null)));
+		assertEquals(1, new Pair<String, Double>("Pair", null).compareTo(pair));
+
+		try {
+			new Pair<Object, Double>(new Object(), null).compareTo(new Pair<Object, Double>(new Object(), null));
+			fail("Should have thrown UnsupportedOperationException");
+		} catch (UnsupportedOperationException e) {
+			assertEquals("K must implement Comparable", e.getMessage());
+		}
+		try {
+			new Pair<Object, Object>(null, new Object()).compareTo(new Pair<Object, Object>(null, new Object()));
+			fail("Should have thrown UnsupportedOperationException");
+		} catch (UnsupportedOperationException e) {
+			assertEquals("V must implement Comparable", e.getMessage());
+		}
+
+		try {
+			new Pair("", null).compareTo(new Pair<Object, Double>(new Object(), null));
+			fail("Should have thrown UnsupportedOperationException");
+		} catch (UnsupportedOperationException e) {
+			assertEquals("K must implement Comparable", e.getMessage());
+		}
+		try {
+			new Pair(null, "").compareTo(new Pair<Object, Object>(null, new Object()));
+			fail("Should have thrown UnsupportedOperationException");
+		} catch (UnsupportedOperationException e) {
+			assertEquals("V must implement Comparable", e.getMessage());
+		}
+	}
+
+	@Test
+	public void toStringTest() {
+		Pair<String, Double> pair = new Pair<>("Pair", Double.valueOf(99.9));
+		Pair<String, Double> pair2 = new Pair<>("Another pair", Double.valueOf(99.9));
+		Pair<String, Double> pair3 = new Pair<>("Pair", Double.valueOf(10d));
+
 		assertEquals("Pair[\"Pair\", 99.9]", pair.toString());
 		assertEquals("Pair[\"Another pair\", 99.9]", pair2.toString());
 		assertEquals("Pair[\"Pair\", 10.0]", pair3.toString());
 		assertEquals("Pair[null, 10.0]", new Pair<String, Double>(null, Double.valueOf(10d)).toString());
 		assertEquals("Pair[\"Pair\", null]", new Pair<String, Double>("Pair", null).toString());
 		assertEquals("Pair[null, null]", new Pair<String, Double>(null, null).toString());
+
+		assertEquals("Pair[2147483647, \"MAX_VALUE\"]", new Pair<Integer, CharSequence>(Integer.MAX_VALUE, new StringBuilder("MAX_VALUE")).toString());
+	}
+
+	@Test
+	public void testMapEntry() {
+		Pair<String, Double> pair = new Pair<>("Pair", Double.valueOf(99.9));
+
+		Map<String, Double> map = new HashMap<>();
+		map.put("Pair", Double.valueOf(99.9));
+		for (Entry<String, Double> entry : map.entrySet()) {
+			assertTrue(pair.equals(entry));
+			assertTrue(entry.equals(pair));
+		}
 	}
 
 	@Test
 	public void testImmutable() {
-		exception.expect(UnsupportedOperationException.class);
-		exception.expectMessage("Pair is immutable");
 		Pair<String, Double> pair = new Pair<>("Pair", Double.valueOf(99.9));
-		pair.setValue(Double.valueOf(20d));
+		try {
+			pair.setValue(Double.valueOf(20d));
+			fail("Should have thrown UnsupportedOperationException");
+		} catch (UnsupportedOperationException e) {
+			assertEquals("Pair is immutable", e.getMessage());
+		}
 	}
 }

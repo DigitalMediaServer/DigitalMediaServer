@@ -636,11 +636,155 @@ public class FileUtil {
 		return extension;
 	}
 
+	/**
+	 * Returns the name of the specified {@link File} split into two parts: the
+	 * name and the extension. Both parts can be {@code null}.
+	 *
+	 * @param file the {@link File} whose name to split.
+	 * @return The {@link Pair} of {@link String}s with the name and the
+	 *         extension respectively. The {@link Pair} itself is never
+	 *         {@code null}, but both of the contained {@link String}s might be.
+	 */
+	@Nonnull
+	public static Pair<String, String> detachExtension(@Nullable File file) {
+		return detachExtension(file, null, null);
+	}
+
+	/**
+	 * Returns the name of the specified {@link File} split into two parts: the
+	 * name and the extension. Both parts can be {@code null}.
+	 *
+	 * @param file the {@link File} whose name to split.
+	 * @param convertExtensionTo if {@code null} makes no letter case change to
+	 *            the returned extension, otherwise converts the extracted
+	 *            extension (if any) to the corresponding letter case.
+	 * @param locale the {@link Locale} to use for letter case conversion.
+	 *            Defaults to {@link Locale#ROOT} if {@code null}.
+	 * @return The {@link Pair} of {@link String}s with the name and the
+	 *         extension respectively. The {@link Pair} itself is never
+	 *         {@code null}, but both of the contained {@link String}s might be.
+	 */
+	@Nonnull
+	public static Pair<String, String> detachExtension(
+		@Nullable File file,
+		@Nullable LetterCase convertExtensionTo,
+		@Nullable Locale locale
+	) {
+		String fileName;
+		if (file == null || (fileName = file.getName()) == null) {
+			return Pair.emptyPair();
+		}
+		return detachExtension(fileName, convertExtensionTo, locale);
+	}
+
+	/**
+	 * Returns the name of the specified {@link Path} split into two parts: the
+	 * name and the extension. Both parts can be {@code null}.
+	 *
+	 * @param path the {@link Path} whose name to split.
+	 * @return The {@link Pair} of {@link String}s with the name and the
+	 *         extension respectively. The {@link Pair} itself is never
+	 *         {@code null}, but both of the contained {@link String}s might be.
+	 */
+	@Nonnull
+	public static Pair<String, String> detachExtension(@Nullable Path path) {
+		return detachExtension(path, null, null);
+	}
+
+	/**
+	 * Returns the name of the specified {@link Path} split into two parts: the
+	 * name and the extension. Both parts can be {@code null}.
+	 *
+	 * @param path the {@link Path} whose name to split.
+	 * @param convertExtensionTo if {@code null} makes no letter case change to
+	 *            the returned extension, otherwise converts the extracted
+	 *            extension (if any) to the corresponding letter case.
+	 * @param locale the {@link Locale} to use for letter case conversion.
+	 *            Defaults to {@link Locale#ROOT} if {@code null}.
+	 * @return The {@link Pair} of {@link String}s with the name and the
+	 *         extension respectively. The {@link Pair} itself is never
+	 *         {@code null}, but both of the contained {@link String}s might be.
+	 */
+	@Nonnull
+	public static Pair<String, String> detachExtension(
+		@Nullable Path path,
+		@Nullable LetterCase convertExtensionTo,
+		@Nullable Locale locale
+	) {
+		Path fileName;
+		if (path == null || (fileName = path.getFileName()) == null) {
+			return Pair.emptyPair();
+		}
+		return detachExtension(fileName.toString(), convertExtensionTo, locale);
+	}
+
+	/**
+	 * Returns the specified file name split into two parts: the name and the
+	 * extension. Both parts can be {@code null}.
+	 *
+	 * @param fileName the file name to split.
+	 * @return The {@link Pair} of {@link String}s with the name and the
+	 *         extension respectively. The {@link Pair} itself is never
+	 *         {@code null}, but both of the contained {@link String}s might be.
+	 */
+	@Nonnull
+	public static Pair<String, String> detachExtension(@Nullable String fileName) {
+		return detachExtension(fileName, null, null);
+	}
+
+	/**
+	 * Returns the specified file name split into two parts: the name and the
+	 * extension. Both parts can be {@code null}.
+	 *
+	 * @param fileName the file name to split.
+	 * @param convertExtensionTo if {@code null} makes no letter case change to
+	 *            the returned extension, otherwise converts the extracted
+	 *            extension (if any) to the corresponding letter case.
+	 * @param locale the {@link Locale} to use for letter case conversion.
+	 *            Defaults to {@link Locale#ROOT} if {@code null}.
+	 * @return The {@link Pair} of {@link String}s with the name and the
+	 *         extension respectively. The {@link Pair} itself is never
+	 *         {@code null}, but both of the contained {@link String}s might be.
+	 */
+	@Nonnull
+	public static Pair<String, String> detachExtension(
+		@Nullable String fileName,
+		@Nullable LetterCase convertExtensionTo,
+		@Nullable Locale locale
+	) {
+		if (isBlank(fileName)) {
+			return Pair.emptyPair();
+		}
+
+		int point = fileName.lastIndexOf('.');
+		if (point == -1) {
+			return new Pair<>(fileName, null);
+		}
+
+		if (convertExtensionTo != null && locale == null) {
+			locale = Locale.ROOT;
+		}
+
+		String name = fileName.substring(0, point);
+		if (name.length() == 0) {
+			name = null;
+		}
+		String extension = fileName.substring(point + 1);
+		if (extension.length() == 0) {
+			extension = null;
+		} else if (convertExtensionTo == LetterCase.UPPER) {
+			extension = extension.toUpperCase(locale);
+		} else if (convertExtensionTo == LetterCase.LOWER) {
+			extension = extension.toLowerCase(locale);
+		}
+		return new Pair<>(name, extension);
+	}
+
 	public static String getFileNameWithoutExtension(String f) {
 		int point = f.lastIndexOf('.');
 
 		if (point == -1) {
-			point = f.length();
+			return f;
 		}
 
 		return f.substring(0, point);
