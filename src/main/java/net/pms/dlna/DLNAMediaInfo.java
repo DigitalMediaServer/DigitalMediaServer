@@ -560,6 +560,9 @@ public class DLNAMediaInfo implements Cloneable {
 		forThumbnail.setMediaparsed(mediaparsed);  // check if file was already parsed by MediaInfo
 		forThumbnail.setImageInfo(imageInfo);
 		forThumbnail.durationSec = getDuration();
+		forThumbnail.audioTracks = audioTracks;
+		forThumbnail.imageCount = imageCount;
+		forThumbnail.videoTrackCount = videoTrackCount;
 		if (forThumbnail.durationSec == null) {
 			forThumbnail.durationSec = Double.valueOf(0d);
 		} else if (seekPosition <= forThumbnail.durationSec.doubleValue()) {
@@ -997,7 +1000,17 @@ public class DLNAMediaInfo implements Cloneable {
 			}
 
 			if (ffmpeg_parsing) {
-				if (!thumbOnly || ((type == FormatType.VIDEO || type == FormatType.CONTAINER) && !configuration.isUseMplayerForVideoThumbs())) {
+				if (
+					!thumbOnly || (
+						mediaparsed && getMediaType() == MediaType.VIDEO
+					) || (
+						!mediaparsed && (
+							type == FormatType.VIDEO ||
+							type == FormatType.CONTAINER
+						) &&
+						!configuration.isUseMplayerForVideoThumbs()
+					)
+				) {
 					pw = getFFmpegThumbnail(inputFile, resume);
 				}
 
