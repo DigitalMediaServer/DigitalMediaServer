@@ -1,27 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE module PUBLIC "-//Puppy Crawl//DTD Check Configuration 1.3//EN" "http://www.puppycrawl.com/dtds/configuration_1_3.dtd">
+<!DOCTYPE module PUBLIC "-//Checkstyle//DTD Checkstyle Configuration 1.3//EN" "https://checkstyle.org/dtds/configuration_1_3.dtd">
 
 <!--
     This configuration file was written by the eclipse-cs plugin configuration editor
 -->
 <!--
     Checkstyle-Configuration: DMS
-    Description:
-Checkstyle configuration for Digital Media Server.
+    Description: Checkstyle configuration for Digital Media Server.
 -->
 <module name="Checker">
   <property name="severity" value="warning"/>
   <property name="fileExtensions" value="java, xml"/>
-  <module name="SuppressWarningsFilter" />
+  <property name="tabWidth" value="4"/>
   <module name="TreeWalker">
-    <property name="tabWidth" value="4"/>
-    <module name="RegexpSinglelineJava">
-      <property name="format" value="^\t*(?! \*) "/>
-      <property name="message" value="Indent must use tab characters"/>
-      <property name="ignoreComments" value="true"/>
-    </module>
-	<module name="SuppressWarningsHolder" />
+    <module name="InvalidJavadocPosition"/>
     <module name="JavadocMethod">
+      <property name="validateThrows" value="true"/>
       <property name="scope" value="protected"/>
     </module>
     <module name="JavadocType">
@@ -34,6 +28,18 @@ Checkstyle configuration for Digital Media Server.
       <property name="endOfSentenceFormat" value="([.?!:][ \t\n\r\f&lt;])|([.?!:]$)"/>
       <property name="tokens" value="INTERFACE_DEF,CLASS_DEF,METHOD_DEF,CTOR_DEF"/>
     </module>
+    <module name="MissingJavadocMethod">
+      <property name="scope" value="protected"/>
+    </module>
+    <module name="MissingJavadocType">
+      <property name="scope" value="protected"/>
+    </module>
+    <module name="RegexpSinglelineJava">
+      <property name="format" value="^\t*(?! \*) "/>
+      <property name="message" value="Indent must use tab characters"/>
+      <property name="ignoreComments" value="true"/>
+    </module>
+    <module name="SuppressWarningsHolder"/>
     <module name="ConstantName"/>
     <module name="LocalFinalVariableName"/>
     <module name="LocalVariableName"/>
@@ -53,11 +59,7 @@ Checkstyle configuration for Digital Media Server.
     </module>
     <module name="RedundantImport"/>
     <module name="UnusedImports">
-      <property name="processJavadoc" value="false"/>
-    </module>
-    <module name="LineLength">
-      <property name="max" value="140"/>
-      <property name="tabWidth" value="4"/>
+      <property name="processJavadoc" value="true"/>
     </module>
     <module name="MethodLength">
       <property name="max" value="300"/>
@@ -98,7 +100,10 @@ Checkstyle configuration for Digital Media Server.
       <property name="tokens" value="VARIABLE_DEF"/>
     </module>
     <module name="IllegalInstantiation"/>
-    <module name="InnerAssignment"/>
+    <module name="InnerAssignment">
+      <property name="severity" value="ignore"/>
+      <metadata name="net.sf.eclipsecs.core.lastEnabledSeverity" value="inherit"/>
+    </module>
     <module name="MagicNumber">
       <property name="severity" value="ignore"/>
       <metadata name="net.sf.eclipsecs.core.lastEnabledSeverity" value="inherit"/>
@@ -150,6 +155,7 @@ Checkstyle configuration for Digital Media Server.
       <metadata name="net.sf.eclipsecs.core.lastEnabledSeverity" value="inherit"/>
     </module>
   </module>
+  <module name="SuppressWarningsFilter"/>
   <module name="JavadocPackage">
     <property name="severity" value="ignore"/>
     <metadata name="net.sf.eclipsecs.core.lastEnabledSeverity" value="inherit"/>
@@ -169,5 +175,9 @@ Checkstyle configuration for Digital Media Server.
   <module name="RegexpSingleline">
     <property name="format" value="\s+$"/>
     <property name="message" value="Line has trailing spaces."/>
+  </module>
+  <module name="LineLength">
+    <property name="fileExtensions" value="java"/>
+    <property name="max" value="140"/>
   </module>
 </module>
