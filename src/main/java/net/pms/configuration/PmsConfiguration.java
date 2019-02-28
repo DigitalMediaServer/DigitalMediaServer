@@ -4524,7 +4524,7 @@ public class PmsConfiguration extends RendererConfiguration {
 	@Nonnull
 	public File getWebPath() {
 		File path = new File(getString(KEY_WEB_PATH, "web"));
-		if (!path.exists()) {
+		if (!path.exists() || !new File(path, "start.html").exists()) {
 			// Make it work while debugging
 			File debugPath = new File("src/main/external-resources/" + getString(KEY_WEB_PATH, "web"));
 			if (debugPath.exists()) {
