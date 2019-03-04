@@ -12,6 +12,7 @@ import java.nio.charset.IllegalCharsetNameException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileStore;
 import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -1990,7 +1991,23 @@ public class FileUtil {
 		}
 		String[] paths = osPath.split(File.pathSeparator);
 		for (String path : paths) {
-			result.add(Paths.get(path));
+			if (isBlank(path)) {
+				continue;
+			}
+			try {
+				result.add(Paths.get(path));
+			} catch (InvalidPathException e) {
+				if (LOGGER.isDebugEnabled()) {
+					LOGGER.warn(
+						"Unable to resolve PATH element \"{}\" to a folder, it will be ignored: {}",
+						path,
+						e.getMessage()
+					);
+					LOGGER.trace("", e);
+				} else {
+					LOGGER.warn("Unable to resolve PATH element \"{}\" to a folder, it will be ignored", path);
+				}
+			}
 		}
 		return result;
 	}
