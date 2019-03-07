@@ -6,14 +6,14 @@ import java.util.List;
 import net.pms.PMS;
 
 public class FileSearch implements SearchObj {
-	private ArrayList<RealFile> folders;
+	private List<RealFile> folders;
 
 	public FileSearch(List<RealFile> folders) {
 		this.folders = new ArrayList<>(folders);
 	}
 
 	public void update(List<RealFile> folders) {
-		this.folders = (ArrayList<RealFile>) folders;
+		this.folders = folders;
 	}
 
 	@Override

@@ -207,11 +207,12 @@ public class RealFile extends MapFile {
 						);
 						LOGGER.trace("", e);
 					}
-
 				}
 			}
 
-			if (!found) {
+			if (found) {
+				LOGGER.trace("Retrieved cached parsing results for \"{}\": {}", file, media);
+			} else {
 				if (getMedia() == null) {
 					setMedia(new DLNAMediaInfo());
 				}
@@ -225,6 +226,7 @@ public class RealFile extends MapFile {
 					// Don't think that will ever happen
 					getMedia().parse(input, getFormat(), false, isResume(), parent == null ? null : parent.getDefaultRenderer());
 				}
+				LOGGER.trace("Parsing results for \"{}\": {}", file, media);
 
 				if (configuration.getUseCache() && getMedia().isMediaparsed() && !getMedia().isParsing()) {
 					DLNAMediaDatabase database = PMS.get().getDatabase();

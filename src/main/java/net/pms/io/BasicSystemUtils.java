@@ -65,6 +65,8 @@ public class BasicSystemUtils implements SystemUtils {
 	/** The singleton platform dependent {@link SystemUtils} instance */
 	public static SystemUtils INSTANCE = BasicSystemUtils.createInstance();
 
+	@Nonnull
+	protected final Version osVersion;
 	protected Path vlcPath;
 	protected Version vlcVersion;
 	protected boolean aviSynth;
@@ -86,6 +88,7 @@ public class BasicSystemUtils implements SystemUtils {
 
 	/** Only to be instantiated by {@link BasicSystemUtils#createInstance()}. */
 	protected BasicSystemUtils() {
+		osVersion = getOSVersionInternal();
 	}
 
 	@Override
@@ -243,8 +246,14 @@ public class BasicSystemUtils implements SystemUtils {
 	 */
 	@Override
 	public String[] getPingCommand(String hostAddress, int count, int packetSize) {
-		return new String[] { "ping", /* count */"-c", Integer.toString(count), /* size */
-				"-s", Integer.toString(packetSize), hostAddress };
+		return new String[] {
+			"ping",
+			"-c", // count
+			Integer.toString(count),
+			"-s", // size
+			Integer.toString(packetSize),
+			hostAddress
+		};
 	}
 
 	@Override
@@ -253,7 +262,7 @@ public class BasicSystemUtils implements SystemUtils {
 		String timeString = null;
 
 		if (msPos > -1) {
-			if (line.lastIndexOf('<', msPos) > -1){
+			if (line.lastIndexOf('<', msPos) > -1) {
 				timeString = "0.5";
 			} else {
 				timeString = line.substring(line.lastIndexOf('=', msPos) + 1, msPos).trim();
@@ -283,8 +292,17 @@ public class BasicSystemUtils implements SystemUtils {
 	}
 
 	@Override
-	public Double getWindowsVersion() {
-		return null;
+	@Nonnull
+	public Version getOSVersion() {
+		return osVersion;
+	}
+
+	/**
+	 * @return The non-cached OS {@link Version}.
+	 */
+	@Nonnull
+	protected Version getOSVersionInternal() {
+		return new Version(System.getProperty("os.version"));
 	}
 
 	@Override

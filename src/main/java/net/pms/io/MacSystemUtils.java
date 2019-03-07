@@ -20,8 +20,10 @@ import net.pms.newgui.LooksFrame;
 import net.pms.platform.macos.Cocoa;
 import net.pms.platform.macos.Cocoa.NSApplicationActivationOptions;
 import net.pms.platform.macos.SystemConfiguration;
+import net.pms.util.Version;
 import net.pms.util.jna.macos.corefoundation.CoreFoundation;
 import net.pms.util.jna.macos.corefoundation.CoreFoundation.CFStringRef;
+import net.pms.util.jna.macos.iokit.IOKitUtils;
 
 public class MacSystemUtils extends BasicSystemUtils {
 	private final static Logger LOGGER = LoggerFactory.getLogger(MacSystemUtils.class);
@@ -176,6 +178,13 @@ public class MacSystemUtils extends BasicSystemUtils {
 	@Nonnull
 	protected String getTrayIconName() {
 		return "icon-18.png";
+	}
+
+	@Override
+	@Nonnull
+	protected Version getOSVersionInternal() {
+		int[] elements = IOKitUtils.getMacosversion();
+		return new Version(elements[0], elements[1], elements[2], 0);
 	}
 
 	@Override

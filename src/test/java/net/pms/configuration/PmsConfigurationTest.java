@@ -23,6 +23,7 @@ import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.LoggerContext;
 import java.io.File;
 import java.util.Locale;
+import net.pms.logging.LogLevel;
 import net.pms.util.FileUtil;
 import net.pms.util.Languages;
 import org.apache.commons.configuration.Configuration;
@@ -61,8 +62,8 @@ public class PmsConfigurationTest {
 		file = new File(configuration.getDefaultLogFilePath());
 		assertTrue("DefaultLogFilePath", configuration.getDefaultLogFilePath().endsWith("debug.log"));
 		assertFalse("LoggingBufferedDefault", configuration.getLoggingBuffered());
-		assertEquals("LoggingFilterConsoleDefault", Level.TRACE, configuration.getLoggingFilterConsole());
-		assertEquals("LoggingFilterLogsTabDefault", configuration.getLoggingFilterLogsTab(), Level.INFO);
+		assertEquals("LoggingFilterConsoleDefault", LogLevel.TRACE, configuration.getLoggingFilterConsole());
+		assertEquals("LoggingFilterLogsTabDefault", LogLevel.INFO, configuration.getLoggingFilterLogsTab());
 		assertEquals("LoggingLogsTabLinebufferDefault", configuration.getLoggingLogsTabLinebuffer(), 1000);
 		assertTrue("LoggingLogsTabLinebufferLegal",
 			configuration.getLoggingLogsTabLinebuffer() >= PmsConfiguration.LOGGING_LOGS_TAB_LINEBUFFER_MIN &&

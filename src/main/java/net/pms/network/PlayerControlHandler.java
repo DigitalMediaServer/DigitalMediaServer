@@ -244,7 +244,7 @@ public class PlayerControlHandler implements HttpHandler {
 		if (!StringUtils.isBlank(raw)) {
 			try {
 				String[] q = raw.split("&|=");
-				for (int i = 0; i < q.length; i += 2) {
+				for (int i = 0; i < q.length - 1; i += 2) {
 					vars.put(URLDecoder.decode(q[i], "UTF-8"), UPNPHelper.unescape(URLDecoder.decode(q[i + 1], "UTF-8")));
 				}
 			} catch (Exception e) {

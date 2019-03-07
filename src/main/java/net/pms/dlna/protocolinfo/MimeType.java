@@ -225,7 +225,7 @@ public class MimeType implements Comparable<MimeType>, Serializable {
 		} else if (elements.length == 2) {
 			type = elements[0];
 			subtype = elements[1];
-		} else if (elements.length > 2) {
+		} else {
 			throw new ParseException("Error parsing mimetype \"" + parts[0] + "\" from \"" + stringValue + "\"");
 		}
 

@@ -60,6 +60,8 @@ public class FormatConfiguration {
 	public static final String ALS = "als";
 	public static final String AMR = "amr";
 	public static final String ASF = "asf";
+	/** @deprecated Not in use until multi-level parsing is implemented */
+	@Deprecated
 	public static final String ATMOS = "atmos";
 	public static final String ATRAC = "atrac";
 	public static final String AU = "au";
@@ -154,6 +156,7 @@ public class FormatConfiguration {
 	public static final String SIPRO = "sipro";
 	public static final String SLS = "sls";
 	public static final String SORENSON = "sor";
+	public static final String SUDS = "suds";
 	public static final String TGA = "tga";
 	public static final String THEORA = "theora";
 	public static final String TIFF = "tiff";

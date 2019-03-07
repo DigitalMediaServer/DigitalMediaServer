@@ -26,6 +26,7 @@ import java.util.*;
 import java.util.Map.Entry;
 import javax.annotation.Nullable;
 import net.pms.PMS;
+import net.pms.configuration.FFmpegProgramInfo;
 import net.pms.configuration.FormatConfiguration;
 import net.pms.configuration.PmsConfiguration;
 import net.pms.configuration.RendererConfiguration;
@@ -559,6 +560,9 @@ public class DLNAMediaInfo implements Cloneable {
 		forThumbnail.setMediaparsed(mediaparsed);  // check if file was already parsed by MediaInfo
 		forThumbnail.setImageInfo(imageInfo);
 		forThumbnail.durationSec = getDuration();
+		forThumbnail.audioTracks = audioTracks;
+		forThumbnail.imageCount = imageCount;
+		forThumbnail.videoTrackCount = videoTrackCount;
 		if (forThumbnail.durationSec == null) {
 			forThumbnail.durationSec = Double.valueOf(0d);
 		} else if (seekPosition <= forThumbnail.durationSec.doubleValue()) {
@@ -583,7 +587,7 @@ public class DLNAMediaInfo implements Cloneable {
 
 		args.add(PlayerFactory.getPlayerExecutable(StandardPlayerId.FFMPEG_VIDEO));
 		if (args.get(0) == null) {
-			LOGGER.warn("Cannot generate thumbnail for {} since the FFmpeg executable is undefined");
+			LOGGER.warn("Cannot generate thumbnail for \"{}\" since the FFmpeg executable is undefined", media.getFilename());
 			return null;
 		}
 
@@ -596,6 +600,9 @@ public class DLNAMediaInfo implements Cloneable {
 			}
 		}
 
+		args.add("-loglevel");
+		args.add(FFmpegProgramInfo.getFFmpegLogLevel());
+		args.add("-hide_banner");
 		args.add("-i");
 
 		if (media.getFile() != null) {
@@ -604,12 +611,22 @@ public class DLNAMediaInfo implements Cloneable {
 			args.add("-");
 		}
 
+		args.add("-map");
+		args.add("0:V");
 		args.add("-an");
 		args.add("-dn");
 		args.add("-sn");
 		if (generateThumbnail) {
+			args.add("-c:v");
+			args.add("mjpeg");
+			args.add("-pix_fmt");
+			args.add("yuvj420p");
+			args.add("-q:v");
+			args.add("2");
 			args.add("-vf");
-			args.add("scale=320:-2");
+			args.add("select='eq(pict_type,PICT_TYPE_I)',scale='if(gte(iw,ih),320,trunc(iw*sar*oh/ih))':'if(gte(iw,ih),trunc(ih*ow/iw/sar),320)'");
+			args.add("-vsync");
+			args.add("vfr");
 			args.add("-vframes");
 			args.add("1");
 			args.add("-f");
@@ -983,7 +1000,17 @@ public class DLNAMediaInfo implements Cloneable {
 			}
 
 			if (ffmpeg_parsing) {
-				if (!thumbOnly || ((type == FormatType.VIDEO || type == FormatType.CONTAINER) && !configuration.isUseMplayerForVideoThumbs())) {
+				if (
+					!thumbOnly || (
+						mediaparsed && getMediaType() == MediaType.VIDEO
+					) || (
+						!mediaparsed && (
+							type == FormatType.VIDEO ||
+							type == FormatType.CONTAINER
+						) &&
+						!configuration.isUseMplayerForVideoThumbs()
+					)
+				) {
 					pw = getFFmpegThumbnail(inputFile, resume);
 				}
 
@@ -1249,7 +1276,7 @@ public class DLNAMediaInfo implements Cloneable {
 								String frameRateDoubleString = token.substring(0, token.indexOf("tb")).trim();
 								try {
 									if (!frameRateDoubleString.equals(frameRate)) {// tbc taken into account only if different than tbr
-										Double frameRateDouble = Double.parseDouble(frameRateDoubleString);
+										double frameRateDouble = Double.valueOf(frameRateDoubleString);
 										frameRate = String.format(Locale.ENGLISH, "%.2f", frameRateDouble / 2);
 									}
 								} catch (NumberFormatException nfe) {
@@ -2201,7 +2228,7 @@ public class DLNAMediaInfo implements Cloneable {
 	/**
 	 * Sets the {@link ScanOrder}.
 	 *
-	 * @param scanType the {@link ScanOrder} to set.
+	 * @param scanOrder the {@link ScanOrder} to set.
 	 */
 	public void setScanOrder(@Nullable ScanOrder scanOrder) {
 		this.scanOrder = scanOrder;

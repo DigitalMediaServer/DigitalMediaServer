@@ -186,7 +186,7 @@ public class LoggingTest {
 		// Load logback configuration
 		LoggingConfig.loadFile();
 		// Silence logger
-		LoggingConfig.setRootLevel(Level.OFF);
+		LoggingConfig.setRootLevel(LogLevel.OFF);
 
 		// Get access to logger
 		LoggerContext context = (LoggerContext) LoggerFactory.getILoggerFactory();
@@ -273,14 +273,14 @@ public class LoggingTest {
 		assertEquals("GetRootLevel", LoggingConfig.getRootLevel(), rootLogger.getLevel());
 
 		// Test setRootLevel()
-		LoggingConfig.setRootLevel(Level.ALL);
+		LoggingConfig.setRootLevel(LogLevel.ALL);
 		assertEquals("SetRootLevel", LoggingConfig.getRootLevel(), Level.ALL);
-		LoggingConfig.setRootLevel(Level.INFO);
+		LoggingConfig.setRootLevel(LogLevel.INFO);
 		assertEquals("SetRootLevel", LoggingConfig.getRootLevel(), Level.INFO);
-		LoggingConfig.setRootLevel(Level.OFF);
+		LoggingConfig.setRootLevel(LogLevel.OFF);
 
 		// Test setConsoleFilter()
-		configuration.setLoggingFilterConsole(Level.WARN);
+		configuration.setLoggingFilterConsole(LogLevel.WARN);
 		ConsoleAppender<ILoggingEvent> consoleAppender = new ConsoleAppender<>();
 		consoleAppender.setContext(context);
 		PatternLayoutEncoder patternEncoder = new PatternLayoutEncoder();
@@ -298,7 +298,7 @@ public class LoggingTest {
 		Field field = thresholdFilter.getClass().getDeclaredField("level");
 		field.setAccessible(true);
 		assertEquals("ConsoleFilterLevel", field.get(thresholdFilter), Level.WARN);
-		configuration.setLoggingFilterConsole(Level.TRACE);
+		configuration.setLoggingFilterConsole(LogLevel.TRACE);
 		LoggingConfig.setConsoleFilter();
 		filterList = consoleAppender.getCopyOfAttachedFiltersList();
 		assertEquals("NumberOfConsoleFilters", filterList.size(), 1);
@@ -310,7 +310,7 @@ public class LoggingTest {
 		rootLogger.detachAppender(consoleAppender);
 
 		// Test setTracesFilter()
-		configuration.setLoggingFilterLogsTab(Level.WARN);
+		configuration.setLoggingFilterLogsTab(LogLevel.WARN);
 		FrameAppender<ILoggingEvent> frameAppender = new FrameAppender<>();
 		frameAppender.setContext(context);
 		patternEncoder = new PatternLayoutEncoder();
@@ -328,7 +328,7 @@ public class LoggingTest {
 		field = thresholdFilter.getClass().getDeclaredField("level");
 		field.setAccessible(true);
 		assertEquals("TracesFilterLevel", field.get(thresholdFilter), Level.WARN);
-		configuration.setLoggingFilterLogsTab(Level.TRACE);
+		configuration.setLoggingFilterLogsTab(LogLevel.TRACE);
 		LoggingConfig.setTracesFilter();
 		filterList = frameAppender.getCopyOfAttachedFiltersList();
 		assertEquals("NumberOfTracesFilters", filterList.size(), 1);

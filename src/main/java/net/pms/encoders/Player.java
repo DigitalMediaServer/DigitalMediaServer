@@ -1263,6 +1263,7 @@ public abstract class Player {
 						result.getErrorType(),
 						result.getErrorText()
 					);
+					programInfo.setExecutableInfo(executableType, result);
 				}
 				return true;
 			} finally {

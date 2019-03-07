@@ -1,3 +1,22 @@
+/*
+ * Digital Media Server, for streaming digital media to DLNA compatible devices
+ * based on www.ps3mediaserver.org and www.universalmediaserver.com.
+ * Copyright (C) 2016 Digital Media Server developers.
+ *
+ * This program is a free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; version 2
+ * of the License only.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ */
 package net.pms.configuration;
 
 import java.nio.file.Path;
@@ -5,6 +24,9 @@ import java.util.Map;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.ThreadSafe;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import net.pms.logging.LogLevel;
 
 
 /**
@@ -16,6 +38,8 @@ import javax.annotation.concurrent.ThreadSafe;
  */
 @ThreadSafe
 public class FFmpegProgramInfo extends ExternalProgramInfo {
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(FFmpegProgramInfo.class);
 
 	/**
 	 * Creates a new instance with the given arguments.
@@ -112,4 +136,62 @@ public class FFmpegProgramInfo extends ExternalProgramInfo {
 	public FFmpegProgramInfo copy() {
 		return new FFmpegProgramInfo(programName, defaultType, originalDefaultType, executablesInfo);
 	}
+
+	/**
+	 * Returns the FFmpeg parameter value for {@code "-loglevel"} derived from
+	 * the current {@link LogLevel}.
+	 *
+	 * @return The FFmpeg {@code "-loglevel"} parameter value.
+	 */
+	@Nonnull
+	public static String getFFmpegLogLevel() {
+		return getFFmpegLogLevel(LOGGER);
+	}
+
+	/**
+	 * Returns the FFmpeg parameter value for {@code "-loglevel"} derived from
+	 * the {@link LogLevel} of the specified {@link Logger}.
+	 *
+	 * @param logger the {@link Logger} from which to derive the value.
+	 * @return The FFmpeg {@code "-loglevel"} parameter value.
+	 */
+	@Nonnull
+	public static String getFFmpegLogLevel(@Nullable Logger logger) {
+		if (logger == null) {
+			logger = LOGGER;
+		}
+		return getFFmpegLogLevel(LogLevel.getLogLevel(logger));
+	}
+
+	/**
+	 * Returns the FFmpeg parameter value for {@code "-loglevel"} derived from
+	 * the specified {@link LogLevel}.
+	 *
+	 * @param level the {@link LogLevel} from which to derive the value.
+	 * @return The FFmpeg {@code "-loglevel"} parameter value.
+	 */
+	@Nonnull
+	public static String getFFmpegLogLevel(@Nullable LogLevel level) {
+		if (level == null) {
+			return "warning";
+		}
+		switch (level) {
+			case OFF:
+				return "quiet";
+			case ERROR:
+				return "error";
+			case WARN:
+			case INFO:
+				return "warning";
+			case DEBUG:
+			case TRACE:
+				return "info";
+			case ALL:
+				return "verbose";
+			default:
+				LOGGER.error("Unimplemented enum value \"{}\" in getFFmpegLogLevel()", level.name());
+				return "info";
+		}
+	}
+
 }

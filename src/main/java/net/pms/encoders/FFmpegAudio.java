@@ -30,6 +30,7 @@ import java.util.List;
 import javax.swing.*;
 import net.pms.Messages;
 import net.pms.configuration.DeviceConfiguration;
+import net.pms.configuration.FFmpegProgramInfo;
 import net.pms.configuration.PmsConfiguration;
 import net.pms.dlna.DLNAMediaInfo;
 import net.pms.dlna.DLNAResource;
@@ -41,11 +42,8 @@ import net.pms.io.ProcessWrapper;
 import net.pms.io.ProcessWrapperImpl;
 import net.pms.network.HTTPResource;
 import net.pms.newgui.GuiUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class FFmpegAudio extends FFMpegVideo {
-	private static final Logger LOGGER = LoggerFactory.getLogger(FFmpegAudio.class);
 	public static final PlayerId ID = StandardPlayerId.FFMPEG_AUDIO;
 
 	/** The {@link Configuration} key for the FFmpeg Audio executable type. */
@@ -162,12 +160,7 @@ public class FFmpegAudio extends FFMpegVideo {
 		cmdList.add(getExecutable());
 
 		cmdList.add("-loglevel");
-
-		if (LOGGER.isTraceEnabled()) { // Set -loglevel in accordance with LOGGER setting
-			cmdList.add("info"); // Could be changed to "verbose" or "debug" if "info" level is not enough
-		} else {
-			cmdList.add("warning");
-		}
+		cmdList.add(FFmpegProgramInfo.getFFmpegLogLevel());
 
 		double start = Math.max(params.timeseek, 0.0);
 		double end = params.timeend > 0 ? params.timeend : Double.POSITIVE_INFINITY;

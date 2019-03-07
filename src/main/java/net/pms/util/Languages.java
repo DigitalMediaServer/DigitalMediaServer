@@ -412,7 +412,7 @@ public final class Languages {
 								LOGGER.debug("Failed to parse translation statistics line \"{}\": Illegal qualifier", line);
 							}
 						} catch (NumberFormatException e) {
-							LOGGER.debug("Failed to parse translation statistics line \"{}\": ", line, e.getMessage());
+							LOGGER.debug("Failed to parse translation statistics line \"{}\": {}", line, e.getMessage());
 						}
 					}
 				}

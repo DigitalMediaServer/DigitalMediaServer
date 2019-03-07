@@ -532,7 +532,7 @@ public class SleepManager implements Service {
 					LOGGER.trace("", e);
 				}
 			} else {
-				LOGGER.warn("Ignoring attempt to release idle sleep prevention assertion with invalid id ", preventAssertionId);
+				LOGGER.warn("Ignoring attempt to release idle sleep prevention assertion with invalid id {}", preventAssertionId);
 				preventSleep = sleepPrevented;
 			}
 		}

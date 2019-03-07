@@ -43,6 +43,7 @@ import net.pms.configuration.ExecutableInfo.ExecutableInfoBuilder;
 import net.pms.configuration.ExternalProgramInfo;
 import net.pms.configuration.FFmpegExecutableInfo;
 import net.pms.configuration.FFmpegExecutableInfo.FFmpegExecutableInfoBuilder;
+import net.pms.configuration.FFmpegProgramInfo;
 import net.pms.configuration.FormatConfiguration;
 import net.pms.configuration.PmsConfiguration;
 import net.pms.configuration.RendererConfiguration;
@@ -132,7 +133,7 @@ public class FFMpegVideo extends Player {
 		ArrayList<String> scalePadFilterChain = new ArrayList<>();
 		final RendererConfiguration renderer = params.mediaRenderer;
 
-		boolean isMediaValid = media != null && media.isMediaparsed() && media.getHeight() != 0;
+		boolean isMediaValid = media.isMediaparsed() && media.getHeight() != 0;
 		boolean isResolutionTooHighForRenderer = isMediaValid && !params.mediaRenderer.isResolutionCompatibleWithRenderer(media.getWidth(), media.getHeight());
 
 		int scaleWidth = 0;
@@ -712,20 +713,6 @@ public class FFMpegVideo extends Player {
 		return FormatType.VIDEO;
 	}
 
-	// unused; return this array for backwards-compatibility
-	@Deprecated
-	protected String[] getDefaultArgs() {
-		List<String> defaultArgsList = new ArrayList<>();
-
-		defaultArgsList.add("-loglevel");
-		defaultArgsList.add("warning");
-
-		String[] defaultArgsArray = new String[defaultArgsList.size()];
-		defaultArgsList.toArray(defaultArgsArray);
-
-		return defaultArgsArray;
-	}
-
 	private static int[] getVideoBitrateConfig(String bitrate) {
 		int bitrates[] = new int[2];
 
@@ -749,7 +736,7 @@ public class FFMpegVideo extends Player {
 	@Override
 	@Deprecated
 	public String[] args() {
-		return getDefaultArgs(); // unused; return this array for for backwards compatibility
+		return null;
 	}
 
 	@Override
@@ -827,11 +814,7 @@ public class FFMpegVideo extends Player {
 		cmdList.add("-y");
 
 		cmdList.add("-loglevel");
-		if (LOGGER.isTraceEnabled()) { // Set -loglevel in accordance with LOGGER setting
-			cmdList.add("info"); // Could be changed to "verbose" or "debug" if "info" level is not enough
-		} else {
-			cmdList.add("fatal");
-		}
+		cmdList.add(FFmpegProgramInfo.getFFmpegLogLevel());
 
 		double start = Math.max(params.timeseek, 0.0);
 		double end = params.timeend > 0 ? params.timeend : Double.POSITIVE_INFINITY;
@@ -1343,7 +1326,7 @@ public class FFMpegVideo extends Player {
 		try {
 			Thread.sleep(200);
 		} catch (InterruptedException e) {
-			LOGGER.error("Thread interrupted while waiting for transcode to start", e.getMessage());
+			LOGGER.error("Thread interrupted while waiting for transcode to start");
 			LOGGER.trace("", e);
 		}
 		configuration = prev;
@@ -1614,8 +1597,21 @@ public class FFMpegVideo extends Player {
 						LOGGER.debug(
 							"{} supported codecs: {}",
 							executableInfo.getPath(),
-							FFmpegExecutableInfo.toCodecsStringBuilder(builder.codecs())
+							FFmpegExecutableInfo.toCodecsBuilderString(builder.codecs())
 						);
+					}
+
+					FFmpegExecutableInfo.determineBitstreamFilters(builder);
+					if (LOGGER.isDebugEnabled()) {
+						if (builder.bitstreamFilters() == null || builder.bitstreamFilters().isEmpty()) {
+							LOGGER.debug("No bitstream filters parsed for \"{}\"", executableInfo.getPath());
+						} else {
+							LOGGER.debug(
+								"{} supported bitstream filters: {}",
+								executableInfo.getPath(),
+								FFmpegExecutableInfo.toBitstreamFiltersString(builder.bitstreamFilters())
+							);
+						}
 					}
 				} else {
 					LOGGER.error("Could not determine FFmpeg details because of an internal error");

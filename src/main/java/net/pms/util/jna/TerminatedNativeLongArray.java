@@ -85,6 +85,6 @@ public abstract class TerminatedNativeLongArray extends TerminatedArray<NativeLo
 
 	@Override
 	protected void writeTerminator() {
-		getPointer().setNativeLong(buffer.size() * SIZE, getTerminator());
+		getPointer().setNativeLong((long) buffer.size() * SIZE, getTerminator());
 	}
 }

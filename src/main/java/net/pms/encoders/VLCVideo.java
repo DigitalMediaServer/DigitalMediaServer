@@ -728,7 +728,7 @@ public class VLCVideo extends Player {
 				}
 				if (output.getExitCode() == 0) {
 					if (output.getOutput() != null && output.getOutput().size() > 0) {
-						Pattern pattern = Pattern.compile("\\(([^\\)]*)");
+						Pattern pattern = Pattern.compile("\\(([^\\)]*)\\)");
 						Matcher matcher = pattern.matcher(output.getOutput().get(0));
 						if (matcher.find() && isNotBlank(matcher.group(1))) {
 							result.version(new Version(matcher.group(1)));

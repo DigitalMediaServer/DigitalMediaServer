@@ -171,8 +171,11 @@ public class DLNAMediaAudio extends DLNAMediaLang implements Cloneable {
 	}
 
 	/**
-	 * @return True if the audio codec is Atmos.
+	 * @return {@code true} if the audio codec is Atmos.
+	 *
+	 * @deprecated Not in use until multi-level parsing is implemented
 	 */
+	@Deprecated
 	public boolean isAtmos() {
 		return FormatConfiguration.ATMOS.equalsIgnoreCase(getCodecA());
 	}

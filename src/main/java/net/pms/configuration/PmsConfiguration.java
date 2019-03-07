@@ -20,7 +20,6 @@ package net.pms.configuration;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
-import ch.qos.logback.classic.Level;
 import com.sun.jna.Platform;
 import java.awt.Color;
 import java.awt.Component;
@@ -54,6 +53,7 @@ import net.pms.encoders.StandardPlayerId;
 import net.pms.exception.InvalidArgumentException;
 import net.pms.image.thumbnail.CoverSupplier;
 import net.pms.io.BasicSystemUtils;
+import net.pms.logging.LogLevel;
 import net.pms.newgui.NavigationShareTab.SharedFoldersTableModel;
 import net.pms.service.PreventSleepMode;
 import net.pms.service.Services;
@@ -1236,7 +1236,7 @@ public class PmsConfiguration extends RendererConfiguration {
 
 	/**
 	 * Sets the preferred language for the DMS user interface.
-	 * @param value The {@link java.net.Locale}.
+	 * @param locale The {@link java.net.Locale}.
 	 */
 	public void setLanguage(Locale locale) {
 		if (locale != null) {
@@ -4187,20 +4187,20 @@ public class PmsConfiguration extends RendererConfiguration {
 		configuration.setProperty(KEY_LOGGING_BUFFERED, value);
 	}
 
-	public Level getLoggingFilterConsole() {
-		return Level.toLevel(getString(KEY_LOGGING_FILTER_CONSOLE, "TRACE"), Level.INFO);
+	public LogLevel getLoggingFilterConsole() {
+		return LogLevel.typeOf(getString(KEY_LOGGING_FILTER_CONSOLE, "Trace"), LogLevel.TRACE);
 	}
 
-	public void setLoggingFilterConsole(Level value) {
-		configuration.setProperty(KEY_LOGGING_FILTER_CONSOLE, value.levelStr);
+	public void setLoggingFilterConsole(LogLevel value) {
+		configuration.setProperty(KEY_LOGGING_FILTER_CONSOLE, value == null ? "" : value.toString(false));
 	}
 
-	public Level getLoggingFilterLogsTab() {
-		return Level.toLevel(getString(KEY_LOGGING_FILTER_LOGS_TAB, "INFO"), Level.INFO);
+	public LogLevel getLoggingFilterLogsTab() {
+		return LogLevel.typeOf(getString(KEY_LOGGING_FILTER_LOGS_TAB, "Info"), LogLevel.INFO);
 	}
 
-	public void setLoggingFilterLogsTab(Level value) {
-		configuration.setProperty(KEY_LOGGING_FILTER_LOGS_TAB, value.levelStr);
+	public void setLoggingFilterLogsTab(LogLevel value) {
+		configuration.setProperty(KEY_LOGGING_FILTER_LOGS_TAB, value == null ? "" : value.toString(false));
 	}
 
 	public int getLoggingLogsTabLinebuffer() {
@@ -4524,7 +4524,7 @@ public class PmsConfiguration extends RendererConfiguration {
 	@Nonnull
 	public File getWebPath() {
 		File path = new File(getString(KEY_WEB_PATH, "web"));
-		if (!path.exists()) {
+		if (!path.exists() || !new File(path, "start.html").exists()) {
 			// Make it work while debugging
 			File debugPath = new File("src/main/external-resources/" + getString(KEY_WEB_PATH, "web"));
 			if (debugPath.exists()) {
@@ -4756,13 +4756,12 @@ public class PmsConfiguration extends RendererConfiguration {
 		return getBoolean(KEY_UPNP_ENABLED, true);
 	}
 
-	public String getRootLogLevel() {
-		String level = getString(KEY_ROOT_LOG_LEVEL, "INFO").toUpperCase();
-		return "ALL TRACE DEBUG INFO WARN ERROR OFF".contains(level) ? level : "INFO";
+	public LogLevel getRootLogLevel() {
+		return LogLevel.typeOf(getString(KEY_ROOT_LOG_LEVEL, "Info"), LogLevel.INFO);
 	}
 
-	public void setRootLogLevel(ch.qos.logback.classic.Level level) {
-		configuration.setProperty(KEY_ROOT_LOG_LEVEL, level.toString());
+	public void setRootLogLevel(LogLevel level) {
+		configuration.setProperty(KEY_ROOT_LOG_LEVEL, level.toString(false));
 	}
 
 	public boolean isShowSplashScreen() {

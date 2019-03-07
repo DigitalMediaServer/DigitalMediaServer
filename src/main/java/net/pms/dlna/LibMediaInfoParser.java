@@ -5,7 +5,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Locale;
-import java.util.StringTokenizer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.annotation.Nonnull;
@@ -576,7 +575,7 @@ public class LibMediaInfoParser {
 			return;
 		}
 
-		value = value.toLowerCase(Locale.ROOT);
+		value = value.trim().toLowerCase(Locale.ROOT);
 		String format = null;
 
 		if (isBlank(value)) {
@@ -638,8 +637,6 @@ public class LibMediaInfoParser {
 			} else {
 				format = FormatConfiguration.LPCM;
 			}
-		} else if (value.contains("atmos") || value.equals("131")) {
-			format = FormatConfiguration.ATMOS;
 		} else if (value.contains("ogg")) {
 			format = FormatConfiguration.OGG;
 		} else if (value.contains("opus")) {
@@ -655,7 +652,8 @@ public class LibMediaInfoParser {
 		) {
 			format = FormatConfiguration.WMV;
 		} else if (
-			value.startsWith("dvr")
+			value.startsWith("dvr") &&
+			media.getContainer().equals(FormatConfiguration.ASF)
 		) {
 			media.setContainer(FormatConfiguration.DVRMS);
 		} else if (
@@ -716,7 +714,7 @@ public class LibMediaInfoParser {
 			format = FormatConfiguration.MACE3;
 		} else if (value.equals("mac6")) {
 			format = FormatConfiguration.MACE6;
-		} else if (streamType == StreamType.Video && value.startsWith("tga")) {
+		} else if (streamType == StreamType.Video && value.equals("tga")) {
 			format = FormatConfiguration.TGA;
 		} else if (value.equals("ffv1")) {
 			format = FormatConfiguration.FFV1;
@@ -724,6 +722,8 @@ public class LibMediaInfoParser {
 			format = FormatConfiguration.CELP;
 		} else if (value.equals("qcelp")) {
 			format = FormatConfiguration.QCELP;
+		} else if (value.equals("suds")) {
+			format = FormatConfiguration.SUDS;
 		} else if (value.matches("(?i)(dv)|(cdv.?)|(dc25)|(dcap)|(dvc.?)|(dvs.?)|(dvrs)|(dv25)|(dv50)|(dvan)|(dvh.?)|(dvis)|(dvl.?)|(dvnm)|(dvp.?)|(mdvf)|(pdvc)|(r411)|(r420)|(sdcc)|(sl25)|(sl50)|(sldv)")) {
 			format = FormatConfiguration.DV;
 		} else if (value.contains("mpeg video")) {
@@ -795,14 +795,21 @@ public class LibMediaInfoParser {
 			value.equals("2000")
 		) {
 			format = FormatConfiguration.AC3;
-		} else if (value.equals("e-ac-3")) {
+		} else if (value.startsWith("e-ac-3") && !value.startsWith("e-ac-3 joc")) {
 			format = FormatConfiguration.EAC3;
 		} else if (value.equals("mlp")) {
 			format = FormatConfiguration.MLP;
 		} else if (value.contains("truehd") || value.contains("mlp fba") && !value.contains("mlp fba 16-ch")) {
 			format = FormatConfiguration.TRUEHD;
-		} else if (value.contains("atmos") || value.contains("mlp fba 16-ch") || value.equals("131")) {
-			format = FormatConfiguration.ATMOS;
+
+		/*
+		 * XXX: Atmos is disabled until multi-level parsing is implemented,
+		 * because it's more useful to know the underlying codec.
+		 */
+
+		//} else if (value.contains("atmos") || value.startsWith("e-ac-3 joc") || value.contains("mlp fba 16-ch") || value.equals("131")) {
+		//	format = FormatConfiguration.ATMOS;
+
 		} else if (value.startsWith("cook")) {
 			format = FormatConfiguration.COOK;
 		} else if (value.startsWith("qdesign")) {
@@ -1202,46 +1209,6 @@ public class LibMediaInfoParser {
 	@Deprecated
 	public static String getFlavor(String value) {
 		return value.trim();
-	}
-
-	/**
-	 * Parses the "Duration/String1" format.
-	 *
-	 * @deprecated Parse "Duration" with {@link #parseDuration(String)} instead.
-	 */
-	@SuppressWarnings("unused")
-	@Deprecated
-	private static double getDuration(String value) {
-		int h = 0, m = 0, s = 0;
-		StringTokenizer st = new StringTokenizer(value, " ");
-
-		while (st.hasMoreTokens()) {
-			String token = st.nextToken();
-			int hl = token.indexOf('h');
-
-			if (hl > -1) {
-				h = Integer.parseInt(token.substring(0, hl).trim());
-			}
-
-			int mnl = token.indexOf("mn");
-
-			if (mnl > -1) {
-				m = Integer.parseInt(token.substring(0, mnl).trim());
-			}
-
-			int msl = token.indexOf("ms");
-
-			if (msl == -1) {
-				// Only check if ms was not found
-				int sl = token.indexOf('s');
-
-				if (sl > -1) {
-					s = Integer.parseInt(token.substring(0, sl).trim());
-				}
-			}
-		}
-
-		return (h * 3600) + (m * 60) + s;
 	}
 
 	/**

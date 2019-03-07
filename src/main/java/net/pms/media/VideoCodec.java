@@ -46,6 +46,9 @@ public enum VideoCodec implements Codec {
 	 */
 	DIVX("DivX"),
 
+	/** Digital Video */
+	DV("Digital Video"),
+
 	/** FF video codec 1 */
 	FFV1("FFV1", true),
 
@@ -67,14 +70,43 @@ public enum VideoCodec implements Codec {
 	/** Motion JPEG */
 	MJPEG("M-JPEG"),
 
+	/** A series of Motion JPEG 2000 images in some containers, for example AVI */
+	MJP2("M-JPEG 2000"),
+
+	/** MPEG-4 Part 2 */
+	// XXX: Figure out how to deal with MPEG-4 and profiles
+	MPEG4("MPEG-4"),
+
 	/** MPEG-4 Part 2, MPEG-4 Visual Advanced Simple Profile (ASP) */
 	MPEG4ASP("MPEG-4 ASP"),
 
 	/** MPEG-4 Part 2, MPEG-4 Visual Simple Profile (SP) */
 	MPEG4SP("MPEG-4 SP"),
 
+	/**
+	 * A series of Portable Network Graphics images in some containers, for
+	 * example AVI
+	 */
+	PNG("PNG"),
+
 	/** Apple ProRes */
 	PRORES("ProRes"),
+
+	/** A series of uncompressed RGB bitmaps in some containers, for example AVI */
+	RGB("RGB"),
+
+	/** Real Video */
+	RV("RealVideo"),
+
+	/**
+	 * A series of SoftImage DS Uncompressed (PIC) images in some containers,
+	 * for example AVI.
+	 * <p>
+	 * See image format reference <a href=
+	 * "https://web.archive.org/web/20190211232700/http://softimage.wiki.softimage.com/index70ed.html?title=PIC_file_format#Channel_Info_Section"
+	 * >here</a>.
+	 */
+	SUDS("SUDS"),
 
 	/** Sorenson Video */
 	SVQ1("Sorenson Video"),
@@ -84,6 +116,18 @@ public enum VideoCodec implements Codec {
 
 	/** Sorenson Spark */
 	FLV1("Sorenson Spark"),
+
+	/** Indeo Video (Intel) */
+	INDEO("INDEO"),
+
+	/**
+	 * A series of Run-Length Encoded bitmaps in some containers, for example
+	 * AVI
+	 */
+	RLE("RLE"),
+
+	/** A series of Truevision Targa images in some containers, for example AVI */
+	TGA("TGA"),
 
 	/** Theora */
 	THEORA("Theora"),
@@ -122,6 +166,7 @@ public enum VideoCodec implements Codec {
 		this.codecName = name;
 		this.lossless = false;
 	}
+
 	private VideoCodec(String name, boolean lossless) {
 		this.codecName = name;
 		this.lossless = lossless;
@@ -191,6 +236,10 @@ public enum VideoCodec implements Codec {
 		switch (valueLower) {
 			case FormatConfiguration.CINEPAK:
 				return CINEPAK;
+			case "mpeg1":
+				return H261;
+			case "mpeg2":
+				return H262;
 			case FormatConfiguration.SORENSON:
 				return SVQ1;
 			default:

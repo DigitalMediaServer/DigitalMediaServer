@@ -164,7 +164,7 @@ public class CodecUtil {
 				try {
 					fontName = Font.createFont(Font.TRUETYPE_FONT, fontFile).getFontName();
 				} catch (FontFormatException | IOException e) {
-					LOGGER.debug("Exception when implementing the custom font: ", e.getMessage());
+					LOGGER.debug("Exception when implementing the custom font: {}", e.getMessage());
 				}
 			}
 

@@ -21,7 +21,6 @@ package net.pms.dlna;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
 import java.util.List;
 import org.apache.commons.lang3.StringUtils;
 import org.jdom2.Content;
@@ -120,7 +119,7 @@ public class Feed extends DLNAResource {
 				tempFeedLink = entry.getUri();
 				tempItemThumbURL = null;
 
-				ArrayList<Element> elements = (ArrayList<Element>) entry.getForeignMarkup();
+				List<Element> elements = entry.getForeignMarkup();
 				for (Element elt : elements) {
 					if ("group".equals(elt.getName()) && "media".equals(elt.getNamespacePrefix())) {
 						List<Content> subElts = elt.getContent();

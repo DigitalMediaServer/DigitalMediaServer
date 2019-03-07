@@ -408,7 +408,7 @@ public class LanguageSelection {
 						try {
 							Desktop.getDesktop().browse(new URI(e.getDescription()));
 						} catch (IOException | URISyntaxException ex) {
-							LOGGER.error("Language selection failed to open translation page hyperlink: ", ex.getMessage());
+							LOGGER.error("Language selection failed to open translation page hyperlink: {}", ex.getMessage());
 							LOGGER.trace("", ex);
 							error = true;
 						}

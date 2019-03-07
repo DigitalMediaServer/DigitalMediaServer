@@ -12,6 +12,7 @@ import java.nio.charset.IllegalCharsetNameException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileStore;
 import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -552,8 +553,6 @@ public class FileUtil {
 
 	/**
 	 * Remove group name from the beginning of the filename
-	 *
-	 * @param fileNameWithoutExtension
 	 */
 	private static String removeGroupNameFromBeginning(String formattedName) {
 		if (!"".equals(formattedName) && formattedName.startsWith("[")) {
@@ -1313,11 +1312,12 @@ public class FileUtil {
 	 */
 	@Nonnull
 	public static CharsetMatch getFileCharsetMatch(@Nonnull File file) throws IOException {
-		InputStream in = new BufferedInputStream(new FileInputStream(file));
-		CharsetDetector detector = new CharsetDetector();
-		detector.setText(in);
-		// Results are sorted on descending confidence, so we're only after the first one.
-		return detector.detectAll()[0];
+		try (InputStream in = new BufferedInputStream(new FileInputStream(file))) {
+			CharsetDetector detector = new CharsetDetector();
+			detector.setText(in);
+			// Results are sorted on descending confidence, so we're only after the first one.
+			return detector.detectAll()[0];
+		}
 	}
 
 	/**
@@ -1408,7 +1408,7 @@ public class FileUtil {
 	/**
 	 * Tests if charset is UTF-8.
 	 *
-	 * @param charset charset name to test
+	 * @param charsetName charset name to test
 	 * @return True if charset is UTF-8, false otherwise.
 	 */
 	public static boolean isCharsetUTF8(String charsetName) {
@@ -1816,16 +1816,8 @@ public class FileUtil {
 				return isAdmin;
 			}
 			if (Platform.isWindows()) {
-				Double version = BasicSystemUtils.INSTANCE.getWindowsVersion();
-				if (version == null) {
-					LOGGER.error(
-						"Could not determine Windows version from {}. Administrator privileges is undetermined.",
-						System.getProperty("os.version")
-					);
-					isAdmin = false;
-					return false;
-				}
-				if (version >= 5.1) {
+				Version version = BasicSystemUtils.INSTANCE.getOSVersion();
+				if (version.isGreaterThanOrEqualTo(5, 1)) {
 					try {
 						String command = "reg query \"HKU\\S-1-5-19\"";
 						Process p = Runtime.getRuntime().exec(command);
@@ -1851,10 +1843,9 @@ public class FileUtil {
 					LOGGER.trace("isAdmin: Executing \"{}\"", command);
 					Process p = Runtime.getRuntime().exec(command);
 					InputStream is = p.getInputStream();
-					InputStreamReader isr = new InputStreamReader(is, StandardCharsets.US_ASCII);
 					int exitValue;
 					String exitLine;
-					try (BufferedReader br = new BufferedReader(isr)) {
+					try (BufferedReader br = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8))) {
 						p.waitFor();
 						exitValue = p.exitValue();
 						exitLine = br.readLine();
@@ -2000,7 +1991,23 @@ public class FileUtil {
 		}
 		String[] paths = osPath.split(File.pathSeparator);
 		for (String path : paths) {
-			result.add(Paths.get(path));
+			if (isBlank(path)) {
+				continue;
+			}
+			try {
+				result.add(Paths.get(path));
+			} catch (InvalidPathException e) {
+				if (LOGGER.isDebugEnabled()) {
+					LOGGER.warn(
+						"Unable to resolve PATH element \"{}\" to a folder, it will be ignored: {}",
+						path,
+						e.getMessage()
+					);
+					LOGGER.trace("", e);
+				} else {
+					LOGGER.warn("Unable to resolve PATH element \"{}\" to a folder, it will be ignored", path);
+				}
+			}
 		}
 		return result;
 	}
