@@ -30,6 +30,7 @@ import net.pms.media.VP9Level;
 import net.pms.media.VideoCodec;
 import net.pms.util.FileUtil;
 import net.pms.util.StringUtil;
+import net.pms.util.Version;
 import org.apache.commons.codec.binary.Base64;
 import static org.apache.commons.lang3.StringUtils.*;
 import org.slf4j.Logger;
@@ -114,6 +115,7 @@ public class LibMediaInfoParser {
 	);
 
 	private static MediaInfo MI;
+	private static final Version VERSION;
 
 	static {
 		MI = new MediaInfo();
@@ -123,15 +125,38 @@ public class LibMediaInfoParser {
 			MI.Option("Complete", "1");
 			MI.Option("Language", "raw");
 			MI.Option("File_TestContinuousFileNames", "0");
+			Matcher matcher = Pattern.compile("MediaInfoLib[\\s-]*(\\S+)", Pattern.CASE_INSENSITIVE).matcher(MI.Option("Info_Version"));
+			if (matcher.find() && isNotBlank(matcher.group(1))) {
+				VERSION = new Version(matcher.group(1));
+			} else {
+				VERSION = null;
+			}
+			if (VERSION != null && VERSION.isGreaterThan(18, 5)) {
+				MI.Option("LegacyStreamDisplay", "1");
+				MI.Option("File_HighestFormat", "0");
+				MI.Option("File_ChannelLayout", "1");
+				MI.Option("Legacy", "1");
+			}
 			LOGGER.debug("Option 'File_TestContinuousFileNames' is set to: " + MI.Option("File_TestContinuousFileNames_Get"));
 			MI.Option("ParseSpeed", "0");
 			LOGGER.debug("Option 'ParseSpeed' is set to: " + MI.Option("ParseSpeed_Get"));
 //			LOGGER.debug(MI.Option("Info_Parameters_CSV")); // It can be used to export all current MediaInfo parameters
+		} else {
+			VERSION = null;
 		}
 	}
 
 	public static boolean isValid() {
 		return MI.isValid();
+	}
+
+	/**
+	 * @return The {@code LibMediaInfo} {@link Version} or {@code null} if
+	 *         unknown.
+	 */
+	@Nullable
+	public static Version getVersion() {
+		return VERSION;
 	}
 
 	/**
