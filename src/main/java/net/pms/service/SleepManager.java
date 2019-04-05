@@ -115,6 +115,7 @@ public class SleepManager implements Service {
 		playingCount--;
 		if (isPreventSleepSupported() && playingCount == 0 && sleepPrevented && mode == PreventSleepMode.PLAYBACK) {
 			allowSleep();
+			postponeSleep();
 		}
 	}
 
@@ -388,10 +389,9 @@ public class SleepManager implements Service {
 			try {
 				while (true) {
 					while (sleepPrevented && lastChange + 5000 > System.currentTimeMillis()) {
-						// Wait until there's been 5 seconds after a change
-						// before
-						// allowing sleep if it's already prevented. This is to
-						// avoid acting on multiple rapid changes.
+						// Wait until 5 seconds have passed after a change before
+						// allowing sleep if it is currently prevented, to avoid
+						// acting on multiple rapid changes.
 						wait(Math.max(System.currentTimeMillis() - lastChange + 5001, 0));
 					}
 					if (preventSleep != sleepPrevented) {
