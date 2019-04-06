@@ -44,6 +44,7 @@ import net.pms.formats.v2.SubtitleType;
 import net.pms.image.ImagesUtil;
 import net.pms.io.OutputParams;
 import net.pms.io.ProcessWrapper;
+import net.pms.service.Services;
 import net.pms.util.FullyPlayed;
 import net.pms.util.StringUtil;
 import net.pms.util.SubtitleUtils;
@@ -352,6 +353,7 @@ public class RequestV2 extends HTTPResource {
 					output.headers().set(HttpHeaders.Names.CONNECTION, HttpHeaders.Values.KEEP_ALIVE);
 				} else if (dlna.getMedia() != null && dlna.getMedia().getMediaType() == MediaType.IMAGE && dlna.isCodeValid(dlna)) {
 					// This is a request for an image
+					Services.sleepManager().postponeSleep();
 					DLNAImageProfile imageProfile = ImagesUtil.parseImageRequest(fileName, null);
 					if (imageProfile == null) {
 						// Parsing failed for some reason, we'll have to pick a profile
