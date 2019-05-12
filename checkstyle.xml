@@ -20,6 +20,7 @@
     </module>
     <module name="JavadocType">
       <property name="scope" value="protected"/>
+      <property name="allowUnknownTags" value="true"/>
     </module>
     <module name="JavadocVariable">
       <property name="scope" value="protected"/>
@@ -126,6 +127,7 @@
     <module name="InterfaceIsType"/>
     <module name="VisibilityModifier">
       <property name="protectedAllowed" value="true"/>
+      <property name="allowPublicFinalFields" value="true"/>
       <property name="allowPublicImmutableFields" value="true"/>
     </module>
     <module name="ArrayTypeStyle"/>
@@ -153,6 +155,10 @@
     <module name="CommentsIndentation">
       <property name="severity" value="ignore"/>
       <metadata name="net.sf.eclipsecs.core.lastEnabledSeverity" value="inherit"/>
+    </module>
+    <module name="SingleLineJavadoc"/>
+    <module name="AtclauseOrder">
+      <property name="tagOrder" value="@version,@param,@return,@throws,@exception,@see,@since,@serial,@serialField,@serialData,@author,@deprecated"/>
     </module>
   </module>
   <module name="SuppressWarningsFilter"/>

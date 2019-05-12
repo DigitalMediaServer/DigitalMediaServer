@@ -41,21 +41,21 @@ public class SpinnerIntModelTest {
 	public void testSpinnerIntModel() {
 		SpinnerIntModel intModel = new SpinnerIntModel(65,50,250,100);
 
-		assertEquals("InitValue", intModel.getIntValue(), 65);
-		assertEquals("LowerLimit", intModel.getMinimum(), 50);
-		assertEquals("UpperLimit", intModel.getMaximum(), 250);
-		assertEquals("StepSize", intModel.getStepSize(), 100);
-		assertEquals("NextValue", intModel.getNextValue(), 165);
-		assertEquals("PrevValue", intModel.getPreviousValue(), 50);
+		assertEquals("InitValue",  65, intModel.getIntValue());
+		assertEquals("LowerLimit", 50, intModel.getMinimum());
+		assertEquals("UpperLimit", 250, intModel.getMaximum());
+		assertEquals("StepSize", 100, intModel.getStepSize());
+		assertEquals("NextValue", Integer.valueOf(165), intModel.getNextValue());
+		assertEquals("PrevValue", Integer.valueOf(50), intModel.getPreviousValue());
 		intModel.setIntValue(50);
-		assertEquals("NextValue", intModel.getNextValue(), 100);
-		assertEquals("PrevValue", intModel.getPreviousValue(), 50);
-		assertEquals("CurrValue", intModel.getValue(), 50);
+		assertEquals("NextValue", Integer.valueOf(100), intModel.getNextValue());
+		assertNull("PrevValue", intModel.getPreviousValue());
+		assertEquals("CurrValue", Integer.valueOf(50), intModel.getValue());
 		intModel.setValue(intModel.getNextValue());
 		intModel.setValue(intModel.getNextValue());
 		intModel.setValue(intModel.getNextValue());
-		assertEquals("NextValue", intModel.getNextValue(), 250);
-		assertEquals("PrevValue", intModel.getPreviousValue(), 200);
-		assertEquals("CurrValue", intModel.getValue(), 250);
+		assertNull("NextValue", intModel.getNextValue());
+		assertEquals("PrevValue", Integer.valueOf(200), intModel.getPreviousValue());
+		assertEquals("CurrValue", Integer.valueOf(250), intModel.getValue());
 	}
 }
