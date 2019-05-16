@@ -43,6 +43,9 @@
 package net.pms.util;
 
 import java.util.ArrayList;
+import java.util.List;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import javax.swing.ComboBoxModel;
 import javax.swing.event.ListDataEvent;
 import javax.swing.event.ListDataListener;
@@ -62,19 +65,20 @@ import javax.swing.event.ListDataListener;
  * @author Nadahar (Implemented generics)
  */
 public class KeyedComboBoxModel<K, V> implements ComboBoxModel<V> {
+
 	/**
 	 * The internal data carrier to map keys to values and vice versa.
 	 */
-	private class ComboBoxItemPair {
+	public static class ComboBoxItemPair<K, V> {
 		/**
 		 * The key.
 		 */
-		private K key;
+		private final K key;
 
 		/**
 		 * The value for the key.
 		 */
-		private V value;
+		private final V value;
 
 		/**
 		 * Creates a new item pair for the given key and value. The value can be
@@ -105,16 +109,6 @@ public class KeyedComboBoxModel<K, V> implements ComboBoxModel<V> {
 		public V getValue() {
 			return value;
 		}
-
-		/**
-		 * Redefines the value stored for that key.
-		 *
-		 * @param value the new value.
-		 */
-		@SuppressWarnings("unused")
-		public void setValue(final V value) {
-			this.value = value;
-		}
 	}
 
 	/**
@@ -128,7 +122,7 @@ public class KeyedComboBoxModel<K, V> implements ComboBoxModel<V> {
 	/**
 	 * The data (contains ComboBoxItemPairs).
 	 */
-	private ArrayList<ComboBoxItemPair> data;
+	private ArrayList<ComboBoxItemPair<K, V>> data;
 
 	/**
 	 * The listeners.
@@ -212,7 +206,7 @@ public class KeyedComboBoxModel<K, V> implements ComboBoxModel<V> {
 	 */
 	@Deprecated
 	@Override
-	public Object getSelectedItem() {
+	public V getSelectedItem() {
 		return selectedItemValue;
 	}
 
@@ -347,7 +341,7 @@ public class KeyedComboBoxModel<K, V> implements ComboBoxModel<V> {
 			return null;
 		}
 
-		final ComboBoxItemPair datacon = data.get(index);
+		final ComboBoxItemPair<K, V> datacon = data.get(index);
 		if (datacon == null) {
 			return null;
 		}
@@ -365,7 +359,7 @@ public class KeyedComboBoxModel<K, V> implements ComboBoxModel<V> {
 			return null;
 		}
 
-		final ComboBoxItemPair datacon = data.get(index);
+		final ComboBoxItemPair<K, V> datacon = data.get(index);
 		if (datacon == null) {
 			return null;
 		}
@@ -387,7 +381,7 @@ public class KeyedComboBoxModel<K, V> implements ComboBoxModel<V> {
 			return null;
 		}
 
-		final ComboBoxItemPair datacon = data.get(index);
+		final ComboBoxItemPair<K, V> datacon = data.get(index);
 		if (datacon == null) {
 			return null;
 		}
@@ -395,13 +389,33 @@ public class KeyedComboBoxModel<K, V> implements ComboBoxModel<V> {
 	}
 
 	/**
-	 * Returns the length of the list.
+	 * Returns the {@link ComboBoxItemPair} representing the element at the
+	 * given index.
 	 *
-	 * @return the length of the list
+	 * @param index the index of the element.
+	 * @return The {@link ComboBoxItemPair}.
+	 * @throws IndexOutOfBoundsException if the index is out of range
+	 *             (<tt>index &lt; 0 || index &gt;= size()</tt>)
+	 */
+	@Nonnull
+	public ComboBoxItemPair<K, V> get(int index) {
+		return data.get(index);
+	}
+
+	/**
+	 * @return The number of elements.
 	 */
 	@Override
 	public int getSize() {
 		return data.size();
+	}
+
+	/**
+	 * @return An copy of the elements.
+	 */
+	@Nonnull
+	public List<ComboBoxItemPair<K, V>> getElements() {
+		return new ArrayList<>(data);
 	}
 
 	/**
@@ -417,19 +431,18 @@ public class KeyedComboBoxModel<K, V> implements ComboBoxModel<V> {
 	}
 
 	/**
-	 * Tries to find the index of element with the given key. The key must not
-	 * be null.
+	 * Tries to find the index of element with the given key.
 	 *
 	 * @param key the key for the element to be searched.
 	 * @return the index of the key, or -1 if not found.
 	 */
-	public int findKeyIndex(final Object key) {
+	public int findKeyIndex(@Nullable K key) {
 		if (key == null) {
-			throw new IllegalArgumentException("Search key can not be null");
+			return -1;
 		}
 
 		for (int i = 0; i < data.size(); i++) {
-			final ComboBoxItemPair datacon = data.get(i);
+			final ComboBoxItemPair<K, V> datacon = data.get(i);
 			if (key.equals(datacon.getKey())) {
 				return i;
 			}
@@ -438,19 +451,18 @@ public class KeyedComboBoxModel<K, V> implements ComboBoxModel<V> {
 	}
 
 	/**
-	 * Tries to find the index of element with the given value. The value must
-	 * not be null.
+	 * Tries to find the index of element with the given value.
 	 *
 	 * @param value the value for the element to be searched.
 	 * @return the index of the value, or -1 if not found.
 	 */
-	public int findValueIndex(final Object value) {
+	public int findValueIndex(@Nonnull V value) {
 		if (value == null) {
-			throw new IllegalArgumentException("Search value can not be null");
+			return -1;
 		}
 
 		for (int i = 0; i < data.size(); i++) {
-			final ComboBoxItemPair datacon = data.get(i);
+			final ComboBoxItemPair<K, V> datacon = data.get(i);
 			if (value.equals(datacon.getValue())) {
 				return i;
 			}
@@ -462,16 +474,63 @@ public class KeyedComboBoxModel<K, V> implements ComboBoxModel<V> {
 	 * Removes an entry from the model.
 	 *
 	 * @param key the key
+	 * @return The removed value or {@code null}.
 	 */
-	public void removeDataElement(final K key) {
+	@Nullable
+	public V removeKey(@Nullable K key) {
 		final int idx = findKeyIndex(key);
 		if (idx == -1) {
-			return;
+			return null;
 		}
 
-		data.remove(idx);
+		ComboBoxItemPair<K, V> result = remove(idx);
+		return result == null ? null : result.value;
+	}
+
+	/**
+	 * Removes an entry from the model.
+	 *
+	 * @param value the key
+	 * @return The removed value or {@code null}.
+	 */
+	@Nullable
+	public K removeValue(@Nullable V value) {
+		final int idx = findValueIndex(value);
+		if (idx == -1) {
+			return null;
+		}
+
+		ComboBoxItemPair<K, V> result = remove(idx);
+		return result == null ? null : result.key;
+	}
+
+	/**
+	 * Removes an entry from the model.
+	 *
+	 * @param idx the entry index.
+	 * @return The removed {@link ComboBoxItemPair} or {@code null} if it didn't
+	 *         exist.
+	 */
+	@Nullable
+	public ComboBoxItemPair<K, V> remove(int idx) {
+		if (idx < 0 || idx >= data.size()) {
+			return null;
+		}
+
+		ComboBoxItemPair<K, V> result = data.remove(idx);
+		if (selectedItemIndex == idx) {
+			selectedItemIndex = -1;
+			selectedItemKey = null;
+			selectedItemValue = null;
+		} else if (selectedItemIndex > idx) {
+			selectedItemIndex--;
+			ComboBoxItemPair<K, V> pair = data.get(selectedItemIndex);
+			selectedItemKey = pair.key;
+			selectedItemValue = pair.value;
+		}
 		final ListDataEvent evt = new ListDataEvent(this, ListDataEvent.INTERVAL_REMOVED, idx, idx);
 		fireListDataEvent(evt);
+		return result;
 	}
 
 	/**
@@ -481,9 +540,31 @@ public class KeyedComboBoxModel<K, V> implements ComboBoxModel<V> {
 	 * @param value the display value.
 	 */
 	public void add(final K key, final V value) {
-		final ComboBoxItemPair con = new ComboBoxItemPair(key, value);
+		final ComboBoxItemPair<K, V> con = new ComboBoxItemPair<>(key, value);
 		data.add(con);
-		final ListDataEvent evt = new ListDataEvent(this, ListDataEvent.INTERVAL_ADDED, data.size() - 2, data.size() - 2);
+		final ListDataEvent evt = new ListDataEvent(this, ListDataEvent.INTERVAL_ADDED, data.size() - 1, data.size() - 1);
+		fireListDataEvent(evt);
+	}
+
+	/**
+	 * Adds a new entry to the model at the specified position.
+	 *
+	 * @param index the index at which the specified element is to be inserted.
+	 * @param key the key.
+	 * @param value the display value.
+	 * @throws IndexOutOfBoundsException if the index is out of range
+	 *             (<tt>index &lt; 0 || index &gt; size()</tt>).
+	 */
+	public void add(int index, final K key, final V value) {
+		final ComboBoxItemPair<K, V> con = new ComboBoxItemPair<>(key, value);
+		data.add(index, con);
+		if (selectedItemIndex >= index) {
+			selectedItemIndex++;
+			ComboBoxItemPair<K, V> pair = data.get(selectedItemIndex);
+			selectedItemKey = pair.key;
+			selectedItemValue = pair.value;
+		}
+		final ListDataEvent evt = new ListDataEvent(this, ListDataEvent.INTERVAL_ADDED, index, index);
 		fireListDataEvent(evt);
 	}
 
@@ -493,6 +574,9 @@ public class KeyedComboBoxModel<K, V> implements ComboBoxModel<V> {
 	public void clear() {
 		final int size = getSize();
 		data.clear();
+		selectedItemIndex = -1;
+		selectedItemKey = null;
+		selectedItemValue = null;
 		final ListDataEvent evt = new ListDataEvent(this, ListDataEvent.INTERVAL_REMOVED, 0, size - 1);
 		fireListDataEvent(evt);
 	}

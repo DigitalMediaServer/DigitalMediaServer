@@ -141,7 +141,7 @@ public class KeyedStringComboBoxModel extends KeyedComboBoxModel<String, String>
 		throw new IllegalArgumentException("AllowOtherValue is implicit in KeyedStringComboBoxModel");
 	}
 
-	private String generateCustomValue(String key) {
+	private static String generateCustomValue(String key) {
 		return String.format(Messages.getString("KeyedComboBoxModel.1"), key);
 	}
 }
