@@ -101,7 +101,7 @@ public class PipeProcess {
 			if (Platform.isMac() || Platform.isFreeBSD() || Platform.isSolaris()) {
 				cmdArray = new String[] {"mkfifo", "-m", "777", linuxPipeName};
 			} else {
-				cmdArray = new String[] {"mkfifo", "--mode=777", linuxPipeName};
+				cmdArray = new String[] {"mkfifo", "-m777", linuxPipeName};
 			}
 
 			ProcessWrapperImpl mkfifo_vid_process = new ProcessWrapperImpl(cmdArray, mkfifo_vid_params);
