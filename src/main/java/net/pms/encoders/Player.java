@@ -65,6 +65,7 @@ import org.slf4j.LoggerFactory;
 import com.sun.jna.Platform;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
+
 /**
  * The base class for all transcoding engines.
  */
@@ -198,16 +199,6 @@ public abstract class Player {
 	}
 
 	/**
-	 * Sets the current {@link ProgramExecutableType} for this {@link Player}.
-	 * For an explanation of the concept, see {@link #currentExecutableType}.
-	 *
-	 * @param executableType the new {@link ProgramExecutableType}.
-	 */
-	public void setCurrentExecutableType(ProgramExecutableType executableType) {
-		currentExecutableType = executableType;
-	}
-
-	/**
 	 * Determines and sets the current {@link ProgramExecutableType} for this
 	 * {@link Player}. The determination starts out with the configured
 	 * {@link ProgramExecutableType}.
@@ -259,7 +250,21 @@ public abstract class Player {
 				}
 			}
 		}
-		currentExecutableType = newExecutableType;
+		if (currentExecutableType != newExecutableType) {
+			currentExecutableType = newExecutableType;
+			currentExecutableTypeUpdated();
+		}
+	}
+
+	/**
+	 * This should be called whenever {@code currentExecutableType} is changed,
+	 * to alert implementations of the change. Implementations that want to be
+	 * alerted should override this method.
+	 *
+	 * Implementations of this method should be light and defer to other threads
+	 * for length operations.
+	 */
+	public void currentExecutableTypeUpdated() {
 	}
 
 	// FIXME this is an implementation detail (and not a very good one).
@@ -754,19 +759,6 @@ public abstract class Player {
 	 */
 	public boolean isActive() {
 		return isAvailable(currentExecutableType) && isEnabled();
-	}
-
-	/**
-	 * Returns whether or not this {@link Player} supports GPU acceleration.
-	 * <p>
-	 * Each {@link Player} capable of video hardware acceleration must override
-	 * this method and return {@code true}.
-	 *
-	 * @return {@code true} if GPU acceleration is supported, {@code false}
-	 *         otherwise.
-	 */
-	public boolean isGPUAccelerationReady() {
-		return false;
 	}
 
 	public abstract ProcessWrapper launchTranscode(

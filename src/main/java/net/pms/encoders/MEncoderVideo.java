@@ -46,6 +46,8 @@ import java.util.regex.Pattern;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.swing.*;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 import net.pms.Messages;
 import net.pms.PMS;
 import net.pms.configuration.DeviceConfiguration;
@@ -67,6 +69,9 @@ import net.pms.media.VideoLevel;
 import net.pms.network.HTTPResource;
 import net.pms.newgui.GuiUtil;
 import net.pms.newgui.components.CustomJButton;
+import net.pms.newgui.components.CustomJSpinner;
+import net.pms.newgui.components.SpinnerIntModel;
+import net.pms.newgui.components.CustomJSpinner.IrregularEntry;
 import net.pms.platform.windows.NTStatus;
 import net.pms.util.*;
 import static net.pms.util.AudioUtils.getLPCMChannelMappingForMencoder;
@@ -109,7 +114,6 @@ public class MEncoderVideo extends Player {
 	private JCheckBox fc;
 	private JCheckBox ass;
 	private JCheckBox skipLoopFilter;
-	private JCheckBox mencodermt;
 	private JCheckBox videoremux;
 	private JCheckBox normalizeaudio;
 	private JCheckBox noskip;
@@ -186,16 +190,39 @@ public class MEncoderVideo extends Player {
 
 		CellConstraints cc = new CellConstraints();
 
-		mencodermt = new JCheckBox(Messages.getString("MEncoderVideo.35"), configuration.getMencoderMT());
-		mencodermt.setContentAreaFilled(false);
-		mencodermt.addActionListener(new ActionListener() {
+		builder.addLabel(Messages.getString("Generic.CPUThreads")).at(FormLayoutUtil.flip(cc.xy(1, 1), colSpec, orientation));
+
+		SpinnerIntModel cpuThreadsModel = new SpinnerIntModel(
+			configuration.getMEncoderMaxThreads(),
+			1,
+			Runtime.getRuntime().availableProcessors(),
+			1,
+			new IrregularEntry(0, Messages.getString("Generic.Automatic"))
+		);
+		cpuThreadsModel.addChangeListener(new ChangeListener() {
 			@Override
-			public void actionPerformed(ActionEvent e) {
-				configuration.setMencoderMT(mencodermt.isSelected());
+			public void stateChanged(ChangeEvent e) {
+				configuration.setMEncoderMaxThreads(((SpinnerIntModel) e.getSource()).getIntValue());
 			}
 		});
-		mencodermt.setEnabled(Platform.isWindows() || Platform.isMac());
-		builder.add(GuiUtil.getPreferredSizeComponent(mencodermt)).at(FormLayoutUtil.flip(cc.xy(1, 3), colSpec, orientation));
+		CustomJSpinner cpuThreads = new CustomJSpinner(cpuThreadsModel, true);
+		cpuThreads.setToolTipText(String.format(Messages.getString("Generic.CPUThreadsToolTip"), NAME));
+		builder.add(cpuThreads).at(FormLayoutUtil.flip(cc.xy(3, 1), colSpec, orientation));
+
+		JCheckBox sacrificeCompatibiliy = new JCheckBox(
+			Messages.getString("MEncoderVideo.SacrificeCompatibility"),
+			configuration.isMEncoderSacrificeCompatibilityForSpeed()
+		);
+		sacrificeCompatibiliy.setContentAreaFilled(false);
+		sacrificeCompatibiliy.setToolTipText(Messages.getString("MEncoderVideo.SacrificeCompatibilityToolTip"));
+		sacrificeCompatibiliy.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				configuration.setMEncoderSacrificeCompatibilityForSpeed(((JCheckBox) e.getSource()).isSelected());
+			}
+		});
+		builder.add(GuiUtil.getPreferredSizeComponent(sacrificeCompatibiliy))
+			.at(FormLayoutUtil.flip(cc.xy(1, 3), colSpec, orientation));
 
 		skipLoopFilter = new JCheckBox(Messages.getString("MEncoderVideo.0"), configuration.getSkipLoopFilterEnabled());
 		skipLoopFilter.setContentAreaFilled(false);
@@ -1189,7 +1216,7 @@ public class MEncoderVideo extends Player {
 		} else if (pcm) {
 			channels = params.aid == null ? 2 : params.aid.getNumberOfChannels();
 		} else {
-			/**
+			/*
 			 * Note: MEncoder will output 2 audio channels if the input video had 2 channels
 			 * regardless of us telling it to output 6 (unlike FFmpeg which will output 6).
 			 */
@@ -1215,8 +1242,14 @@ public class MEncoderVideo extends Player {
 		{
 			int nThreads = (isDVD || filename.toLowerCase().endsWith("dvr-ms")) ?
 				1 :
-				configuration.getMencoderMaxThreads();
-
+				configuration.getMEncoderEffectiveMaxThreads();
+			if (nThreads == 0) {
+				nThreads = Runtime.getRuntime().availableProcessors();
+			}
+			if (nThreads > 1) {
+				// Use fewer threads for decoding since the setting is for both decoding and encoding
+				nThreads /= 2;
+			}
 			// MEncoder loses audio/video sync if more than 4 decoder (lavdopts) threads are used.
 			// Multithreading for decoding offers little performance gain anyway so it's not a big deal.
 			if (nThreads > 4) {
@@ -1379,9 +1412,10 @@ public class MEncoderVideo extends Player {
 					}
 				}
 
+				int nThreads = wmv && !params.mediaRenderer.isXbox360() ? 1 : configuration.getMEncoderEffectiveMaxThreads();
+				nThreads = Math.min(nThreads == 0 ? Runtime.getRuntime().availableProcessors() : nThreads, 8);
 				encodeSettings = "-lavcopts " + aspectRatioLavcopts + vcodecString + acodec + abitrate +
-					":threads=" + (wmv && !params.mediaRenderer.isXbox360() ? 1 : configuration.getMencoderMaxThreads()) +
-					("".equals(mpeg2Options) ? "" : ":" + mpeg2Options);
+					":threads=" + nThreads + ("".equals(mpeg2Options) ? "" : ":" + mpeg2Options);
 
 				encodeSettings = addMaximumBitrateConstraints(encodeSettings, media, mpeg2Options, params.mediaRenderer, audioType);
 			} else if (configuration.getx264ConstantRateFactor() != null && isTranscodeToH264) {
@@ -1413,9 +1447,10 @@ public class MEncoderVideo extends Player {
 					}
 				}
 
+				int nThreads = configuration.getMEncoderEffectiveMaxThreads();
+				nThreads = Math.min(nThreads == 0 ? Runtime.getRuntime().availableProcessors() : nThreads, 8);
 				encodeSettings = "-lavcopts " + aspectRatioLavcopts + vcodecString + acodec + abitrate +
-					":threads=" + configuration.getMencoderMaxThreads() +
-					":o=preset=superfast,crf=" + x264CRF + ",g=250,i_qfactor=0.71,qcomp=0.6,";
+					":threads=" + nThreads + ":o=preset=superfast,crf=" + x264CRF + ",g=250,i_qfactor=0.71,qcomp=0.6,";
 				VideoLevel level = params.mediaRenderer.getVideoLevelLimit(VideoCodec.H264);
 				if (level != null) {
 					encodeSettings += "level=" + level.toString(false) + ",";
@@ -2045,7 +2080,8 @@ public class MEncoderVideo extends Player {
 			cmdList.add(vfValue);
 		}
 
-		if (configuration.getMencoderMT() && !avisynth && !isDVD && !(media.getCodecV() != null && (media.getCodecV().startsWith("mpeg2")))) {
+		if (configuration.isMEncoderSacrificeCompatibilityForSpeed() && !avisynth && !isDVD && !(media.getCodecV() != null && (media.getCodecV().startsWith("mpeg2")))) {
+			// A hack that will lead to playback problems in many instances but can increases transcoding speed
 			cmdList.add("-lavdopts");
 			cmdList.add("fast");
 		}
@@ -2126,12 +2162,15 @@ public class MEncoderVideo extends Player {
 							break;
 						}
 						// XXX like the old (cmdArray) code, this clobbers the old -lavcopts value
+
+						int nThreads = configuration.getMEncoderEffectiveMaxThreads();
+						nThreads = Math.min(nThreads == 0 ? Runtime.getRuntime().availableProcessors() : nThreads, 8);
 						String lavcopts = String.format(
-							"autoaspect=1:vcodec=%s:acodec=%s:abitrate=%s:threads=%d:%s",
+							"autoaspect=1:vcodec=%s:acodec=%s:abitrate=%s:threads=%s:%s",
 							vcodec,
 							(configuration.isMencoderAc3Fixed() ? "ac3_fixed" : "ac3"),
 							CodecUtil.getAC3Bitrate(configuration, params.aid),
-							configuration.getMencoderMaxThreads(),
+							nThreads,
 							expertOptions[i + 1]
 						);
 

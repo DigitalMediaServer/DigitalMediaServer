@@ -85,6 +85,12 @@ public class FFmpegExecutableInfo extends ExecutableInfo {
 	protected final Set<String> bitstreamFilters;
 
 	/**
+	 * The {@link Set} of names of supported hardware acceleration methods.
+	 */
+	@Nonnull
+	protected final Set<String> hardwareAccelerationMethods;
+
+	/**
 	 * The {@link Map} of libraries in lower-case and their corresponding
 	 * {@link Version}s.
 	 */
@@ -114,6 +120,8 @@ public class FFmpegExecutableInfo extends ExecutableInfo {
 	 *            this executable.
 	 * @param bitstreamFilters a {@link Set} of supported bitstream filter names
 	 *            for this executable.
+	 * @param hardwareAccelerationMethods a {@link Set} of supported hardware
+	 *            acceleration method names for this executable.
 	 * @param libraryVersions a {@link Map} of libraries in lower-case and their
 	 *            corresponding {@link Version}s.
 	 */
@@ -127,6 +135,7 @@ public class FFmpegExecutableInfo extends ExecutableInfo {
 		@Nullable Map<String, Codec> codecs,
 		@Nullable Map<String, EnumSet<ProtocolFlags>> protocols,
 		@Nullable Set<String> bitstreamFilters,
+		@Nullable Set<String> hardwareAccelerationMethods,
 		@Nullable Map<String, Version> libraryVersions
 	) {
 		super(available, path, version, errorType, errorText);
@@ -142,9 +151,17 @@ public class FFmpegExecutableInfo extends ExecutableInfo {
 			protocols == null ? new HashMap<String, EnumSet<ProtocolFlags>>() : new HashMap<>(protocols)
 		);
 
-		this.bitstreamFilters = Collections.unmodifiableSet(
-			bitstreamFilters == null ? new HashSet<String>() : new HashSet<>(bitstreamFilters)
-		);
+		if (bitstreamFilters == null) {
+			this.bitstreamFilters = Collections.emptySet();
+		} else {
+			this.bitstreamFilters = Collections.unmodifiableSet(new HashSet<>(bitstreamFilters));
+		}
+
+		if (hardwareAccelerationMethods == null) {
+			this.hardwareAccelerationMethods = Collections.emptySet();
+		} else {
+			this.hardwareAccelerationMethods = Collections.unmodifiableSet(new HashSet<>(hardwareAccelerationMethods));
+		}
 
 		this.libraryVersions = Collections.unmodifiableMap(
 			libraryVersions == null ? new HashMap<String, Version>() : new HashMap<>(libraryVersions)
@@ -208,6 +225,15 @@ public class FFmpegExecutableInfo extends ExecutableInfo {
 	@Nonnull
 	public Set<String> getBitstreamFilters() {
 		return bitstreamFilters;
+	}
+
+	/**
+	 * @return The {@link Set} of names of supported hardware acceleration
+	 *         methods.
+	 */
+	@Nonnull
+	public Set<String> getHardwareAccelerationMethods() {
+		return hardwareAccelerationMethods;
 	}
 
 	/**
@@ -736,10 +762,57 @@ public class FFmpegExecutableInfo extends ExecutableInfo {
 			if (isBlank(line)) {
 				continue;
 			}
-			if ("Bitstream filters:".equals(line)) {
+			if (!filters && "Bitstream filters:".equals(line)) {
 				filters = true;
 			} else if (filters) {
 				builder.bitstreamFilters.add(line.trim());
+			}
+		}
+	}
+
+	/**
+	 * Gathers information about supported hardware acceleration methods and
+	 * stores the results in the specified {@link FFmpegExecutableInfoBuilder}.
+	 *
+	 * @param builder the {@link FFmpegExecutableInfoBuilder}.
+	 * @throws InterruptedException If interrupted during execution.
+	 */
+	public static void determineHardwareAccelerationMethods(@Nonnull FFmpegExecutableInfoBuilder builder) throws InterruptedException {
+		ListProcessWrapperResult output = SimpleProcessWrapper.runProcessListOutput(
+			30000,
+			1000,
+			builder.executablePath().toString(),
+			"-hide_banner",
+			"-hwaccels"
+		);
+		if (output.getError() != null) {
+			LOGGER.error(
+				"Failed to determine supported hardware acceleration methods for \"{}\": {}",
+				builder.executablePath(),
+				output.getError().getMessage()
+			);
+			LOGGER.trace("", output.getError());
+			return;
+		}
+		if (output.getExitCode() != 0) {
+			LOGGER.error(
+				"Failed to determine supported hardware acceleration methods for \"{}\" with exit code {}",
+				builder.executablePath(),
+				output.getExitCode()
+			);
+			return;
+		}
+		builder.hardwareAccelerationMethods(new HashSet<String>());
+
+		boolean accelerationMethods = false;
+		for (String line : output.getOutput()) {
+			if (isBlank(line)) {
+				continue;
+			}
+			if (!accelerationMethods && "Hardware acceleration methods:".equals(line)) {
+				accelerationMethods = true;
+			} else if (accelerationMethods) {
+				builder.hardwareAccelerationMethods.add(line.trim());
 			}
 		}
 	}
@@ -891,6 +964,21 @@ public class FFmpegExecutableInfo extends ExecutableInfo {
 	}
 
 	/**
+	 * Creates a sorted, combined string from the specified {@link Set} of names
+	 * of supported hardware acceleration methods.
+	 *
+	 * @param hardwareAccelerationMethods the {@link Set} of hardware
+	 *            acceleration method names.
+	 * @return The resulting {@link String}.
+	 */
+	@Nonnull
+	public static String toHardwareAccelerationMethodsString(@Nullable Collection<String> hardwareAccelerationMethods) {
+		return hardwareAccelerationMethods == null || hardwareAccelerationMethods.isEmpty() ?
+			"None" :
+			sortAndCombine(hardwareAccelerationMethods);
+	}
+
+	/**
 	 * Sorts and combines a {@link Collection} of strings into one
 	 * comma-separated string.
 	 *
@@ -899,7 +987,7 @@ public class FFmpegExecutableInfo extends ExecutableInfo {
 	 */
 	@Nonnull
 	protected static String sortAndCombine(@Nonnull Collection<String> collection) {
-		List<String> list = collection instanceof List ? (List<String>) collection : new ArrayList<String>(collection);
+		List<String> list = collection instanceof List ? (List<String>) collection : new ArrayList<>(collection);
 		Collections.sort(list);
 		StringBuilder sb = new StringBuilder();
 		boolean first = true;
@@ -949,6 +1037,12 @@ public class FFmpegExecutableInfo extends ExecutableInfo {
 		protected Set<String> bitstreamFilters;
 
 		/**
+		 * The {@link Set} of names of supported hardware acceleration methods.
+		 */
+		@Nullable
+		protected Set<String> hardwareAccelerationMethods;
+
+		/**
 		 * The {@link Map} of libraries in lower-case and their corresponding
 		 * {@link Version}s.
 		 */
@@ -972,7 +1066,7 @@ public class FFmpegExecutableInfo extends ExecutableInfo {
 		}
 
 		/**
-		 * Creates a new {@link FFmpegExecutableInfoBuilder} whose values is
+		 * Creates a new {@link FFmpegExecutableInfoBuilder} whose values are
 		 * initialized by the specified {@link ExecutableInfo}.
 		 *
 		 * @param executableInfo the {@link ExecutableInfo} whose values to use.
@@ -984,7 +1078,20 @@ public class FFmpegExecutableInfo extends ExecutableInfo {
 			this.errorType = executableInfo.errorType;
 			this.errorText = executableInfo.errorText;
 			if (executableInfo instanceof FFmpegExecutableInfo) {
-				this.protocols = ((FFmpegExecutableInfo) executableInfo).protocols;
+				FFmpegExecutableInfo info = (FFmpegExecutableInfo) executableInfo;
+				this.formats = new HashMap<>(info.formats);
+				if (info.codecs != null) {
+					this.codecs = new HashMap<>(info.codecs.size());
+					for (Entry<String, Codec> entry : info.codecs.entrySet()) {
+						this.codecs.put(entry.getKey(), new CodecBuilder(entry.getValue()));
+					}
+				} else {
+					this.codecs = null;
+				}
+				this.protocols = new HashMap<>(info.protocols);
+				this.bitstreamFilters = new HashSet<>(info.bitstreamFilters);
+				this.hardwareAccelerationMethods = new HashSet<>(info.hardwareAccelerationMethods);
+				this.libraryVersions = new HashMap<>(info.libraryVersions);
 			}
 		}
 
@@ -1014,6 +1121,7 @@ public class FFmpegExecutableInfo extends ExecutableInfo {
 				builtCodecs,
 				protocols,
 				bitstreamFilters,
+				hardwareAccelerationMethods,
 				libraryVersions
 			);
 		}
@@ -1128,7 +1236,7 @@ public class FFmpegExecutableInfo extends ExecutableInfo {
 		 */
 		@Nullable
 		public Set<String> bitstreamFilters() {
-			return this.bitstreamFilters;
+			return bitstreamFilters;
 		}
 
 		/**
@@ -1141,6 +1249,28 @@ public class FFmpegExecutableInfo extends ExecutableInfo {
 		@Nonnull
 		public FFmpegExecutableInfoBuilder bitstreamFilters(@Nullable Set<String> bitstreamFilters) {
 			this.bitstreamFilters = bitstreamFilters;
+			return this;
+		}
+
+		/**
+		 * @return The {@link Set} of names of supported hardware acceleration
+		 *         methods.
+		 */
+		@Nullable
+		public Set<String> hardwareAccelerationMethods() {
+			return hardwareAccelerationMethods;
+		}
+
+		/**
+		 * Sets the supported hardware acceleration methods.
+		 *
+		 * @param hardwareAccelerationMethods the {@link Set} of hardware
+		 *            acceleration method names to set.
+		 * @return This {@link FFmpegExecutableInfoBuilder} instance.
+		 */
+		@Nonnull
+		public FFmpegExecutableInfoBuilder hardwareAccelerationMethods(@Nullable Set<String> hardwareAccelerationMethods) {
+			this.hardwareAccelerationMethods = hardwareAccelerationMethods;
 			return this;
 		}
 
@@ -1826,7 +1956,7 @@ public class FFmpegExecutableInfo extends ExecutableInfo {
 	/**
 	 * The {@link Codec} types.
 	 */
-	public static enum CodecType {
+	public enum CodecType {
 
 		/** Audio */
 		AUDIO("Audio"),
@@ -1855,7 +1985,7 @@ public class FFmpegExecutableInfo extends ExecutableInfo {
 	/**
 	 * The codec flags.
 	 */
-	public static enum CodecFlags {
+	public enum CodecFlags {
 
 		/** Intra frame-only codec */
 		INTRA_FRAME("Intra frame-only"),
@@ -1881,7 +2011,7 @@ public class FFmpegExecutableInfo extends ExecutableInfo {
 	/**
 	 * The decoder and encoder flags.
 	 */
-	public static enum CoderFlags {
+	public enum CoderFlags {
 
 		/** Supports direct rendering method 1 */
 		DIRECT_1("Direct rendering method 1"),
@@ -1913,7 +2043,7 @@ public class FFmpegExecutableInfo extends ExecutableInfo {
 	/**
 	 * The format flags.
 	 */
-	public static enum FormatFlags {
+	public enum FormatFlags {
 
 		/** Format can be demuxed */
 		DEMUXING("Demuxing"),
@@ -1936,7 +2066,7 @@ public class FFmpegExecutableInfo extends ExecutableInfo {
 	/**
 	 * The protocol flags.
 	 */
-	public static enum ProtocolFlags {
+	public enum ProtocolFlags {
 
 		/** Protocol supports input */
 		INPUT,

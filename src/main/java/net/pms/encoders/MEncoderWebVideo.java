@@ -73,7 +73,8 @@ public class MEncoderWebVideo extends MEncoderVideo {
 
 	@Override
 	protected String[] getDefaultArgs() {
-		int nThreads = configuration.getMencoderMaxThreads();
+		int nThreads = configuration.getMEncoderEffectiveMaxThreads();
+		nThreads = Math.min(nThreads == 0 ? Runtime.getRuntime().availableProcessors() : nThreads, 8);
 		String acodec = configuration.isMencoderAc3Fixed() ? "ac3_fixed" : "ac3";
 		return new String[]{
 				"-msglevel", "all=2",
@@ -84,7 +85,8 @@ public class MEncoderWebVideo extends MEncoderVideo {
 				"-of", "lavf",
 				"-lavfopts", "format=dvd",
 				"-ovc", "lavc",
-				"-lavcopts", "vcodec=mpeg2video:vbitrate=4096:threads=" + nThreads + ":acodec=" + acodec + ":abitrate=128",
+				"-lavcopts", "vcodec=mpeg2video:vbitrate=4096:threads=" + nThreads +
+				":acodec=" + acodec + ":abitrate=128",
 				"-vf", "harddup",
 				"-ofps", "25"
 			};

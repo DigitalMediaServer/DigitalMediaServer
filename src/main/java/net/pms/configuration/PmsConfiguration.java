@@ -42,6 +42,7 @@ import net.pms.Messages;
 import net.pms.PMS;
 import net.pms.dlna.CodeEnter;
 import net.pms.dlna.MediaType;
+import net.pms.encoders.FFMpegVideo;
 import net.pms.encoders.Player;
 import net.pms.encoders.PlayerFactory;
 import net.pms.encoders.PlayerId;
@@ -104,14 +105,6 @@ public class PmsConfiguration extends RendererConfiguration {
 	private static final ReentrantReadWriteLock enginesPriorityLock = new ReentrantReadWriteLock();
 	private static UniqueList<PlayerId> enginesPriority;
 
-	/*
-	 * MEncoder has a hardwired maximum of 8 threads for -lavcopts and 16
-	 * for -lavdopts.
-	 * The Windows SubJunk Builds can take 16 for both, but we keep it at 8
-	 * for compatibility with other operating systems.
-	 */
-	protected static final int MENCODER_MAX_THREADS = 8;
-
 	protected static final String KEY_3D_SUBTITLES_DEPTH = "3d_subtitles_depth";
 	protected static final String KEY_ALIVE_DELAY = "ALIVE_delay";
 	protected static final String KEY_ALTERNATE_SUBTITLES_FOLDER = "alternate_subtitles_folder";
@@ -132,8 +125,6 @@ public class PmsConfiguration extends RendererConfiguration {
 	protected static final String KEY_AUTOLOAD_SUBTITLES = "autoload_external_subtitles";
 	protected static final String KEY_AVISYNTH_CONVERT_FPS = "avisynth_convert_fps";
 	protected static final String KEY_AVISYNTH_INTERFRAME = "avisynth_interframe";
-	protected static final String KEY_AVISYNTH_INTERFRAME_GPU = "avisynth_interframegpu";
-	protected static final String KEY_AVISYNTH_MULTITHREADING = "avisynth_multithreading";
 	protected static final String KEY_AVISYNTH_SCRIPT = "avisynth_script";
 	protected static final String KEY_ASS_MARGIN = "subtitles_ass_margin";
 	protected static final String KEY_ASS_OUTLINE = "subtitles_ass_outline";
@@ -168,10 +159,11 @@ public class PmsConfiguration extends RendererConfiguration {
 	protected static final String KEY_FFMPEG_AVISYNTH_CONVERT_FPS = "ffmpeg_avisynth_convertfps";
 	protected static final String KEY_FFMPEG_AVISYNTH_INTERFRAME = "ffmpeg_avisynth_interframe";
 	protected static final String KEY_FFMPEG_AVISYNTH_INTERFRAME_GPU = "ffmpeg_avisynth_interframegpu";
-	protected static final String KEY_FFMPEG_AVISYNTH_MULTITHREADING = "ffmpeg_avisynth_multithreading";
+	protected static final String KEY_FFMPEG_AVISYNTH_MAX_THREADS = "ffmpeg_avisynth_max_threads";
 	protected static final String KEY_FFMPEG_FONTCONFIG = "ffmpeg_fontconfig";
+	protected static final String KEY_FFMPEG_DECODING_HARDWARE_ACCELERATION = "ffmpeg_decoding_hardware_acceleration";
+	protected static final String KEY_FFMPEG_MAX_THREADS = "ffmpeg_max_threads";
 	protected static final String KEY_FFMPEG_MENCODER_PROBLEMATIC_SUBTITLES = "ffmpeg_mencoder_problematic_subtitles";
-	protected static final String KEY_FFMPEG_MULTITHREADING = "ffmpeg_multithreading";
 	protected static final String KEY_FFMPEG_MUX_TSMUXER_COMPATIBLE = "ffmpeg_mux_tsmuxer_compatible";
 	protected static final String KEY_FIX_25FPS_AV_MISMATCH = "fix_25fps_av_mismatch";
 	protected static final String KEY_FOLDER_LIMIT = "folder_limit";
@@ -183,7 +175,6 @@ public class PmsConfiguration extends RendererConfiguration {
 	protected static final String KEY_FORCE_TRANSCODE_FOR_EXTENSIONS = "force_transcode_for_extensions";
 	protected static final String KEY_FORCED_SUBTITLE_LANGUAGE = "forced_subtitle_language";
 	protected static final String KEY_FORCED_SUBTITLE_TAGS = "forced_subtitle_tags";
-	public    static final String KEY_GPU_ACCELERATION = "gpu_acceleration";
 	protected static final String KEY_GUI_CLOSE_ACTION = "gui_close_action";
 	protected static final String KEY_GUI_LOG_SEARCH_CASE_SENSITIVE = "gui_log_search_case_sensitive";
 	protected static final String KEY_GUI_LOG_SEARCH_MULTILINE = "gui_log_search_multiline";
@@ -226,6 +217,8 @@ public class PmsConfiguration extends RendererConfiguration {
 	protected static final String KEY_MEDIA_LIB_SORT = "media_lib_sort";
 	protected static final String KEY_MENCODER_ASS = "mencoder_ass";
 	protected static final String KEY_MENCODER_AC3_FIXED = "mencoder_ac3_fixed";
+	protected static final String KEY_MENCODER_AVISYNTH_INTERFRAME_GPU = "mencoder_avisynth_interframegpu";
+	protected static final String KEY_MENCODER_AVISYNTH_MAX_THREADS = "mencoder_avisynth_max_threads";
 	protected static final String KEY_MENCODER_CODEC_SPECIFIC_SCRIPT = "mencoder_codec_specific_script";
 	protected static final String KEY_MENCODER_CUSTOM_OPTIONS = "mencoder_custom_options";
 	protected static final String KEY_MENCODER_FONT_CONFIG = "mencoder_fontconfig";
@@ -233,7 +226,7 @@ public class PmsConfiguration extends RendererConfiguration {
 	protected static final String KEY_MENCODER_INTELLIGENT_SYNC = "mencoder_intelligent_sync";
 	protected static final String KEY_MENCODER_MAX_THREADS = "mencoder_max_threads";
 	protected static final String KEY_MENCODER_MUX_COMPATIBLE = "mencoder_mux_compatible";
-	protected static final String KEY_MENCODER_MT = "mencoder_mt";
+	protected static final String KEY_MENCODER_SPEED_TRUMPS_COMPATIBILITY = "mencoder_speed_trumps_compatibility";
 	protected static final String KEY_MENCODER_NO_OUT_OF_SYNC = "mencoder_nooutofsync";
 	protected static final String KEY_MENCODER_NOASS_BLUR = "mencoder_noass_blur";
 	protected static final String KEY_MENCODER_NOASS_OUTLINE = "mencoder_noass_outline";
@@ -259,7 +252,6 @@ public class PmsConfiguration extends RendererConfiguration {
 	protected static final String KEY_MPEG2_MAIN_SETTINGS = "mpeg2_main_settings";
 	protected static final String KEY_MUX_ALLAUDIOTRACKS = "tsmuxer_mux_all_audiotracks";
 	protected static final String KEY_NETWORK_INTERFACE = "network_interface";
-	protected static final String KEY_NUMBER_OF_CPU_CORES = "number_of_cpu_cores";
 	protected static final String KEY_OPEN_ARCHIVES = "enable_archive_browsing";
 	protected static final String KEY_OVERSCAN = "mencoder_overscan";
 	protected static final String KEY_PLAYLIST_AUTO_ADD_ALL= "playlist_auto_add_all";
@@ -328,12 +320,13 @@ public class PmsConfiguration extends RendererConfiguration {
 	protected static final String KEY_VIRTUAL_FOLDERS = "virtual_folders";
 	protected static final String KEY_VIRTUAL_FOLDERS_FILE = "virtual_folders_file";
 	protected static final String KEY_VLC_AUDIO_SYNC_ENABLED = "vlc_audio_sync_enabled";
+	protected static final String KEY_VLC_MAX_THREADS = "vlc_max_threads";
 	protected static final String KEY_VLC_SAMPLE_RATE = "vlc_sample_rate";
 	protected static final String KEY_VLC_SAMPLE_RATE_OVERRIDE = "vlc_sample_rate_override";
 	protected static final String KEY_VLC_SCALE = "vlc_scale";
 	protected static final String KEY_VLC_SUBTITLE_ENABLED = "vlc_subtitle_enabled";
 	protected static final String KEY_VLC_USE_EXPERIMENTAL_CODECS = "vlc_use_experimental_codecs";
-	protected static final String KEY_VLC_USE_HW_ACCELERATION = "vlc_use_hw_acceleration";
+	protected static final String KEY_VLC_HARDWARE_ACCELERATION = "vlc_hardware_acceleration";
 	protected static final String KEY_FULLY_PLAYED_ACTION = "fully_played_action";
 	protected static final String KEY_FULLY_PLAYED_OUTPUT_DIRECTORY = "fully_played_output_directory";
 	protected static final String KEY_WEB_AUTHENTICATE = "web_authenticate";
@@ -742,10 +735,6 @@ public class PmsConfiguration extends RendererConfiguration {
 		String value = getString(KEY_LOG_SYSTEM_INFO, defaultValue.toString());
 		LogSystemInformationMode result = LogSystemInformationMode.typeOf(value);
 		return result != null ? result : defaultValue;
-	}
-
-	public int getMencoderMaxThreads() {
-		return Math.min(getInt(KEY_MENCODER_MAX_THREADS, getNumberOfCpuCores()), MENCODER_MAX_THREADS);
 	}
 
 	/**
@@ -1438,15 +1427,6 @@ public class PmsConfiguration extends RendererConfiguration {
 	}
 
 	/**
-	 * Set the maximum number of concurrent MEncoder threads.
-	 * XXX Currently unused.
-	 * @param value The maximum number of concurrent threads.
-	 */
-	public void setMencoderMaxThreads(int value) {
-		configuration.setProperty(KEY_MENCODER_MAX_THREADS, value);
-	}
-
-	/**
 	 * Returns the number of seconds from the start of a video file (the seek
 	 * position) where the thumbnail image for the movie should be extracted
 	 * from. Default is 4 seconds.
@@ -2042,37 +2022,6 @@ public class PmsConfiguration extends RendererConfiguration {
 	}
 
 	/**
-	 * Returns the number of CPU cores that should be used for transcoding.
-	 *
-	 * @return The number of CPU cores.
-	 */
-	public int getNumberOfCpuCores() {
-		int nbcores = Runtime.getRuntime().availableProcessors();
-		if (nbcores < 1) {
-			nbcores = 1;
-		}
-		return getInt(KEY_NUMBER_OF_CPU_CORES, nbcores);
-	}
-
-	/**
-	 * Sets the number of CPU cores that should be used for transcoding. The
-	 * maximum value depends on the physical available count of "real processor
-	 * cores". That means hyperthreading virtual CPU cores do not count! If you
-	 * are not sure, analyze your CPU with the free tool CPU-z on Windows
-	 * systems. On Linux have a look at the virtual proc-filesystem: in the
-	 * file "/proc/cpuinfo" you will find more details about your CPU. You also
-	 * get much information about CPUs from AMD and Intel from their Wikipedia
-	 * articles.
-	 * <p>
-	 * DMS will detect and set the correct amount of cores as the default value.
-	 *
-	 * @param value The number of CPU cores.
-	 */
-	public void setNumberOfCpuCores(int value) {
-		configuration.setProperty(KEY_NUMBER_OF_CPU_CORES, value);
-	}
-
-	/**
 	 * Returns {@code true} if DMS should start hidden, i.e. without the GUI
 	 * visible.
 	 *
@@ -2329,20 +2278,24 @@ public class PmsConfiguration extends RendererConfiguration {
 		return getBoolean(KEY_AVISYNTH_INTERFRAME, false);
 	}
 
-	public void setAvisynthInterFrameGPU(boolean value) {
-		configuration.setProperty(KEY_AVISYNTH_INTERFRAME_GPU, value);
+	public void setMEncoderAviSynthInterFrameGPU(boolean value) {
+		configuration.setProperty(KEY_MENCODER_AVISYNTH_INTERFRAME_GPU, value);
 	}
 
-	public boolean getAvisynthInterFrameGPU() {
-		return getBoolean(KEY_AVISYNTH_INTERFRAME_GPU, false);
+	public boolean isMEncoderAviSynthInterFrameGPU() {
+		return getBoolean(KEY_MENCODER_AVISYNTH_INTERFRAME_GPU, false);
 	}
 
-	public void setAvisynthMultiThreading(boolean value) {
-		configuration.setProperty(KEY_AVISYNTH_MULTITHREADING, value);
+	public int getMEncoderAviSynthMaxThreads() {
+		return getInt(KEY_MENCODER_AVISYNTH_MAX_THREADS, 1);
 	}
 
-	public boolean getAvisynthMultiThreading() {
-		return getBoolean(KEY_AVISYNTH_MULTITHREADING, false);
+	public void setMEncoderAviSynthMaxThreads(int value) {
+		configuration.setProperty(KEY_MENCODER_AVISYNTH_MAX_THREADS, value);
+	}
+
+	public int getMEncoderAviSynthEffectiveMaxThreads() {
+		return Math.max(Math.min(getMEncoderAviSynthMaxThreads(), Runtime.getRuntime().availableProcessors()), 1);
 	}
 
 	/**
@@ -2418,22 +2371,95 @@ public class PmsConfiguration extends RendererConfiguration {
 		return convertMencoderSettingToFFmpegFormat(mpegSettings);
 	}
 
-	public void setFfmpegMultithreading(boolean value) {
-		configuration.setProperty(KEY_FFMPEG_MULTITHREADING, value);
+	public int getFFmpegMaxThreads() {
+		return getInt(KEY_FFMPEG_MAX_THREADS, 0);
 	}
 
-	public boolean isFfmpegMultithreading() {
-		boolean isMultiCore = getNumberOfCpuCores() > 1;
-		return getBoolean(KEY_FFMPEG_MULTITHREADING, isMultiCore);
+	/**
+	 * Sets the maximum number of concurrent FFmpeg threads.
+	 *
+	 * @param value The maximum number of concurrent threads.
+	 */
+	public void setFFmpegMaxThreads(int value) {
+		configuration.setProperty(KEY_FFMPEG_MAX_THREADS, value);
 	}
 
-	public void setFfmpegAviSynthMultithreading(boolean value) {
-		configuration.setProperty(KEY_FFMPEG_AVISYNTH_MULTITHREADING, value);
+	public int getFFmpegDecodingThreads() {
+		if (getFFmpegVideoHardwareAccelerationMethod() != FFMpegVideo.HARDWARE_ACCELERATION_NONE) {
+			return 1;
+		}
+		return getFFmpegVideoHardwareAccelerationMethod() == FFMpegVideo.HARDWARE_ACCELERATION_NONE ?
+			Math.max(Math.min(getFFmpegMaxThreads(), Runtime.getRuntime().availableProcessors()), 0) :
+			1;
 	}
 
-	public boolean isFfmpegAviSynthMultithreading() {
-		boolean isMultiCore = getNumberOfCpuCores() > 1;
-		return getBoolean(KEY_FFMPEG_AVISYNTH_MULTITHREADING, isMultiCore);
+	public int getFFmpegEncodingThreads() {
+		return Math.max(Math.min(getFFmpegMaxThreads(), Runtime.getRuntime().availableProcessors()), 0);
+	}
+
+	public String getFFmpegHardwareDecodingAccelerationMethod() {
+		return getString(KEY_FFMPEG_DECODING_HARDWARE_ACCELERATION, FFMpegVideo.HARDWARE_ACCELERATION_NONE).trim().toLowerCase(Locale.ROOT);
+	}
+
+	public void setFFmpegDecodingHardwareAccelerationMethod(String value) {
+		configuration.setProperty(KEY_FFMPEG_DECODING_HARDWARE_ACCELERATION, value);
+	}
+
+	/**
+	 * Validates and return the hardware acceleration method for FFmpegVideo.
+	 * The validation is made against the hardware acceleration methods
+	 * collected from the currently chosen executable. Invalid method names are
+	 * replaced with {@link FFMpegVideo#HARDWARE_ACCELERATION_AUTO}, unless no
+	 * information has been collected, in which case the specified string is
+	 * used as-is. Blank values returns
+	 * {@link FFMpegVideo#HARDWARE_ACCELERATION_AUTO}.
+	 *
+	 * @return The "sanitized" {@link FFMpegVideo} acceleration method.
+	 */
+	@Nonnull
+	public String getFFmpegVideoHardwareAccelerationMethod() {
+		Player player = PlayerFactory.getPlayer(FFMpegVideo.ID, false, false);
+		FFmpegExecutableInfo info = null;
+		if (player != null) {
+			ExecutableInfo executableInfo = player.getExecutableInfo();
+			if (executableInfo instanceof FFmpegExecutableInfo) {
+				info = (FFmpegExecutableInfo) executableInfo;
+			}
+		}
+		String result = getFFmpegHardwareDecodingAccelerationMethod();
+		if (info == null) {
+			LOGGER.warn("Could not validate FFmpeg hardware acceleration method \"{}\", transcoding might fail", result);
+			return isBlank(result) ? FFMpegVideo.HARDWARE_ACCELERATION_AUTO : result;
+		}
+		Set<String> methods = info.getHardwareAccelerationMethods();
+		if (
+			result.equals(FFMpegVideo.HARDWARE_ACCELERATION_NONE) ||
+			result.equals(FFMpegVideo.HARDWARE_ACCELERATION_AUTO) ||
+			methods.contains(result)
+		) {
+			return result;
+		}
+		LOGGER.warn(
+			"Invalid or unsupported FFmpeg hardware acceleration method \"{}\" " +
+			"configured, falling back to automatic detection",
+			result
+		);
+		return FFMpegVideo.HARDWARE_ACCELERATION_AUTO;
+	}
+
+	public int getFFmpegAviSynthMaxThreads() {
+		return getInt(KEY_FFMPEG_AVISYNTH_MAX_THREADS, Runtime.getRuntime().availableProcessors());
+	}
+
+	public void setFFmpegAviSynthMaxThreads(int value) {
+		configuration.setProperty(KEY_FFMPEG_AVISYNTH_MAX_THREADS, value);
+	}
+
+	public int getFFmpegAviSynthEffectiveMaxThreads() {
+		return Math.max(Math.min(
+			getFFmpegAviSynthMaxThreads(),
+			Runtime.getRuntime().availableProcessors()
+		), 1);
 	}
 
 	/**
@@ -2441,7 +2467,7 @@ public class PmsConfiguration extends RendererConfiguration {
 	 *
 	 * @param value True if we should pass the flag.
 	 */
-	public void setFfmpegAvisynthConvertFps(boolean value) {
+	public void setFFmpegAviSynthConvertFps(boolean value) {
 		configuration.setProperty(KEY_AVISYNTH_CONVERT_FPS, value);
 	}
 
@@ -2450,23 +2476,23 @@ public class PmsConfiguration extends RendererConfiguration {
 	 *
 	 * @return True if we should pass the flag.
 	 */
-	public boolean getFfmpegAvisynthConvertFps() {
+	public boolean getFFmpegAviSynthConvertFps() {
 		return getBoolean(KEY_FFMPEG_AVISYNTH_CONVERT_FPS, true);
 	}
 
-	public void setFfmpegAvisynthInterFrame(boolean value) {
+	public void setFFmpegAviSynthInterFrame(boolean value) {
 		configuration.setProperty(KEY_FFMPEG_AVISYNTH_INTERFRAME, value);
 	}
 
-	public boolean getFfmpegAvisynthInterFrame() {
+	public boolean getFFmpegAviSynthInterFrame() {
 		return getBoolean(KEY_FFMPEG_AVISYNTH_INTERFRAME, false);
 	}
 
-	public void setFfmpegAvisynthInterFrameGPU(boolean value) {
+	public void setFFmpegAviSynthInterFrameGPU(boolean value) {
 		configuration.setProperty(KEY_FFMPEG_AVISYNTH_INTERFRAME_GPU, value);
 	}
 
-	public boolean getFfmpegAvisynthInterFrameGPU() {
+	public boolean getFFmpegAviSynthInterFrameGPU() {
 		return getBoolean(KEY_FFMPEG_AVISYNTH_INTERFRAME_GPU, false);
 	}
 
@@ -3286,13 +3312,29 @@ public class PmsConfiguration extends RendererConfiguration {
 		configuration.setProperty(KEY_FORCE_TRANSCODE_FOR_EXTENSIONS, value);
 	}
 
-	public void setMencoderMT(boolean value) {
-		configuration.setProperty(KEY_MENCODER_MT, value);
+	public int getMEncoderMaxThreads() {
+		return getInt(KEY_MENCODER_MAX_THREADS, 0);
 	}
 
-	public boolean getMencoderMT() {
-		boolean isMultiCore = getNumberOfCpuCores() > 1;
-		return getBoolean(KEY_MENCODER_MT, isMultiCore);
+	/**
+	 * Sets the maximum number of concurrent MEncoder threads.
+	 *
+	 * @param value The maximum number of concurrent threads.
+	 */
+	public void setMEncoderMaxThreads(int value) {
+		configuration.setProperty(KEY_MENCODER_MAX_THREADS, value);
+	}
+
+	public int getMEncoderEffectiveMaxThreads() {
+		return Math.max(Math.min(getMEncoderMaxThreads(), Runtime.getRuntime().availableProcessors()), 0);
+	}
+
+	public boolean isMEncoderSacrificeCompatibilityForSpeed() {
+		return getBoolean(KEY_MENCODER_SPEED_TRUMPS_COMPATIBILITY, false);
+	}
+
+	public void setMEncoderSacrificeCompatibilityForSpeed(boolean value) {
+		configuration.setProperty(KEY_MENCODER_SPEED_TRUMPS_COMPATIBILITY, value);
 	}
 
 	public void setAudioRemuxAC3(boolean value) {
@@ -3965,22 +4007,6 @@ public class PmsConfiguration extends RendererConfiguration {
 	}
 
 	/**
-	 * State if the video hardware acceleration is allowed
-	 * @return true if hardware acceleration is allowed, false otherwise
-	 */
-	public boolean isGPUAcceleration() {
-		return getBoolean(KEY_GPU_ACCELERATION, false);
-	}
-
-	/**
-	 * Set the video hardware acceleration enable/disable
-	 * @param value true if hardware acceleration is allowed, false otherwise
-	 */
-	public void setGPUAcceleration(boolean value) {
-		configuration.setProperty(KEY_GPU_ACCELERATION, value);
-	}
-
-	/**
 	 * @return the {@link GUICloseAction} to use.
 	 */
 	public GUICloseAction getGUICloseAction() {
@@ -4353,12 +4379,12 @@ public class PmsConfiguration extends RendererConfiguration {
 		return dbLog || PMS.getLogDB();
 	}
 
-	public boolean isVlcUseHardwareAccel() {
-		return getBoolean(KEY_VLC_USE_HW_ACCELERATION, false);
+	public boolean isVLCHardwareAcceleration() {
+		return getBoolean(KEY_VLC_HARDWARE_ACCELERATION, true);
 	}
 
-	public void setVlcUseHardwareAccel(boolean value) {
-		configuration.setProperty(KEY_VLC_USE_HW_ACCELERATION, value);
+	public void setVLCHardwareAcceleration(boolean value) {
+		configuration.setProperty(KEY_VLC_HARDWARE_ACCELERATION, value);
 	}
 
 	public boolean isVlcExperimentalCodecs() {
@@ -4375,6 +4401,21 @@ public class PmsConfiguration extends RendererConfiguration {
 
 	public void setVlcAudioSyncEnabled(boolean value) {
 		configuration.setProperty(KEY_VLC_AUDIO_SYNC_ENABLED, value);
+	}
+
+	public int getVlcMaxThreads() {
+		return getInt(KEY_VLC_MAX_THREADS, Runtime.getRuntime().availableProcessors());
+	}
+
+	public void setVlcMaxThreads(int value) {
+		configuration.setProperty(KEY_VLC_MAX_THREADS, value);
+	}
+
+	public int getVlcEffectiveMaxThreads() {
+		return Math.max(Math.min(
+			getVlcMaxThreads(),
+			Runtime.getRuntime().availableProcessors()
+		), 1);
 	}
 
 	public boolean isVlcSubtitleEnabled() {

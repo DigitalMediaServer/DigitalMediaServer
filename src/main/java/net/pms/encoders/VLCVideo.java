@@ -24,6 +24,7 @@ import com.jgoodies.forms.layout.CellConstraints;
 import com.jgoodies.forms.layout.FormLayout;
 import com.sun.jna.Platform;
 import java.awt.ComponentOrientation;
+import java.awt.FlowLayout;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
 import java.io.File;
@@ -34,6 +35,8 @@ import java.util.regex.Pattern;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.swing.*;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 import net.pms.Messages;
 import net.pms.PMS;
 import net.pms.configuration.DeviceConfiguration;
@@ -51,6 +54,8 @@ import net.pms.media.H264Level;
 import net.pms.media.VideoCodec;
 import net.pms.network.HTTPResource;
 import net.pms.newgui.GuiUtil;
+import net.pms.newgui.components.CustomJSpinner;
+import net.pms.newgui.components.SpinnerIntModel;
 import net.pms.util.*;
 import net.pms.util.Version.WindowsVersionType;
 import org.apache.commons.lang3.StringUtils;
@@ -81,8 +86,10 @@ public class VLCVideo extends Player {
 	public static final String NAME = "VLC Video";
 
 	private static final String COL_SPEC = "left:pref, 3dlu, p, 3dlu, 0:grow";
-	private static final String ROW_SPEC = "p, 3dlu, p, 3dlu, p";
+	private static final String ROW_SPEC = "p, 3dlu, p, 3dlu, p, 3dlu, p";
 	protected JTextField scale;
+	protected JCheckBox hardwareAcceleration;
+	protected ItemListener hardwareAccelerationItemListener;
 	protected JCheckBox experimentalCodecs;
 	protected JCheckBox audioSyncEnabled;
 	protected JTextField sampleRate;
@@ -120,11 +127,6 @@ public class VLCVideo extends Player {
 	}
 
 	@Override
-	public boolean isGPUAccelerationReady() {
-		return true;
-	}
-
-	@Override
 	public boolean avisynth() {
 		return false;
 	}
@@ -153,6 +155,18 @@ public class VLCVideo extends Player {
 	@Override
 	protected ExternalProgramInfo programInfo() {
 		return configuration.getVLCPaths();
+	}
+
+	@Override
+	public void currentExecutableTypeUpdated() {
+		// Enable/disable hardware acceleration in the GUI
+		SwingUtilities.invokeLater(new Runnable() {
+
+			@Override
+			public void run() {
+				updateHardwareAcceleration();
+			}
+		});
 	}
 
 	/**
@@ -232,7 +246,7 @@ public class VLCVideo extends Player {
 		args.put("vcodec", codecConfig.videoCodec);
 		args.put("acodec", codecConfig.audioCodec);
 
-		/**
+		/*
 		 * Bitrate in kbit/s
 		 *
 		 * TODO: Make this engine smarter with bitrates, see
@@ -280,7 +294,7 @@ public class VLCVideo extends Player {
 		args.put("strict-rc", null);
 
 		// Enable multi-threading
-		args.put("threads", "" + configuration.getNumberOfCpuCores());
+		args.put("threads", "" + configuration.getVlcEffectiveMaxThreads());
 
 		// Hardcode subtitles into video
 		args.put("soverlay", null);
@@ -465,6 +479,7 @@ public class VLCVideo extends Player {
 	public ProcessWrapper launchTranscode(DLNAResource dlna, DLNAMediaInfo media, OutputParams params) throws IOException {
 		// Use device-specific DMS conf
 		PmsConfiguration prev = configuration;
+		ExecutableInfo executableInfo = programInfo.getExecutableInfo(currentExecutableType);
 		configuration = (DeviceConfiguration) params.mediaRenderer;
 		final String filename = dlna.getFileName();
 		boolean isWindows = Platform.isWindows();
@@ -490,24 +505,20 @@ public class VLCVideo extends Player {
 		cmdList.add("-I");
 		cmdList.add("dummy");
 
-		/**
-		 * Disable hardware acceleration which is enabled by default,
-		 * but for hardware acceleration, user must enable it in "VLC Preferences",
-		 * until they release documentation for new functionalities introduced in 2.1.4+
+		/*
+		 * Handle hardware acceleration, which is enabled by default for VLC
+		 * versions 3.0.0 and later.
 		 */
-		if (BasicSystemUtils.INSTANCE.getVlcVersion() != null) {
-			Version requiredVersion = new Version("2.1.4");
-
-			if (BasicSystemUtils.INSTANCE.getVlcVersion().compareTo(requiredVersion) > 0) {
-				if (!configuration.isGPUAcceleration()) {
-					cmdList.add("--avcodec-hw=disabled");
-					LOGGER.trace("Disabled VLC's hardware acceleration.");
-				}
-			} else if (!configuration.isGPUAcceleration()) {
-				LOGGER.debug(
-					"Version {} of VLC is too low to handle the way we disable hardware acceleration.",
-					BasicSystemUtils.INSTANCE.getVlcVersion()
-				);
+		Version currentVersion = executableInfo == null ? null : executableInfo.getVersion();
+		if (currentVersion != null && currentVersion.isGreaterThanOrEqualTo(3)) {
+			// For older versions, decoding hardware acceleration is disabled
+			// by default and must be enabled with --ffmpeg-hw (before 2.1.0)
+			// or --avcodec-hw (2.1.0 to before 3.0.0)
+			if (!configuration.isVLCHardwareAcceleration()) {
+				cmdList.add("--avcodec-hw=none");
+				LOGGER.trace("Disabled VLC's hardware acceleration.");
+			} else {
+				cmdList.add("--avcodec-threads=1");
 			}
 		}
 
@@ -653,6 +664,37 @@ public class VLCVideo extends Player {
 
 		CellConstraints cc = new CellConstraints();
 
+		JPanel cpuThreadsPanel = new JPanel(new FlowLayout(FlowLayout.LEADING));
+		cpuThreadsPanel.add(new JLabel(Messages.getString("Generic.CPUThreads")));
+
+		SpinnerIntModel cpuThreadsModel = new SpinnerIntModel(
+			configuration.getVlcMaxThreads(),
+			1,
+			Runtime.getRuntime().availableProcessors(),
+			1
+		);
+		cpuThreadsModel.addChangeListener(new ChangeListener() {
+			@Override
+			public void stateChanged(ChangeEvent e) {
+				configuration.setVlcMaxThreads(((SpinnerIntModel) e.getSource()).getIntValue());
+			}
+		});
+		CustomJSpinner cpuThreads = new CustomJSpinner(cpuThreadsModel, true);
+		cpuThreads.setToolTipText(String.format(Messages.getString("Generic.CPUThreadsToolTip"), NAME));
+		cpuThreadsPanel.add(cpuThreads);
+		builder.add(cpuThreadsPanel).at(FormLayoutUtil.flip(cc.xy(1, 1), colSpec, orientation));
+
+		hardwareAcceleration = new JCheckBox(Messages.getString("Generic.EnableHardwareAcceleration"));
+		hardwareAcceleration.setContentAreaFilled(false);
+		hardwareAccelerationItemListener = new ItemListener() {
+			@Override
+			public void itemStateChanged(ItemEvent e) {
+				configuration.setVLCHardwareAcceleration(e.getStateChange() == ItemEvent.SELECTED);
+			}
+		};
+		updateHardwareAcceleration();
+		builder.add(GuiUtil.getPreferredSizeComponent(hardwareAcceleration)).at(FormLayoutUtil.flip(cc.xy(1, 3), colSpec, orientation));
+
 		experimentalCodecs = new JCheckBox(Messages.getString("VlcTrans.3"), configuration.isVlcExperimentalCodecs());
 		experimentalCodecs.setContentAreaFilled(false);
 		experimentalCodecs.addItemListener(new ItemListener() {
@@ -661,7 +703,7 @@ public class VLCVideo extends Player {
 				configuration.setVlcExperimentalCodecs(e.getStateChange() == ItemEvent.SELECTED);
 			}
 		});
-		builder.add(GuiUtil.getPreferredSizeComponent(experimentalCodecs)).at(FormLayoutUtil.flip(cc.xy(1, 3), colSpec, orientation));
+		builder.add(GuiUtil.getPreferredSizeComponent(experimentalCodecs)).at(FormLayoutUtil.flip(cc.xy(1, 5), colSpec, orientation));
 
 		audioSyncEnabled = new JCheckBox(Messages.getString("MEncoderVideo.2"), configuration.isVlcAudioSyncEnabled());
 		audioSyncEnabled.setContentAreaFilled(false);
@@ -671,7 +713,7 @@ public class VLCVideo extends Player {
 				configuration.setVlcAudioSyncEnabled(e.getStateChange() == ItemEvent.SELECTED);
 			}
 		});
-		builder.add(GuiUtil.getPreferredSizeComponent(audioSyncEnabled)).at(FormLayoutUtil.flip(cc.xy(1, 5), colSpec, orientation));
+		builder.add(GuiUtil.getPreferredSizeComponent(audioSyncEnabled)).at(FormLayoutUtil.flip(cc.xy(1, 7), colSpec, orientation));
 
 		JPanel panel = builder.getPanel();
 
@@ -679,6 +721,28 @@ public class VLCVideo extends Player {
 		panel.applyComponentOrientation(orientation);
 
 		return panel;
+	}
+
+	// Must only be called by the event dispatching thread
+	private void updateHardwareAcceleration() {
+		if (hardwareAcceleration == null) {
+			return;
+		}
+		ExecutableInfo executableInfo = programInfo.getExecutableInfo(currentExecutableType);
+		Version version = executableInfo == null ? null : executableInfo.getVersion();
+		if (version == null || version.isLessThan(3)) {
+			if (hardwareAccelerationItemListener != null) {
+				hardwareAcceleration.removeItemListener(hardwareAccelerationItemListener);
+			}
+			hardwareAcceleration.setSelected(false);
+			hardwareAcceleration.setEnabled(false);
+		} else {
+			hardwareAcceleration.setSelected(configuration.isVLCHardwareAcceleration());
+			hardwareAcceleration.setEnabled(true);
+			if (hardwareAccelerationItemListener != null) {
+				hardwareAcceleration.addItemListener(hardwareAccelerationItemListener);
+			}
+		}
 	}
 
 	@Override

@@ -28,6 +28,7 @@ import java.awt.event.ItemListener;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.regex.Matcher;
@@ -35,7 +36,11 @@ import java.util.regex.Pattern;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.swing.JCheckBox;
+import javax.swing.JComboBox;
 import javax.swing.JComponent;
+import javax.swing.SwingUtilities;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 import net.pms.Messages;
 import net.pms.configuration.DeviceConfiguration;
 import net.pms.configuration.ExecutableInfo;
@@ -63,8 +68,12 @@ import net.pms.media.VideoCodec;
 import net.pms.media.VideoLevel;
 import net.pms.network.HTTPResource;
 import net.pms.newgui.GuiUtil;
+import net.pms.newgui.components.CustomJSpinner;
+import net.pms.newgui.components.CustomJSpinner.IrregularEntry;
+import net.pms.newgui.components.SpinnerIntModel;
 import net.pms.platform.windows.NTStatus;
 import net.pms.util.CodecUtil;
+import net.pms.util.KeyedComboBoxModel;
 import net.pms.util.ProcessUtil;
 import net.pms.util.Rational;
 import net.pms.util.StringUtil;
@@ -75,7 +84,8 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/*
+
+/**
  * Pure FFmpeg video player.
  *
  * Design note:
@@ -100,6 +110,8 @@ import org.slf4j.LoggerFactory;
 public class FFMpegVideo extends Player {
 	private static final Logger LOGGER = LoggerFactory.getLogger(FFMpegVideo.class);
 	public static final PlayerId ID = StandardPlayerId.FFMPEG_VIDEO;
+	public static final String HARDWARE_ACCELERATION_NONE = "none";
+	public static final String HARDWARE_ACCELERATION_AUTO = "auto";
 	private static Rational ASPECT_16_9 = Rational.valueOf(16, 9);
 
 	/** The {@link Configuration} key for the custom FFmpeg path. */
@@ -682,6 +694,18 @@ public class FFMpegVideo extends Player {
 	}
 
 	@Override
+	public void currentExecutableTypeUpdated() {
+		// Update the available hardware acceleration methods in the GUI
+		SwingUtilities.invokeLater(new Runnable() {
+
+			@Override
+			public void run() {
+				updateHardwareAccelerationMethods(accelerationModel);
+			}
+		});
+	}
+
+	@Override
 	public boolean isTimeSeekable() {
 		return true;
 	}
@@ -689,18 +713,6 @@ public class FFMpegVideo extends Player {
 	@Override
 	public boolean avisynth() {
 		return false;
-	}
-
-	public String initialString() {
-		String threads = " -threads 1";
-		if (configuration.isFfmpegMultithreading()) {
-			if (Runtime.getRuntime().availableProcessors() == configuration.getNumberOfCpuCores()) {
-				threads = "";
-			} else {
-				threads = " -threads " + configuration.getNumberOfCpuCores();
-			}
-		}
-		return threads;
 	}
 
 	@Override
@@ -750,11 +762,6 @@ public class FFMpegVideo extends Player {
 	}
 
 	@Override
-	public boolean isGPUAccelerationReady() {
-		return false;
-	}
-
-	@Override
 	public synchronized ProcessWrapper launchTranscode(
 		DLNAResource dlna,
 		DLNAMediaInfo media,
@@ -779,21 +786,6 @@ public class FFMpegVideo extends Player {
 			!media.getAspectRatioContainer().equals(media.getAspectRatioVideoTrack())
 		) {
 			aspectRatiosMatch = false;
-		}
-
-		/*
-		 * FFmpeg uses multithreading by default, so provided that the
-		 * user has not disabled FFmpeg multithreading and has not
-		 * chosen to use more or less threads than are available, do not
-		 * specify how many cores to use.
-		 */
-		int nThreads = 1;
-		if (configuration.isFfmpegMultithreading()) {
-			if (Runtime.getRuntime().availableProcessors() == configuration.getNumberOfCpuCores()) {
-				nThreads = 0;
-			} else {
-				nThreads = configuration.getNumberOfCpuCores();
-			}
 		}
 
 		List<String> cmdList = new ArrayList<>();
@@ -844,10 +836,19 @@ public class FFMpegVideo extends Player {
 			cmdList.add(String.valueOf(duration));
 		}
 
-		// Decoder threads
-		if (nThreads > 0) {
+		// Decoder threads (0 means automatic)
+		int nThreads = configuration.getFFmpegDecodingThreads();
+		String hardwareAcceleration = configuration.getFFmpegVideoHardwareAccelerationMethod();
+		if (nThreads > 0 && HARDWARE_ACCELERATION_NONE.equals(hardwareAcceleration)) {
 			cmdList.add("-threads");
-			cmdList.add(String.valueOf(nThreads));
+			cmdList.add(Integer.toString(nThreads));
+		} else if (!HARDWARE_ACCELERATION_NONE.equals(hardwareAcceleration) && !avisynth) {
+			if (!HARDWARE_ACCELERATION_AUTO.equals(hardwareAcceleration)) {
+				cmdList.add("-threads");
+				cmdList.add("1");
+			}
+			cmdList.add("-hwaccel");
+			cmdList.add(hardwareAcceleration);
 		}
 
 		final boolean isTsMuxeRVideoEngineActive = PlayerFactory.isPlayerActive(TsMuxeRVideo.ID);
@@ -1049,10 +1050,11 @@ public class FFMpegVideo extends Player {
 
 		// Now configure the output streams
 
-		// Encoder threads
+		// Encoder threads (0 means automatic)
+		nThreads = configuration.getFFmpegEncodingThreads();
 		if (nThreads > 0) {
 			cmdList.add("-threads");
-			cmdList.add(String.valueOf(nThreads));
+			cmdList.add(Integer.toString(nThreads));
 		}
 
 		// Add the output options (-f, -c:a, -c:v, etc.)
@@ -1333,29 +1335,58 @@ public class FFMpegVideo extends Player {
 		return pw;
 	}
 
-	private JCheckBox multithreading;
 	private JCheckBox videoRemuxTsMuxer;
 	private JCheckBox fc;
 	private JCheckBox deferToMEncoderForSubtitles;
+	private CustomJSpinner cpuThreads;
+	private final KeyedComboBoxModel<String, String> accelerationModel = new KeyedComboBoxModel<>();
 
 	@Override
 	public JComponent getConfigurationPanel() {
 		FormLayout layout = new FormLayout(
-			"left:pref, 0:grow",
-			"p, 3dlu, p, 3dlu, p, 3dlu, p, 3dlu, p"
+			"pref, 5dlu, pref, 3dlu, 0:grow",
+			"p, 3dlu, p, 3dlu, p, 3dlu, p, 3dlu, p, 3dlu, p, 3dlu, p, 3dlu, p, 3dlu, p"
 		);
 		FormBuilder builder = FormBuilder.create().layout(layout).border(Paddings.EMPTY).opaque(false);
 		CellConstraints cc = new CellConstraints();
 
-		multithreading = new JCheckBox(Messages.getString("MEncoderVideo.35"), configuration.isFfmpegMultithreading());
-		multithreading.setContentAreaFilled(false);
-		multithreading.addItemListener(new ItemListener() {
+		builder.addLabel(Messages.getString("Generic.DecodingHardwareAccelerationMethod")).at(cc.xy(1, 1));
+		updateHardwareAccelerationMethods(accelerationModel);
+		accelerationModel.setSelectedKey(configuration.getFFmpegHardwareDecodingAccelerationMethod());
+		JComboBox<String> decodingAcceleration = new JComboBox<>(accelerationModel);
+		decodingAcceleration.setToolTipText(String.format(
+			Messages.getString("FFmpeg.DecodingHardwareAccelerationMethodToolTip"),
+			Messages.getString("Generic.None"),
+			Messages.getString("Generic.Automatic")
+		));
+		decodingAcceleration.addItemListener(new ItemListener() {
 			@Override
 			public void itemStateChanged(ItemEvent e) {
-				configuration.setFfmpegMultithreading(e.getStateChange() == ItemEvent.SELECTED);
+				if (e.getStateChange() == ItemEvent.SELECTED) {
+					String key = accelerationModel.getSelectedKey();
+					configuration.setFFmpegDecodingHardwareAccelerationMethod(key);
+				}
 			}
 		});
-		builder.add(GuiUtil.getPreferredSizeComponent(multithreading)).at(cc.xy(2, 3));
+		builder.add(decodingAcceleration).at(cc.xy(3, 1));
+
+		builder.addLabel(Messages.getString("Generic.CPUThreads")).at(cc.xy(1, 3));
+		SpinnerIntModel cpuThreadsModel = new SpinnerIntModel(
+			configuration.getFFmpegMaxThreads(),
+			1,
+			Runtime.getRuntime().availableProcessors(),
+			1,
+			new IrregularEntry(0, Messages.getString("Generic.Automatic"))
+		);
+		cpuThreadsModel.addChangeListener(new ChangeListener() {
+			@Override
+			public void stateChanged(ChangeEvent e) {
+				configuration.setFFmpegMaxThreads(((SpinnerIntModel) e.getSource()).getIntValue());
+			}
+		});
+		cpuThreads = new CustomJSpinner(cpuThreadsModel, true);
+		cpuThreads.setToolTipText(String.format(Messages.getString("Generic.CPUThreadsToolTip"), NAME));
+		builder.add(cpuThreads).at(cc.xy(3, 3));
 
 		videoRemuxTsMuxer = new JCheckBox(Messages.getString("MEncoderVideo.38"), configuration.isFFmpegMuxWithTsMuxerWhenCompatible());
 		videoRemuxTsMuxer.setContentAreaFilled(false);
@@ -1365,7 +1396,7 @@ public class FFMpegVideo extends Player {
 				configuration.setFFmpegMuxWithTsMuxerWhenCompatible(e.getStateChange() == ItemEvent.SELECTED);
 			}
 		});
-		builder.add(GuiUtil.getPreferredSizeComponent(videoRemuxTsMuxer)).at(cc.xy(2, 5));
+		builder.add(GuiUtil.getPreferredSizeComponent(videoRemuxTsMuxer)).at(cc.xyw(1, 5, 3));
 
 		fc = new JCheckBox(Messages.getString("FFmpeg.3"), configuration.isFFmpegFontConfig());
 		fc.setContentAreaFilled(false);
@@ -1376,7 +1407,7 @@ public class FFMpegVideo extends Player {
 				configuration.setFFmpegFontConfig(e.getStateChange() == ItemEvent.SELECTED);
 			}
 		});
-		builder.add(GuiUtil.getPreferredSizeComponent(fc)).at(cc.xy(2, 7));
+		builder.add(GuiUtil.getPreferredSizeComponent(fc)).at(cc.xyw(1, 7, 3));
 
 		deferToMEncoderForSubtitles = new JCheckBox(Messages.getString("FFmpeg.1"), configuration.isFFmpegDeferToMEncoderForProblematicSubtitles());
 		deferToMEncoderForSubtitles.setContentAreaFilled(false);
@@ -1387,9 +1418,78 @@ public class FFMpegVideo extends Player {
 				configuration.setFFmpegDeferToMEncoderForProblematicSubtitles(e.getStateChange() == ItemEvent.SELECTED);
 			}
 		});
-		builder.add(GuiUtil.getPreferredSizeComponent(deferToMEncoderForSubtitles)).at(cc.xy(2, 9));
+		builder.add(GuiUtil.getPreferredSizeComponent(deferToMEncoderForSubtitles)).at(cc.xyw(1, 9, 3));
 
 		return builder.getPanel();
+	}
+
+	protected void updateHardwareAccelerationMethods(@Nonnull KeyedComboBoxModel<String, String> model) {
+		List<String> methods = new ArrayList<>();
+		ExecutableInfo info = getExecutableInfo();
+		if (info instanceof FFmpegExecutableInfo) {
+			methods.addAll(((FFmpegExecutableInfo) info).getHardwareAccelerationMethods());
+			Collections.sort(methods);
+		}
+		methods.add(0, HARDWARE_ACCELERATION_NONE);
+		methods.add(1, HARDWARE_ACCELERATION_AUTO);
+
+		String method;
+		String key;
+		boolean found;
+		int size = methods.size();
+		for (int i = 0; i < size; i++) {
+			method = methods.get(i);
+			while (i < model.getSize() && !method.equals(key = model.getKeyAt(i))) {
+				found = false;
+				for (int j = i + 1; j < size; j++) {
+					if (key.equals(methods.get(j))) {
+						found = true;
+						break;
+					}
+				}
+				if (found) {
+					break;
+				}
+				model.remove(i);
+			}
+
+			if (i >= model.getSize()) {
+				model.add(method, accelerationKeyToValue(method));
+			} else if (!method.equals(model.getKeyAt(i))) {
+				model.add(i, method, accelerationKeyToValue(method));
+			}
+		}
+		while (model.getSize() > size) {
+			model.remove(size);
+		}
+	}
+
+	@Nonnull
+	protected String accelerationKeyToValue(@Nonnull String key) {
+		switch (key) {
+			case HARDWARE_ACCELERATION_NONE:
+				return Messages.getString("Generic.None");
+			case HARDWARE_ACCELERATION_AUTO:
+				return Messages.getString("Generic.Automatic");
+			case "cuda":
+				return "NVIDIA hardware-acceleration (CUDA)";
+			case "dxva2":
+				return "DirectX Video Acceleration (DXVA2)";
+			case "vdpau":
+				return "Video Decode and Presentation API for Unix (VDPAU)";
+			case "vaapi":
+				return "Video Acceleration API (VAAPI)";
+			case "qsv":
+				return "Intel QuickSync Video acceleration (QSV)";
+			case "d3d11va":
+				return "Direct3D11 Video Acceleration (D3D11VA)";
+			case "cuvid":
+				return "NVIDIA hardware-acceleration (CUVID)";
+			case "videotoolbox":
+				return "VideoToolbox";
+			default:
+				return key.toUpperCase(Locale.ROOT);
+		}
 	}
 
 	/**
@@ -1459,7 +1559,6 @@ public class FFMpegVideo extends Player {
 	 * @param resource the {@link DLNAResource} to check for compatibility.
 	 * @return The result.
 	 */
-	@SuppressWarnings("null")
 	protected boolean isContainerCompatible(@Nonnull DLNAResource resource) {
 		DLNAMediaInfo media = resource.getMedia();
 		String container = media == null ? null : media.getContainer();
@@ -1610,6 +1709,22 @@ public class FFMpegVideo extends Player {
 								"{} supported bitstream filters: {}",
 								executableInfo.getPath(),
 								FFmpegExecutableInfo.toBitstreamFiltersString(builder.bitstreamFilters())
+							);
+						}
+					}
+
+					FFmpegExecutableInfo.determineHardwareAccelerationMethods(builder);
+					if (LOGGER.isDebugEnabled()) {
+						if (
+							builder.hardwareAccelerationMethods() == null ||
+							builder.hardwareAccelerationMethods().isEmpty()
+						) {
+							LOGGER.debug("No hardware acceleration methods parsed for \"{}\"", executableInfo.getPath());
+						} else {
+							LOGGER.debug(
+								"{} supported hardware acceleration methods: {}",
+								executableInfo.getPath(),
+								FFmpegExecutableInfo.toHardwareAccelerationMethodsString(builder.hardwareAccelerationMethods())
 							);
 						}
 					}

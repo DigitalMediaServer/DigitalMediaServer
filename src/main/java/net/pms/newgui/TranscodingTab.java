@@ -80,7 +80,6 @@ public class TranscodingTab {
 	private JTextField forcetranscode;
 	private JTextField notranscode;
 	private JTextField maxbuffer;
-	private JComboBox<Integer> nbcores;
 	private DefaultMutableTreeNode parent[];
 	private JPanel cardsPanel;
 	private CardLayout cardLayout;
@@ -96,7 +95,6 @@ public class TranscodingTab {
 	private JCheckBox mpeg2remux;
 	private JCheckBox chapter_support;
 	private JTextField chapter_interval;
-	private JCheckBox videoHWacceleration;
 	private JTextField langs;
 	private JTextField defaultsubs;
 	private JTextField forcedsub;
@@ -119,15 +117,10 @@ public class TranscodingTab {
 	private JComboBox<Integer> depth3D;
 	private HashMap<EngineTreeNode, JComponent> engineSelectionPanels = new HashMap<>();
 
-	/*
-	 * 16 cores is the maximum allowed by MEncoder as of MPlayer r34863.
-	 * Revisions before that allowed only 8.
-	 */
-	private static final int MAX_CORES = 16;
 	private ImageButton arrowDownButton;
 	private ImageButton arrowUpButton;
 	private ImageButton toggleButton;
-	private static enum ToggleButtonState {
+	private enum ToggleButtonState {
 		On ("button-toggle-on.png"),
 		Off ("button-toggle-off.png");
 
@@ -398,14 +391,6 @@ public class TranscodingTab {
 	}
 
 	public void addEngines() {
-		for (Player player : PlayerFactory.getPlayers(false, true)) {
-			if (player.isGPUAccelerationReady()) {
-				videoHWacceleration.setEnabled(true);
-				videoHWacceleration.setSelected(configuration.isGPUAcceleration());
-				break;
-			}
-		}
-
 		for (Player player : PlayerFactory.getAllPlayers()) {
 			EngineTreeNode engine = new EngineTreeNode(player.name(), player, null);
 
@@ -461,30 +446,6 @@ public class TranscodingTab {
 			});
 			builder.add(maxbuffer).at(FormLayoutUtil.flip(cc.xy(3, 3), colSpec, orientation));
 
-			String nCpusLabel = String.format(Messages.getString("TrTab2.24"), Runtime.getRuntime().availableProcessors());
-			builder.addLabel(nCpusLabel, FormLayoutUtil.flip(cc.xy(1, 5), colSpec, orientation));
-
-			Integer[] guiCores = new Integer[MAX_CORES];
-			for (int i = 0; i < MAX_CORES; i++) {
-				guiCores[i] = i + 1;
-			}
-			nbcores = new JComboBox<>(guiCores);
-			nbcores.setEditable(false);
-			int nbConfCores = configuration.getNumberOfCpuCores();
-			if (nbConfCores > 0 && nbConfCores <= MAX_CORES) {
-				nbcores.setSelectedItem(nbConfCores);
-			} else {
-				nbcores.setSelectedIndex(0);
-			}
-
-			nbcores.addItemListener(new ItemListener() {
-				@Override
-				public void itemStateChanged(ItemEvent e) {
-					configuration.setNumberOfCpuCores((int) e.getItem());
-				}
-			});
-			builder.add(nbcores).at(FormLayoutUtil.flip(cc.xy(3, 5), colSpec, orientation));
-
 			chapter_support = new JCheckBox(Messages.getString("TrTab2.52"), configuration.isChapterSupport());
 			chapter_support.setContentAreaFilled(false);
 			chapter_support.addItemListener(new ItemListener() {
@@ -537,16 +498,6 @@ public class TranscodingTab {
 		FormLayout layout = new FormLayout(colSpec, "$lgap, 2*(pref, 3dlu), 10dlu, 10dlu, 4*(pref, 3dlu), pref");
 		FormBuilder builder = FormBuilder.create().layout(layout).border(Paddings.DLU4);
 		CellConstraints cc = new CellConstraints();
-
-		videoHWacceleration = new JCheckBox(Messages.getString("TrTab2.70"), configuration.isGPUAcceleration());
-		videoHWacceleration.addItemListener(new ItemListener() {
-			@Override
-			public void itemStateChanged(ItemEvent e) {
-				configuration.setGPUAcceleration((e.getStateChange() == ItemEvent.SELECTED));
-			}
-		});
-		builder.add(GuiUtil.getPreferredSizeComponent(videoHWacceleration)).at(FormLayoutUtil.flip(cc.xy(1, 2), colSpec, orientation));
-		videoHWacceleration.setEnabled(false);
 
 		mpeg2remux = new JCheckBox(Messages.getString("MEncoderVideo.39"), configuration.isMencoderRemuxMPEG2());
 		mpeg2remux.setToolTipText(Messages.getString("TrTab2.82") + (Platform.isWindows() ? " " + Messages.getString("TrTab2.21") : "") + "</html>");

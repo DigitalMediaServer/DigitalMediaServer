@@ -134,25 +134,11 @@ public class FFmpegWebVideo extends FFMpegVideo {
 		cmdList.add("-loglevel");
 		cmdList.add(FFmpegProgramInfo.getFFmpegLogLevel());
 
-		/*
-		 * FFmpeg uses multithreading by default, so provided that the
-		 * user has not disabled FFmpeg multithreading and has not
-		 * chosen to use more or less threads than are available, do not
-		 * specify how many cores to use.
-		 */
-		int nThreads = 1;
-		if (configuration.isFfmpegMultithreading()) {
-			if (Runtime.getRuntime().availableProcessors() == configuration.getNumberOfCpuCores()) {
-				nThreads = 0;
-			} else {
-				nThreads = configuration.getNumberOfCpuCores();
-			}
-		}
-
-		// Decoder threads
+		// Decoder threads (0 means automatic)
+		int nThreads = configuration.getFFmpegDecodingThreads();
 		if (nThreads > 0) {
 			cmdList.add("-threads");
-			cmdList.add("" + nThreads);
+			cmdList.add(Integer.toString(nThreads));
 		}
 
 		// Add global and input-file custom options, if any
@@ -171,10 +157,11 @@ public class FFmpegWebVideo extends FFMpegVideo {
 
 		cmdList.addAll(getVideoFilterOptions(dlna, media, params));
 
-		// Encoder threads
+		// Encoder threads (0 means automatic)
+		nThreads = configuration.getFFmpegEncodingThreads();
 		if (nThreads > 0) {
 			cmdList.add("-threads");
-			cmdList.add("" + nThreads);
+			cmdList.add(Integer.toString(nThreads));
 		}
 
 		// Add the output options (-f, -c:a, -c:v, etc.)

@@ -25,6 +25,7 @@ import com.jgoodies.forms.layout.FormLayout;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
+import java.awt.FlowLayout;
 import java.awt.event.*;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -33,6 +34,8 @@ import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.StringTokenizer;
 import javax.swing.*;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 import net.pms.Messages;
 import net.pms.PMS;
 import net.pms.configuration.FormatConfiguration;
@@ -43,9 +46,9 @@ import net.pms.dlna.MediaType;
 import net.pms.formats.Format;
 import net.pms.formats.v2.SubtitleType;
 import net.pms.newgui.GuiUtil;
+import net.pms.newgui.components.CustomJSpinner;
+import net.pms.newgui.components.SpinnerIntModel;
 import net.pms.util.ProcessUtil;
-import org.apache.commons.configuration.event.ConfigurationEvent;
-import org.apache.commons.configuration.event.ConfigurationListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -62,7 +65,6 @@ public class AviSynthMEncoder extends MEncoderVideo {
 	private JCheckBox convertfps;
 	private JCheckBox interframe;
 	private static JCheckBox interframegpu;
-	private JCheckBox multithreading;
 
 	@Override
 	public JComponent getConfigurationPanel() {
@@ -74,15 +76,25 @@ public class AviSynthMEncoder extends MEncoderVideo {
 
 		CellConstraints cc = new CellConstraints();
 
-		multithreading = new JCheckBox(Messages.getString("MEncoderVideo.35"), configuration.getAvisynthMultiThreading());
-		multithreading.setContentAreaFilled(false);
-		multithreading.addItemListener(new ItemListener() {
+		JPanel cpuThreadsPanel = new JPanel(new FlowLayout(FlowLayout.LEADING));
+		cpuThreadsPanel.add(new JLabel(Messages.getString("Generic.CPUThreads")));
+
+		SpinnerIntModel cpuThreadsModel = new SpinnerIntModel(
+			configuration.getMEncoderAviSynthMaxThreads(),
+			1,
+			Runtime.getRuntime().availableProcessors(),
+			1
+		);
+		cpuThreadsModel.addChangeListener(new ChangeListener() {
 			@Override
-			public void itemStateChanged(ItemEvent e) {
-				configuration.setAvisynthMultiThreading((e.getStateChange() == ItemEvent.SELECTED));
+			public void stateChanged(ChangeEvent e) {
+				configuration.setMEncoderAviSynthMaxThreads(((SpinnerIntModel) e.getSource()).getIntValue());
 			}
 		});
-		builder.add(GuiUtil.getPreferredSizeComponent(multithreading)).at(cc.xy(2, 3));
+		CustomJSpinner cpuThreads = new CustomJSpinner(cpuThreadsModel, true);
+		cpuThreads.setToolTipText(String.format(Messages.getString("Generic.CPUThreadsToolTip"), NAME));
+		cpuThreadsPanel.add(cpuThreads);
+		builder.add(cpuThreadsPanel).at(cc.xy(2, 3));
 
 		interframe = new JCheckBox(Messages.getString("AviSynthMEncoder.13"), configuration.getAvisynthInterFrame());
 		interframe.setContentAreaFilled(false);
@@ -102,12 +114,12 @@ public class AviSynthMEncoder extends MEncoderVideo {
 		});
 		builder.add(GuiUtil.getPreferredSizeComponent(interframe)).at(cc.xy(2, 5));
 
-		interframegpu = new JCheckBox(Messages.getString("AviSynthMEncoder.15"), configuration.getAvisynthInterFrameGPU());
+		interframegpu = new JCheckBox(Messages.getString("AviSynthMEncoder.15"), configuration.isMEncoderAviSynthInterFrameGPU());
 		interframegpu.setContentAreaFilled(false);
 		interframegpu.addItemListener(new ItemListener() {
 			@Override
 			public void itemStateChanged(ItemEvent e) {
-				configuration.setAvisynthInterFrameGPU((e.getStateChange() == ItemEvent.SELECTED));
+				configuration.setMEncoderAviSynthInterFrameGPU((e.getStateChange() == ItemEvent.SELECTED));
 			}
 		});
 		builder.add(GuiUtil.getPreferredSizeComponent(interframegpu)).at(cc.xy(2, 7));
@@ -170,18 +182,6 @@ public class AviSynthMEncoder extends MEncoderVideo {
 		pane.setPreferredSize(new Dimension(500, 350));
 		builder.add(pane).at(cc.xy(2, 13));
 
-		configuration.addConfigurationListener(new ConfigurationListener() {
-			@Override
-			public void configurationChanged(ConfigurationEvent event) {
-				if (event.getPropertyName() == null) {
-					return;
-				}
-				if ((!event.isBeforeUpdate()) && event.getPropertyName().equals(PmsConfiguration.KEY_GPU_ACCELERATION)) {
-					interframegpu.setEnabled(configuration.isGPUAcceleration());
-				}
-			}
-		});
-
 		return builder.getPanel();
 	}
 
@@ -203,11 +203,6 @@ public class AviSynthMEncoder extends MEncoderVideo {
 	@Override
 	public String name() {
 		return NAME;
-	}
-
-	@Override
-	public boolean isGPUAccelerationReady() {
-		return true;
 	}
 
 	/*
@@ -261,12 +256,10 @@ public class AviSynthMEncoder extends MEncoderVideo {
 			String interframeLines = null;
 			String interframePath  = configuration.getInterFramePath();
 
-			int Cores = 1;
-			if (configuration.getAvisynthMultiThreading()) {
-				Cores = configuration.getNumberOfCpuCores();
-
+			int cores = configuration.getMEncoderAviSynthEffectiveMaxThreads();
+			if (cores > 1) {
 				// Goes at the start of the file to initiate multithreading
-				mtLine1 = "SetMemoryMax(512)\nSetMTMode(3," + Cores + ")\n";
+				mtLine1 = "SetMemoryMax(512)\nSetMTMode(3," + cores + ")\n";
 
 				// Goes after the input line to make multithreading more efficient
 				mtLine2 = "SetMTMode(2)";
@@ -281,7 +274,7 @@ public class AviSynthMEncoder extends MEncoderVideo {
 				movieLine += ".ConvertToYV12()";
 
 				// Enable GPU to assist with CPU
-				if (configuration.getAvisynthInterFrameGPU() && interframegpu.isEnabled()){
+				if (configuration.isMEncoderAviSynthInterFrameGPU()){
 					GPU = ", GPU=true";
 				}
 
@@ -290,7 +283,7 @@ public class AviSynthMEncoder extends MEncoderVideo {
 					"LoadPlugin(PluginPath+\"svpflow1.dll\")\n" +
 					"LoadPlugin(PluginPath+\"svpflow2.dll\")\n" +
 					"Import(PluginPath+\"InterFrame2.avsi\")\n" +
-					"InterFrame(Cores=" + Cores + GPU + ", Preset=\"Faster\")\n";
+					"InterFrame(Cores=" + cores + GPU + ", Preset=\"Faster\")\n";
 			}
 
 			String subLine = null;
