@@ -52,6 +52,7 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
+import javax.swing.SwingUtilities;
 import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.EtchedBorder;
@@ -59,6 +60,8 @@ import javax.swing.border.TitledBorder;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.filechooser.FileFilter;
+import org.apache.commons.configuration.event.ConfigurationEvent;
+import org.apache.commons.configuration.event.ConfigurationListener;
 import com.jgoodies.forms.layout.CellConstraints;
 import com.jgoodies.forms.layout.FormLayout;
 import com.sun.jna.Platform;
@@ -88,7 +91,7 @@ import net.pms.util.Version;
  *
  * @author Nadahar
  */
-public class EnginePanel extends JScrollPane {
+public class EnginePanel extends JScrollPane implements ConfigurationListener {
 	private static final long serialVersionUID = 1L;
 
 	private static final String SELECTION_COL_SPEC = "left:pref, $lcgap, fill:50dlu:grow";
@@ -118,11 +121,12 @@ public class EnginePanel extends JScrollPane {
 
 	private final Player player;
 	private ComponentOrientation orientation;
+	private final String playerConfigurablePathKey;
 	private final JComponent engineSettings;
 	private final JButton selectPath = new JButton("...");
 	private final PmsConfiguration configuration;
 	private final CardListenerRegistrar cardListenerRegistrar;
-	private final GenericsComboBoxModel<ProgramExecutableType> executableTypeModel = new GenericsComboBoxModel<ProgramExecutableType>();
+	private final GenericsComboBoxModel<ProgramExecutableType> executableTypeModel = new GenericsComboBoxModel<>();
 	private final DefaultTextField enginePath = new DefaultTextField("", true);
 	private final AnimatedButton selectedLight = new AnimatedButton();
 	private final AnimatedButton statusLight = new AnimatedButton();
@@ -205,6 +209,11 @@ public class EnginePanel extends JScrollPane {
 				null :
 				new CardListenerRegistrar(tabListenerRegistrar, this);
 		build();
+
+		playerConfigurablePathKey = player.getConfigurablePathKey();
+		if (isNotBlank(playerConfigurablePathKey)) {
+			configuration.addConfigurationListener(this);
+		}
 	}
 
 	/**
@@ -469,7 +478,7 @@ public class EnginePanel extends JScrollPane {
 
 		JLabel engineTypeLabel = new JLabel(Messages.getString("EnginePanel.ExecutableType"));
 		updateSelection();
-		JComboBox<ProgramExecutableType> executableType = new JComboBox<ProgramExecutableType>(executableTypeModel);
+		JComboBox<ProgramExecutableType> executableType = new JComboBox<>(executableTypeModel);
 		executableType.addItemListener(new ItemListener() {
 
 			@Override
@@ -606,6 +615,19 @@ public class EnginePanel extends JScrollPane {
 		return player;
 	}
 
+	@Override
+	public void configurationChanged(ConfigurationEvent event) {
+		if ((!event.isBeforeUpdate()) && playerConfigurablePathKey.equals(event.getPropertyName())) {
+			SwingUtilities.invokeLater(new Runnable() {
+
+				@Override
+				public void run() {
+					updatePanel();
+				}
+			});
+		}
+	}
+
 	/**
 	 * This is a {@link FileFilter} implementation that filters out executable
 	 * files only for the current platform.
@@ -653,7 +675,7 @@ public class EnginePanel extends JScrollPane {
 
 	}
 
-	private static enum IconState {
+	private enum IconState {
 		OK, OK_DISABLED, ERROR, ERROR_ACTIVE, ERROR_DISABLED, MISSING;
 	}
 
