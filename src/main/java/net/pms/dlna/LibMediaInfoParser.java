@@ -623,15 +623,18 @@ public class LibMediaInfoParser {
 			format = FormatConfiguration.MXF;
 		} else if (value.equals("qt") || value.equals("quicktime")) {
 			format = FormatConfiguration.MOV;
-		} else if (
-			value.contains("isom") ||
-			streamType != StreamType.Audio && value.startsWith("mp4") && !value.startsWith("mp4a") ||
-			value.equals("20") ||
-			value.equals("isml") ||
-			(value.startsWith("m4a") && !value.startsWith("m4ae")) ||
-			value.startsWith("m4v") ||
-			value.equals("mpeg-4 visual") ||
-			value.equals("xavc")
+		} else if ((
+				value.contains("isom") ||
+				streamType != StreamType.Audio && value.startsWith("mp4") && !value.startsWith("mp4a") ||
+				value.equals("20") ||
+				value.equals("isml") ||
+				(value.startsWith("m4a") && !value.startsWith("m4ae")) ||
+				value.startsWith("m4v") ||
+				value.equals("mpeg-4 visual") ||
+				value.equals("xavc")
+			) &&
+			!FormatConfiguration.MPEG4ASP.equals(media.getCodecV()) &&
+			!FormatConfiguration.MPEG4SP.equals(media.getCodecV())
 		) {
 			format = FormatConfiguration.MP4;
 		} else if (
