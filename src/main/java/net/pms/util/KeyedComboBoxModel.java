@@ -210,6 +210,7 @@ public class KeyedComboBoxModel<K, V> implements ComboBoxModel<V> {
 	 * @deprecated Inherited method. Use {@link #getSelectedKey()} or
 	 * {@link #getSelectedValue()} instead.
 	 */
+	@Deprecated
 	@Override
 	public Object getSelectedItem() {
 		return selectedItemValue;
@@ -270,6 +271,7 @@ public class KeyedComboBoxModel<K, V> implements ComboBoxModel<V> {
 	 * @deprecated Inherited method. Use {@link #setSelectedKey(K)} or
 	 * {@link #setSelectedValue(V)} instead.
 	 */
+	@Deprecated
 	@SuppressWarnings("unchecked")
 	@Override
 	public void setSelectedItem(final Object anItem) {
@@ -338,6 +340,7 @@ public class KeyedComboBoxModel<K, V> implements ComboBoxModel<V> {
 	 * @deprecated Inherited method. Use {@link #getValueAt(int)} or
 	 * {@link #getKeyAt(int)} instead.
 	 */
+	@Deprecated
 	@Override
 	public V getElementAt(final int index) {
 		if (index >= data.size()) {
@@ -422,7 +425,7 @@ public class KeyedComboBoxModel<K, V> implements ComboBoxModel<V> {
 	 */
 	public int findKeyIndex(final Object key) {
 		if (key == null) {
-			throw new NullPointerException("Search key can not be null");
+			throw new IllegalArgumentException("Search key can not be null");
 		}
 
 		for (int i = 0; i < data.size(); i++) {
@@ -443,7 +446,7 @@ public class KeyedComboBoxModel<K, V> implements ComboBoxModel<V> {
 	 */
 	public int findValueIndex(final Object value) {
 		if (value == null) {
-			throw new NullPointerException("Search value can not be null");
+			throw new IllegalArgumentException("Search value can not be null");
 		}
 
 		for (int i = 0; i < data.size(); i++) {

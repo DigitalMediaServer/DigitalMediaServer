@@ -28,7 +28,6 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.text.translate.CharSequenceTranslator;
 import org.apache.commons.text.translate.LookupTranslator;
 import org.slf4j.Logger;
@@ -147,7 +146,7 @@ public class DeviceProtocolInfo implements Serializable {
 	 *         {@code false} this already contains the specified element(s).
 	 */
 	public boolean add(DeviceProtocolInfoSource<?> type, String protocolInfoString) {
-		if (StringUtils.isBlank(protocolInfoString)) {
+		if (isBlank(protocolInfoString)) {
 			return false;
 		}
 
@@ -159,7 +158,7 @@ public class DeviceProtocolInfo implements Serializable {
 			if (protocolInfoSets.containsKey(type)) {
 				currentSet = protocolInfoSets.get(type);
 			} else {
-				currentSet = new TreeSet<ProtocolInfo>();
+				currentSet = new TreeSet<>();
 				protocolInfoSets.put(type, currentSet);
 			}
 
@@ -487,7 +486,7 @@ public class DeviceProtocolInfo implements Serializable {
 			if (protocolInfoSets.containsKey(type)) {
 				currentSet = protocolInfoSets.get(type);
 			} else {
-				currentSet = new TreeSet<ProtocolInfo>();
+				currentSet = new TreeSet<>();
 				protocolInfoSets.put(type, currentSet);
 			}
 
@@ -520,7 +519,7 @@ public class DeviceProtocolInfo implements Serializable {
 			if (protocolInfoSets.containsKey(type)) {
 				currentSet = protocolInfoSets.get(type);
 			} else {
-				currentSet = new TreeSet<ProtocolInfo>();
+				currentSet = new TreeSet<>();
 				protocolInfoSets.put(type, currentSet);
 			}
 

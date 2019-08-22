@@ -974,6 +974,7 @@ public class DLNAImageProfile implements Comparable<DLNAImageProfile>, Serializa
 					} else {
 						complianceResult.failures.add("color type");
 					}
+					break;
 			}
 		} else if (LOGGER.isTraceEnabled()) {
 			if (LOGGER.isTraceEnabled()) {
@@ -1042,7 +1043,7 @@ public class DLNAImageProfile implements Comparable<DLNAImageProfile>, Serializa
 		boolean allowJPEG_RES_H_V
 	) {
 		if (format == null) {
-			throw new NullPointerException("format cannot be null");
+			throw new IllegalArgumentException("format cannot be null");
 		}
 		if (width < 1 || height < 1) {
 			throw new IllegalArgumentException(String.format(
@@ -1096,10 +1097,10 @@ public class DLNAImageProfile implements Comparable<DLNAImageProfile>, Serializa
 	 */
 	public static DLNAComplianceResult checkCompliance(ImageInfo imageInfo, ImageFormat format) {
 		if (imageInfo == null) {
-			throw new NullPointerException("imageInfo cannot be null");
+			throw new IllegalArgumentException("imageInfo cannot be null");
 		}
 		if (format == null) {
-			throw new NullPointerException("format cannot be null");
+			throw new IllegalArgumentException("format cannot be null");
 		}
 
 		InternalComplianceResult complianceResult = new InternalComplianceResult();
@@ -1161,6 +1162,7 @@ public class DLNAImageProfile implements Comparable<DLNAImageProfile>, Serializa
 				} else {
 					complianceResult.failures.add("illegal format");
 				}
+				break;
 		}
 
 		return DLNAComplianceResult.toDLNAComplianceResult(complianceResult);

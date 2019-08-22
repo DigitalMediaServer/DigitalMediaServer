@@ -25,7 +25,6 @@ import java.util.Collections;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
-import org.apache.commons.lang3.StringUtils;
 import org.fourthline.cling.support.model.Protocol;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -124,7 +123,7 @@ public class PanasonicDmpProfiles implements Serializable {
 	 *         elements.
 	 */
 	public boolean add(String dmpProfilesString) {
-		if (StringUtils.isBlank(dmpProfilesString)) {
+		if (isBlank(dmpProfilesString)) {
 			return false;
 		}
 

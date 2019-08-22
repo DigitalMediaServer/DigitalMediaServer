@@ -156,7 +156,7 @@ public class FormattableColor extends Color {
 	 */
 	protected static int calculateIntValue(String color) throws InvalidArgumentException {
 		if (color == null) {
-			throw new NullPointerException("color cannot be null");
+			throw new IllegalArgumentException("color cannot be null");
 		}
 		color = color.trim();
 

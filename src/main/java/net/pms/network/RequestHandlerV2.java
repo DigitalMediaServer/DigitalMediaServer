@@ -203,7 +203,7 @@ public class RequestHandlerV2 extends SimpleChannelUpstreamHandler {
 						// It may be unusual but already known
 						if (!isKnown && renderer != null) {
 							String additionalHeader = renderer.getUserAgentAdditionalHttpHeader();
-							if (StringUtils.isNotBlank(additionalHeader) && lowerCaseHeaderLine.startsWith(additionalHeader)) {
+							if (isNotBlank(additionalHeader) && lowerCaseHeaderLine.startsWith(additionalHeader)) {
 								isKnown = true;
 							}
 						}
@@ -281,7 +281,7 @@ public class RequestHandlerV2 extends SimpleChannelUpstreamHandler {
 			header.append("\n\n");
 			header.append("HEADER:\n");
 			for (Entry<String, String> entry : ((HttpMessage) event.getMessage()).headers().entries()) {
-				if (StringUtils.isNotBlank(entry.getKey())) {
+				if (isNotBlank(entry.getKey())) {
 					header.append("  ").append(entry.getKey()).append(": ").append(entry.getValue()).append("\n");
 					if ("SOAPACTION".equalsIgnoreCase(entry.getKey())) {
 						soapAction = entry.getValue().toUpperCase(Locale.ROOT);
@@ -293,7 +293,7 @@ public class RequestHandlerV2 extends SimpleChannelUpstreamHandler {
 			header.append(event).append("\n");
 		}
 		String formattedContent = null;
-		if (StringUtils.isNotBlank(content)) {
+		if (isNotBlank(content)) {
 			try {
 				formattedContent = StringUtil.prettifyXML(content, 4);
 			} catch (XPathExpressionException | SAXException | ParserConfigurationException | TransformerException e) {
@@ -338,7 +338,7 @@ public class RequestHandlerV2 extends SimpleChannelUpstreamHandler {
 			requestType,
 			rendererName,
 			header,
-			StringUtils.isNotBlank(formattedContent) ? "\nCONTENT:\n" + formattedContent : ""
+			isNotBlank(formattedContent) ? "\nCONTENT:\n" + formattedContent : ""
 		);
 	}
 

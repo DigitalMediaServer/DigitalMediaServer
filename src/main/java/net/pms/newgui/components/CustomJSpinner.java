@@ -46,7 +46,7 @@ import net.pms.PMS;
  */
 @SuppressWarnings("serial")
 
-public class CustomJSpinner extends javax.swing.JSpinner {
+public class CustomJSpinner extends JSpinner {
 
 	/**
 	 * Creates a new {@link CustomJSpinner} with default instance of

@@ -332,10 +332,10 @@ public class DCRaw extends ImagePlayer {
 	@Override
 	public void parse(DLNAMediaInfo media, File file) {
 		if (media == null) {
-			throw new NullPointerException("media cannot be null");
+			throw new IllegalArgumentException("media cannot be null");
 		}
 		if (file == null) {
-			throw new NullPointerException("file cannot be null");
+			throw new IllegalArgumentException("file cannot be null");
 		}
 
 		OutputParams params = new OutputParams(configuration);

@@ -45,7 +45,6 @@ import net.pms.util.StringUtil.LetterCase;
 import static net.pms.util.Constants.*;
 import static org.apache.commons.lang3.StringUtils.*;
 import org.apache.commons.io.FilenameUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.text.WordUtils;
 import org.apache.commons.text.similarity.JaroWinklerDistance;
 import org.slf4j.Logger;
@@ -875,7 +874,7 @@ public class FileUtil {
 				PMS.get().infoDbAdd(file, isNotBlank(searchFormattedName) ?  searchFormattedName : formattedName);
 			} else if (isTVSeriesToLookup) {
 				int showNameIndex = indexOf(Pattern.compile("(?i) - \\d\\d\\d.*"), formattedName);
-				if (StringUtils.isNotEmpty(info.title) && showNameIndex != -1) {
+				if (isNotEmpty(info.title) && showNameIndex != -1) {
 					String titleFromFilename = formattedName.substring(0, showNameIndex);
 
 					// The following line can run over 100 times in under 1ms
@@ -883,15 +882,13 @@ public class FileUtil {
 					if (similarity > 0.91) {
 						formattedName = info.title + formattedName.substring(showNameIndex);
 
-						if (isEpisodeToLookup) {
-							if (StringUtils.isNotEmpty(info.ep_name)) {
-								formattedName += " - " + info.ep_name;
-							}
+						if (isEpisodeToLookup && isNotEmpty(info.ep_name)) {
+							formattedName += " - " + info.ep_name;
 						}
 					}
 					LOGGER.trace("The similarity between '" + info.title + "' and '" + titleFromFilename + "' is " + similarity);
 				}
-			} else if (isMovieToLookup && StringUtils.isNotEmpty(info.title) && StringUtils.isNotEmpty(info.year)) {
+			} else if (isMovieToLookup && isNotEmpty(info.title) && isNotEmpty(info.year)) {
 				double similarity;
 				if (isMovieWithoutYear) {
 					similarity = jaroWinklerDistance.apply(formattedName, info.title);
@@ -953,6 +950,7 @@ public class FileUtil {
 						break;
 					default:
 						convertedValue += ' ' + word.substring(0, 1).toUpperCase() + word.substring(1);
+						break;
 				}
 			} else {
 				// Always capitalize the first letter of the string

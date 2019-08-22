@@ -7,7 +7,7 @@ import javax.swing.tree.TreeModel;
 import javax.swing.tree.TreePath;
 import javax.swing.tree.TreeSelectionModel;
 
-// @author Santhosh Kumar T - santhosh@in.fiorano.com 
+// @author Santhosh Kumar T - santhosh@in.fiorano.com
 public class CheckTreeSelectionModel extends DefaultTreeSelectionModel {
 	private static final long serialVersionUID = 6785975582865715495L;
 	private TreeModel model;
@@ -34,7 +34,7 @@ public class CheckTreeSelectionModel extends DefaultTreeSelectionModel {
 	}
 
 	/**
-	 * Whether given path is selected. 
+	 * Whether given path is selected.
 	 * If dig is true, then a path is assumed to be selected, if one of its
 	 * ancestors is selected.
 	 */
@@ -151,8 +151,8 @@ public class CheckTreeSelectionModel extends DefaultTreeSelectionModel {
 	}
 
 	/**
-	 * If any ancestor node of given path is selected then unselect it 
-	 * and selection all its descendants except given path and descendants. 
+	 * If any ancestor node of given path is selected then unselect it
+	 * and selection all its descendants except given path and descendants.
 	 * Otherwise just unselect the given path.
 	 */
 	private void toggleRemoveSelection(TreePath path) {
@@ -177,7 +177,7 @@ public class CheckTreeSelectionModel extends DefaultTreeSelectionModel {
 			int childCount = model.getChildCount(node);
 			for (int i = 0; i < childCount; i++) {
 				Object childNode = model.getChild(node, i);
-				if (childNode != peekNode) {
+				if (!childNode.equals(peekNode)) {
 					super.addSelectionPaths(new TreePath[]{temp.pathByAddingChild(childNode)});
 				}
 			}

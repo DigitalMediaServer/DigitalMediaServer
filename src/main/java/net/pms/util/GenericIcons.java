@@ -190,6 +190,7 @@ public enum GenericIcons {
 						} else if (label.toLowerCase(Locale.ROOT).equals(label)) {
 							label = StringUtils.capitalize(label);
 						}
+						break;
 				}
 			}
 
@@ -308,6 +309,7 @@ public enum GenericIcons {
 				break;
 			default:
 				image = genericUnknownIcon;
+				break;
 		}
 
 		if (image != null) {

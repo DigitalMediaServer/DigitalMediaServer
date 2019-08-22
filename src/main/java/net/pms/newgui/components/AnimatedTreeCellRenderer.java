@@ -57,6 +57,7 @@ public class AnimatedTreeCellRenderer extends RepaintableTreeCellRenderer implem
 				break;
 			default:
 				setIcon(stage.icon);
+				break;
 		}
 	}
 

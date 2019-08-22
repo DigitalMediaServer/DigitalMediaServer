@@ -246,7 +246,7 @@ public class DefaultTextField extends JTextField implements FocusListener, Actio
 				newFontColor = STANDARD_DEFAULT_FONT_COLOR;
 			}
 		}
-		if (newFontColor != defaultFontColor) {
+		if (!newFontColor.equals(defaultFontColor)) {
 			defaultFontColor = newFontColor;
 			repaint();
 		}

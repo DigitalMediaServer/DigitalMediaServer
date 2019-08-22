@@ -98,7 +98,7 @@ public abstract class FixedArrayByReference<E> extends PointerType {
 	 */
 	public void setArray(E[] array) {
 		if (array == null) {
-			throw new NullPointerException("array cannot be null");
+			throw new IllegalArgumentException("array cannot be null");
 		}
 		if (array.length != size) {
 			throw new IllegalArgumentException("array size must be " + size);

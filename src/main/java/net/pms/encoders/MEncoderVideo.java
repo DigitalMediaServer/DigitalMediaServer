@@ -2297,7 +2297,7 @@ public class MEncoderVideo extends Player {
 				cmdList.add(pipe.getInputPipe());
 
 				if (pcm && !channels_filter_present && params.aid != null) {
-					String mixer = AudioUtils.getLPCMChannelMappingForMencoder(params.aid);
+					String mixer = getLPCMChannelMappingForMencoder(params.aid);
 					if (isNotBlank(mixer)) {
 						cmdList.add("-af");
 						cmdList.add(mixer);

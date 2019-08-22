@@ -142,7 +142,7 @@ public abstract class ArrayByReference<E> extends PointerType {
 	 */
 	public void setArray(E[] array, long reAllocateThreshold) {
 		if (array == null) {
-			throw new NullPointerException("array cannot be null");
+			throw new IllegalArgumentException("array cannot be null");
 		}
 		setSize(array.length, reAllocateThreshold);
 		if (array.length > 0) {

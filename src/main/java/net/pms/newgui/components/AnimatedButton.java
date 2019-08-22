@@ -176,7 +176,7 @@ public class AnimatedButton extends ImageButton implements AnimatedComponent {
 				break;
 			default:
 				setIcon(stage.icon);
+				break;
 		}
 	}
-
 }

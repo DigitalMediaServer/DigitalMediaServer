@@ -55,11 +55,9 @@ import net.pms.util.FileUtil;
 import net.pms.util.MpegUtil;
 import net.pms.util.ProcessUtil;
 import net.pms.util.Rational;
-import net.pms.util.StringUtil;
 import static net.pms.util.StringUtil.*;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
-import org.apache.commons.lang3.StringUtils;
 import org.jaudiotagger.audio.AudioFile;
 import org.jaudiotagger.audio.AudioFileIO;
 import org.jaudiotagger.audio.AudioHeader;
@@ -106,7 +104,7 @@ public class DLNAMediaInfo implements Cloneable {
 	protected static final Map<String, AudioVariantInfo> audioOrVideoContainers;
 
 	static {
-		Map<String, AudioVariantInfo> mutableAudioOrVideoContainers = new HashMap<String, AudioVariantInfo>();
+		Map<String, AudioVariantInfo> mutableAudioOrVideoContainers = new HashMap<>();
 
 		// Map container formats to their "audio variant".
 		mutableAudioOrVideoContainers.put(FormatConfiguration.MP4, new AudioVariantInfo(new M4A(), FormatConfiguration.M4A));
@@ -802,7 +800,7 @@ public class DLNAMediaInfo implements Cloneable {
 							bitRate = (int) ah.getBitRateAsNumber();
 
 							String channels = ah.getChannels().trim().toLowerCase(Locale.ROOT);
-							if (StringUtils.isNotBlank(channels)) {
+							if (isNotBlank(channels)) {
 								if (channels.equals("1") || channels.contains("mono")) {
 									audio.setNumberOfChannels(1);
 								} else if (channels.equals("2") || channels.contains("stereo")) {
@@ -828,7 +826,7 @@ public class DLNAMediaInfo implements Cloneable {
 								audio.setNumberOfChannels(DLNAMediaAudio.NUMBEROFCHANNELS_DEFAULT); // set default number of channels
 							}
 
-							if (StringUtils.isNotBlank(ah.getEncodingType())) {
+							if (isNotBlank(ah.getEncodingType())) {
 								audio.setCodecA(ah.getEncodingType());
 							}
 
@@ -1479,7 +1477,7 @@ public class DLNAMediaInfo implements Cloneable {
 
 	@Nullable
 	public String getDurationString() {
-		return durationSec != null ? StringUtil.formatDLNADuration(durationSec) : null;
+		return durationSec != null ? formatDLNADuration(durationSec) : null;
 	}
 
 	/**
@@ -1487,7 +1485,7 @@ public class DLNAMediaInfo implements Cloneable {
 	 */
 	@Deprecated
 	public static String getDurationString(double d) {
-		return StringUtil.formatDLNADuration(d);
+		return formatDLNADuration(d);
 	}
 
 	@Nullable
@@ -1599,6 +1597,7 @@ public class DLNAMediaInfo implements Cloneable {
 					break;
 				case FormatConfiguration.LPCM:
 					mimeType = HTTPResource.AUDIO_LPCM_TYPEMIME;
+					break;
 				case FormatConfiguration.M4A:
 					mimeType = HTTPResource.AUDIO_M4A_TYPEMIME;
 					break;
@@ -2928,7 +2927,7 @@ public class DLNAMediaInfo implements Cloneable {
 		AYBH,
 		AYBC,
 		AYBD
-	};
+	}
 
 	public Mode3D get3DLayout() {
 		if (!is3d()) {
@@ -3008,7 +3007,7 @@ public class DLNAMediaInfo implements Cloneable {
 	 *         audio or video, {@code false} otherwise.
 	 */
 	public boolean isAudioOrVideoContainer() {
-		if (StringUtils.isBlank(container)) {
+		if (isBlank(container)) {
 			return false;
 		}
 		for (Entry<String, AudioVariantInfo> entry : audioOrVideoContainers.entrySet()) {
@@ -3034,7 +3033,7 @@ public class DLNAMediaInfo implements Cloneable {
 	 *         {@code null} if it doesn't apply.
 	 */
 	public Format getAudioVariantFormat() {
-		if (StringUtils.isBlank(container)) {
+		if (isBlank(container)) {
 			return null;
 		}
 		for (Entry<String, AudioVariantInfo> entry : audioOrVideoContainers.entrySet()) {
@@ -3060,7 +3059,7 @@ public class DLNAMediaInfo implements Cloneable {
 	 *         constant for this container, or {@code null} if it doesn't apply.
 	 */
 	public String getAudioVariantFormatConfigurationString() {
-		if (StringUtils.isBlank(container)) {
+		if (isBlank(container)) {
 			return null;
 		}
 		for (Entry<String, AudioVariantInfo> entry : audioOrVideoContainers.entrySet()) {
@@ -3086,7 +3085,7 @@ public class DLNAMediaInfo implements Cloneable {
 	 *         if it doesn't apply.
 	 */
 	public AudioVariantInfo getAudioVariant() {
-		if (StringUtils.isBlank(container)) {
+		if (isBlank(container)) {
 			return null;
 		}
 		for (Entry<String, AudioVariantInfo> entry : audioOrVideoContainers.entrySet()) {
@@ -3139,7 +3138,7 @@ public class DLNAMediaInfo implements Cloneable {
 	/**
 	 * This {@code enum} represents the different video "scan types".
 	 */
-	public static enum ScanType {
+	public enum ScanType {
 
 		/** Interlaced scan, any sub-type */
 		INTERLACED,
@@ -3162,7 +3161,7 @@ public class DLNAMediaInfo implements Cloneable {
 				default:
 					return name();
 			}
-		};
+		}
 
 		public static ScanType typeOf(String scanType) {
 			if (isBlank(scanType)) {
@@ -3186,7 +3185,7 @@ public class DLNAMediaInfo implements Cloneable {
 	/**
 	 * This {@code enum} represents the video scan order.
 	 */
-	public static enum ScanOrder {
+	public enum ScanOrder {
 
 		/** Bottom Field First */
 		BFF,
@@ -3229,7 +3228,7 @@ public class DLNAMediaInfo implements Cloneable {
 				default:
 					return name();
 			}
-		};
+		}
 
 		public static ScanOrder typeOf(String scanOrder) {
 			if (isBlank(scanOrder)) {
@@ -3269,7 +3268,7 @@ public class DLNAMediaInfo implements Cloneable {
 	 * This {@code enum} represents constant or variable rate modes, for example
 	 * for bitrate of framerate.
 	 */
-	public static enum RateMode {
+	public enum RateMode {
 		CONSTANT,
 		VARIABLE;
 

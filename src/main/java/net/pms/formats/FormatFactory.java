@@ -179,7 +179,7 @@ public final class FormatFactory {
 	public static List<Format> getSupportedFormats() {
 		formatsLock.readLock().lock();
 		try {
-			return new ArrayList<Format>(formats);
+			return new ArrayList<>(formats);
 		} finally {
 			formatsLock.readLock().unlock();
 		}
@@ -192,7 +192,7 @@ public final class FormatFactory {
 	 */
 	public static boolean addFormat(Format format) {
 		if (format == null) {
-			throw new NullPointerException("format cannot be null");
+			throw new IllegalArgumentException("format cannot be null");
 		}
 		formatsLock.writeLock().lock();
 		try {
@@ -209,7 +209,7 @@ public final class FormatFactory {
 	 */
 	public static boolean removeFormat(Format format) {
 		if (format == null) {
-			throw new NullPointerException("format cannot be null");
+			throw new IllegalArgumentException("format cannot be null");
 		}
 		formatsLock.writeLock().lock();
 		try {

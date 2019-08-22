@@ -166,7 +166,9 @@ public class PSDInfo extends ImageInfo {
 							case LAB:
 								parsedInfo.numComponents = 3;
 								parsedInfo.colorSpaceType = ColorSpaceType.TYPE_Lab;
+								break;
 							default:
+								break;
 						}
 					}
 				}

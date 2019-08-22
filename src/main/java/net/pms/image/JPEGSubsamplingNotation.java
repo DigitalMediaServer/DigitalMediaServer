@@ -50,7 +50,7 @@ public class JPEGSubsamplingNotation implements Serializable {
 	private final double b;
 
 	/**
-	 * Creates a new {@link JPEGSubsamplingNotation} with the given factors.
+	 * Creates a new {@link JPEGSubsamplingNotation} with the specified factors.
 	 *
 	 * @param j the {@code J} factor.
 	 * @param a the {@code a} factor.
@@ -62,13 +62,25 @@ public class JPEGSubsamplingNotation implements Serializable {
 		this.b = b;
 	}
 
+	/**
+	 * Creates a new {@link JPEGSubsamplingNotation} with the specified factors.
+	 *
+	 * @param j the {@code J} factor.
+	 * @param a the {@code a} factor.
+	 * @param b the {@code b} factor.
+	 */
 	public JPEGSubsamplingNotation(double j, double a, double b) {
 		this.j = j;
 		this.a = a;
 		this.b = b;
 	}
 
-	// Internal constructor
+	/**
+	 * (Internal) Creates a new {@link JPEGSubsamplingNotation} with the
+	 * specified factors.
+	 *
+	 * @param factors the array of {@code double} factors.
+	 */
 	protected JPEGSubsamplingNotation(double[] factors) {
 		j = factors[0];
 		a = factors[1];
@@ -86,7 +98,7 @@ public class JPEGSubsamplingNotation implements Serializable {
 	 */
 	public static JPEGSubsamplingNotation calculateJPEGSubsampling(Metadata metadata) {
 		if (metadata == null) {
-			throw new NullPointerException("metadata cannot be null");
+			throw new IllegalArgumentException("metadata cannot be null");
 		}
 
 		JpegDirectory directory = metadata.getFirstDirectoryOfType(JpegDirectory.class);
@@ -107,10 +119,11 @@ public class JPEGSubsamplingNotation implements Serializable {
 	 * @param directory the {@link JpegDirectory} instance from which to
 	 *            calculate.
 	 * @return A {@link JPEGSubsamplingNotation} with the result.
+	 * @throws IllegalArgumentException If {@code directory} is {@code null}.
 	 */
 	public static JPEGSubsamplingNotation calculateJPEGSubsampling(JpegDirectory directory) {
 		if (directory == null) {
-			throw new NullPointerException("directory cannot be null");
+			throw new IllegalArgumentException("directory cannot be null");
 		}
 
 		if (
@@ -270,17 +283,9 @@ public class JPEGSubsamplingNotation implements Serializable {
 			return false;
 		}
 		JPEGSubsamplingNotation other = (JPEGSubsamplingNotation) obj;
-		if (Double.doubleToLongBits(a) != Double.doubleToLongBits(other.a)) {
-			return false;
-		}
-		if (Double.doubleToLongBits(b) != Double.doubleToLongBits(other.b)) {
-			return false;
-		}
-		if (Double.doubleToLongBits(j) != Double.doubleToLongBits(other.j)) {
-			return false;
-		}
-		return true;
+		return
+			Double.doubleToLongBits(a) == Double.doubleToLongBits(other.a) &&
+			Double.doubleToLongBits(b) == Double.doubleToLongBits(other.b) &&
+			Double.doubleToLongBits(j) == Double.doubleToLongBits(other.j);
 	}
-
-
 }

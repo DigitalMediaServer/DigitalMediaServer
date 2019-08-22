@@ -238,7 +238,7 @@ public class FreedesktopTrash {
 	 * @throws InvalidFileSystemException If the file system doesn't support the
 	 *             operation.
 	 * @throws IOException If an error occurs during the operation.
-	 * @throws NullPointerException If {@code file} is {@code null}.
+	 * @throws IllegalArgumentException If {@code file} is {@code null}.
 	 */
 	public static void moveToTrash(@Nonnull File file) throws InvalidFileSystemException, IOException {
 		moveToTrash(file.toPath());
@@ -251,11 +251,11 @@ public class FreedesktopTrash {
 	 * @throws InvalidFileSystemException If the file system doesn't support the
 	 *             operation.
 	 * @throws IOException If an error occurs during the operation.
-	 * @throws NullPointerException If {@code path} is {@code null}.
+	 * @throws IllegalArgumentException If {@code path} is {@code null}.
 	 */
 	public static void moveToTrash(@Nonnull Path path) throws InvalidFileSystemException, IOException {
 		if (path == null) {
-			throw new NullPointerException("path cannot be null");
+			throw new IllegalArgumentException("path cannot be null");
 		}
 
 		final int limit = 10;

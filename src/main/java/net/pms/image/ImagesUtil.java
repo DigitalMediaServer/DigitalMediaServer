@@ -398,7 +398,7 @@ public class ImagesUtil {
 		int scaleHeight
 	) {
 		if (scaleType == null) {
-			throw new NullPointerException("scaleType cannot be null");
+			throw new IllegalArgumentException("scaleType cannot be null");
 		}
 		if (actualWidth < 1 || actualHeight < 1) {
 			throw new IllegalArgumentException(String.format(
@@ -1245,6 +1245,7 @@ public class ImagesUtil {
 					} else {
 						outputFormat = ImageFormat.JPEG;
 					}
+					break;
 			}
 		}
 
@@ -1353,7 +1354,7 @@ public class ImagesUtil {
 				default:
 					throw new IllegalStateException("Unexpected image format: " + outputFormat);
 			}
-			reencode = reencode || convertColors || !complianceResult.isFormatCorrect() || !complianceResult.isColorsCorrect();;
+			reencode = reencode || convertColors || !complianceResult.isFormatCorrect() || !complianceResult.isColorsCorrect();
 			if (!complianceResult.isResolutionCorrect()) {
 				width = width > 0 && complianceResult.getMaxWidth() > 0 ?
 					Math.min(width, complianceResult.getMaxWidth()) :
@@ -1696,6 +1697,7 @@ public class ImagesUtil {
 				default:
 					// Return an empty Metadata instance for unsupported formats
 					metadata = new Metadata();
+					break;
 			}
 		} else {
 			switch (format) {
@@ -1748,6 +1750,7 @@ public class ImagesUtil {
 				case WBMP:
 				default:
 					metadata = new Metadata();
+					break;
 			}
 		}
 		return metadata;

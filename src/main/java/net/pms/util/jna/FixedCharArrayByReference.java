@@ -204,7 +204,7 @@ public class FixedCharArrayByReference extends FixedArrayByReference<Byte> {
 	 */
 	public void setByteArray(byte[] array) {
 		if (array == null) {
-			throw new NullPointerException("array cannot be null");
+			throw new IllegalArgumentException("array cannot be null");
 		}
 		if (array.length != size) {
 			throw new IllegalArgumentException("array size must be " + size);

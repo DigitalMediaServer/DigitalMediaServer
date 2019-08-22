@@ -94,7 +94,7 @@ public final class Version implements Comparable<Version> {
 	 */
 	public Version(@Nonnull String versionString, boolean hexadecimal) {
 		if (versionString == null) {
-			throw new NullPointerException("Version string can not be null");
+			throw new IllegalArgumentException("versionString can not be null");
 		}
 		this.versionString = versionString.trim();
 

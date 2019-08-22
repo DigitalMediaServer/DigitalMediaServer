@@ -154,8 +154,8 @@ public class JNATypesTest {
 
 		try {
 			pointerArrayByReference.setArray(null);
-			fail("Expected exception of type NullPointerException");
-		} catch (NullPointerException e) {
+			fail("Expected exception of type IllegalArgumentException");
+		} catch (IllegalArgumentException e) {
 			// Expected exception.
 		}
 	}

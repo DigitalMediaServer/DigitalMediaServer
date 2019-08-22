@@ -1219,8 +1219,10 @@ public class StringUtil {
 				case ',':
 				case ';':
 					sb.append("\\");
+					// Fall through
 				default:
 					sb.append(ch);
+					break;
 			}
 		}
 
@@ -1469,7 +1471,7 @@ public class StringUtil {
 	/**
 	 * An {@code enum} representing letter cases.
 	 */
-	public static enum LetterCase {
+	public enum LetterCase {
 
 		/** Upper-case, uppercase, capital or majuscule */
 		UPPER,

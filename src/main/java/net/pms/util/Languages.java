@@ -406,6 +406,7 @@ public final class Languages {
 											break;
 										default:
 											LOGGER.debug("Failed to parse translation statistics line \"{}\": Illegal qualifier", line);
+											break;
 									}
 								}
 							} else {
@@ -606,8 +607,8 @@ public final class Languages {
 			List<LanguageEntry> relatedLanguages = new ArrayList<>();
 			for (LanguageEntry entry : sortedLanguages) {
 				if (
-					entry != baseLanguage &&
-					entry != preferredLanguage &&
+					!entry.equals(baseLanguage) &&
+					!entry.equals(preferredLanguage) &&
 					(!preferredLocale.getCountry().isEmpty() &&
 					preferredLocale.getCountry().equals(entry.locale.getCountry()) ||
 					!preferredLocale.getLanguage().isEmpty() &&

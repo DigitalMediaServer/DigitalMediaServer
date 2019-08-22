@@ -65,7 +65,7 @@ public class LoggingConfig {
 	private static Logger rootLogger;
 	private static SyslogAppender syslog;
 	private static boolean syslogDisabled = false;
-	private static enum ActionType { START, STOP, NONE };
+	private enum ActionType { START, STOP, NONE }
 	private static Level consoleLevel = null;
 	private static Level tracesLevel = null;
 	private static LinkedList<Appender<ILoggingEvent>> syslogDetachedAppenders = new LinkedList<>();
@@ -257,7 +257,6 @@ public class LoggingConfig {
 		setConfigurableFilters(true, true);
 
 		StatusPrinter.printInCaseOfErrorsOrWarnings(loggerContext);
-		return;
 	}
 
 	private static synchronized void setConfigurableFilters(boolean setConsole, boolean setTraces) {
@@ -269,7 +268,7 @@ public class LoggingConfig {
 
 		if (setConsole) {
 			Level level = configuration.getLoggingFilterConsole().getLogbackLevel();
-			if (consoleLevel == null || consoleLevel != level) {
+			if (consoleLevel == null || !consoleLevel.equals(level)) {
 				consoleLevel = level;
 			} else {
 				setConsole = false;
@@ -277,7 +276,7 @@ public class LoggingConfig {
 		}
 		if (setTraces) {
 			Level level = configuration.getLoggingFilterLogsTab().getLogbackLevel();
-			if (tracesLevel == null || tracesLevel != level) {
+			if (tracesLevel == null || !tracesLevel.equals(level)) {
 				tracesLevel = level;
 			} else {
 				setTraces = false;

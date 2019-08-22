@@ -390,7 +390,7 @@ public final class GuiUtil {
 		}
 
 		@Override
-		public void setUI(javax.swing.plaf.ProgressBarUI ui) {
+		public void setUI(ProgressBarUI ui) {
 			// Always prefer our own ui if we have one
 			super.setUI(this.ui != null ? this.ui : ui);
 		}

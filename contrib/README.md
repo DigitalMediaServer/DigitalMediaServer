@@ -31,7 +31,6 @@ After running the first two scripts the following directory structure is created
 Search `../target/bin-tools/target/bin/` for compiled binaries and
 `../target/bin-tools/target/lib/` for libraries.
 
-
 ## Downloading (and updating) sources
 This script downloads the sources for the binaries and libraries:
 
@@ -40,13 +39,11 @@ This script downloads the sources for the binaries and libraries:
 Run the script and the source archives and directories will be stored in
 `../target/bin-tools/src/`.
 
-
 ## Building binaries
 This script builds binaries from the sources that were downloaded with the
 other script:
 
     build-dms-binaries.sh
-
 
 ## Cleaning up
 To clean binaries built by the scripts, remove the following directories:

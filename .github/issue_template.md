@@ -52,42 +52,42 @@ About GitHub attachments:
 
 ### Describe your environment
 
-* Type of computer running DMS:
-* OS version of the computer running DMS:
-* DMS version:
-* UPnP AV or DLNA device(s) or software used:
+*   Type of computer running DMS:
+*   OS version of the computer running DMS:
+*   DMS version:
+*   UPnP AV or DLNA device(s) or software used:
 
 ### Issue Type
 <!--
 Put an X between the brackets for the one that applies
 -->
 
-* [ ] Bug report
-* [ ] Feature request
-* [ ] Other
+*   [ ] Bug report
+*   [ ] Feature request
+*   [ ] Other
 
 ### Description
 
-[Describe the issue]
+\[Describe the issue]
 
 ### Steps to reproduce
 
-1. [First step]
-2. [Second step]
-3. [...]
+1.  \[First step]
+2.  \[Second step]
+3.  \[...]
 
 ### Expected behavior
 
-[What you expect to happen]
+\[What you expect to happen]
 
 ### Actual behavior
 
-[What actually happens]
+\[What actually happens]
 
 ### Reproducibility
 
-[How often can the issue be reproduced?]
+\[How often can the issue be reproduced?]
 
 ### Additional Information
 
-[Any additional information, configuration or data that might be necessary to reproduce the issue]
+\[Any additional information, configuration or data that might be necessary to reproduce the issue]

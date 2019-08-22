@@ -172,7 +172,7 @@ public class StatusTab {
 	private static int bufferSize;
 	public enum ConnectionState {
 		SEARCHING, CONNECTED, DISCONNECTED, BLOCKED, UNKNOWN
-	};
+	}
 	private ConnectionState connectionState = ConnectionState.UNKNOWN;
 	private final AnimatedButton connectionStatus = new AnimatedButton();
 	private final AnimatedIcon searchingIcon;
@@ -304,6 +304,7 @@ public class StatusTab {
 					break;
 				default:
 					connectionStatus.setIcon(null);
+					break;
 			}
 		}
 	}

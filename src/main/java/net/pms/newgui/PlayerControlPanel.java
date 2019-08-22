@@ -214,9 +214,9 @@ public class PlayerControlPanel extends JPanel implements ActionListener {
 		// limit width to available space
 		uris.setPrototypeDisplayValue("");
 		uri = (JTextField) uris.getEditor().getEditorComponent();
-		uri.addFocusListener(new java.awt.event.FocusAdapter() {
+		uri.addFocusListener(new FocusAdapter() {
 			@Override
-			public void focusGained(java.awt.event.FocusEvent evt) {
+			public void focusGained(FocusEvent evt) {
 				SwingUtilities.invokeLater(new Runnable() {
 					@Override
 					public void run() {

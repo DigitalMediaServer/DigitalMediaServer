@@ -148,8 +148,8 @@ public class FormatsRegressionTest0 {
 		// generation
 		try {
 			boolean b1 = FormatFactory.addFormat(format0);
-			fail("Expected exception of type NullPointerException");
-		} catch (NullPointerException e) {
+			fail("Expected exception of type IllegalArgumentException");
+		} catch (IllegalArgumentException e) {
 			// Expected exception.
 		}
 	}

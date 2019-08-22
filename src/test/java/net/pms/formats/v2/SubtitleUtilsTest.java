@@ -42,7 +42,7 @@ public class SubtitleUtilsTest {
 		context.reset();
 	}
 
-	@Test(expected = NullPointerException.class)
+	@Test(expected = IllegalArgumentException.class)
 	public void testGetSubCpOptionForMencoder_withNullDLNAMediaSubtitle() throws Exception {
 		getSubCpOptionForMencoder(null);
 	}

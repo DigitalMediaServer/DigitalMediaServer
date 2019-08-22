@@ -24,6 +24,8 @@ import java.awt.image.ColorModel;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Serializable;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import javax.imageio.ImageIO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,7 +62,7 @@ public class Image implements Serializable {
 	 * @param copy whether this instance should be copied or shared.
 	 */
 	@SuppressFBWarnings("EI_EXPOSE_REP2")
-	public Image(Image image, boolean copy) {
+	public Image(@Nonnull Image image, boolean copy) {
 		this.bytes = image.getBytes(copy);
 		this.imageInfo = copy && image.getImageInfo() != null ? image.getImageInfo().copy() : image.getImageInfo();
 	}
@@ -74,7 +76,7 @@ public class Image implements Serializable {
 	 * @param copy whether this instance should be copied or shared.
 	 */
 	@SuppressFBWarnings("EI_EXPOSE_REP2")
-	public Image(byte[] bytes, ImageInfo imageInfo, boolean copy) {
+	public Image(@Nonnull byte[] bytes, @Nullable ImageInfo imageInfo, boolean copy) {
 		if (copy && bytes != null) {
 			this.bytes = new byte[bytes.length];
 			System.arraycopy(bytes, 0, this.bytes, 0, bytes.length);

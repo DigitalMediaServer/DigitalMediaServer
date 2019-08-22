@@ -142,13 +142,13 @@ public abstract class TerminatedArray<E> extends PointerType implements List<E> 
 		}
 		E terminator = getTerminator();
 		if (buffer == null) {
-			buffer = new ArrayList<E>();
+			buffer = new ArrayList<>();
 		} else {
 			buffer.clear();
 		}
 		for (int i = 0;; i++) {
 			E element = readElement(i);
-			if (element == terminator) {
+			if (element.equals(terminator)) {
 				break;
 			}
 			buffer.add(element);

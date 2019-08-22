@@ -1,10 +1,10 @@
 # Digital Media Server Plugin Development
 
 ## Important
-Plugins has been disabled in Digital Media Server. The current implementation allows plugins too 
+Plugins has been disabled in Digital Media Server. The current implementation allows plugins too
 much access to DMS' inner workings, which leads to bugs and instability. Furthermore, the
 existing plugins mostly hasn't been updated in years. Until the plugin implementation is refactored,
-plugins will not register with Digital Media Server. 
+plugins will not register with Digital Media Server.
 
 ## Basics
 Digital Media Server Plugin is a self-contained .jar which is loaded during the runtime of
@@ -14,7 +14,7 @@ plugins from the folder, e.g. ```Searching for plugins in /xxx/xxx/plugins```
 
 By default DMS does not load all jars from the plugins/ folder. The jar must contain a text file named
 ```plugin``` in its root, which contains the package and class of your plugin interface
-(contained in the jar). Example plugin file contains one line and looks like this: 
+(contained in the jar). Example plugin file contains one line and looks like this:
 ```com.glebb.helloworld.Plugin``` The class Plugin must implement a DMS plugin interface
 ExternalListener or extend some other class implementing it. If these two conditions are satisfied,
 DMS will try to load the plugin.
@@ -25,9 +25,9 @@ You can develop using whatever tools you like, but in this guide we are using th
 build system and the Eclipse IDE.
 
 Prerequisites:
-   * You have built a snapshot DMS as described in the [instructions](https://github.com/DigitalMediaServer/DigitalMediaServer/blob/master/BUILD.md) and you have set up the development environment.
-   * [Gradle](http://www.gradle.org/) is installed and working
-   
+*   You have built a snapshot DMS as described in the [instructions](https://github.com/DigitalMediaServer/DigitalMediaServer/blob/master/BUILD.md) and you have set up the development environment.
+*   [Gradle](http://www.gradle.org/) is installed and working
+
 ### Step 1: install DMS to local maven repository
 By doing this you don't have to manually load DMS-jars while developing your plugin.
 In the DMS root folder, execute: ```mvn javadoc:jar source:jar install```. The
@@ -41,78 +41,77 @@ run the mvn command after that. You can also omit the "javadoc:jar source:jar" p
 but then you will not be able to jump to the source in the IDE or see the javadocs.
 
 ### Step 2: set up project using Gradle
-   1. Create a folder for your plugin project.
-   2. Create a build.gradle file there. Content: 
-   ```
+1.  Create a folder for your plugin project.
+
+2.  Create a build.gradle file there. Content:
+
+    ```gradle
     apply plugin: 'java'
     apply plugin: 'application'
     apply plugin: 'eclipse'
 
-    
     mainClassName = "com.glebb.helloworld.Plugin"
-    
+
     defaultTasks 'clean', 'jar'
-    
+
     version = '1.0.0'
     jar.baseName = 'helloworld' // otherwise it defaults to the directory name
-    
+
     repositories {
         mavenLocal()
         mavenCentral()
     }
-    
+
     dependencies {
-        compile group: 'net.pms', name: 'dms', version: '1.5+'
+         compile group: 'net.pms', name: 'dms', version: '1.5+'
     }
-   ```
-   The content is pretty bare-bone and self-explaining. The dependencies declaration tries to load
-   DMS jars from first local and then mavenCentral repository. You might need to tweak the version.
-   Also notice the mainClassName, which you want to change later to reflect the main Plugin class
-   that you implement.
-   3. Execute ```gradle``` to see if it works. If everything goes as planned you should see
-   "BUILD SUCCESSFUL".
-   4. Execute ```gradle eclipse``` to create files needed to load the project in Eclipse.
+    ```
+
+    The content is pretty bare-bone and self-explaining. The dependencies declaration tries to load DMS jars from first local and then mavenCentral repository. You might need to tweak the version. Also notice the mainClassName, which you want to change later to reflect the main Plugin class that you implement.
+
+3.  Execute ```gradle``` to see if it works. If everything goes as planned you should see "BUILD SUCCESSFUL".
+
+4.  Execute ```gradle eclipse``` to create files needed to load the project in Eclipse.
 
 ### Step 3: Configure project in Eclipse
-   1. Import the project in Eclipse workspace (General / existing project).
-   2. Create source folders (BuildPath/Configure Build Path.../Source):
-   ```
+1.  Import the project in Eclipse workspace (General / existing project).
+
+2.  Create source folders (BuildPath/Configure Build Path.../Source):
+
+    ```
     src/main/java
-    
+
     src/main/resources
-    
+
     src/main/tests
-   ```
-   These are default locations where Gradle tries to load the source and resource files. You can use
-   different folders, but you need to set up gradle.build accordingly.
-   
+    ```
+
+    These are default locations where Gradle tries to load the source and resource files. You can use different folders, but you need to set up gradle.build accordingly.
+
 ### Step 4: Implement Skeleton-Plugin
-   1. Create a class (make sure you define the same class as main class in build.gradle) to src/main/java
-   2. Make the class implement ```net.pms.external.ExternalListener``` (Gradle should have added
-   the DMS dependency to your project automatically, so the class should be resolvable by default)
-   3. Add unimplemented methods.
-   4. Implement name method: ```return "HelloWorld Plugin";```.
-   5. Create a new file called "plugin" to src/main/resources.
-   6. Write a single line e.g. ```com.glebb.helloworld.Plugin``` to the "plugin" file. This needs
-   to be the main class of your plugin with the package.
-   7. Execute ```gradle```
-   8. Check that ```build/libs/helloworld-1.0.0.jar``` is created. (If you later run into problems,
-   you can check the jar and make sure the root contains the plugin file with correct path to mainClass,
-   which should also be included)
+1.  Create a class (make sure you define the same class as main class in build.gradle) to src/main/java
+2.  Make the class implement ```net.pms.external.ExternalListener``` (Gradle should have added the DMS dependency to your project automatically, so the class should be resolvable by default)
+3.  Add unimplemented methods.
+4.  Implement name method: ```return "HelloWorld Plugin";```.
+5.  Create a new file called "plugin" to src/main/resources.
+6.  Write a single line e.g. ```com.glebb.helloworld.Plugin``` to the "plugin" file. This needs to be the main class of your plugin with the package.
+7.  Execute ```gradle```
+8.  Check that ```build/libs/helloworld-1.0.0.jar``` is created. (If you later run into problems, you can check the jar and make sure the root contains the plugin file with correct path to mainClass, which should also be included)
 
 ### Step 5: Load the plugin in DMS
-   1. Copy your created jar (e.g. helloworld-1.0.0.jar) to plugins/ folder of your DMS.
-   2. Start DMS.
-   3. Check from Traces that plugin is loaded:
-   ```
-    Searching for plugins in ...
-    Found plugin: com.glebb.helloworld.Plugin
-   ```
-   4. Your plugin should also show up at the bottom of General Configuration tab.
+1.  Copy your created jar (e.g. helloworld-1.0.0.jar) to plugins/ folder of your DMS.
+
+2.  Start DMS.
+
+3.  Check from Traces that plugin is loaded:
+        Searching for plugins in ...
+        Found plugin: com.glebb.helloworld.Plugin
+
+4.  Your plugin should also show up at the bottom of General Configuration tab.
 
 That's it. Now you have a working project to build on, happy plugging!
-   
-You can download a skeleton "HelloWorld" plugin from https://github.com/glebb/pms-helloworld-plugin
+
+You can download a skeleton "HelloWorld" plugin from <https://github.com/glebb/pms-helloworld-plugin>
 which implements steps stated here.
 
 ## Plugin types provided by DMS
@@ -120,11 +119,10 @@ By implementing interfaces found from net.pms.external you can create different 
 
 ### Example: AdditionalFolderAtRoot
 Adds a new VirtualFolder to the root system. This type of plugin requires 4 methods to be implemented:
-   * name, used in the plugin list
-   * config, returning a JComponent object that shows any configuration options onscreen. This is being
-   called when the plugin list button is pressed. Can return null.
-   * shutdown, in case you need to clean up something, e.g. file or network handlers. Can be empty.
-   * getChild, returning a VirtualFolder item. Needs to return real DLNAResource (e.g. VirtualFolder)
+*   name, used in the plugin list
+*   config, returning a JComponent object that shows any configuration options onscreen. This is being called when the plugin list button is pressed. Can return null.
+*   shutdown, in case you need to clean up something, e.g. file or network handlers. Can be empty.
+*   getChild, returning a VirtualFolder item. Needs to return real DLNAResource (e.g. VirtualFolder)
 
 With this type you should also implement discoverChildren to at least on of the child classes
 (where you call addChild method to populate folders with actual DLNAResource file (e.g. RealFile).
@@ -146,4 +144,3 @@ instanciating the plugins [click](https://github.com/taconaut/pms-mlx/blob/maste
 Then you can put the plugins into /src/main/external-resources/plugins.
 
 Load both the modified DMS and your plugin projects to the same workspace and launch DMS using debug mode.
-

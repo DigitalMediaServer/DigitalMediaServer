@@ -284,17 +284,17 @@ public class AnimatedIcon implements Icon, ActionListener {
 	 */
 	public void setFrames(@Nonnull List<AnimatedIconFrame> frames) {
 		if (frames == null) {
-			throw new NullPointerException("Frames cannot be null");
+			throw new IllegalArgumentException("frames cannot be null");
 		}
 
 		this.frames.clear();
 		this.frames.ensureCapacity(frames.size());
 		for (AnimatedIconFrame frame : frames) {
 			if (frame == null) {
-				throw new NullPointerException("A frame cannot be null");
+				throw new IllegalArgumentException("A frame cannot be null");
 			}
 			if (frame.icon == null) {
-				throw new NullPointerException("An icon cannot be null");
+				throw new IllegalArgumentException("An icon cannot be null");
 			}
 			if (frame.durationMS < 0) {
 				throw new IllegalArgumentException("Length can't be negative");
@@ -316,17 +316,17 @@ public class AnimatedIcon implements Icon, ActionListener {
 	 */
 	public void setFrames(@Nonnull AnimatedIconFrame... frames) {
 		if (frames == null) {
-			throw new NullPointerException("Frames cannot be null");
+			throw new IllegalArgumentException("frames cannot be null");
 		}
 
 		this.frames.clear();
 		this.frames.ensureCapacity(frames.length);
 		for (AnimatedIconFrame frame : frames) {
 			if (frame == null) {
-				throw new NullPointerException("A frame cannot be null");
+				throw new IllegalArgumentException("A frame cannot be null");
 			}
 			if (frame.icon == null) {
-				throw new NullPointerException("An icon cannot be null");
+				throw new IllegalArgumentException("An icon cannot be null");
 			}
 			if (frame.durationMS < 0) {
 				throw new IllegalArgumentException("Length can't be negative");
@@ -1050,7 +1050,7 @@ public class AnimatedIcon implements Icon, ActionListener {
 	/**
 	 * Defines icon type used in callback
 	 */
-	public static enum AnimatedIconType {
+	public enum AnimatedIconType {
 
 		/** The default icon */
 		DEFAULTICON,
@@ -1126,7 +1126,7 @@ public class AnimatedIcon implements Icon, ActionListener {
 	/**
 	 * Defines animation run states.
 	 */
-	public static enum RunState {
+	public enum RunState {
 
 		/** The animation is stopped */
 		STOPPED,

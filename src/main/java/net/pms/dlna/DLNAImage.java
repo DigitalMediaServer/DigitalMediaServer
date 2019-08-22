@@ -23,6 +23,8 @@ import java.awt.image.ColorModel;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import javax.imageio.ImageIO;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -63,17 +65,18 @@ public class DLNAImage extends Image {
 	 * @param profile the {@link DLNAImageProfile} this {@link DLNAImage}
 	 *            adheres to.
 	 * @param copy whether this instance should be copied or shared.
-	 * @throws DLNAProfileException if the profile compliance check fails.
+	 * @throws DLNAProfileException If the profile compliance check fails.
+	 * @throws IllegalArgumentException If {@code profile} is {@code null}.
 	 */
 	public DLNAImage(
-		Image image,
-		DLNAImageProfile profile,
+		@Nonnull Image image,
+		@Nonnull DLNAImageProfile profile,
 		boolean copy
 	) throws DLNAProfileException {
 		super(image, copy);
 		this.profile = profile != null ? profile : findMatchingProfile(this instanceof DLNAThumbnail);
 		if (this.profile == null) {
-			throw new NullPointerException("DLNAImage: profile cannot be null");
+			throw new IllegalArgumentException("DLNAImage: profile cannot be null");
 		}
 		checkCompliance();
 	}
@@ -89,17 +92,18 @@ public class DLNAImage extends Image {
 	 *            adheres to.
 	 * @param copy whether this instance should be copied or shared.
 	 * @throws DLNAProfileException if the profile compliance check fails.
+	 * @throws IllegalArgumentException If {@code profile} is {@code null}.
 	 */
 	public DLNAImage(
-		byte[] bytes,
-		ImageInfo imageInfo,
-		DLNAImageProfile profile,
+		@Nonnull byte[] bytes,
+		@Nullable ImageInfo imageInfo,
+		@Nonnull DLNAImageProfile profile,
 		boolean copy
 	) throws DLNAProfileException {
 		super(bytes, imageInfo, copy);
 		this.profile = profile != null ? profile : findMatchingProfile(this instanceof DLNAThumbnail);
 		if (this.profile == null) {
-			throw new NullPointerException("DLNAImage: profile cannot be null");
+			throw new IllegalArgumentException("DLNAImage: profile cannot be null");
 		}
 		checkCompliance();
 	}
@@ -134,7 +138,7 @@ public class DLNAImage extends Image {
 		super(bytes, width, height, format, colorModel, metadata, true, copy);
 		this.profile = profile != null ? profile : findMatchingProfile(this instanceof DLNAThumbnail);
 		if (this.profile == null) {
-			throw new NullPointerException("DLNAImage: profile cannot be null");
+			throw new IllegalArgumentException("DLNAImage: profile cannot be null");
 		}
 		checkCompliance();
 	}
@@ -167,7 +171,7 @@ public class DLNAImage extends Image {
 		super(bytes, format, bufferedImage, metadata, copy);
 		this.profile = profile != null ? profile : findMatchingProfile(this instanceof DLNAThumbnail);
 		if (this.profile == null) {
-			throw new NullPointerException("DLNAImage: profile cannot be null");
+			throw new IllegalArgumentException("DLNAImage: profile cannot be null");
 		}
 		checkCompliance();
 	}

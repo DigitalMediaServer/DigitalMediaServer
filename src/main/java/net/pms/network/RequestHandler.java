@@ -210,7 +210,7 @@ public class RequestHandler implements Runnable {
 						// It may be unusual but already known
 						if (renderer != null) {
 							String additionalHeader = renderer.getUserAgentAdditionalHttpHeader();
-							if (StringUtils.isNotBlank(additionalHeader) && lowerCaseHeaderLine.startsWith(additionalHeader)) {
+							if (isNotBlank(additionalHeader) && lowerCaseHeaderLine.startsWith(additionalHeader)) {
 								isKnown = true;
 							}
 						}
@@ -330,7 +330,7 @@ public class RequestHandler implements Runnable {
 		}
 
 		String formattedContent = null;
-		if (StringUtils.isNotBlank(content)) {
+		if (isNotBlank(content)) {
 			try {
 				formattedContent = StringUtil.prettifyXML(content, 4);
 			} catch (XPathExpressionException | SAXException | ParserConfigurationException | TransformerException e) {
@@ -375,7 +375,7 @@ public class RequestHandler implements Runnable {
 			requestType,
 			rendererName,
 			header,
-			StringUtils.isNotBlank(formattedContent) ? "\nCONTENT:\n" + formattedContent : ""
+			isNotBlank(formattedContent) ? "\nCONTENT:\n" + formattedContent : ""
 		);
 	}
 

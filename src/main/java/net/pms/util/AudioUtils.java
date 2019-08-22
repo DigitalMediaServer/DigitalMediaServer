@@ -287,14 +287,19 @@ public final class AudioUtils {
 						break;
 					case "cook":
 						audio.setCodecA(FormatConfiguration.COOK);
+						break;
 					case "atrc":
 						audio.setCodecA(FormatConfiguration.ATRAC);
+						break;
 					case "ralf":
 						audio.setCodecA(FormatConfiguration.RALF);
+						break;
 					case "raac":
 						audio.setCodecA(FormatConfiguration.AAC_LC);
+						break;
 					case "racp":
 						audio.setCodecA(FormatConfiguration.HE_AAC);
+						break;
 					default:
 						LOGGER.debug("Unknown RealMedia codec FourCC \"{}\" - parsing failed", fourCCString);
 						return false;

@@ -477,7 +477,7 @@ public class RepaintableTreeCellRenderer extends JLabel implements TreeCellRende
 			g.drawRect(x, y, w - 1, h - 1);
 		}
 		if (drawDashedFocusIndicator && notColor != null) {
-			if (treeBGColor != notColor) {
+			if (!treeBGColor.equals(notColor)) {
 				treeBGColor = notColor;
 				focusBGColor = new Color(~notColor.getRGB());
 			}

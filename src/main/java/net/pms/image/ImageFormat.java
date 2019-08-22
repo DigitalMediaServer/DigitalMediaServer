@@ -225,7 +225,7 @@ public enum ImageFormat {
 	@SuppressWarnings("incomplete-switch")
 	public static ImageFormat toImageFormat(Metadata metadata) {
 		if (metadata == null) {
-			throw new NullPointerException("metadata cannot be null");
+			throw new IllegalArgumentException("metadata cannot be null");
 		}
 
 		// Check for known directories tied to a particular format

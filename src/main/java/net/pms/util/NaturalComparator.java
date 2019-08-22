@@ -92,7 +92,7 @@ public final class NaturalComparator {
 		if (collator == null) {
 			// it's important to explicitly handle this here - else the bug will manifest anytime later in possibly
 			// unrelated code that tries to use the comparator
-			throw new NullPointerException("collator must not be null");
+			throw new IllegalArgumentException("collator must not be null");
 		}
 		return new Comparator<String>() {
 			@Override

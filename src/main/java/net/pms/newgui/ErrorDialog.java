@@ -287,6 +287,7 @@ public class ErrorDialog {
 			}
 			rootPanel.add(scrollPane);
 		}
+		rootPanel.applyComponentOrientation(orientation);
 
 		return rootPanel;
 	}

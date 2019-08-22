@@ -275,17 +275,11 @@ public class HTTPServer implements Runnable {
 	 * A {@link ThreadFactory} that creates Netty worker threads.
 	 */
 	static class NettyWorkerThreadFactory implements ThreadFactory {
-		private final ThreadGroup group;
 		private final AtomicInteger threadNumber = new AtomicInteger(1);
-
-		NettyWorkerThreadFactory() {
-			group = new ThreadGroup("Netty worker group");
-			group.setDaemon(false);
-		}
 
 		@Override
 		public Thread newThread(Runnable runnable) {
-			Thread thread = new Thread(group, runnable, "HTTPv2 Request Worker " + threadNumber.getAndIncrement());
+			Thread thread = new Thread(runnable, "HTTPv2 Request Worker " + threadNumber.getAndIncrement());
 			if (thread.isDaemon()) {
 				thread.setDaemon(false);
 			}
@@ -300,17 +294,11 @@ public class HTTPServer implements Runnable {
 	 * A {@link ThreadFactory} that creates Netty boss threads.
 	 */
 	static class NettyBossThreadFactory implements ThreadFactory {
-		private final ThreadGroup group;
 		private final AtomicInteger threadNumber = new AtomicInteger(1);
-
-		NettyBossThreadFactory() {
-			group = new ThreadGroup("Netty boss group");
-			group.setDaemon(false);
-		}
 
 		@Override
 		public Thread newThread(Runnable runnable) {
-			Thread thread = new Thread(group, runnable, "HTTPv2 Request Handler " + threadNumber.getAndIncrement());
+			Thread thread = new Thread(runnable, "HTTPv2 Request Handler " + threadNumber.getAndIncrement());
 			if (thread.isDaemon()) {
 				thread.setDaemon(false);
 			}

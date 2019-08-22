@@ -111,7 +111,7 @@ public class SubtitleUtils {
 	 */
 	public static String getSubCpOptionForMencoder(DLNAMediaSubtitle dlnaMediaSubtitle) {
 		if (dlnaMediaSubtitle == null) {
-			throw new NullPointerException("dlnaMediaSubtitle can't be null.");
+			throw new IllegalArgumentException("dlnaMediaSubtitle can't be null.");
 		}
 		if (isBlank(dlnaMediaSubtitle.getSubCharacterSet())) {
 			return null;
@@ -285,7 +285,7 @@ public class SubtitleUtils {
 		if (is3D) {
 			try {
 				tempSubs = convertASSToASS3D(tempSubs, media, params);
-			} catch (IOException | NullPointerException e) {
+			} catch (IOException | IllegalArgumentException e) {
 				LOGGER.debug("Converting to ASS3D format ends with error: " + e);
 				return null;
 			}
@@ -480,7 +480,7 @@ public class SubtitleUtils {
 	 * @return Converted subtitles file
 	 * @throws IOException
 	 */
-	public static File convertASSToASS3D(File tempSubs, DLNAMediaInfo media, OutputParams params) throws IOException, NullPointerException {
+	public static File convertASSToASS3D(File tempSubs, DLNAMediaInfo media, OutputParams params) throws IOException {
 		File outputSubs = new File(FileUtil.getFileNameWithoutExtension(tempSubs.getAbsolutePath()) + "_3D.ass");
 		StringBuilder outputString = new StringBuilder();
 		Charset subsFileCharset = FileUtil.getFileCharset(tempSubs);
@@ -492,7 +492,7 @@ public class SubtitleUtils {
 		boolean isSBS = mode3D == Mode3D.SBSL || mode3D == Mode3D.SBSR || mode3D == Mode3D.SBS2L;
 		if (mode3D == null) {
 			LOGGER.debug("The 3D layout not recognized for the 3D video");
-			throw new NullPointerException("The 3D layout not recognized for the 3D video");
+			throw new IllegalArgumentException("The 3D layout not recognized for the 3D video");
 		}
 
 		int depth3D = configuration.getDepth3D();

@@ -21,7 +21,6 @@ package net.pms.network;
 import net.pms.PMS;
 import net.pms.configuration.PmsConfiguration;
 import net.pms.dlna.DLNAMediaDatabase;
-import net.pms.util.PropertiesUtil;
 
 public class HTMLConsole {
 	public static String servePage(String resource) {

@@ -379,6 +379,7 @@ public class Request extends HTTPResource {
 									break;
 								default:
 									imageProfile = DLNAImageProfile.JPEG_LRG;
+									break;
 							}
 						} else {
 							imageProfile = DLNAImageProfile.JPEG_LRG;

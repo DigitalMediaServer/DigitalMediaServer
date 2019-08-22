@@ -193,6 +193,7 @@ public class RendererPanel extends JPanel {
 						case JOptionPane.CANCEL_OPTION:
 						case JOptionPane.NO_OPTION:
 							setSelectedFile(file);
+							return;
 						case JOptionPane.CLOSED_OPTION:
 							return;
 					}
