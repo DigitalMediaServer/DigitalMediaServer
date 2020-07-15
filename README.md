@@ -1,5 +1,6 @@
 # Digital Media Server
 [![Build Status](https://travis-ci.org/DigitalMediaServer/DigitalMediaServer.svg?branch=master)](https://travis-ci.org/DigitalMediaServer/DigitalMediaServer) [![DepShield Badge](https://depshield.sonatype.org/badges/DigitalMediaServer/DigitalMediaServer/depshield.svg)](https://depshield.github.io) ![GitHub contributors](https://img.shields.io/github/contributors/digitalmediaserver/digitalmediaserver.svg?colorB=3a04ff) ![GitHub top language](https://img.shields.io/github/languages/top/digitalmediaserver/digitalmediaserver.svg?colorB=7855ff)
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2FDigitalMediaServer%2FDigitalMediaServer.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2FDigitalMediaServer%2FDigitalMediaServer?ref=badge_shield)
 
 <img align="right" src="https://github.com/DigitalMediaServer/DigitalMediaServer/blob/master/src/main/resources/images/logo.png?raw=true" alt="Digital Media Server" width="256" height="auto"/> Digital Media Server is a DLNA compatible UPnP AV Media Server. It is capable of sharing digital video, audio and image resources to UPnP AV and DLNA capable devices. It is based on PS3 Media Server by shagrath and Universal Media Server.
 
@@ -21,3 +22,7 @@ It is powered by MEncoder, FFmpeg, tsMuxeR, AviSynth, MediaInfo, VLC, [OpenSubti
 [11]: https://github.com/DigitalMediaServer/DigitalMediaServer
 [12]: https://github.com/DigitalMediaServer/DigitalMediaServer/issues?state=open
 [25]: http://www.opensubtitles.org/
+
+
+## License
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2FDigitalMediaServer%2FDigitalMediaServer.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2FDigitalMediaServer%2FDigitalMediaServer?ref=badge_large)
