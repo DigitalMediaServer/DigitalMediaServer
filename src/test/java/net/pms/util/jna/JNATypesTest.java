@@ -8,6 +8,7 @@ import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
 import com.sun.jna.Memory;
+import com.sun.jna.Native;
 import com.sun.jna.Pointer;
 
 
@@ -43,26 +44,31 @@ public class JNATypesTest {
 		assertEquals("foo", utf16StringByReference.getValue());
 		assertEquals("foo", utf16StringByReference.toString());
 		assertEquals(6, utf16StringByReference.getAllocatedSize());
+		utf16StringByReference = new UTF16StringByReference(28);
+		assertEquals("", utf16StringByReference.getValue());
+		assertEquals(28, utf16StringByReference.getAllocatedSize());
+		utf16StringByReference.setValue("foo-bar");
+		assertEquals("foo-bar", utf16StringByReference.getValue());
 	}
 
 	/**
-	 * Tests {@link StringByReference}.
+	 * Tests {@link ByteStringByReference}.
 	 *
 	 * @throws Throwable if an error occurs during the test.
 	 */
 	@Test
-	public void testStringByReference() throws Throwable {
-		assertEquals("", new StringByReference("").toString());
-		assertEquals(-1L, new StringByReference().getAllocatedSize());
-		assertEquals(-1L, new StringByReference(-5).getAllocatedSize());
-		assertEquals("null", new StringByReference().toString());
-		assertEquals(10L, new StringByReference(10).getAllocatedSize());
-		assertEquals(0L, new StringByReference("").getAllocatedSize());
-		assertNull(new StringByReference().getValue());
-		assertNull(new StringByReference().getPointer());
-		assertNotNull(new StringByReference("foo").getPointer());
-		assertEquals(Pointer.class, new StringByReference().nativeType());
-		StringByReference stringByReference = new StringByReference();
+	public void testByteStringByReference() throws Throwable {
+		assertEquals("", new ByteStringByReference("").toString());
+		assertEquals(-1L, new ByteStringByReference().getAllocatedSize());
+		assertEquals(-1L, new ByteStringByReference(-5).getAllocatedSize());
+		assertEquals("null", new ByteStringByReference().toString());
+		assertEquals(10L, new ByteStringByReference(10).getAllocatedSize());
+		assertEquals(0L, new ByteStringByReference("").getAllocatedSize());
+		assertNull(new ByteStringByReference().getValue());
+		assertNull(new ByteStringByReference().getPointer());
+		assertNotNull(new ByteStringByReference("foo").getPointer());
+		assertEquals(Pointer.class, new ByteStringByReference().nativeType());
+		ByteStringByReference stringByReference = new ByteStringByReference();
 		stringByReference.setValue("foo", StandardCharsets.US_ASCII);
 		assertEquals("foo", stringByReference.getValue());
 		assertEquals("foo", stringByReference.toString());
@@ -70,8 +76,8 @@ public class JNATypesTest {
 
 		try {
 			stringByReference.setValue("foo", "bar");
-			fail("Expected exception of type IllegalArgumentException");
-		} catch (IllegalArgumentException e) {
+			fail("Expected exception of type UnsupportedEncodingException");
+		} catch (UnsupportedEncodingException e) {
 			// Expected exception.
 		}
 
@@ -84,16 +90,16 @@ public class JNATypesTest {
 
 		try {
 			stringByReference.setValue("null", (String) null);
-			fail("Expected exception of type NullPointerException");
-		} catch (NullPointerException e) {
+			fail("Expected exception of type UnsupportedEncodingException");
+		} catch (UnsupportedEncodingException e) {
 			// Expected exception.
 		}
 
 		try {
 			stringByReference.setValue("\uFFFD", "\u001E\u1D88");
-			fail("Expected exception of type IllegalArgumentException");
-		} catch (IllegalArgumentException e) {
-			assertEquals(UnsupportedEncodingException.class, e.getCause().getClass());
+			fail("Expected exception of type UnsupportedEncodingException");
+		} catch (UnsupportedEncodingException e) {
+			// Expected exception.
 		}
 	}
 
@@ -132,7 +138,7 @@ public class JNATypesTest {
 	public void testPointerArrayByReference() throws Throwable {
 		assertNull(new PointerArrayByReference(0L).getArray());
 		assertEquals("NULL", new PointerArrayByReference().toString());
-		assertEquals(Pointer.SIZE, new PointerArrayByReference().getElementSize());
+		assertEquals(Native.POINTER_SIZE, new PointerArrayByReference().getElementSize());
 		assertEquals(0L, new PointerArrayByReference().getSize());
 		assertEquals(5L, new PointerArrayByReference(5).getSize());
 		assertEquals(0L, new PointerArrayByReference(-9).getSize());

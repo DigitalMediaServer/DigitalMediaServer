@@ -18,6 +18,8 @@
  */
 package net.pms.util.jna;
 
+import java.nio.ByteOrder;
+import java.nio.charset.StandardCharsets;
 import com.sun.jna.FromNativeContext;
 import com.sun.jna.Memory;
 import com.sun.jna.Pointer;
@@ -25,7 +27,8 @@ import com.sun.jna.PointerType;
 
 
 /**
- * An implementation of a referenced {@code null}-terminated UTF-16 string.
+ * An implementation of a referenced {@code null}-terminated UTF-16 string using
+ * the native byte-order.
  */
 public class UTF16StringByReference extends PointerType {
 
@@ -38,13 +41,16 @@ public class UTF16StringByReference extends PointerType {
 
 	/**
 	 * Creates a {@link UTF16StringByReference} and allocates space for {
-	 * {@code dataSize} plus the size of the {@code null} terminator.
+	 * {@code dataSize} bytes plus the size of the {@code null} terminator.
 	 *
 	 * @param dataSize the size to allocate in bytes excluding the {@code null}
 	 *            terminator.
 	 */
 	public UTF16StringByReference(long dataSize) {
-		super(dataSize < 1 ? Pointer.NULL : new Memory(dataSize + 2));
+		super(dataSize < 1L ? Pointer.NULL : new Memory(dataSize + 2L));
+		if (dataSize > 0L) {
+			getPointer().setMemory(0L, 2L, (byte) 0);
+		}
 	}
 
 	/**
@@ -73,14 +79,15 @@ public class UTF16StringByReference extends PointerType {
 			setPointer(Pointer.NULL);
 			return;
 		}
-		if (getNumberOfBytes(value) > getAllocatedSize()) {
-			setPointer(new Memory(getNumberOfBytes(value) + 2));
+		byte[] bytes = value.getBytes(ByteOrder.nativeOrder() == ByteOrder.BIG_ENDIAN ?
+			StandardCharsets.UTF_16BE :
+			StandardCharsets.UTF_16LE
+		);
+		if (bytes.length > getAllocatedSize()) {
+			setPointer(new Memory(bytes.length + 2));
 		}
-		int i;
-		for (i = 0; i < value.length(); i++) {
-			getPointer().setChar(i * 2, value.charAt(i));
-		}
-		getPointer().setMemory(i * 2L, 2L, (byte) 0);
+		getPointer().write(0L, bytes, 0, bytes.length);
+		getPointer().setMemory(bytes.length, 2L, (byte) 0);
 	}
 
 	/**
@@ -92,15 +99,28 @@ public class UTF16StringByReference extends PointerType {
 		if (getPointer() == null) {
 			return null;
 		}
-		int length = 0;
-		while (getPointer().getChar(length) != 0) {
-			length += 2;
+
+		int allocated = (int) getAllocatedSize();
+		if (allocated < 0) {
+			return null;
 		}
-		char[] value = new char[length / 2];
-		for (int i = 0; i < length; i += 2) {
-			value[i / 2] = getPointer().getChar(i);
+		if (allocated == 0) {
+			return "";
 		}
-		return String.valueOf(value);
+		byte[] bytes = new byte[allocated];
+		getPointer().read(0, bytes, 0, allocated);
+
+		int length = allocated;
+		for (int i = 0; i < bytes.length - 1; i += 2) {
+			if (bytes[i] == (byte) 0 && bytes[i + 1] == (byte) 0) {
+				length = i;
+				break;
+			}
+		}
+		return new String(bytes, 0, length, ByteOrder.nativeOrder() == ByteOrder.BIG_ENDIAN ?
+			StandardCharsets.UTF_16BE :
+			StandardCharsets.UTF_16LE
+		);
 	}
 
 	/**
@@ -146,10 +166,12 @@ public class UTF16StringByReference extends PointerType {
 		}
 		final int length = string.length();
 		int byteLength = 0;
+		int pointSize;
 		for (int offset = 0; offset < length;) {
-			int codepoint = string.codePointAt(offset);
-			byteLength += Character.charCount(codepoint) * 2;
-			offset += Character.charCount(codepoint);
+			int codePoint = string.codePointAt(offset);
+			pointSize = Character.charCount(codePoint);
+			byteLength += pointSize * 2;
+			offset += pointSize;
 		}
 		return byteLength;
 	}

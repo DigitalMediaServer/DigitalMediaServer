@@ -18,6 +18,7 @@
  */
 package net.pms.util.jna.macos.corefoundation;
 
+import java.io.UnsupportedEncodingException;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
@@ -46,7 +47,7 @@ import net.pms.util.jna.JnaIntEnum;
 import net.pms.util.jna.JnaIntEnumConverter;
 import net.pms.util.jna.JnaLongEnum;
 import net.pms.util.jna.JnaLongEnumConverter;
-import net.pms.util.jna.StringByReference;
+import net.pms.util.jna.ByteStringByReference;
 import net.pms.util.jna.UTF16StringByReference;
 import net.pms.util.jna.macos.kernreturn.KernReturnT;
 import net.pms.util.jna.macos.kernreturn.KernReturnTConverter;
@@ -1285,9 +1286,13 @@ public interface CoreFoundation extends Library {
 					CFStringBuiltInEncodings.kCFStringEncodingUTF8.getValue()),
 				1
 			);
-			StringByReference buffer = new StringByReference(maxSize);
+			ByteStringByReference buffer = new ByteStringByReference(maxSize);
 			INSTANCE.CFStringGetCString(this, buffer, maxSize, CFStringBuiltInEncodings.kCFStringEncodingUTF8.getValue());
-			return buffer.getValue(StandardCharsets.UTF_8);
+			try {
+				return buffer.getValue(StandardCharsets.UTF_8);
+			} catch (UnsupportedEncodingException e) {
+				throw new AssertionError("UTF-8 is always allowed");
+			}
 		}
 	}
 
@@ -1643,7 +1648,7 @@ public interface CoreFoundation extends Library {
 	 * @return {@code true} upon success or {@code false} if the conversion
 	 *         fails or the provided buffer is too small.
 	 */
-	boolean CFStringGetCString(CFStringRef theString, StringByReference buffer, long bufferSize, int encoding);
+	boolean CFStringGetCString(CFStringRef theString, ByteStringByReference buffer, long bufferSize, int encoding);
 
 	/**
 	 * Quickly obtains a pointer to a C-string buffer containing the characters
@@ -1670,7 +1675,7 @@ public interface CoreFoundation extends Library {
 	 *         of {@code theString} does not allow this to be returned
 	 *         efficiently.
 	 */
-	StringByReference CFStringGetCStringPtr(CFStringRef theString, int encoding);
+	ByteStringByReference CFStringGetCStringPtr(CFStringRef theString, int encoding);
 
 	/**
 	 * Quickly obtains a pointer to the contents of a string as a buffer of
@@ -1793,7 +1798,7 @@ public interface CoreFoundation extends Library {
 	 *         if the conversion fails, or the results don’t fit into the
 	 *         buffer.
 	 */
-	boolean CFStringGetFileSystemRepresentation(CFStringRef string, StringByReference buffer, long maxBufLen);
+	boolean CFStringGetFileSystemRepresentation(CFStringRef string, ByteStringByReference buffer, long maxBufLen);
 
 	/**
 	 * Determines the upper bound on the number of bytes required to hold the
@@ -1830,7 +1835,7 @@ public interface CoreFoundation extends Library {
 	 *         "https://developer.apple.com/library/content/documentation/CoreFoundation/Conceptual/CFMemoryMgmt/Concepts/Ownership.html#//apple_ref/doc/uid/20001148-103029"
 	 *         >The Create Rule</a>.
 	 */
-	CFStringRef CFStringCreateWithFileSystemRepresentation(CFAllocatorRef alloc, StringByReference buffer);
+	CFStringRef CFStringCreateWithFileSystemRepresentation(CFAllocatorRef alloc, ByteStringByReference buffer);
 
 	/**
 	 * Compares one {@code CFString} with another {@code CFString}.

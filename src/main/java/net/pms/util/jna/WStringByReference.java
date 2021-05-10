@@ -46,6 +46,9 @@ public class WStringByReference extends PointerType {
 	 */
 	public WStringByReference(long dataSize) {
 		super(dataSize < 1 ? Pointer.NULL : new Memory(dataSize + Native.WCHAR_SIZE));
+		if (dataSize > 0L) {
+			getPointer().setMemory(0L, Native.WCHAR_SIZE, (byte) 0);
+		}
 	}
 
 	/**

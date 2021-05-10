@@ -25,7 +25,7 @@ import com.sun.jna.Native;
 import com.sun.jna.Pointer;
 import com.sun.jna.ptr.IntByReference;
 import com.sun.jna.ptr.PointerByReference;
-import net.pms.util.jna.StringByReference;
+import net.pms.util.jna.ByteStringByReference;
 
 /**
  * JNA mapping of macOS' Objective-C Runtime.
@@ -1097,7 +1097,7 @@ public interface ObjCRuntime extends Library {
 	 *
 	 * @since macOS 10.5
 	 */
-	public void method_getReturnType(Pointer method, StringByReference dst, long dst_len);
+	public void method_getReturnType(Pointer method, ByteStringByReference dst, long dst_len);
 
 	/**
 	 * Returns the number of arguments accepted by a method.
@@ -1125,7 +1125,7 @@ public interface ObjCRuntime extends Library {
 	 *
 	 * @since macOS 10.5
 	 */
-	public void method_getArgumentType(Pointer method, int index, StringByReference dst, long dst_len);
+	public void method_getArgumentType(Pointer method, int index, ByteStringByReference dst, long dst_len);
 
 	/**
 	 * Sets the implementation of a method.

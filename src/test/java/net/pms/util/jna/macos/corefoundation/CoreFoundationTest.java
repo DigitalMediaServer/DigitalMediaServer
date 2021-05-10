@@ -22,7 +22,7 @@ import com.sun.jna.ptr.IntByReference;
 import com.sun.jna.ptr.LongByReference;
 import com.sun.jna.ptr.PointerByReference;
 
-import net.pms.util.jna.StringByReference;
+import net.pms.util.jna.ByteStringByReference;
 import net.pms.util.jna.macos.corefoundation.CoreFoundation.CFArrayRef;
 import net.pms.util.jna.macos.corefoundation.CoreFoundation.CFComparisonResult;
 import net.pms.util.jna.macos.corefoundation.CoreFoundation.CFDataRef;
@@ -116,7 +116,7 @@ public class CoreFoundationTest {
 			false
 		);
 		assertEquals("Test byte array string", cfStringRef2.toString());
-		StringByReference refString = new StringByReference(20);
+		ByteStringByReference refString = new ByteStringByReference(20);
 		assertTrue(
 			CF.CFStringGetCString(cfStringRef, refString, refString.getAllocatedSize(),
 				CFStringBuiltInEncodings.kCFStringEncodingASCII.getValue())
@@ -124,7 +124,7 @@ public class CoreFoundationTest {
 		assertEquals("test string", refString.getValue());
 		refString = CF.CFStringGetCStringPtr(cfStringRef2, CFStringBuiltInEncodings.kCFStringEncodingMacRoman.getValue());
 		assertEquals("Test byte array string", refString.toString());
-		refString = new StringByReference(CF.CFStringGetMaximumSizeOfFileSystemRepresentation(cfStringRef2));
+		refString = new ByteStringByReference(CF.CFStringGetMaximumSizeOfFileSystemRepresentation(cfStringRef2));
 		assertTrue(CF.CFStringGetFileSystemRepresentation(cfStringRef2, refString, refString.getAllocatedSize()));
 		CF.CFRelease(cfStringRef);
 		cfStringRef = CF.CFStringCreateWithFileSystemRepresentation(null, refString);
