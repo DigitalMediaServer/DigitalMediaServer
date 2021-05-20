@@ -117,11 +117,6 @@ public class BasicSystemUtils implements SystemUtils {
 	}
 
 	@Override
-	public boolean isKerioFirewall() {
-		return false;
-	}
-
-	@Override
 	public Path getVlcPath() {
 		return vlcPath;
 	}

@@ -100,7 +100,6 @@ public class WindowsSystemUtils extends BasicSystemUtils {
 		DWORD GetVersion();
 	}
 
-	private final boolean kerio;
 	protected final Path psPing;
 	protected final String avsPluginsFolder;
 	protected final String kLiteFiltersDir;
@@ -257,7 +256,6 @@ public class WindowsSystemUtils extends BasicSystemUtils {
 		avsPluginsFolder = getAviSynthPluginsFolder();
 		aviSynth = avsPluginsFolder != null;
 		kLiteFiltersDir = getKLiteFiltersFolder();
-		kerio = isKerioInstalled();
 		psPing = findPsPing();
 	}
 
@@ -312,21 +310,6 @@ public class WindowsSystemUtils extends BasicSystemUtils {
 		return null;
 	}
 
-	protected boolean isKerioInstalled() {
-		try {
-			String key = "SOFTWARE\\Kerio";
-			if (!Advapi32Util.registryKeyExists(WinReg.HKEY_LOCAL_MACHINE, key)) {
-				key = "SOFTWARE\\Wow6432Node\\Kerio";
-				return Advapi32Util.registryKeyExists(WinReg.HKEY_LOCAL_MACHINE, key);
-			}
-			return true;
-		} catch (Win32Exception e) {
-			LOGGER.debug("Could not get Kerio information from Windows registry: {}", e.getMessage());
-			LOGGER.trace("", e);
-			return false;
-		}
-	}
-
 	protected Path findPsPing() {
 		// PsPing
 		Path tmpPsPing = null;
@@ -335,11 +318,6 @@ public class WindowsSystemUtils extends BasicSystemUtils {
 			tmpPsPing = FileUtil.findExecutableInOSPath(Paths.get("psping.exe"));
 		}
 		return tmpPsPing;
-	}
-
-	@Override
-	public boolean isKerioFirewall() {
-		return kerio;
 	}
 
 	@Override
