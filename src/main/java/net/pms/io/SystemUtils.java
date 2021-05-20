@@ -21,8 +21,6 @@ public interface SystemUtils {
 
 	public abstract String getDiskLabel(File f);
 
-	public abstract boolean isKerioFirewall();
-
 	public abstract Path getVlcPath();
 
 	public abstract Version getVlcVersion();

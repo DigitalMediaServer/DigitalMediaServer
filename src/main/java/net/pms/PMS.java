@@ -656,11 +656,6 @@ public class PMS {
 			}
 		}
 
-		// Check if Kerio is installed
-		if (BasicSystemUtils.INSTANCE.isKerioFirewall()) {
-			LOGGER.info("Detected Kerio firewall");
-		}
-
 		// Disable jaudiotagger logging
 		LogManager.getLogManager().readConfiguration(
 			new ByteArrayInputStream("org.jaudiotagger.level=OFF".getBytes(StandardCharsets.US_ASCII))
