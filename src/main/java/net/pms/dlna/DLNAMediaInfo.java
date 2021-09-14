@@ -617,8 +617,6 @@ public class DLNAMediaInfo implements Cloneable {
 		if (generateThumbnail) {
 			args.add("-c:v");
 			args.add("mjpeg");
-			args.add("-pix_fmt");
-			args.add("yuvj420p");
 			args.add("-q:v");
 			args.add("2");
 			args.add("-vf");
@@ -627,8 +625,12 @@ public class DLNAMediaInfo implements Cloneable {
 			args.add("vfr");
 			args.add("-vframes");
 			args.add("1");
+			args.add("-bsf:v");
+			args.add("mjpeg2jpeg");
 			args.add("-f");
 			args.add("image2");
+			args.add("-pixel_format");
+			args.add("yuv420p");
 			args.add("pipe:");
 		}
 
