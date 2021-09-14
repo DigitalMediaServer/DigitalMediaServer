@@ -623,7 +623,7 @@ public class DLNAMediaInfo implements Cloneable {
 			args.add("select='eq(pict_type,PICT_TYPE_I)',scale='if(gte(iw,ih),320,trunc(iw*sar*oh/ih))':'if(gte(iw,ih),trunc(ih*ow/iw/sar),320)'");
 			args.add("-vsync");
 			args.add("vfr");
-			args.add("-vframes");
+			args.add("-frames:v");
 			args.add("1");
 			args.add("-bsf:v");
 			args.add("mjpeg2jpeg");
