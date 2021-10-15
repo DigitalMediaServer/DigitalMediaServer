@@ -132,10 +132,6 @@
 				<enabled>false</enabled>
 			</snapshots>
 		</repository>
-		<repository>
-			<id>jaudiotagger-repository</id>
-			<url>https://dl.bintray.com/ijabz/maven</url>
-		</repository>
 	</repositories>
 	<dependencies>
 		<!-- TODO this can be removed when MEncoder is removed -->
