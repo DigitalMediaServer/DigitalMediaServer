@@ -1357,6 +1357,9 @@ public class PMS {
 
 	public static void main(String args[]) {
 
+		// Protect against CVE-2021-44228 in case log4j is used by a dependency
+		System.setProperty("log4j2.formatMsgNoLookups", "true");
+
 		// This must be called before JNA is used
 		configureJNA();
 
@@ -2144,7 +2147,7 @@ public class PMS {
 	 * This {@code enum} represents the startup options parsed from the command
 	 * line arguments, system variables or environment variables.
 	 */
-	public static enum Option {
+	public enum Option {
 
 		/** Backup and downgrade the database if incompatible */
 		DB_BACKUP_DOWNGRADE,
