@@ -335,6 +335,15 @@ public class ProcessManager implements Service {
 		if (process == null) {
 			return 0;
 		}
+
+		// Java 9+ has a new method Process.pid() that returns the process ID - use it if available
+		try {
+			Method method = Process.class.getMethod("pid");
+			return (int) (long) method.invoke(process);
+		} catch (Exception e) {
+			// Method doesn't exist, move on
+		}
+
 		try {
 			Field field;
 			if (Platform.isWindows()) {
@@ -1218,7 +1227,7 @@ public class ProcessManager implements Service {
 	 *
 	 * @author Nadahar
 	 */
-	protected static enum ProcessTicketAction {
+	protected enum ProcessTicketAction {
 
 		/** Add a process for management */
 		ADD,
@@ -1342,7 +1351,7 @@ public class ProcessManager implements Service {
 	 *
 	 * @author Nadahar
 	 */
-	protected static enum ProcessState {
+	protected enum ProcessState {
 
 		/** Running; initial state */
 		RUNNING,
@@ -1374,7 +1383,7 @@ public class ProcessManager implements Service {
 	 *
 	 * @author Nadahar
 	 */
-	public static enum POSIXSignal {
+	public enum POSIXSignal {
 
 		/**
 		 * 1: POSIX {@code SIGHUP} - Hangup detected on controlling terminal or

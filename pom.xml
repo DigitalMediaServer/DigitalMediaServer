@@ -98,7 +98,7 @@
 
 			Check the org.slf4j:slf4j-api version of the other libraries before upgrading
 		-->
-		<logback-version>1.2.3</logback-version>
+		<logback-version>1.2.10</logback-version>
 		<surefire-version>2.20</surefire-version>
 
 		<!--
@@ -346,6 +346,12 @@
 			<groupId>org.digitalmediaserver</groupId>
 			<artifactId>cuelib-core</artifactId>
 			<version>2.0.0</version>
+			<exclusions>
+				<exclusion>
+					<groupId>org.slf4j</groupId>
+					<artifactId>slf4j-api</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 		<dependency>
 			<groupId>xmlwise</groupId>
@@ -502,6 +508,12 @@
 				Check the net.java.dev.jna:jna-platform version before upgrading
 			-->
 			<version>3.4.3</version>
+			<exclusions>
+				<exclusion>
+					<groupId>org.slf4j</groupId>
+					<artifactId>slf4j-api</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 	</dependencies>
 	<build>
