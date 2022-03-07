@@ -33,6 +33,9 @@ import ch.qos.logback.core.OutputStreamAppender;
 import ch.qos.logback.core.encoder.Encoder;
 import ch.qos.logback.core.filter.Filter;
 import ch.qos.logback.core.joran.spi.JoranException;
+import ch.qos.logback.core.status.NopStatusListener;
+import ch.qos.logback.core.status.OnConsoleStatusListener;
+import ch.qos.logback.core.status.StatusManager;
 import ch.qos.logback.core.util.StatusPrinter;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import java.io.File;
@@ -40,12 +43,16 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
+import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -57,6 +64,7 @@ import net.pms.PMS;
 import net.pms.configuration.PmsConfiguration;
 import net.pms.configuration.RendererConfiguration;
 import net.pms.util.Iterators;
+import net.pms.util.Pair;
 import net.pms.util.PropertiesUtil;
 import net.pms.util.FilePermissions.FileFlag;
 import org.slf4j.ILoggerFactory;
@@ -71,6 +79,7 @@ public class LoggingConfig {
 	private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(LoggingConfig.class);
 	private static Path filepath;
 	private static Map<String, String> logFilePaths; // key: appender name, value: log file path
+	private static Entry<String, String> mainLogFilePath; // key: appender name, value: log file path
 	private static LoggerContext loggerContext = null;
 	private static Logger rootLogger;
 	private static SyslogAppender syslog;
@@ -79,6 +88,8 @@ public class LoggingConfig {
 	private static Level consoleLevel = null;
 	private static Level tracesLevel = null;
 	private static LinkedList<Appender<ILoggingEvent>> syslogDetachedAppenders = new LinkedList<>();
+	private static NopStatusListener nopListener;
+	private static OnConsoleStatusListener consoleListener;
 
 	/** Not to be instantiated. */
 	private LoggingConfig() {
@@ -242,17 +253,50 @@ public class LoggingConfig {
 		}
 
 		Iterator<Appender<ILoggingEvent>> it = iterators.combinedIterator();
-		logFilePaths = new HashMap<>();
+		logFilePaths = new LinkedHashMap<>();
+		List<Pair<Entry<String, String>, Integer>> candidates = new ArrayList<>();
+		int maxScore = -1;
+		String name, lowerName, path;
+		int score;
 		while (it.hasNext()) {
 			Appender<ILoggingEvent> appender = it.next();
 			if (appender instanceof FileAppender) {
+				score = 0;
 				FileAppender<ILoggingEvent> fa = (FileAppender<ILoggingEvent>) appender;
-				logFilePaths.put(fa.getName(), fa.getFile());
+				name = fa.getName();
+				lowerName = name.toLowerCase(Locale.ROOT);
+				path = fa.getFile();
+				if (lowerName.contains("default.")) {
+					score += 15;
+				} else if (lowerName.contains("default")) {
+					score += 10;
+				}
+				logFilePaths.put(name, path);
+				if (appender instanceof AppendingRollingZipFileAppender) {
+					logFilePaths.put(name + ".zip", path + ".zip");
+					logFilePaths.put(name + ".prev.zip", path + ".prev.zip");
+					score += 7;
+				} else {
+					logFilePaths.put(name + ".prev", path + ".prev");
+				}
+				candidates.add(new Pair<Entry<String, String>, Integer>(new Pair<>(name, path), Integer.valueOf(score)));
+				maxScore = Math.max(score, maxScore);
 			} else if (appender instanceof SyslogAppender) {
 				syslogDisabled = true;
 			}
 		}
 		logFilePaths = Collections.unmodifiableMap(logFilePaths);
+		mainLogFilePath = null;
+		if (candidates.size() == 1) {
+			mainLogFilePath = candidates.get(0).getFirst();
+		} else if (candidates.size() > 1) {
+			for (Pair<Entry<String, String>, Integer> candidate : candidates) {
+				if (candidate.getSecond().intValue() == maxScore) {
+					mainLogFilePath = candidate.getFirst();
+					break;
+				}
+			}
+		}
 
 		// Set filters for console and traces
 		setConfigurableFilters(true, true);
@@ -537,6 +581,28 @@ public class LoggingConfig {
 			return;
 		}
 		rootLogger.setLevel(level.getLogbackLevel());
+		StatusManager sm = loggerContext.getStatusManager();
+		if (sm != null) {
+			if (level == LogLevel.TRACE || level == LogLevel.ALL) {
+				if (nopListener != null) {
+					sm.remove(nopListener);
+				}
+				if (consoleListener == null) {
+					consoleListener = new OnConsoleStatusListener();
+				}
+				consoleListener.start();
+				sm.add(consoleListener);
+			} else {
+				if (consoleListener != null) {
+					sm.remove(consoleListener);
+					consoleListener.stop();
+				}
+				if (nopListener == null) {
+					nopListener = new NopStatusListener();
+				}
+				sm.add(nopListener);
+			}
+		}
 	}
 
 	/**
@@ -638,7 +704,20 @@ public class LoggingConfig {
 	}
 
 	public static synchronized Map<String, String> getLogFilePaths() {
-		return logFilePaths;
+		return logFilePaths; // Ordered / LinkedHashMap
+	}
+
+	/**
+	 * @return The {@link Entry} containing the appender name and the file path
+	 *         of the entry in {@link #getLogFilePaths()} that is considered to
+	 *         be the "main" log file. If there are multiple log file paths, a
+	 *         simple algorithm tries to determine which is the "main". If
+	 *         there's only one, it will be returned. If there are none,
+	 *         {@code null} will be returned.
+	 */
+	@Nullable
+	public static synchronized Entry<String, String> getMainLogFilePath() {
+		return mainLogFilePath;
 	}
 
 	@Nonnull
@@ -682,12 +761,6 @@ public class LoggingConfig {
 			file = new File(entry.getValue());
 			if (file.exists()) {
 				result.add(file.getAbsoluteFile());
-			}
-			if ("default.log".equals(entry.getKey())) {
-				file = new File(entry.getValue() + ".prev");
-				if (file.exists()) {
-					result.add(file.getAbsoluteFile());
-				}
 			}
 		}
 		return result;

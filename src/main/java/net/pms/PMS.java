@@ -296,7 +296,8 @@ public class PMS {
 		if (lfps != null && lfps.size() > 0) {
 			if (lfps.size() == 1) {
 				Entry<String, String> entry = lfps.entrySet().iterator().next();
-				if (entry.getKey().toLowerCase().equals("default.log")) {
+				Entry<String, String> main = LoggingConfig.getMainLogFilePath();
+				if (main != null && entry.getKey().equals(main.getKey())) {
 					LOGGER.info("Logfile: {}", entry.getValue());
 				} else {
 					LOGGER.info("{}: {}", entry.getKey(), entry.getValue());
@@ -1441,9 +1442,8 @@ public class PMS {
 			 * for the file location.
 			 */
 
-			// Set root level from configuration here so that logging is available during renameOldLogFile();
+			// Set root level from configuration here so that logging is available
 			LoggingConfig.setRootLevel(getConfiguration().getRootLogLevel());
-			renameOldLogFile();
 
 			// Load the (optional) LogBack config file.
 			// This has to be called after 'new PmsConfiguration'
@@ -1720,33 +1720,6 @@ public class PMS {
 			LOGGER.warn("subfolder with versions compiled for your version of OS X.");
 			LOGGER.warn("-----------------------------------------------------------------");
 			LOGGER.warn("");
-		}
-	}
-
-	/**
-	 * Try to rename old logfile to <filename>.prev
-	 */
-	private static void renameOldLogFile() {
-		String fullLogFileName = configuration.getDefaultLogFilePath();
-		String newLogFileName = fullLogFileName + ".prev";
-
-		try {
-			File logFile = new File(newLogFileName);
-			if (logFile.exists()) {
-				if (!logFile.delete()) {
-					newLogFileName += ".prev";
-				}
-			}
-			logFile = new File(fullLogFileName);
-			if (logFile.exists()) {
-				File newFile = new File(newLogFileName);
-				if (!logFile.renameTo(newFile)) {
-					LOGGER.warn("Could not rename \"{}\" to \"{}\"", fullLogFileName, newLogFileName);
-				}
-			}
-		} catch (Exception e) {
-			LOGGER.warn("Could not rename \"{}\" to \"{}\": {}", fullLogFileName, newLogFileName, e.getMessage());
-			LOGGER.trace("", e);
 		}
 	}
 

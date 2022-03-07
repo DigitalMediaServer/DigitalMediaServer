@@ -15,6 +15,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 import javax.annotation.Nullable;
@@ -162,12 +163,12 @@ public class DbgPacker implements ActionListener {
 	private void resolveTargetPath() {
 		Path path = BasicSystemUtils.INSTANCE.getDesktopFolder();
 		if (!validFolder(path)) {
-			Map<String, String> logFilePaths = LoggingConfig.getLogFilePaths();
-			if (logFilePaths != null && !logFilePaths.isEmpty()) {
-				String s = logFilePaths.get("default.log");
-				if (isNotBlank(s)) {
+			Entry<String, String> mainLogFilePath = LoggingConfig.getMainLogFilePath();
+			if (mainLogFilePath != null) {
+				String filePath = mainLogFilePath.getValue();
+				if (isNotBlank(filePath)) {
 					try {
-						path = Paths.get(s);
+						path = Paths.get(filePath);
 						if (path != null) {
 							path = path.getParent();
 							if (!validFolder(path)) {
@@ -176,6 +177,29 @@ public class DbgPacker implements ActionListener {
 						}
 					} catch (InvalidPathException e) {
 						path = null;
+					}
+				}
+			}
+			if (path == null) {
+				Map<String, String> logFilePaths = LoggingConfig.getLogFilePaths();
+				if (logFilePaths != null && !logFilePaths.isEmpty()) {
+					// Pick the first valid one
+					for (String logFilePath : logFilePaths.values()) {
+						if (isNotBlank(logFilePath)) {
+							try {
+								path = Paths.get(logFilePath);
+								if (path != null) {
+									path = path.getParent();
+									if (validFolder(path)) {
+										break;
+									} else {
+										path = null;
+									}
+								}
+							} catch (InvalidPathException e) {
+								path = null;
+							}
+						}
 					}
 				}
 			}

@@ -33,18 +33,35 @@
 	</appender>
 
 	<!--
-		Appender for the default logfile that will keep the file growing in size
-		until DMS is restarted.
+		Appender for the default logfile that will roll and ZIP the logfile
+		after 100 megabyte.
 	-->
-	<appender name="default.log" class="ch.qos.logback.core.FileAppender">
-		<!-- No threshold filtering, log everything the root logger allows -->
+	<appender name="default.log.zip" class="net.pms.logging.AppendingRollingZipFileAppender">
 		<file>${logFilePath}${file.separator}${logFileName}</file>
-		<append>false</append>  <!-- Start new logfile on each application start -->
+		<rollingPolicy class="net.pms.logging.AppendingZipRollingPolicy" />
+		<triggeringPolicy class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
+			<maxFileSize>100MB</maxFileSize>
+		</triggeringPolicy>
 		<encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
 			<charset>UTF-8</charset>
 			<pattern>%-5level %d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %msg%n</pattern>
 		</encoder>
 	</appender>
+
+	<!--
+		Appender for the default logfile that will keep the file growing in size
+		until DMS is restarted.
+	-->
+	<!--
+	<appender name="default.log" class="ch.qos.logback.core.FileAppender">
+		<file>${logFilePath}${file.separator}${logFileName}</file>
+		<append>false</append>
+		<encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+			<charset>UTF-8</charset>
+			<pattern>%-5level %d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %msg%n</pattern>
+		</encoder>
+	</appender>
+	-->
 
 	<!--
 		Appender for the default logfile that will roll the logfile after 10 MBytes
@@ -87,12 +104,8 @@
 	<!-- Root logger defines the minimum log level for all loggers -->
 	<root level="${rootLevel}">
 		<appender-ref ref="console" />
-
-		<!--
-			If unlimited growth of the logfile is not desired use the
-			appender-ref "default.log.10MB" instead of "default.log".
-		-->
-		<appender-ref ref="default.log" />
+		<appender-ref ref="default.log.zip" />
+		<!-- <appender-ref ref="default.log" /> -->
 		<!-- <appender-ref ref="default.log.10MB" /> -->
 	</root>
 </configuration>

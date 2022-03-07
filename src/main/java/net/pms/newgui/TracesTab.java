@@ -39,6 +39,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
@@ -565,20 +566,41 @@ public class TracesTab {
 		// Add buttons to open logfiles (there may be more than one)
 		JPanel pLogFileButtons = new JPanel(new FlowLayout(FlowLayout.RIGHT));
 		Map<String, String> logFiles = LoggingConfig.getLogFilePaths();
+		Entry<String, String> mainLogFile = LoggingConfig.getMainLogFilePath();
+		String appenderName, fileName;
+		boolean main;
 		for (Map.Entry<String,String> logger : logFiles.entrySet()) {
-			String loggerNameDisplay = logger.getKey();
-			if (logger.getKey().toLowerCase().startsWith("default.log")) {
-				loggerNameDisplay = Messages.getString("TracesTab.5");
+			appenderName = logger.getKey();
+			if (appenderName.toLowerCase(Locale.ROOT).contains(".prev")) {
+				// Skip
+				continue;
 			}
-			CustomJButton b = new CustomJButton(loggerNameDisplay);
-			if (!logger.getKey().equals(loggerNameDisplay)) {
+			if (mainLogFile != null && appenderName.equals(mainLogFile.getKey())) {
+				fileName = Messages.getString("TracesTab.5");
+				main = true;
+			} else {
+				fileName = new File(logger.getValue()).getName();
+				main = false;
+			}
+			CustomJButton b = new CustomJButton(fileName);
+			if (main) {
 				b.setMnemonic(KeyEvent.VK_O);
 			}
 			b.setToolTipText(logger.getValue());
 			b.addActionListener(new ActionListener() {
 				@Override
 				public void actionPerformed(ActionEvent e) {
-					File logFile = new File(((CustomJButton) e.getSource()).getToolTipText());
+					String filename = ((JComponent) e.getSource()).getToolTipText();
+					File logFile = new File(filename);
+					if (!logFile.exists()) {
+						JOptionPane.showMessageDialog(
+							looksFrame,
+							String.format(Locale.ROOT, Messages.getString("TracesTab.LogfileNotFound"), filename),
+							Messages.getString("Dialog.Error"),
+							JOptionPane.ERROR_MESSAGE
+						);
+						return;
+					}
 					try {
 						java.awt.Desktop.getDesktop().open(logFile);
 					} catch (IOException | UnsupportedOperationException ioe) {
