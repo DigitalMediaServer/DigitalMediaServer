@@ -13,6 +13,9 @@ import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -34,7 +37,7 @@ import org.slf4j.LoggerFactory;
 
 public class DbgPacker implements ActionListener {
 	private static final Logger LOGGER = LoggerFactory.getLogger(DbgPacker.class);
-	public static final String ZIP_FILE_NAME = "dms_debug.zip";
+	public static final String PACKED_FILE_NAME = "dms_debug_";
 
 	private LinkedHashMap<File, JCheckBox> items;
 	private Path zippedDebugFile;
@@ -204,10 +207,16 @@ public class DbgPacker implements ActionListener {
 				}
 			}
 		}
+
+		DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd-HH-mm");
+		Date date = new Date();
+		String packedFileName = PACKED_FILE_NAME + dateFormat.format(date) + ".zip";
+
 		if (path == null) {
 			LOGGER.warn("Could not resolve suggested destination folder for packed debug files");
+			zippedDebugFile = Paths.get(packedFileName);
 		} else {
-			zippedDebugFile = path.resolve(ZIP_FILE_NAME);
+			zippedDebugFile = path.resolve(packedFileName);
 		}
 	}
 

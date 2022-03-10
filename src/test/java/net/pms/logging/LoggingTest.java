@@ -205,8 +205,7 @@ public class LoggingTest {
 
 		// Test getLogFilePaths() and LoggingConfigFileLoader.getLogFilePaths()
 		Map<String, String> logFilePaths = LoggingConfig.getLogFilePaths();
-		@SuppressWarnings("deprecation")
-		HashMap<String, String> compLogFilePaths = LoggingConfigFileLoader.getLogFilePaths();
+		Map<String, String> compLogFilePaths = LoggingConfig.getLogFilePaths();
 		Iterator<Appender<ILoggingEvent>> iterator = rootLogger.iteratorForAppenders();
 		while (iterator.hasNext()) {
 			Appender<ILoggingEvent> appender = iterator.next();
@@ -214,13 +213,8 @@ public class LoggingTest {
 				FileAppender<ILoggingEvent> fa = (FileAppender<ILoggingEvent>) appender;
 				assertTrue("LogFilePathsContainsKey", logFilePaths.containsKey(fa.getName()));
 				assertEquals("LogFilePathsHasPath", logFilePaths.get(fa.getName()), fa.getFile());
-				if (fa.getName().equals("default.log")) {
-					assertTrue("CompatibleLogFilePathsContainsKey", compLogFilePaths.containsKey("debug.log"));
-					assertEquals("CompatibleLogFilePathsHasPath", compLogFilePaths.get("debug.log"), fa.getFile());
-				} else {
-					assertTrue("CompatibleLogFilePathsContainsKey", compLogFilePaths.containsKey(fa.getName()));
-					assertEquals("CompatibleLogFilePathsHasPath", compLogFilePaths.get(fa.getName()), fa.getFile());
-				}
+				assertTrue("CompatibleLogFilePathsContainsKey", compLogFilePaths.containsKey(fa.getName()));
+				assertEquals("CompatibleLogFilePathsHasPath", compLogFilePaths.get(fa.getName()), fa.getFile());
 			}
 		}
 
