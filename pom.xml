@@ -75,7 +75,7 @@
 
 		<sevenzip-version>9.20-2.00beta</sevenzip-version>
 
-		<twelvemonkeys-imageio-version>3.3.2</twelvemonkeys-imageio-version>
+		<twelvemonkeys-imageio-version>3.8.2</twelvemonkeys-imageio-version>
 
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.external-resources>${project.basedir}/src/main/external-resources</project.external-resources>
@@ -308,6 +308,11 @@
 		<dependency>
 			<groupId>com.twelvemonkeys.imageio</groupId>
 			<artifactId>imageio-tiff</artifactId>
+			<version>${twelvemonkeys-imageio-version}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.twelvemonkeys.imageio</groupId>
+			<artifactId>imageio-webp</artifactId>
 			<version>${twelvemonkeys-imageio-version}</version>
 		</dependency>
 		<dependency>

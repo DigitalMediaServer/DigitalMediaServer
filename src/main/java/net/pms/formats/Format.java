@@ -264,7 +264,7 @@ public abstract class Format implements Cloneable {
 	 */
 	public abstract Identifier getIdentifier();
 
-	public static enum Identifier {
+	public enum Identifier {
 		AC3,
 		ADPCM,
 		ADTS,
@@ -323,6 +323,7 @@ public abstract class Format implements Cloneable {
 		WAV,
 		WBMP,
 		WEB,
+		WEBP,
 		WEBVTT,
 		WMA,
 		WV,

@@ -99,6 +99,7 @@ public final class FormatFactory {
 		new WavPack(),
 		new WBMP(),
 		new WEB(),
+		new WebP(),
 		new WebVTT(),
 		new WMA(),
 	};
