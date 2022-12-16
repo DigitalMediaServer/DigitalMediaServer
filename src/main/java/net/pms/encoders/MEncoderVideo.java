@@ -2757,7 +2757,7 @@ public class MEncoderVideo extends Player {
 				result.errorType(ExecutableErrorType.GENERAL);
 				result.errorText(String.format(Messages.getString("Engine.Error"), this) + " \n" + output.getError().getMessage());
 				result.available(Boolean.FALSE);
-				LOGGER.debug("\"{} {}\" failed with error: {}", executableInfo.getPath(), arg, output.getError().getMessage());
+				LOGGER.warn("\"{} {}\" failed with error: {}", executableInfo.getPath(), arg, output.getError().getMessage());
 				return result.build();
 			}
 			if (output.getExitCode() == 0) {
@@ -2774,6 +2774,7 @@ public class MEncoderVideo extends Player {
 				if (ntStatus != null) {
 					result.errorType(ExecutableErrorType.GENERAL);
 					result.errorText(String.format(Messages.getString("Engine.Error"), this) + "\n\n" + ntStatus);
+					LOGGER.warn("\"{} {}\" failed with exit code: {}", executableInfo.getPath(), arg, ntStatus);
 				} else {
 					if (output.getOutput() != null &&
 						output.getOutput().size() > 3 &&
@@ -2786,9 +2787,16 @@ public class MEncoderVideo extends Player {
 							String.format(Messages.getString("Engine.Error"), this) + " \n" +
 							output.getOutput().get(output.getOutput().size() - 3)
 						);
+						LOGGER.warn(
+							"\"{} {}\" failed with: {}",
+							executableInfo.getPath(),
+							arg,
+							output.getOutput().get(output.getOutput().size() - 3)
+						);
 					} else {
 						result.errorType(ExecutableErrorType.GENERAL);
 						result.errorText(String.format(Messages.getString("Engine.Error"), this) + Messages.getString("General.3"));
+						LOGGER.warn("\"{} {}\" failed with an unknown error", executableInfo.getPath(), arg);
 					}
 				}
 				result.available(Boolean.FALSE);

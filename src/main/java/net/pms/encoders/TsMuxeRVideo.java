@@ -914,7 +914,7 @@ public class TsMuxeRVideo extends Player {
 				result.errorType(ExecutableErrorType.GENERAL);
 				result.errorText(String.format(Messages.getString("Engine.Error"), this) + " \n" + output.getError().getMessage());
 				result.available(Boolean.FALSE);
-				LOGGER.debug("\"{} {}\" failed with error: {}", executableInfo.getPath(), arg, output.getError().getMessage());
+				LOGGER.warn("\"{} {}\" failed with error: {}", executableInfo.getPath(), arg, output.getError().getMessage());
 				return result.build();
 			}
 			if (output.getExitCode() == 0) {
@@ -931,12 +931,19 @@ public class TsMuxeRVideo extends Player {
 				if (ntStatus != null) {
 					result.errorType(ExecutableErrorType.GENERAL);
 					result.errorText(String.format(Messages.getString("Engine.Error"), this) + "\n\n" + ntStatus);
+					LOGGER.warn("\"{} {}\" failed with exit code: {}", executableInfo.getPath(), arg, ntStatus);
 				} else {
 					result.errorType(ExecutableErrorType.GENERAL);
 					result.errorText(String.format(Messages.getString("Engine.ExitCode"), this, output.getExitCode()));
+					LOGGER.warn("\"{} {}\" failed with exit code: {}", executableInfo.getPath(), arg, output.getExitCode());
 					if (Platform.isLinux() && Platform.is64Bit()) {
 						result.errorType(ExecutableErrorType.GENERAL);
 						result.errorText(result.errorText() + ". \n" + Messages.getString("Engine.tsMuxerErrorLinux"));
+						LOGGER.warn(
+							"\"{} {}\": Make sure that the necessary 32-bit libraries are installed",
+							executableInfo.getPath(),
+							arg
+						);
 					}
 					result.available(Boolean.FALSE);
 				}

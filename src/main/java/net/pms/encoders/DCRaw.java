@@ -403,7 +403,7 @@ public class DCRaw extends ImagePlayer {
 				result.errorType(ExecutableErrorType.GENERAL);
 				result.errorText(String.format(Messages.getString("Engine.Error"), this) + " \n" + output.getError().getMessage());
 				result.available(Boolean.FALSE);
-				LOGGER.debug("\"{}\" failed with error: {}", executableInfo.getPath(), output.getError().getMessage());
+				LOGGER.warn("\"{}\" failed with error: {}", executableInfo.getPath(), output.getError().getMessage());
 				return result.build();
 			}
 			if (!output.getOutput().isEmpty() && isBlank(output.getOutput().get(0))) {
@@ -419,14 +419,17 @@ public class DCRaw extends ImagePlayer {
 				result.errorType(ExecutableErrorType.GENERAL);
 				result.errorText(String.format(Messages.getString("Engine.Error"), this) + " \n" + output.getOutput().get(0));
 				result.available(Boolean.FALSE);
+				LOGGER.warn("\"{}\" failed with: {}", executableInfo.getPath(), output.getOutput().get(0));
 			} else {
 				NTStatus ntStatus = Platform.isWindows() ? NTStatus.typeOf(output.getExitCode()) : null;
 				if (ntStatus != null && ntStatus != NTStatus.STATUS_SUCCESS) {
 					result.errorType(ExecutableErrorType.GENERAL);
 					result.errorText(String.format(Messages.getString("Engine.Error"), this) + "\n\n" + ntStatus);
+					LOGGER.warn("\"{}\" failed with exit code: {}", executableInfo.getPath(), ntStatus);
 				} else {
 					result.errorType(ExecutableErrorType.GENERAL);
 					result.errorText(String.format(Messages.getString("Engine.Error"), this) + Messages.getString("General.3"));
+					LOGGER.warn("\"{}\" failed with an unknown error", executableInfo.getPath());
 				}
 				result.available(Boolean.FALSE);
 			}

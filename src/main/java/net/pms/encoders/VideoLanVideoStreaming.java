@@ -266,7 +266,7 @@ public class VideoLanVideoStreaming extends Player {
 					result.errorType(ExecutableErrorType.GENERAL);
 					result.errorText(String.format(Messages.getString("Engine.Error"), this) + " \n" + output.getError().getMessage());
 					result.available(Boolean.FALSE);
-					LOGGER.debug("\"{} {}\" failed with error: {}", executableInfo.getPath(), arg, output.getError().getMessage());
+					LOGGER.warn("\"{} {}\" failed with error: {}", executableInfo.getPath(), arg, output.getError().getMessage());
 					return result.build();
 				}
 				if (output.getExitCode() == 0) {
@@ -282,6 +282,7 @@ public class VideoLanVideoStreaming extends Player {
 					result.errorType(ExecutableErrorType.GENERAL);
 					result.errorText(String.format(Messages.getString("Engine.ExitCode"), this, output.getExitCode()));
 					result.available(Boolean.FALSE);
+					LOGGER.warn("\"{} {}\" failed with exit code: {}", executableInfo.getPath(), arg, output.getExitCode());
 				}
 			} catch (InterruptedException e) {
 				return null;

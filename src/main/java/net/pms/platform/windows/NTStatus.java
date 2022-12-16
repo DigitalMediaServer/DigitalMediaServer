@@ -9089,9 +9089,9 @@ public enum NTStatus {
 	}
 
 	@Override
-		public String toString() {
-			return super.toString() + ": " + text;
-		}
+	public String toString() {
+		return super.toString() + ": " + text;
+	}
 
 	/**
 	 * Returns the {@link NTStatus} that corresponds to the specified error
