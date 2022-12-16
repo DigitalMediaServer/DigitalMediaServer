@@ -1135,6 +1135,30 @@ public class RootFolder extends DLNAResource {
 			}
 		});
 
+		// Shut down the computer
+		res.addChild(new VirtualVideoAction(Messages.getString("Action.ShutDown"), true) {
+			@Override
+			public boolean enable() {
+				 try {
+					// Shut down the system
+					if (Platform.isWindows()) {
+						Runtime.getRuntime().exec("shutdown -s -t 0");
+						System.exit(0);
+					} else if (Platform.isLinux()) {
+						Runtime.getRuntime().exec("sudo -n shutdown -h now");
+						System.exit(0);
+					} else if (Platform.isMac()) {
+						Runtime.getRuntime().exec("osascript -e 'tell app \"System Events\" to shut down' &");
+						System.exit(0);
+					}
+				} catch (IOException e) {
+					LOGGER.error("Failed to shut down the computer: {}", e.getMessage());
+				}
+				// Shut down failed
+				return false;
+			}
+		});
+
 		addChild(res);
 	}
 
