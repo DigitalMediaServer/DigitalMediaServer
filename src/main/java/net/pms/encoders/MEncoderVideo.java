@@ -727,11 +727,6 @@ public class MEncoderVideo extends Player {
 			// Convert value from Mb to Kb
 			defaultMaxBitrates[0] = 1000 * defaultMaxBitrates[0];
 
-			if (mediaRenderer.isHalveBitrate()) {
-				defaultMaxBitrates[0] /= 2;
-				LOGGER.trace("Halving the video bitrate limit to {} kb/s", defaultMaxBitrates[0]);
-			}
-
 			int bufSize = 1835;
 			boolean bitrateLevel41Limited = false;
 			boolean isXboxOneWebVideo = mediaRenderer.isXboxOne() && purpose() == VIDEO_WEBSTREAM_PLAYER;
