@@ -111,7 +111,6 @@ ManifestSupportedOS all ; Left here to remember to add GUI ID in case Windows 11
 
 Var Clean
 Var CopyLeft
-Var FirewallStatus
 Var RAM
 Var X64
 Var XP
@@ -183,7 +182,6 @@ Section "!$(SectionServer)" sectionServer
 	WriteRegStr HKLM "${REG_KEY_UNINSTALL}" "UninstallString" "$INSTDIR\${UninstallEXE}"
 	WriteRegDWORD HKLM "${REG_KEY_UNINSTALL}" "NoModify" 0x00000001
 	WriteRegDWORD HKLM "${REG_KEY_UNINSTALL}" "NoRepair" 0x00000001
-	WriteRegStr HKLM "${REG_KEY_UNINSTALL}" "FirewallSettings" "$FirewallStatus"
 
 	SetOutPath "$INSTDIR"
 	WriteUninstaller "$INSTDIR\${UninstallEXE}"
@@ -232,20 +230,26 @@ Section /o $(SectionCleanInstall) sectionCleanInstall
 SectionEnd
 
 Section /o $(SectionWindowsFirewall) sectionFirewall
-	StrCpy $FirewallStatus "1" ; Will be used later by the uninstaller
+	WriteRegStr HKLM "${REG_KEY_UNINSTALL}" "FirewallRules" "1"
 
-	${IfNot} ${IsWinXP}
-		nsExec::Exec 'netsh advfirewall firewall add rule name="Digital Media Server - Incoming port TCP 1900/5252/6363" action=allow description="Incoming on port TCP 1900/5252/6363" dir=in enable=yes profile=private,domain protocol=tcp localport=1900,5252,6363'
-		nsExec::Exec 'netsh advfirewall firewall add rule name="Digital Media Server - Incoming port UDP 1900"  action=allow description="Incoming on port UDP 1900" dir=in enable=yes profile=private,domain protocol=udp localport=1900'
-	${Else}
+	${If} ${IsWinXP}
+	${OrIf} ${IsWin2003}
 		nsExec::Exec 'netsh firewall set multicastbroadcastresponse mode=enable profile=standard'
 		nsExec::Exec 'netsh firewall set multicastbroadcastresponse mode=enable profile=domain'
 		nsExec::Exec 'netsh firewall add portopening protocol=tcp port=5252 name="Digital Media Server - TCP 5252" mode=enable profile=standard'
 		nsExec::Exec 'netsh firewall add portopening protocol=tcp port=6363 name="Digital Media Server - TCP 6363" mode=enable profile=standard'
 		nsExec::Exec 'netsh firewall add portopening protocol=tcp port=5252 name="Digital Media Server - TCP 5252" mode=enable profile=domain'
 		nsExec::Exec 'netsh firewall add portopening protocol=tcp port=6363 name="Digital Media Server - TCP 6363" mode=enable profile=domain'
-		nsExec::Exec 'netsh firewall add portopening protocol=all port=1900 name="Digital Media Server - TCP/UDP 1900" mode=enable profile=standard'
-		nsExec::Exec 'netsh firewall add portopening protocol=all port=1900 name="Digital Media Server - TCP/UDP 1900" mode=enable profile=domain'
+		nsExec::Exec 'netsh firewall add portopening protocol=all port=1900 name="Digital Media Server - TCP 1900" mode=enable profile=standard'
+		nsExec::Exec 'netsh firewall add portopening protocol=all port=1900 name="Digital Media Server - TCP 1900" mode=enable profile=domain'
+	${ElseIf} ${AtLeastWinVista}
+		nsExec::Exec 'netsh advfirewall set privateprofile settings unicastresponsetomulticast enable'
+		nsExec::Exec 'netsh advfirewall set domainprofile settings unicastresponsetomulticast enable'
+		; Delete the rules before creating them, as it's possible to create multiple identical rules.
+		nsExec::Exec 'netsh advfirewall firewall delete rule name="Digital Media Server - Incoming TCP port 1900/5252/6363"'
+		nsExec::Exec 'netsh advfirewall firewall delete rule name="Digital Media Server - Incoming UDP port 1900"'
+		nsExec::Exec 'netsh advfirewall firewall add rule name= "Digital Media Server - Incoming TCP port 1900/5252/6363" dir=in action=allow description="Incoming on TCP ports 1900, 5252 and 6363" profile=private,domain protocol=TCP localport=1900,5252,6363 enable=yes'
+		nsExec::Exec 'netsh advfirewall firewall add rule name= "Digital Media Server - Incoming UDP port 1900" dir=in action=allow description="Incoming on UDP port 1900" profile=private,domain protocol=UDP localport=1900 enable=yes'
 	${EndIf}
 	; Future Windows 10 or later versions should not accept anymore "netsh" use for the firewall configuration, so a powershell script or plugin or code should be used
 	; To check if other firewalls are blocking ports: netstat -ano | findstr -i "5252" or portqry.exe -n x.x.x.x -e 5252
@@ -793,7 +797,6 @@ Section "un.${PROJECT_NAME}" sectionUnStandard
 		RMDir /r /REBOOTOK "$TEMP\fontconfig"
 		RMDir /r /REBOOTOK "$LOCALAPPDATA\fontconfig"
 		RMDir /r /REBOOTOK "$INSTDIR"
-		DeleteRegKey HKLM "${REG_KEY_UNINSTALL}"
 		DeleteRegKey HKLM "${REG_KEY_SOFTWARE}"
 
 	serviceRunningTest:
@@ -816,6 +819,28 @@ Section "un.${PROJECT_NAME}" sectionUnStandard
 		Abort
 
 	Done:
+
+	ClearErrors
+	ReadRegStr $0 HKLM "${REG_KEY_UNINSTALL}" "FirewallRules"
+	IfErrors skipFirewall
+	StrCmp $0 "1" 0 skipFirewall
+	${If} ${IsWinXP}
+	${OrIf} ${IsWin2003}
+		nsExec::Exec 'netsh firewall delete portopening protocol=tcp port=5252 profile=standard'
+		nsExec::Exec 'netsh firewall delete portopening protocol=tcp port=6363 profile=standard'
+		nsExec::Exec 'netsh firewall delete portopening protocol=tcp port=5252 profile=domain'
+		nsExec::Exec 'netsh firewall delete portopening protocol=tcp port=6363 profile=domain'
+		nsExec::Exec 'netsh firewall delete portopening protocol=all port=1900 profile=standard'
+		nsExec::Exec 'netsh firewall delete portopening protocol=all port=1900 profile=domain'
+	${ElseIf} ${AtLeastWinVista}
+		nsExec::Exec 'netsh advfirewall firewall delete rule name="Digital Media Server - Incoming TCP port 1900/5252/6363"'
+		nsExec::Exec 'netsh advfirewall firewall delete rule name="Digital Media Server - Incoming UDP port 1900"'
+	${EndIf}
+
+	skipFirewall:
+	ClearErrors
+	DeleteRegKey HKLM "${REG_KEY_UNINSTALL}"
+
 SectionEnd
 
 Section /o "un.$(SectionUninstallComplete)" sectionUnComplete
@@ -828,19 +853,6 @@ Function un.onInit
 	${If} ${RunningX64}
 		SetRegView 64
 	${EndIf}
-	ReadRegStr $0 HKLM "${REG_KEY_UNINSTALL}" "FirewallSettings"
-	Pop $0
-	StrCmp $0 "" noNeed
-	${IfNot} ${IsWinXP}
-		nsExec::Exec 'netsh advfirewall firewall delete rule name="Digital Media Server - Incoming port TCP 1900/5252/6363"'
-		nsExec::Exec 'netsh advfirewall firewall delete rule name="Digital Media Server - Incoming port UDP 1900"'
-	${ElseIf} ${IsWinXP}
-		nsExec::Exec 'netsh firewall set portopening protocol=tcp port=5252 mode=disable profile=all'
-		nsExec::Exec 'netsh firewall set portopening protocol=tcp port=6363 mode=disable profile=all'
-		nsExec::Exec 'netsh firewall set portopening protocol=all port=1900 mode=disable profile=all'
-	${EndIf}
-
-	noNeed:
 FunctionEnd
 
 !insertmacro MUI_UNFUNCTION_DESCRIPTION_BEGIN
