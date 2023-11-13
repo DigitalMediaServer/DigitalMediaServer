@@ -258,37 +258,29 @@ Section /o $(SectionWindowsFirewall) sec2
 SectionEnd
 
 Section /o $(SectionDownloadJava) sec3 ; http://www.oracle.com/technetwork/java/javase/windows-diskspace-140460.html
-	${If} ${AtLeastWinVista}
-		inetc::get /NOCANCEL /CONNECTTIMEOUT 30 /SILENT /WEAKSECURITY /NOCOOKIES /TOSTACK "https://lv.binarybabel.org/catalog-api/java/jdk8.txt?p=downloads.exe" "" /END
-		Pop $1
-		Pop $0
-		${WordReplaceS} "$0" "download" "edelivery" "+1" $0
-		${WordReplaceS} "$0" "jdk-" "jre-" "+1" $0
-		${IfNot} ${RunningX64}
-			${WordReplaceS} "$0" "-x64" "-i586" "+1" $0
+
+	${If} ${AtMostWin2008}
+		${If} ${RunningX64}
+			StrCpy $0 "http://web.archive.org/web/20231111192459/http://download.ithb.ac.id/downloads/Softwares/Developers/java/oracle/v7/jre-7u80-windows-x64.exe"
+			StrCpy $1 "jre-7u80-windows-x64.exe"
+		${Else}
+			StrCpy $0 "http://web.archive.org/web/20231111192435/http://download.ithb.ac.id/downloads/Softwares/Developers/java/oracle/v7/jre-7u80-windows-i586.exe"
+			StrCpy $1 "jre-7u80-windows-i586.exe"
 		${EndIf}
-		${WordFind} "$0" "/" "-1}" $1
-	${EndIf}
-	${If} ${IsWinXP}
-	${AndIfNot} ${RunningX64}
-		; jre-7u80-windows-i586.exe
-		; http://javadl.sun.com/webapps/download/AutoDL?BundleId=106307
-		StrCpy $0 "http://javadl.oracle.com/webapps/download/AutoDL?BundleId=227550_e758a0de34e24606bca991d704f6dcbf"
-		StrCpy $1 "jre-8u151-windows-i586.exe"
-	${EndIf}
-	${If} ${IsWinXP}
-	${AndIf} ${RunningX64}
-		; jre-7u80-windows-x64.exe
-		; http://javadl.sun.com/webapps/download/AutoDL?BundleId=106309
-		StrCpy $0 "http://javadl.oracle.com/webapps/download/AutoDL?BundleId=227552_e758a0de34e24606bca991d704f6dcbf"
-		StrCpy $1 "jre-8u151-windows-x64.exe"
-	${EndIf}
-	${WordReplaceS} $(Downloading) "%s" "Oracle Java 8" "+1" $2
-	${If} ${IsWinXP}
-		inetc::get /NOSSL /RESUME "" /CONNECTTIMEOUT 30 /RECEIVETIMEOUT 30 /MODERNPOPUP "$1" /CAPTION "$2" /QUESTION $(ConfirmCancel) /TRANSLATE $(DownloadingFile) $(Downloaded) $(TimeRemaining) $(Speed) $(CancelButton) /USERAGENT "Mozilla/5.0 (Windows NT 6.3; rv:48.0) Gecko/20100101 Firefox/48.0" /HEADER "Cookie: oraclelicense=accept-securebackup-cookie" /NOCOOKIES "$0" "$PLUGINSDIR\$1" /END
+		StrCpy $3 "Java 7u80"
 	${Else}
-		inetc::get /WEAKSECURITY /RESUME "" /CONNECTTIMEOUT 30 /RECEIVETIMEOUT 30 /MODERNPOPUP "$1" /CAPTION "$2" /QUESTION $(ConfirmCancel) /TRANSLATE $(DownloadingFile) $(Downloaded) $(TimeRemaining) $(Speed) $(CancelButton) /USERAGENT "Mozilla/5.0 (Windows NT 6.3; rv:48.0) Gecko/20100101 Firefox/48.0" /HEADER "Cookie: oraclelicense=accept-securebackup-cookie" /NOCOOKIES "$0" "$PLUGINSDIR\$1" /END
+		${If} ${RunningX64}
+			StrCpy $0 "https://api.adoptium.net/v3/installer/latest/8/ga/windows/x64/jre/hotspot/normal/eclipse?project=jdk"
+			StrCpy $1 "OpenJDK8U-jre_x64_windows_hotspot.msi"
+		${Else}
+			StrCpy $0 "https://api.adoptium.net/v3/installer/latest/8/ga/windows/x86/jre/hotspot/normal/eclipse?project=jdk"
+			StrCpy $1 "OpenJDK8U-jre_x86-32_windows_hotspot.msi"
+		${EndIf}
+		StrCpy $3 "Java 8"
 	${EndIf}
+	
+	${WordReplaceS} $(Downloading) "%s" "$3" "+1" $2 ;
+	NScurl::http GET "$0" "$PLUGINSDIR\$1" /INSIST /CANCEL /RESUME /POPUP /STRING TITLE_NOSIZE "$2" /STRING TITLE "$2 [@PERCENT@%]" /STRING_NOSIZE TEXT "$(DownloadingFile) @OUTFILE@, @XFERSIZE@ @ @SPEED@ @ANIMDOTS@" /STRING TEXT "$(DownloadingFile) @OUTFILE@, @XFERSIZE@ / @FILESIZE@ @ @SPEED@ @ANIMDOTS@" /END
 	Pop $0
 	StrCmpS $0 "OK" JavaDownloadOK
 	${WordReplaceS} $(DownloadError) "%s" $0 "+1" $0
@@ -296,7 +288,11 @@ Section /o $(SectionDownloadJava) sec3 ; http://www.oracle.com/technetwork/java/
 	Goto End
 
 	JavaDownloadOK:
-		ExecWait "$PLUGINSDIR\$1" ; '"$PLUGINSDIR\$1 /s /v$\"/qn ADDLOCAL=ALL REBOOT=Suppress /L C:\setup.log$\""'
+		${If} ${AtMostWin2008}
+			ExecWait "$PLUGINSDIR\$1 SPONSORS=0"
+		${Else}
+			ExecWait "msiexec /i $PLUGINSDIR\$1 /norestart"
+		${EndIf}
 
 	End:
 SectionEnd
