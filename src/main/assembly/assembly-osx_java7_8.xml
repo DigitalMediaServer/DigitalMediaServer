@@ -28,6 +28,7 @@
 			</includes>
 			<excludes>
 				<exclude>dms.icns</exclude>
+				<exclude>**/Thumbs.db</exclude>
 			</excludes>
 		</fileSet>
 
@@ -63,6 +64,9 @@
 			<includes>
 				<include>*</include>
 			</includes>
+			<excludes>
+				<exclude>**/Thumbs.db</exclude>
+			</excludes>
 		</fileSet>
 
 		<!-- Include configuration files -->
@@ -83,9 +87,12 @@
 				<include>DummyInput.jpg</include>
 				<include>web/**</include>
 			</includes>
+			<excludes>
+				<exclude>**/Thumbs.db</exclude>
+			</excludes>
 		</fileSet>
-                
-                <!-- Include jar-with-dependencies -->
+
+		<!-- Include jar-with-dependencies -->
 		<fileSet>
 			<directory>${project.basedir}/target</directory>
 			<outputDirectory>${project.name}.app/Contents/Java</outputDirectory>
@@ -94,6 +101,5 @@
 				<include>${project.build.finalName}-jar-with-dependencies.jar</include>
 			</includes>
 		</fileSet>
-
-        </fileSets>
+	</fileSets>
 </assembly>

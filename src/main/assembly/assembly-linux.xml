@@ -90,6 +90,9 @@
 				<include>VirtualFolders.conf</include>
 				<include>DummyInput.ass</include>
 			</includes>
+			<excludes>
+				<exclude>**/Thumbs.db</exclude>
+			</excludes>
 		</fileSet>
 
 		<!--
@@ -106,6 +109,9 @@
 				<include>DummyInput.jpg</include>
 				<include>web/**</include>
 			</includes>
+			<excludes>
+				<exclude>**/Thumbs.db</exclude>
+			</excludes>
 		</fileSet>
 
 	</fileSets>

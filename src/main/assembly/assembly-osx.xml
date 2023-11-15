@@ -28,6 +28,7 @@
 			</includes>
 			<excludes>
 				<exclude>dms.icns</exclude>
+				<exclude>**/Thumbs.db</exclude>
 			</excludes>
 		</fileSet>
 
@@ -73,6 +74,9 @@
 			<includes>
 				<include>*</include>
 			</includes>
+			<excludes>
+				<exclude>**/Thumbs.db</exclude>
+			</excludes>
 		</fileSet>
 
 		<!-- Include configuration files -->
@@ -93,7 +97,9 @@
 				<include>DummyInput.jpg</include>
 				<include>web/**</include>
 			</includes>
+			<excludes>
+				<exclude>**/Thumbs.db</exclude>
+			</excludes>
 		</fileSet>
-
 	</fileSets>
 </assembly>
