@@ -148,12 +148,12 @@ Section "!$(SectionServer)" sec1
 	SetOutPath "$INSTDIR"
 	SetOverwrite on
 
-	File /r "${PROJECT_BASEDIR}\src\main\external-resources\documentation"
-	File /r "${PROJECT_BASEDIR}\src\main\external-resources\renderers"
-	File /r /x "ffmpeg*.*" /x "avisynth" /x "MediaInfo64.dll" "${PROJECT_BASEDIR}\target\bin\win32"
+	File /r /x "Thumbs.db" "${PROJECT_BASEDIR}\src\main\external-resources\documentation"
+	File /r /x "Thumbs.db" "${PROJECT_BASEDIR}\src\main\external-resources\renderers"
+	File /r /x "Thumbs.db" /x "ffmpeg*.*" /x "avisynth" /x "MediaInfo64.dll" "${PROJECT_BASEDIR}\target\bin\win32"
 	File "${PROJECT_BUILD_DIR}\${PROJECT_NAME_SHORT}.exe"
 	File "${PROJECT_BASEDIR}\src\main\external-resources\${PROJECT_NAME_SHORT}.bat"
-	File /r "${PROJECT_BASEDIR}\src\main\external-resources\web"
+	File /r /x "Thumbs.db" "${PROJECT_BASEDIR}\src\main\external-resources\web"
 	File "${PROJECT_BUILD_DIR}\${PROJECT_ARTIFACT_ID}.jar"
 	File /nonfatal "${PROJECT_BASEDIR}\CHANGELOG.txt"
 	File "${PROJECT_BASEDIR}\EULA.rtf"
@@ -225,7 +225,7 @@ SectionEnd
 Section /o "-XP" secXP
 	SetOverwrite on
 	SetOutPath "$INSTDIR\win32"
-	File /r "${PROJECT_BASEDIR}\src\main\external-resources\lib\winxp"
+	File /r /x "Thumbs.db" "${PROJECT_BASEDIR}\src\main\external-resources\lib\winxp"
 SectionEnd
 
 Section /o $(SectionCleanInstall) secClean
