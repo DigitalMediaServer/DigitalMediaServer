@@ -1,4 +1,3 @@
-${LangFileString} CannotOpen "Normal uninstallation is impossible because $\"uninstall.log$\" is missing.$\r$\nDo you want to delete the installation folder instead?"
 ${LangFileString} DownloadingFile "Downloading file:"
 ${LangFileString} Downloading "Downloading %s"
 ${LangFileString} DesktopShortcut "Create desktop shortcut"

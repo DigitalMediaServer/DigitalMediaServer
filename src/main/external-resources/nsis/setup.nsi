@@ -14,7 +14,6 @@ ShowUninstDetails show
 !include "WordFunc.nsh"
 !include "x64.nsh"
 
-!define UninstallLog "uninstall.log"
 !define UninstallEXE "uninstall.exe"
 
 !define INSTALLERMUTEXNAME "$(^Name)"
@@ -333,12 +332,6 @@ Section /o "AviSynth" sectionInstallAviSynth
 	ExecWait "$INSTDIR\win32\avisynth\avisynth.exe"
 SectionEnd
 
-Section "-CreatingInstallLog" sectionInstallLog
-	StrCpy $0 "$INSTDIR\${UninstallLog}"
-	Push $0
-	Call DumpLog
-SectionEnd
-
 Section "-EstimatedSize" sectionEstimatedSize
 	${GetSize} "$INSTDIR" "/S=0B" $0 $1 $2
 	IntFmt $0 "0x%08x" $0 ; https://msdn.microsoft.com/en-us/library/windows/desktop/ms647550(v=vs.85).aspx
@@ -607,7 +600,6 @@ Function .onInit
 	File /nonfatal "Images\Installer@120.bmp"
 	File /nonfatal "Images\Installer@96.bmp"
 
-	SectionSetFlags ${sectionInstallLog} ${SF_SELECTED}
 	SectionSetFlags ${sectionEstimatedSize} ${SF_SELECTED}
 FunctionEnd
 
@@ -628,47 +620,6 @@ FunctionEnd
 Function .onGUIEnd
 	LogSet off
 	RMDir /r /REBOOTOK $PLUGINSDIR
-FunctionEnd
-
-Function DumpLog
-	Exch $5
-	Push $0
-	Push $1
-	Push $2
-	Push $3
-	Push $4
-	Push $6
-	FindWindow $0 "#32770" "" $HWNDPARENT
-	GetDlgItem $0 $0 1016
-	StrCmp $0 0 exit
-	FileOpen $5 $5 w
-	StrCmp $5 "" exit
-	SendMessage $0 ${LVM_GETITEMCOUNT} 0 0 $6
-	System::Alloc ${NSIS_MAX_STRLEN}
-	Pop $3
-	StrCpy $2 0
-	System::Call "*(i, i, i, i, i, i, i, i, i) i (0, 0, 0, 0, 0, r3, ${NSIS_MAX_STRLEN}) .r1"
-
-	loop: StrCmp $2 $6 done
-		System::Call "User32::SendMessage(i, i, i, i) i ($0, ${LVM_GETITEMTEXT}, $2, r1)"
-		System::Call "*$3(&t${NSIS_MAX_STRLEN} .r4)"
-		FileWrite $5 "$4$\r$\n"
-		IntOp $2 $2 + 1
-		Goto loop
-
-	done:
-		FileClose $5
-		System::Free $1
-		System::Free $3
-
-	exit:
-		Pop $6
-		Pop $4
-		Pop $3
-		Pop $2
-		Pop $1
-		Pop $0
-		Exch $5
 FunctionEnd
 
 Function windowsResizing
@@ -733,62 +684,44 @@ Section "un.${PROJECT_NAME}" sectionUnStandard
 	ReadEnvStr $R0 "ALLUSERSPROFILE"
 	SectionGetFlags ${sectionRemoveDataAndSettings} $R1
 	SetOutPath $TEMP ; Make sure $InstDir is not the current folder so we can remove it
-	ClearErrors
-	SetFileAttributes "$INSTDIR\${UninstallLog}" NORMAL
-	IfErrors error reading
 
-	error:
-		MessageBox MB_ICONEXCLAMATION|MB_YESNO "$(CannotOpen)" IDYES +2
-		Quit
-		Delete "$DESKTOP\${PROJECT_NAME}.lnk"
-		RMDir /r /REBOOTOK "$INSTDIR"
-		RMDir /r /REBOOTOK "$SMPROGRAMS\${PROJECT_NAME}"
-		StrCmp "$R1" "1" removeDataAndSettings serviceRunningTest
+	Delete /REBOOTOK "$INSTDIR\uninst.exe"
+	RMDir /r /REBOOTOK "$INSTDIR\documentation"
+	RMDir /r /REBOOTOK "$INSTDIR\web"
+	RMDir /r /REBOOTOK "$INSTDIR\win32"
+	RMDir /r /REBOOTOK "$INSTDIR\renderers"
 
-	reading:
-		FileOpen $0 "$INSTDIR\${UninstallLog}" r
-		IfErrors error
-		StrCpy $5 0
-		loop:
-			FileRead $0 $1
-			IfErrors EOF
-			${WordFind} "$1" ": " "+1}" $2
-			StrCmp "$R1" "1" complete
-			${WordFind} "$2" "$R0\${PROJECT_NAME_CAMEL}" "E+1" $9
-			IfErrors 0 loop
-			complete: ${WordFind} "$2" ":\" "E+1}" $3
-			IfErrors file
-			StrCpy $R2 $2 -2
-			${WordFind} "$2" ".exe$\r$\n" "E+1}" $3
-			IfErrors 0 +3
-			${WordFind} "$2" ".lnk$\r$\n" "E+1}" $3
-			IfErrors +3
-			Delete /REBOOTOK "$R2"
-			Goto loop
-			Push $R2
-			IntOp $5 $5 + 1
-			Goto loop
-			file:
-				${WordFind2X} "$1" ": " "... 100%" "E+1" $4
-				IfErrors 0 delete
-				${WordFind2X} "$1" ": " "$\r$\n" "+1" $4
-				delete: Delete /REBOOTOK "$R2\$4"
-				Goto loop
-		EOF: FileClose $0
+	Delete /REBOOTOK "$INSTDIR\${PROJECT_NAME_SHORT}.exe"
+	Delete /REBOOTOK "$INSTDIR\${PROJECT_NAME_SHORT}.bat"
+	Delete /REBOOTOK "$INSTDIR\${PROJECT_ARTIFACT_ID}.jar"
+	Delete /REBOOTOK "$INSTDIR\${PROJECT_ARTIFACT_ID}.conf"
+	Delete /REBOOTOK "$INSTDIR\${PROJECT_ARTIFACT_ID}.ico"
+	Delete /REBOOTOK "$INSTDIR\CHANGELOG.txt"
+	Delete /REBOOTOK "$INSTDIR\WEB.conf"
+	Delete /REBOOTOK "$INSTDIR\EULA.rtf"
+	Delete /REBOOTOK "$INSTDIR\README.md"
+	Delete /REBOOTOK "$INSTDIR\README.txt"
+	Delete /REBOOTOK "$INSTDIR\LICENSE.txt"
+	Delete /REBOOTOK "$INSTDIR\debug.log"
+	Delete /REBOOTOK "$INSTDIR\debug.log.prev"
+	Delete /REBOOTOK "$INSTDIR\logback.xml"
+	Delete /REBOOTOK "$INSTDIR\logback.headless.xml"
+	Delete /REBOOTOK "$INSTDIR\icon.ico"
+	Delete /REBOOTOK "$INSTDIR\DummyInput.ass"
+	Delete /REBOOTOK "$INSTDIR\DummyInput.jpg"
+	Delete /REBOOTOK "$INSTDIR\VirtualFolders.conf"
+	Delete /REBOOTOK "$INSTDIR\install.log"
+	Delete /REBOOTOK "$INSTDIR\${UninstallEXE}"
+	RMDir /REBOOTOK "$INSTDIR"
 
-	Delete /REBOOTOK "$INSTDIR\${UninstallLog}"
-	${DoUntil} $5 = 0
-		RMDir /REBOOTOK "$R2"
-		Pop $R2
-		IntOp $5 $5 - 1
-	${Loop}
-	Delete "$DESKTOP\${PROJECT_NAME}.lnk"
+	Delete /REBOOTOK "$DESKTOP\${PROJECT_NAME}.lnk"
+	RMDir /r /REBOOTOK "$SMPROGRAMS\${PROJECT_NAME}"
+
 	StrCmp "$R1" "1" removeDataAndSettings
 
 	goto serviceRunningTest ; Data and settings must not be deleted "by accident", so it's skipped unless explicitly called
 
 	removeDataAndSettings:
-		RMDir /r /REBOOTOK "$SMPROGRAMS\${PROJECT_NAME}"
 		RMDir /r /REBOOTOK "$R0\${PROJECT_NAME_CAMEL}"
 		RMDir /r /REBOOTOK "$TEMP\fontconfig"
 		RMDir /r /REBOOTOK "$LOCALAPPDATA\fontconfig"
