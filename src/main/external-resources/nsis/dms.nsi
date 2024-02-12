@@ -11,10 +11,10 @@ CRCCheck force
 
 !include "FileFunc.nsh"
 !include "LogicLib.nsh"
-!include "LocateJava.nsh"
 !include "WinVer.nsh"
 !include "WordFunc.nsh"
 !include "x64.nsh"
+!include "StrStrip.nsh"
 
 Name "${PROJECT_NAME_SHORT}"
 Caption "${PROJECT_NAME}"
@@ -36,12 +36,88 @@ VIProductVersion "${PROJECT_VERSION_SHORT}.0"
 	Pop "${ResultVar}"
 !macroend
 
-Section
-	${LocateJava}
+Var JavaLocation
+Var JavaVersion
+
+Section	
+	StrCpy $JavaLocation ""
+	StrCpy $JavaVersion ""
+
+	; Get the command line parameters
+	${GetParameters} $R1
+
+	${GetOptions} $R1 "/?" $1
+	IfErrors 0 usage
+	${GetOptions} $R1 "/help" $1
+	IfErrors 0 usage
+	${GetOptions} $R1 "--help" $1
+	IfErrors usagedone usage
+
+	usage:
+	; --help and --version is omitted because stdout is "trapped" by NSIS's Exec and never reaches the command line 
+	MessageBox MB_ICONINFORMATION "Usage: ${PROJECT_NAME_SHORT}.exe [-P | -v | -c | -C | -s] [-db <db option>] [-p=profile path] [/help] [/javadebug] $\r$\n$\r$\n\
+		Options:\
+		$\r$\n  /help, --help - Display this help and exit.\
+		$\r$\n  /javadebug, --javadebug - Display debug messages during the Java installation selection process.\
+		$\r$\n  -p, --profile=PROFILE_PATH - Use the configuration in PROFILE_PATH.\
+		$\r$\n  -P, --profiles - Show the profile selection dialog during startup, ignored if running headless or if \
+		                         a profile is specified.\
+		$\r$\n  -v, --trace - Force logging level to TRACE.\
+		$\r$\n  -c, --headless - Run without GUI (Must be terminated from task manager).\
+		$\r$\n  -C, --noconsole - Fail if a GUI can't be created.\
+		$\r$\n  -s, --scrollbars - Force horizontal and vertical GUI scroll bars.\
+		$\r$\n  -db, --database - Combine with one of the options below\
+		$\r$\n    log, trace - Enable database logging.\
+		$\r$\n    downgrade - Delete and recreate any database tables of a newer version. The data in the \
+		                      incompatible tables will be lost.\
+		$\r$\n    backup[=NAME] - Copy the database before downgrading it if any database tables are of a newer \
+		                          version. If a name for the backup isn't provided, one will be generated.\
+		$\r$\n    rename[=NAME] - Rename the database and create a new, empty database if there is a problem with \
+		                          the current database. If a name isn't provided, one will be generated."
+	Quit
+
+	usagedone:
+	ClearErrors
+
+	; Push plugin parameters: /RETVERSION /MAXVER "<9" /OPTVER "8" /END
+	Push "/END"
+	Push "8"
+	Push "/OPTVER"
+	Push "<9"
+	Push "/MAXVER"
+	Push "/RETVERSION"
+
+	StrCpy $R2 ""
+	${GetOptions} $R1 "/javadebug" $1
+	IfErrors 0 dialogdebug
+	${GetOptions} $R1 "--javadebug" $1
+	IfErrors dialogdebugdone dialogdebug
+
+	dialogdebug:
+	StrCpy $R2 "1"
+	Push "DEBUG"
+	Push "/LOGLEVEL"
+	Push "/DIALOGDEBUG"
+	${StrStrip} " /javadebug" $R1 $R1
+	${StrStrip} "/javadebug " $R1 $R1
+	${StrStrip} "/javadebug" $R1 $R1
+	${StrStrip} " --javadebug" $R1 $R1
+	${StrStrip} "--javadebug " $R1 $R1
+	${StrStrip} "--javadebug" $R1 $R1
+
+	dialogdebugdone:
+	ClearErrors
+
+	NsJavaLocator::Locate
+	Pop $JavaLocation
+	Pop $JavaVersion
 
 	${If} $JavaLocation == ""
 		MessageBox MB_ICONSTOP "No suitable Java installation found. Please make sure that either Java 7 or 8 is installed."
 		Quit
+	${EndIf}
+	${If} $R2 == "1"
+		MessageBox MB_ICONINFORMATION "Using Java installation: $JavaLocation"
 	${EndIf}
 
 	ReadRegStr $R3 HKCU "SOFTWARE\${PROJECT_NAME}" "HeapMem"
@@ -58,14 +134,11 @@ Section
 	memdone:
 	StrCpy $R3 "-Xmx$R3"
 
-	; Get the command line parameters
-	${GetParameters} $1
-
 	SetOutPath $EXEDIR
 	${If} $JavaVersion == "7"
-		Exec '"$JavaLocation" -classpath update.jar;${PROJECT_ARTIFACT_ID}.jar $R3 -Dhttps.protocols=TLSv1.2 -Djava.net.preferIPv4Stack=true -Dfile.encoding=UTF-8 net.pms.PMS $1'
+		Exec '"$JavaLocation" -classpath update.jar;${PROJECT_ARTIFACT_ID}.jar $R3 -Dhttps.protocols=TLSv1.2 -Djava.net.preferIPv4Stack=true -Dfile.encoding=UTF-8 net.pms.PMS $R1'
 	${Else}
-		Exec '"$JavaLocation" -classpath update.jar;${PROJECT_ARTIFACT_ID}.jar $R3 -Djava.net.preferIPv4Stack=true -Dfile.encoding=UTF-8 net.pms.PMS $1'
+		Exec '"$JavaLocation" -classpath update.jar;${PROJECT_ARTIFACT_ID}.jar $R3 -Djava.net.preferIPv4Stack=true -Dfile.encoding=UTF-8 net.pms.PMS $R1'
 	${EndIf}
 SectionEnd
 
