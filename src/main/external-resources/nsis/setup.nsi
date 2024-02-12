@@ -7,7 +7,7 @@ ShowUninstDetails show
 !include "MUI2.nsh"
 !include "FileFunc.nsh"
 !include "LogicLib.nsh"
-!include "SearchJava.nsh"
+!include "LocateJava.nsh"
 !include "Sections.nsh"
 !include "serviceLib.nsh"
 !include "WinVer.nsh"
@@ -547,16 +547,25 @@ Function .onInit
 	${EndIf}
 	StrCpy $RAM $4
 
-	${SearchJava}
+	${LocateJava}
 
-	${If} $Java64bit != "64"
-		SectionSetText ${sec47} ""
-		SectionSetText ${sec46} ""
-	${ElseIf} $Java64bit == "64"
+	; If no installation is found, Java is to be downloaded. Assume that Java bitness = OS bitness
+	${If} $JavaLocation == ""
+		${If} ${RunningX64}
+			StrCpy $JavaBitness "64"
+		${Else}
+			StrCpy $JavaBitness "32"
+		${EndIf}
+	${EndIf}
+
+	${If} $JavaBitness == "64"
 		IntCmpU $RAM 6000 +2 0 +2
 		SectionSetText ${sec46} ""
 		IntCmpU $RAM 8000 +2 0 +2
 		SectionSetText ${sec47} ""
+	${Else}
+		SectionSetText ${sec47} ""
+		SectionSetText ${sec46} ""
 	${EndIf}
 
 	${If} ${RunningX64}
@@ -570,7 +579,7 @@ Function .onInit
 
 	SectionSetFlags ${sec2} 1
 
-	${If} $DownloadJava == "1"
+	${If} $JavaLocation == ""
 		SectionSetFlags ${sec3} 1
 	${EndIf}
 
@@ -600,7 +609,7 @@ FunctionEnd
 
 Function hideRequiredSize
 	SectionGetFlags ${sec3} $1
-	${If} $DownloadJava == "1"
+	${If} $JavaLocation == ""
 	${AndIf} $1 != 0
 		FindWindow $1 "#32770" "" $HWNDPARENT
 		GetDlgItem $1 $1 1023
