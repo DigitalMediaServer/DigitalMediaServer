@@ -11,7 +11,7 @@ CRCCheck force
 
 !include "FileFunc.nsh"
 !include "LogicLib.nsh"
-!include "SearchJava.nsh"
+!include "LocateJava.nsh"
 !include "WinVer.nsh"
 !include "WordFunc.nsh"
 !include "x64.nsh"
@@ -37,9 +37,9 @@ VIProductVersion "${PROJECT_VERSION_SHORT}.0"
 !macroend
 
 Section
-	${SearchJava}
+	${LocateJava}
 
-	${If} $DownloadJava == 1
+	${If} $JavaLocation == ""
 		MessageBox MB_ICONSTOP "No suitable Java installation found. Please make sure that either Java 7 or 8 is installed."
 		Quit
 	${EndIf}
@@ -62,7 +62,11 @@ Section
 	${GetParameters} $1
 
 	SetOutPath $EXEDIR
-	Exec '"$JavaLocation" -classpath update.jar;${PROJECT_ARTIFACT_ID}.jar $R3 -Djava.net.preferIPv4Stack=true -Dfile.encoding=UTF-8 net.pms.PMS $1'
+	${If} $JavaVersion == "7"
+		Exec '"$JavaLocation" -classpath update.jar;${PROJECT_ARTIFACT_ID}.jar $R3 -Dhttps.protocols=TLSv1.2 -Djava.net.preferIPv4Stack=true -Dfile.encoding=UTF-8 net.pms.PMS $1'
+	${Else}
+		Exec '"$JavaLocation" -classpath update.jar;${PROJECT_ARTIFACT_ID}.jar $R3 -Djava.net.preferIPv4Stack=true -Dfile.encoding=UTF-8 net.pms.PMS $1'
+	${EndIf}
 SectionEnd
 
 Function .onInit
