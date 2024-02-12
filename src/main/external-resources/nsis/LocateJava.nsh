@@ -4,7 +4,6 @@
 ;Var JavaLocation ; used in dms.exe
 
 Var JavaLocation
-Var JavaVersion
 Var JavaBitness
 
 !macro _LocateJava
@@ -15,10 +14,8 @@ Var JavaBitness
 
 Function doLocate
 	StrCpy $JavaLocation ""
-	StrCpy $JavaVersion ""
 	StrCpy $JavaBitness ""
-	NsJavaLocator::Locate /RETVERSION /RETARCHBITS /MAXVER "<9" /OPTVER "8" /END
+	NsJavaLocator::Locate /RETARCHBITS /MAXVER "<9" /OPTVER "8" /END
 	Pop $JavaLocation
-	Pop $JavaVersion
 	Pop $JavaBitness
 FunctionEnd
