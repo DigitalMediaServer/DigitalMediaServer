@@ -1,4 +1,4 @@
-# This file has been generated automatically, modifications will be overwritten. If you'd like to change the content, please do so at Crowdin.
+﻿# This file has been generated automatically, modifications will be overwritten. If you'd like to change the content, please do so at Crowdin.
 
 ${LangFileString} CannotOpen "Стандартное удаление программы невозможно из-за отсутствия файла $\"uninstall.log$\".$\r$\nХотите ли вы полностью удалить данную папку?"
 ${LangFileString} DownloadingFile "Скачивание файла:"
