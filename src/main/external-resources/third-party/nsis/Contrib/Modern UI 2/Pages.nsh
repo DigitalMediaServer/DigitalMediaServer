@@ -14,7 +14,7 @@ Support code for all pages
     !warning "MUI_PAGE_* inserted after MUI_LANGUAGE"
   !endif
 
-  ;Include interface settings in neccesary
+  ;Include interface settings if necessary
   !insertmacro MUI_INTERFACE
 
   ;Define settings for installer page
@@ -320,3 +320,5 @@ Support code for all pages
   System::Call 'USER32::SetWindowPos(pr0,p0,ir5,ir6,ir1,ir2,i0x14)'
   System::Store "L"
 !macroend
+
+

@@ -32,7 +32,7 @@ $(^Name) 제거
 # ^UnDirSubCaption
 : 제거 폴더
 # ^ConfirmSubCaption
-: 확인
+: 확인 
 # ^UninstallingSubCaption
 : 제거중
 # ^UnCompletedSubCaption

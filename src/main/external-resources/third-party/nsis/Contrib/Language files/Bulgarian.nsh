@@ -100,7 +100,7 @@
   ${LangFileString} MUI_TEXT_FINISH_REBOOTLATER "Не, ще рестартирам по-късно"
   ${LangFileString} MUI_TEXT_FINISH_RUN "Стартирай $(^NameDA)"
   ${LangFileString} MUI_TEXT_FINISH_SHOWREADME "Покажи файла $\"ReadMe$\""
-  ${LangFileString} MUI_BUTTONTEXT_FINISH "&Край"
+  ${LangFileString} MUI_BUTTONTEXT_FINISH "&Край"  
 !endif
 
 !ifdef MUI_STARTMENUPAGE

@@ -1,13 +1,35 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
-<html>
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html lang="en">
 <head>
-<title>NSIS System Plug-in</title>
-<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>System Plug-in (NSIS)</title>
+<style type="text/css">
+:root { color-scheme: light dark; }
+html, body { font-family: Verdana, Arial, Helvetica, sans-serif; color: #050505; background-color: #fefefe; }
+html { font-size: 0.84em; }
+body { font-size: 1em; font-size: 1rem; }
+pre, code { font-family: Courier New, Courier, monospace,serif; font-size: 100%; }
+h1 { font-size: 170%; }
+h2 { font-size: 150%; }
+h3 { font-size: 130%; }
+h4 { font-size: 120%; }
+h5 { font-size: 115%; }
+h6 { font-size: 110%; }
+blockquote { margin:0; padding:0; margin-left: 0.5em; }
+blockquote pre { background-color: #fefefe; }
+
+@media (prefers-color-scheme: dark) {
+html, body { color: #eeeeee; background-color: #161616; }
+blockquote pre { background-color: #202020; }
+}
+</style>
 </head>
 <body>
 <h1>NSIS System Plug-in</h1>
 <p>
-<i>Copyright &copy; 2002 brainsucker (Nik Medved)</i><br><i>Copyright &copy; 2002-2018 NSIS Contributors</i>
+<i>Copyright &copy; 2002 brainsucker (Nik Medved)</i><br><i>Copyright &copy; 2002-2023 NSIS Contributors</i>
 </p>
 
 <h2>Table of Contents</h2>
@@ -36,12 +58,12 @@
 <h4>Usage Examples From The Wiki</h4>
 
 <ul>
-<li><a href="http://nsis.sourceforge.net/wiki/Get_Local_Time">Get local time</a></li>
-<li><a href="http://nsis.sourceforge.net/wiki/Registering_a_Palm_Com_Conduit">Register conduits with Palm HotSync</a></li>
-<li><a href="http://nsis.sourceforge.net/wiki/Determining_free_memory_using_the_System_plugin">Get free memory</a></li>
-<li><a href="http://nsis.sourceforge.net/wiki/REG_MULTI_SZ_Reader">Read REG_MULTI_SZ</a></li>
-<li><a href="http://nsis.sourceforge.net/wiki/Get_Disk_Volume_Serial_Number">Get disk serial number</a></li>
-<li><i><a href="http://nsis.sourceforge.net/Special:Search?search=System%3A%3ACall">Search all...</a></i></li>
+<li><a href="https://nsis.sourceforge.io/wiki/Get_Local_Time">Get local time</a></li>
+<li><a href="https://nsis.sourceforge.io/wiki/Registering_a_Palm_Com_Conduit">Register conduits with Palm HotSync</a></li>
+<li><a href="https://nsis.sourceforge.io/wiki/Determining_free_memory_using_the_System_plugin">Get free memory</a></li>
+<li><a href="https://nsis.sourceforge.io/wiki/REG_MULTI_SZ_Reader">Read REG_MULTI_SZ</a></li>
+<li><a href="https://nsis.sourceforge.io/wiki/Get_Disk_Volume_Serial_Number">Get disk serial number</a></li>
+<li><i><a href="https://nsis.sourceforge.io/Special:Search?search=System%3A%3ACall">Search all...</a></i></li>
 </ul>
 
 <h2><a name="funcs"></a>Available Functions</h2>
@@ -139,6 +161,8 @@ System::<b>Free</b> $0
 <li>To pop $R<i>#</i>, use R<i>#</i>, where <i>#</i> is a digit from 0 to 9.</li>
 <li>To push $0-$9 and $R0-$R9 to System's private stack, use s or S.</li>
 <li>To pop $0-$9 and $R0-$R9 from System's private stack, use l or L.</li>
+<li>To push the internal NSIS flags state <small>(exec_flags_t in api.h)</small> to the stack, use F.</li>
+<li>To pop the internal NSIS flags state <small>(exec_flags_t in api.h)</small> from the stack, use f.</li>
 </ul>
 <h4>Usage Examples</h4>
 <blockquote><pre>
@@ -187,7 +211,7 @@ DetailPrint $4
 
 <p><i>PARAMS</i>, <i>RETURN</i> and <i>OPTIONS</i> can be repeated many times in one Get/Call line. When repeating, a lot can be omitted, and only what you wish to change can be used. <i>Type</i>, <i>source</i> and/or <i>destination</i> can be omitted for each parameter, even the return value. Options can be added or removed. This allows you to define function prototypes and save on some typing. The <a href="#repeat">last two examples</a> show this.</p>
 
-<p><i>PROC</i> can also be repeated but must be prefixed with a hash sign (`#') except if the hash sign is preceded by a double colon (<code>shell32::#18</code>).</p>
+<p><i>PROC</i> can also be <a href="#repeatproc">repeated</a> but it must be prefixed with a hash sign (`#') except if the hash sign is preceded by a double colon (<code>shell32::#18</code>) in which case it is interpreted as a function ordinal.</p>
 
 <h4>Possible <i>PROC</i> Values and Meanings</h4>
 
@@ -220,7 +244,7 @@ DetailPrint $4
 </tr>
 <tr>
 <th><i>IPTR</i>-><i>IDX</i></th>
-<td>Member indexed <i>IDX</i> from<br/>interface pointed by <i>IPTR</i></td>
+<td>Member indexed <i>IDX</i> from<br>interface pointed by <i>IPTR</i></td>
 <td><a href="#com">see below</a></td>
 </tr>
 <tr>
@@ -289,10 +313,10 @@ DetailPrint $4
 <th>k</th>
 <td>callback</td>
 </tr>
-<th>@</th>
-<td>Direct register memory access (Buffer is limited to <code>(NSIS_MAX_STRLEN - 21) * NSIS_CHAR_SIZE</code> bytes)</td>
-</tr>
 <tr>
+<th>@</th>
+<td>Direct register memory access (Buffer is limited to <code>(NSIS_MAX_STRLEN - 24) * NSIS_CHAR_SIZE</code> bytes)</td>
+</tr>
 <tr>
 <th>&amp;v<i>N</i></th>
 <td><i>N</i> bytes padding (structures only)</td>
@@ -343,7 +367,7 @@ DetailPrint $4
 <td>concrete hex, decimal or octal integer value. several integers can be or'ed using the pipe symbol (`|')</td>
 </tr>
 <tr>
-<th>'<i>string</i>'<br/>"<i>string</i>"<br/>`<i>string</i>`</th>
+<th>'<i>string</i>'<br>"<i>string</i>"<br>`<i>string</i>`</th>
 <td>concrete string value</td>
 </tr>
 <tr>
@@ -351,7 +375,7 @@ DetailPrint $4
 <td>$0 through $9 respectively</td>
 </tr>
 <tr>
-<th><i>r10</i> through <i>r19</i><br/><i>R0</i> through <i>R9</i></th>
+<th><i>r10</i> through <i>r19</i><br><i>R0</i> through <i>R9</i></th>
 <td>$R0 through $R9 respectively</td>
 </tr>
 <tr>
@@ -434,8 +458,9 @@ System::Free $0
 
 <blockquote>
 <ul>
-<li>To find out the index of a member in a COM interface, you need to search for the definition of this COM interface in the header files that come with Visual C/C++ or the Platform SDK. Remember the index is zero based.</li>
+<li>To find out the index of a member in a COM interface, you need to search for the definition of this COM interface in the header files that come with Visual C/C++ or the Platform SDK. The index is zero based.</li>
 <li>If a function can't be found or the <code>t</code> parameter type was used, an `A' or `W' will be appended to its name and it will be looked up again. This is done because a lot of Windows API functions have two versions, one for ANSI strings and one for Unicode strings. The ANSI version of the function is marked with `A' and the Unicode version is marked with `W'. For example: lstrcpyA and lstrcpyW.</li>
+<li>Libraries in the system32 directory can be loaded without a path. All other libraries should be loaded with a <a href="#funcqpath">quoted full path</a>.</li>
 </ul>
 </blockquote>
 
@@ -489,12 +514,13 @@ System::Free $0
 <h4>Usage Examples</h4>
 
 <blockquote><pre>
-<a name="func"></a>System::<b>Call</b> "user32::MessageBox(p $HWNDPARENT, t 'NSIS System Plug-in', t 'Test', i 0)"
+<a name="func"></a>System::<b>Call</b> 'user32::MessageBox(p $HWNDPARENT, t "NSIS System Plug-in", t "Test", i 0)'
+<a name="funcqpath"></a>System::<b>Call</b> '"$SysDir\MyLibrary.dll"::MyFunction(i 42)'
 </pre></blockquote>
 <blockquote><pre>
 <a name="funcaddr"></a>System::<b>Call</b> "kernel32::GetModuleHandle(t 'user32.dll') p .s"
 System::<b>Call</b> "kernel32::GetProcAddress(p s, m 'MessageBoxA') p .r0"
-System::<b>Call</b> "::$0(p $HWNDPARENT, t 'GetProcAddress test', t 'NSIS System Plug-in', i 0)"
+System::<b>Call</b> "::$0(p $HWNDPARENT, m 'GetProcAddress test', m 'NSIS System Plug-in', i 0)"
 </pre></blockquote>
 <blockquote><pre>
 <a name="get"></a>System::<b>Get</b> "user32::MessageBox(p $HWNDPARENT, t 'This is a default text', t 'Default', i 0)"
@@ -529,7 +555,7 @@ DetailPrint $1
 </pre></blockquote>
 <a name="structsize"></a><blockquote><pre>
 System::Call '*0(p, <b>&amp;l.r2,</b> &amp;t2)' ; &amp;l. is not part of the struct
-DetailPrint "Struct size=$2"
+DetailPrint "Struct size=$2" 
 </pre></blockquote>
 <a name="structsizemember"></a><blockquote><pre>
 System::Call '*(<b>&amp;l4</b>,i,i,i,i,&amp;t128)p.r1' ; Fills dwOSVersionInfoSize with the struct size as a int32
@@ -567,7 +593,10 @@ end:
 <blockquote><pre>
 InitPluginsDir
 File "/oname=$PLUGINSDIR\MyDLL.dll" MyDLL.dll
-System::<b>Call</b> "MyDLL::MyFunc(i 5) ? u"
+System::<b>Call</b> 'KERNEL32::AddDllDirectory(w "$PLUGINSDIR")'
+System::<b>Call</b> 'KERNEL32::LoadLibrary(t "$PLUGINSDIR\MyDLL.dll")p.r1'
+System::<b>Call</b> 'MyDLL::MyFunc(i 5) ? u'
+System::<b>Call</b> 'KERNEL32::FreeLibrary(pr1)'
 Delete $PLUGINSDIR\MyDLL.dll
 </pre></blockquote>
 <blockquote><pre>
@@ -586,6 +615,7 @@ loop:
 	Goto loop
 done:
 System::Free $R0
+DetailPrint "EnumChildWindows returned $0"
 </pre></blockquote>
 <a name="v2callback"></a><blockquote><pre>
 System::Get '(m.r1)ir2r0 <b>?2</b>' ; v2 syntax
@@ -605,7 +635,7 @@ System::Call '*(&amp;t50 "!")p.r2' ; DecimalSep
 System::Call '*(&amp;t50 "`")p.r3' ; ThousandSep
 System::Call '*(i 2, i 0, i 3, <b>P r2, P r3</b>, i 1)p.r1 <b>?2</b>'
 System::Call 'kernel32::GetNumberFormat(i 0, i 0, t "1337.666" r4, p r1, t.r5, i ${NSIS_MAX_STRLEN})'
-DetailPrint "Custom formated $4: $5"
+DetailPrint "Custom formatted $4: $5"
 System::Free $3
 System::Free $2
 System::Free $1
@@ -617,7 +647,7 @@ System::<b>Call</b> "${MB}(,'another message',,) i.r0"
 MessageBox MB_OK "last call returned $0"
 </pre></blockquote>
 <blockquote><pre>
-System::<b>Call</b> "user32::SendMessage(p $HWNDPARENT, t 'test', t 'test', p 0) p.s ? \
+<a name="repeatproc"></a>System::<b>Call</b> "user32::SendMessage(p $HWNDPARENT, t 'test', t 'test', p 0) p.s ? \
 	e (,t'test replacement',,) i.r0 ? !e #user32::MessageBox"
 DetailPrint $0
 ClearErrors
@@ -672,11 +702,6 @@ Pop $0
 DetailPrint "5 + 5 = $0" # 10
 </pre></blockquote>
 <blockquote><pre>
-System::<b>Int64Op</b> 64 - 25
-Pop $0
-DetailPrint "64 - 25 = $0" # 39
-</pre></blockquote>
-<blockquote><pre>
 System::<b>Int64Op</b> 526355 * 1565487
 Pop $0
 DetailPrint "526355 * 1565487 = $0" # 824001909885
@@ -708,13 +733,6 @@ DetailPrint "0x8000000000000000 &gt;&gt; 1 = $0" # -4611686018427387904 (0xC0000
 System::<b>Int64Op</b> 0x8000000000000000 &gt;&gt;&gt; 1
 Pop $0
 DetailPrint "0x8000000000000000 &gt;&gt;&gt; 1 = $0" # 4611686018427387904 (0x4000000000000000)
-</pre></blockquote>
-<blockquote><pre>
-System::<b>Int64Op</b> 0xF0F0F0F | 0xF0F0FFF
-Pop $0
-# IntFmt is 32-bit, this is just for the example
-IntFmt $0 "0x%X" $0
-DetailPrint "0xF0F0F0F | 0xF0F0FFF = $0" # 0xF0F0FFF
 </pre></blockquote>
 <blockquote><pre>
 System::<b>Int64Op</b> 0x12345678 &amp; 0xF0F0F0F0

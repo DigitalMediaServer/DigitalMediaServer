@@ -97,7 +97,7 @@
   ${LangFileString} MUI_TEXT_FINISH_REBOOTLATER "Ég vil endurræsa seinna"
   ${LangFileString} MUI_TEXT_FINISH_RUN "&Keyra $(^NameDA)"
   ${LangFileString} MUI_TEXT_FINISH_SHOWREADME "&Skoða LestuMig"
-  ${LangFileString} MUI_BUTTONTEXT_FINISH "&Ljúka"
+  ${LangFileString} MUI_BUTTONTEXT_FINISH "&Ljúka"  
 !endif
 
 !ifdef MUI_STARTMENUPAGE

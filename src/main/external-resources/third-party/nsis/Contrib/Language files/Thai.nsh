@@ -97,7 +97,7 @@
   ${LangFileString} MUI_TEXT_FINISH_REBOOTLATER "ฉันต้องการ รีบูทด้วยตนเอง ทีหลัง"
   ${LangFileString} MUI_TEXT_FINISH_RUN "&รัน $(^NameDA)"
   ${LangFileString} MUI_TEXT_FINISH_SHOWREADME "&แสดงรายละเอียด"
-  ${LangFileString} MUI_BUTTONTEXT_FINISH "&เสร็จสิ้น"
+  ${LangFileString} MUI_BUTTONTEXT_FINISH "&เสร็จสิ้น"  
 !endif
 
 !ifdef MUI_STARTMENUPAGE

@@ -48,7 +48,7 @@
   !ifndef NSIS_CONFIG_COMPONENTPAGE_ALTERNATIVE
     ${LangFileString} MUI_INNERTEXT_COMPONENTS_DESCRIPTION_INFO "Rê chuột lên trên một thành phần để thấy mô tả của nó."
   !else
-    #FIXME:MUI_INNERTEXT_COMPONENTS_DESCRIPTION_INFO
+    #FIXME:MUI_INNERTEXT_COMPONENTS_DESCRIPTION_INFO 
   !endif
 !endif
 
@@ -97,7 +97,7 @@
   ${LangFileString} MUI_TEXT_FINISH_REBOOTLATER "Tôi muốn khởi động lại sau"
   ${LangFileString} MUI_TEXT_FINISH_RUN "&Chạy $(^NameDA)"
   ${LangFileString} MUI_TEXT_FINISH_SHOWREADME "Hiện &Readme"
-  ${LangFileString} MUI_BUTTONTEXT_FINISH "&Hoàn thành"
+  ${LangFileString} MUI_BUTTONTEXT_FINISH "&Hoàn thành"  
 !endif
 
 !ifdef MUI_STARTMENUPAGE

@@ -48,7 +48,7 @@
   !ifndef NSIS_CONFIG_COMPONENTPAGE_ALTERNATIVE
     ${LangFileString} MUI_INNERTEXT_COMPONENTS_DESCRIPTION_INFO "Hal den Mausfeil iwwer eng Komponent, fir d'Beschreiwung dervun ze gesinn."
   !else
-    #FIXME:MUI_INNERTEXT_COMPONENTS_DESCRIPTION_INFO
+    #FIXME:MUI_INNERTEXT_COMPONENTS_DESCRIPTION_INFO 
   !endif
 !endif
 
@@ -97,7 +97,7 @@
   ${LangFileString} MUI_TEXT_FINISH_REBOOTLATER "Spéider manuell néi starten"
   ${LangFileString} MUI_TEXT_FINISH_RUN "$(^NameDA) op maan"
   ${LangFileString} MUI_TEXT_FINISH_SHOWREADME "Liesmech op maan"
-  ${LangFileString} MUI_BUTTONTEXT_FINISH "&Färdeg man"
+  ${LangFileString} MUI_BUTTONTEXT_FINISH "&Färdeg man"  
 !endif
 
 !ifdef MUI_STARTMENUPAGE

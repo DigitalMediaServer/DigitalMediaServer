@@ -97,7 +97,7 @@
   ${LangFileString} MUI_TEXT_FINISH_REBOOTLATER "Fellout a ra din adloc'hañ diwezatoc'h dre zorn"
   ${LangFileString} MUI_TEXT_FINISH_RUN "&Lañsañ $(^NameDA)"
   ${LangFileString} MUI_TEXT_FINISH_SHOWREADME "&Diskouez ar restr Malennit"
-  ${LangFileString} MUI_BUTTONTEXT_FINISH "&Echuiñ"
+  ${LangFileString} MUI_BUTTONTEXT_FINISH "&Echuiñ"  
 !endif
 
 !ifdef MUI_STARTMENUPAGE

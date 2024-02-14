@@ -16,7 +16,7 @@ How to use it? Simple:
         Strcpy $0 "Brainsucker"
         Math::Script "a = 'Math'; B = 'Script'; r0 += ' wants to use ' + a + '::' + b +'!'"
         DetailPrint "$0"
-That string will fill r0 with some stuff.
+That string will fill r0 with some stuff. 
 
 Here are some other samples:
         10! (factorial, r0 will contain '10! = 362880'):

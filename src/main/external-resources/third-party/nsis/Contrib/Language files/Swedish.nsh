@@ -98,7 +98,7 @@
   ${LangFileString} MUI_TEXT_FINISH_REBOOTLATER "Jag vill starta om själv senare"
   ${LangFileString} MUI_TEXT_FINISH_RUN "&Kör $(^NameDA)"
   ${LangFileString} MUI_TEXT_FINISH_SHOWREADME "&Visa Readme-filen"
-  ${LangFileString} MUI_BUTTONTEXT_FINISH "&Slutför"
+  ${LangFileString} MUI_BUTTONTEXT_FINISH "&Slutför"  
 !endif
 
 !ifdef MUI_STARTMENUPAGE

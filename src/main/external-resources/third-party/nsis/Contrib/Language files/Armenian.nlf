@@ -10,7 +10,7 @@ NLF v6
 1200
 # RTL - anything else than RTL means LTR
 -
-# Translation by Hrant Ohanyan (h.ohanyan@haysoft.org)
+# Translation by Hrant Ohanyan (h.ohanyan@haysoft.org) 
 # ^Branding
 Nullsoft Install System %s
 # ^SetupCaption
@@ -148,7 +148,7 @@ $(^NameDA) ծրագիրը կջնջվի Ձեր համակարգչից։ $_CLICK
 # ^DeleteOnReboot
 "Կջնջվի վերագործարկելուց հետո. "
 # ^ErrorCreatingShortcut
-"Սխալ՝ պիտակը ստեղծելիս. "
+"Սխալ՝ պիտակը ստեղծելիս. " 
 # ^ErrorCreating
 "Սխալ. "
 # ^ErrorDecompressing
@@ -156,7 +156,7 @@ $(^NameDA) ծրագիրը կջնջվի Ձեր համակարգչից։ $_CLICK
 # ^ErrorRegistering
 Հնարավոր չէ գրանցել գրադարանը(DLL)
 # ^ExecShell
-"Ֆայլի կիրառում. "
+"Ֆայլի կիրառում. " 
 # ^Exec
 "Կատարվում է. "
 # ^Extract
@@ -166,7 +166,7 @@ $(^NameDA) ծրագիրը կջնջվի Ձեր համակարգչից։ $_CLICK
 # ^InvalidOpcode
 Տեղակայիչը վնասված է.
 # ^NoOLE
-"Չկա OLE՝"
+"Չկա OLE՝" 
 # ^OutputFolder
 "Տեղակայելու թղթապանակը. "
 # ^RemoveFolder
@@ -178,7 +178,7 @@ $(^NameDA) ծրագիրը կջնջվի Ձեր համակարգչից։ $_CLICK
 # ^Skipped
 "Բաց թողնած. "
 # ^CopyDetails
-Պատճենել տվյալները
+Պատճենել տվյալները 
 # ^LogInstall
 Տեղակայման հաշվետվություն
 # byte

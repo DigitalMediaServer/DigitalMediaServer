@@ -101,7 +101,7 @@
   ${LangFileString} MUI_TEXT_FINISH_REBOOTLATER "Reštartovať neskôr (manuálne)"
   ${LangFileString} MUI_TEXT_FINISH_RUN "&Spustiť program $(^NameDA)"
   ${LangFileString} MUI_TEXT_FINISH_SHOWREADME "&Zobraziť súbor s informáciami"
-  ${LangFileString} MUI_BUTTONTEXT_FINISH "&Dokončiť"
+  ${LangFileString} MUI_BUTTONTEXT_FINISH "&Dokončiť"  
 !endif
 
 !ifdef MUI_STARTMENUPAGE

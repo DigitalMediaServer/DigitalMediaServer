@@ -111,9 +111,9 @@ El programa d'instalación desinstalará $(^NameDA) del siguiente direutoriu. Pa
 # ^UnDirBrowseText
 Seleiciona'l direutoriu dende'l cual desinstalará $(^NameDA):
 # ^SpaceAvailable
-Espaciu disponible:
+Espaciu disponible: 
 # ^SpaceRequired
-Espaciu requeríu:
+Espaciu requeríu: 
 # ^UninstallingText
 $(^NameDA) sedrá desinstaláu del siguiente direutoriu. $_CLICK
 # ^UninstallingSubText
@@ -179,7 +179,7 @@ Instalador corruptu: códigu d'operación non válidu
 # ^CopyDetails
 Copiar Detalles al Cartafueyu
 # ^LogInstall
-Rexistrar procesu d'instalación
+Rexistrar procesu d'instalación 
 # ^Byte
 B
 # ^Kilo
