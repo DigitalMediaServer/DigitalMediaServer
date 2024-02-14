@@ -1,4 +1,4 @@
-# This file has been generated automatically, modifications will be overwritten. If you'd like to change the content, please do so at Crowdin.
+﻿# This file has been generated automatically, modifications will be overwritten. If you'd like to change the content, please do so at Crowdin.
 
 ${LangFileString} CannotOpen "无法正常卸载，因为缺少 $\"uninstall.log$\"。$\r$\n您要只是删除安装文件夹吗？"
 ${LangFileString} DownloadingFile "正在下载文件："
@@ -31,4 +31,4 @@ ${LangFileString} SectionDescriptionAviSynth "安装 AviSynth 2.6.0 MT 以便在
 ${LangFileString} SectionUninstallComplete "配置和数据库文件"
 ${LangFileString} SectionDescriptionCompleteUninstall "删除所有内容，包括配置，数据库和任何自定义文件。"
 ${LangFileString} SectionDescriptionStandardUninstall "卸载应用程序但保留配置和数据库。"
-${LangFileString} CleanInstallWarning ""
+${LangFileString} CleanInstallWarning "您确定要永久删除媒体库，程序文件夹中的所有自定义文件和所有配置文件吗？"

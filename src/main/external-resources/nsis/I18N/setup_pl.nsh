@@ -1,4 +1,4 @@
-# This file has been generated automatically, modifications will be overwritten. If you'd like to change the content, please do so at Crowdin.
+﻿# This file has been generated automatically, modifications will be overwritten. If you'd like to change the content, please do so at Crowdin.
 
 ${LangFileString} CannotOpen "Standardowe odinstalowanie nie jest możliwe ponieważ brakuje pliku $\"uninstall.log$\".$\r$\nCzy chcesz zamiast tego usunąć folder programu?"
 ${LangFileString} DownloadingFile "Pobieranie pliku:"
