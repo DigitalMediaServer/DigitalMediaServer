@@ -95,7 +95,7 @@
 !define /ifndef GWLP_USERDATA   -21
 !define /ifndef GWLP_ID         -12
 !define DWLP_MSGRESULT  0
-!define /math DWLP_DLGPROC ${DWLP_MSGRESULT} + ${NSIS_PTR_SIZE} ;DWLP_MSGRESULT + sizeof(LRESULT)
+!define /math DWLP_DLGPROC ${DWLP_MSGRESULT} + ${NSIS_PTR_SIZE} ;DWLP_MSGRESULT + sizeof(LRESULT) 
 !define /math DWLP_USER    ${DWLP_DLGPROC} + ${NSIS_PTR_SIZE} ;DWLP_DLGPROC + sizeof(DLGPROC)
 !endif
 
@@ -166,9 +166,9 @@
 !define /ifndef IDC_SIZEWE      32644
 !define /ifndef IDC_SIZENS      32645
 !define /ifndef IDC_SIZEALL     32646
-!define /ifndef IDC_NO          32648
+!define /ifndef IDC_NO          32648 
 !define /ifndef IDC_HAND        32649
-!define /ifndef IDC_APPSTARTING 32650
+!define /ifndef IDC_APPSTARTING 32650 
 !define /ifndef IDC_HELP        32651
 
 !define /ifndef IMAGE_BITMAP        0

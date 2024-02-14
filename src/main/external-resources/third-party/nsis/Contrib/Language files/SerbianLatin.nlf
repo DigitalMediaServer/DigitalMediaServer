@@ -89,7 +89,7 @@ Izaberite tip instalacije:
 # ^ComponentsSubText2_NoInstTypes
 Izaberite komponente za instalaciju: 
 # ^ComponentsSubText2
-Ili, izaberite opcione komponente koje želite da instalirate:
+Ili, izaberite opcione komponente koje želite da instalirate: 
 # ^UnComponentsText
 Izaberite komponente za deinstalaciju. Deinstaliraju se samo označene komponente. $_CLICK
 # ^UnComponentsSubText1
@@ -97,7 +97,7 @@ Izaberite tip deinstalacije:
 # ^UnComponentsSubText2_NoInstTypes
 Izaberite komponente za deinstalaciju: 
 # ^UnComponentsSubText2
-Ili, izaberite opcione komponente koje želite da deinstalirate:
+Ili, izaberite opcione komponente koje želite da deinstalirate: 
 # ^DirText
 Program $(^NameDA) će biti instaliran u navedeni folder. Za instalaciju u drugi folder pritisnite dugme „Izbor...“ i izaberite folder. $_CLICK
 # ^DirSubText
@@ -163,7 +163,7 @@ Greška pri registrovanju biblioteke
 # ^ErrorWriting
 "Otpakivanje: greška pri upisu u fajl "
 # ^InvalidOpcode
-Oštećen instalacioni program: neispravna komanda
+Oštećen instalacioni program: neispravna komanda 
 # ^NoOLE
 "Nema OLE podrške za: "
 # ^OutputFolder

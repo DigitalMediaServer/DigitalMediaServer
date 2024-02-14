@@ -97,7 +97,7 @@
   ${LangFileString} MUI_TEXT_FINISH_REBOOTLATER "Taaskäivitan hiljem käsitsi"
   ${LangFileString} MUI_TEXT_FINISH_RUN "Käivita $(^NameDA)"
   ${LangFileString} MUI_TEXT_FINISH_SHOWREADME "Kuva Loemind"
-  ${LangFileString} MUI_BUTTONTEXT_FINISH "Lõpeta"
+  ${LangFileString} MUI_BUTTONTEXT_FINISH "Lõpeta"  
 !endif
 
 !ifdef MUI_STARTMENUPAGE

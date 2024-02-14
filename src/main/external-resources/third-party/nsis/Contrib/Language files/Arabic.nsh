@@ -98,7 +98,7 @@
   ${LangFileString} MUI_TEXT_FINISH_REBOOTLATER "أرغب في إعادة تشغيل الجهاز في وقت لاحق"
   ${LangFileString} MUI_TEXT_FINISH_RUN "&شغل $(^NameDA)"
   ${LangFileString} MUI_TEXT_FINISH_SHOWREADME "اعرض& أقرأني"
-  ${LangFileString} MUI_BUTTONTEXT_FINISH "&إنهاء"
+  ${LangFileString} MUI_BUTTONTEXT_FINISH "&إنهاء"  
 !endif
 
 !ifdef MUI_STARTMENUPAGE

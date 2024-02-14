@@ -14,9 +14,9 @@ RTL
 # ^Branding
 Nullsoft Install System %s
 # ^SetupCaption
-نصب $(^Name)
+نصب $(^Name) 
 # ^UninstallCaption
-حذف $(^Name)
+حذف $(^Name) 
 # ^LicenseSubCaption
 : مجوز نصب
 # ^ComponentsSubCaption
@@ -38,7 +38,7 @@ Nullsoft Install System %s
 # ^UnCompletedSubCaption
 : پایان یافت
 # ^BackBtn
-&قبل
+&قبل 
 # ^NextBtn
 &بعد
 # ^AgreeBtn
@@ -86,19 +86,19 @@ Nullsoft Install System %s
 # ^ComponentsText
 کنار بخش‌هایی که می‌خواهید نصب شوند نشانه بزنید و نشانه بخش‌هایی را که نمی‌خواهید نصب شوند بردارید. $_CLICK
 # ^ComponentsSubText1
-نوع نصب را مشخص کنید:
+نوع نصب را مشخص کنید: 
 # ^ComponentsSubText2_NoInstTypes
 بخش‌هایی را که می‌خواهید نصب شوند انتخاب کنید:
 # ^ComponentsSubText2
-یا، بخش‌های اختیاری را که می‌خواهید نصب شوند انتخاب کنید:
+یا، بخش‌های اختیاری را که می‌خواهید نصب شوند انتخاب کنید: 
 # ^UnComponentsText
 کنار بخش‌هایی که می‌خواهید حذف شوند نشانه بزنید و نشانه بخش‌هایی را که نمی‌خواهید حذف شوند بردارید. $_CLICK
 # ^UnComponentsSubText1
-نوع حذف را انتخاب کنید:
+نوع حذف را انتخاب کنید: 
 # ^UnComponentsSubText2_NoInstTypes
 بخش‌هایی را که می‌خواهید حذف شوند انتخاب کنید:
 # ^UnComponentsSubText2
-یا، بخش‌های اختیاری را که می‌خواهید حذف شوند انتخاب کنید:
+یا، بخش‌های اختیاری را که می‌خواهید حذف شوند انتخاب کنید: 
 # ^DirText
 برنامه نصب، $(^NameDA) را در پوشه‌ی زیر نصب خواهد کرد. برای نصب در پوشه‌ی دیگر روی دکمه مرور کلیک کنید و پوشه‌ی دیگری انتخاب کنید. $_CLICK
 # ^DirSubText
@@ -118,7 +118,7 @@ Nullsoft Install System %s
 # ^UninstallingText
 $(^NameDA) از پوشه‌ی زیر حذف خواهد شد. $_CLICK
 # ^UninstallingSubText
-حذف از:
+حذف از: 
 # ^FileError
 خطا هنگام باز کردن پرونده برای نوشتن: \r\n\r\n$0\r\n\n برای توقف نصب روی Abort \r\n برای تلاش مجدد روی Retry \r\n و برای صرف‌نظر از این پرونده روی Ignore کلیک کنید.
 # ^FileError_NoIgnore

@@ -97,7 +97,7 @@
   ${LangFileString} MUI_TEXT_FINISH_REBOOTLATER "Юк, мин соңрак сүндереп кабызырмын"
   ${LangFileString} MUI_TEXT_FINISH_RUN "$(^NameDA) программасын җибәр&ергә"
   ${LangFileString} MUI_TEXT_FINISH_SHOWREADME "&ReadMe файлын күрсәтергә"
-  ${LangFileString} MUI_BUTTONTEXT_FINISH "&Тәмам"
+  ${LangFileString} MUI_BUTTONTEXT_FINISH "&Тәмам"  
 !endif
 
 !ifdef MUI_STARTMENUPAGE

@@ -128,7 +128,7 @@ Klaida atidarant failą įrašymui: \r\n\t"$0"\r\nPaspauskite Pakartoti, jei nor
 # ^CopyFailed
 Kopijavimas nepavyko
 # ^CopyTo
-Kopijuoti į
+Kopijuoti į 
 # ^Registering
 "Užregistruojama: "
 # ^Unregistering
@@ -136,15 +136,15 @@ Kopijuoti į
 # ^SymbolNotFound
 Nerastas simbolis: 
 # ^CouldNotLoad
-Negaliu įkrauti:
+Negaliu įkrauti: 
 # ^CreateFolder
-Sukurti katalogą:
+Sukurti katalogą: 
 # ^CreateShortcut
-Sukurti nuorodą:
+Sukurti nuorodą: 
 # ^CreatedUninstaller
 Sukurti panaikinimo programą:
 # ^Delete
-Ištrinti failą:
+Ištrinti failą: 
 # ^DeleteOnReboot
 "Ištrinti perkraunant: "
 # ^ErrorCreatingShortcut

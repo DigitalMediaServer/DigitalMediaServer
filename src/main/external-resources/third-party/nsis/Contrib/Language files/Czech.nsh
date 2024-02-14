@@ -1,7 +1,7 @@
 ﻿;Language: Czech (1029)
 ;By Václav Pavlíček (v.pavlicek@centrum.cz), dříve SELiCE
 
-!insertmacro LANGFILE "Czech" = "Čeština" =
+!insertmacro LANGFILE "Czech" = "Čeština" "Cestina"
 
 !ifdef MUI_WELCOMEPAGE
   ${LangFileString} MUI_TEXT_WELCOME_INFO_TITLE "Vítejte v průvodci instalace programu $(^NameDA)"
@@ -97,7 +97,7 @@
   ${LangFileString} MUI_TEXT_FINISH_REBOOTLATER "Restartovat později ručně"
   ${LangFileString} MUI_TEXT_FINISH_RUN "&Spustit program $(^NameDA)"
   ${LangFileString} MUI_TEXT_FINISH_SHOWREADME "&Zobrazit soubor Readme (Čti mě)"
-  ${LangFileString} MUI_BUTTONTEXT_FINISH "&Dokončit"
+  ${LangFileString} MUI_BUTTONTEXT_FINISH "&Dokončit"  
 !endif
 
 !ifdef MUI_STARTMENUPAGE

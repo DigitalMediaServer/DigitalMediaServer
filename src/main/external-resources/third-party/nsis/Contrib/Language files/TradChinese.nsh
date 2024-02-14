@@ -99,7 +99,7 @@
   ${LangFileString} MUI_TEXT_FINISH_REBOOTLATER "否，我稍後再自行重新開機(&N)"
   ${LangFileString} MUI_TEXT_FINISH_RUN "執行 $(^NameDA)(&R)"
   ${LangFileString} MUI_TEXT_FINISH_SHOWREADME "顯示「讀我檔案」(&S)"
-  ${LangFileString} MUI_BUTTONTEXT_FINISH "完成(&F)"
+  ${LangFileString} MUI_BUTTONTEXT_FINISH "完成(&F)"  
 !endif
 
 !ifdef MUI_STARTMENUPAGE

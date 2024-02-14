@@ -17,9 +17,9 @@ NLF v6
 # ^Branding
 Nullsoft Install System %s
 # ^SetupCaption
-Инсталиране на $(^Name)
+Инсталиране на $(^Name) 
 # ^UninstallCaption
-Изтриване на $(^Name)
+Изтриване на $(^Name) 
 #^LicenseSubCaption
 : Лицензионно споразумение
 #^ComponentsSubCaption
@@ -191,4 +191,4 @@ $(^NameDA) ще бъде изтрита от следната папка. $_CLIC
 # ^Mega
  М
 # ^Giga
- Г
+ Г 
