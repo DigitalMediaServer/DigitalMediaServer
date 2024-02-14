@@ -90,7 +90,7 @@
 
 !ifdef MUI_UNFINISHPAGE
   ${LangFileString} MUI_UNTEXT_FINISH_INFO_TITLE "Disinstallazione di $(^NameDA) completata."
-  ${LangFileString} MUI_UNTEXT_FINISH_INFO_TEXT "$(^NameDA) è stato disinstallato.$\r$\n$\r$\nSeleziona 'Chiudi' per chiudere questa procedura."
+  ${LangFileString} MUI_UNTEXT_FINISH_INFO_TEXT "$(^NameDA) è stato disinstallato.$\r$\n$\r$\nSeleziona 'Chiudi' per chiudere questa procedura."  
   ${LangFileString} MUI_UNTEXT_FINISH_INFO_REBOOT "Per completare la disinstallazione di $(^NameDA) il computer deve essere riavviato. Vuoi riavviarlo ora?"
 !endif
 

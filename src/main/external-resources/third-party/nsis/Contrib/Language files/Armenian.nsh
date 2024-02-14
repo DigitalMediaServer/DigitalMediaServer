@@ -1,7 +1,7 @@
 ﻿;Language: Armenian (1067)
 ;Translation by Hrant Ohanyan (h.ohanyan@haysoft.org)
 
-!insertmacro LANGFILE "Armenian" = "Հայերեն" "Hayeren"
+!insertmacro LANGFILE "Armenian" = "Հայերեն" "Hayeren" 
 
 !ifdef MUI_WELCOMEPAGE
   ${LangFileString} MUI_TEXT_WELCOME_INFO_TITLE "Ձեզ ողջունում է $(^NameDA) տեղակայիչը"
@@ -98,7 +98,7 @@
   ${LangFileString} MUI_TEXT_FINISH_REBOOTLATER "Ոչ, ես վերագործարկեմ ավելի ուշ։"
   ${LangFileString} MUI_TEXT_FINISH_RUN "&Բացել$(^NameDA)-ը"
   ${LangFileString} MUI_TEXT_FINISH_SHOWREADME "&Ցուցադրել ReadMe ֆայլը"
-  ${LangFileString} MUI_BUTTONTEXT_FINISH "&Պատրաստ է"
+  ${LangFileString} MUI_BUTTONTEXT_FINISH "&Պատրաստ է"  
 !endif
 
 !ifdef MUI_STARTMENUPAGE

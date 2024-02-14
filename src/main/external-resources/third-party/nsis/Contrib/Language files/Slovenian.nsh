@@ -98,7 +98,7 @@
   ${LangFileString} MUI_TEXT_FINISH_REBOOTLATER "Računalnik želim znova zagnati kasneje"
   ${LangFileString} MUI_TEXT_FINISH_RUN "&Zaženi $(^NameDA)"
   ${LangFileString} MUI_TEXT_FINISH_SHOWREADME "&Pokaži BeriMe"
-  ${LangFileString} MUI_BUTTONTEXT_FINISH "Do&končaj"
+  ${LangFileString} MUI_BUTTONTEXT_FINISH "Do&končaj"  
 !endif
 
 !ifdef MUI_STARTMENUPAGE

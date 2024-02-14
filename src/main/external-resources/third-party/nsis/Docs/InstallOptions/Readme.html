@@ -3,20 +3,25 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
     <title>InstallOptions 2</title>
-    <meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <style type="text/css">
-        /*<![CDATA[*/body
+        /*<![CDATA[*/
+        html, body { font-family: Verdana, Arial, Helvetica, sans-serif; color: #000000; background-color: #ffffff; }
+        html { font-size: 0.80em; }
+        body { font-size: 1em; font-size: 1rem; }
+        pre, code { font-family: Courier New, Courier, monospace,serif; font-size: 100%; }
+        body
         {
-            padding: 10px;
+            padding:1.5em 0; margin:0;
             background-color: #F0F0F0;
             font-family: Verdana, Arial, Helvetica, sans-serif;
-            font-size: 13px;
             font-weight: normal;
             text-align: left;
         }
         p, li
         {
-            font-size: 13px;
+            font-size: 100%;
         }
         .center
         {
@@ -25,12 +30,13 @@
         table
         {
             margin: auto;
-            font-size: 13px;
+            font-size: 100%;
             background-color: #FFFFFF;
         }
         .maintable
         {
             border: 2px solid #376EAB;
+            width: 90%;
         }
         .parameter
         {
@@ -39,31 +45,27 @@
         }
         h1
         {
-            font-size: 30px;
+            font-size: 140%;
             color: #333333;
             font-weight: normal;
             text-align: center;
-            margin-top: 20px;
+            margin-top: 1.5em;
         }
         h2
         {
-            font-size: 20px;
+            font-size: 130%;
             color: #7A7272;
             font-weight: normal;
         }
         h3
         {
-            font-size: 17px;
+            font-size: 120%;
             font-weight: bold;
             color: #303030;
         }
-        pre
-        {
-            font-size: 13px;
-        }
         div
         {
-            margin: 20px;
+            margin: 1.1em;
         }
         a:link, a:visited, a:active
         {
@@ -78,8 +80,8 @@
         .subtable
         {
             border: 0px;
-            margin-left: 20px;
-            margin-right: 20px;
+            margin-left: 1.3em;
+            margin-right: 1.3em;
         }
         .lefttable
         {
@@ -114,7 +116,7 @@
                         <p>
                             The dialogs created by InstallOptions are based on INI files which define the controls
                             on the dialog and their properties. These INI files can be modified from the script
-                            to adjust the dialogs on runtime.</p>
+                            to adjust the dialogs at runtime.</p>
                         <p>
                             The format of INI files is described in a <a href="http://en.wikipedia.org/wiki/Ini_file">
                                 Wikipedia article</a>.</p>
@@ -717,7 +719,7 @@ FunctionEnd
     <div>
         <p>
             The INSTALLOPTIONS_WRITE macro allows you to write values to the INI file to change
-            texts or control settings on runtime:
+            texts or control settings at runtime:
             <pre>
 !insertmacro INSTALLOPTIONS_WRITE &quot;ioFile.ini&quot; &quot;Field #&quot; &quot;Name&quot; &quot;Value&quot;
 </pre>
@@ -883,7 +885,7 @@ FunctionEnd
         <pre>
 Original version Copyright &copy; 2001 Michael Bishop
 DLL version 1 Copyright &copy; 2001-2002 Nullsoft, Inc., ORTIM
-DLL version 2 Copyright &copy; 2003-2018 Amir Szekely, Joost Verburg, Dave Laundon
+DLL version 2 Copyright &copy; 2003-2023 Amir Szekely, Joost Verburg, Dave Laundon
 
 This software is provided 'as-is', without any express or implied
 warranty. In no event will the authors be held liable for any damages

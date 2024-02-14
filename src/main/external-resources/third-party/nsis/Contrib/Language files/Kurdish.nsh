@@ -49,7 +49,7 @@
   !ifndef NSIS_CONFIG_COMPONENTPAGE_ALTERNATIVE
     ${LangFileString} MUI_INNERTEXT_COMPONENTS_DESCRIPTION_INFO "Ji bo tu der barê pareyan de agahiyan bistînî nîşanekê bibe ser pareyekê."
   !else
-    ${LangFileString} MUI_INNERTEXT_COMPONENTS_DESCRIPTION_INFO "Ji bo tu der barê pareyan de agahiyan bistînî pareyekê hilbijêre."
+    ${LangFileString} MUI_INNERTEXT_COMPONENTS_DESCRIPTION_INFO "Ji bo tu der barê pareyan de agahiyan bistînî pareyekê hilbijêre." 
   !endif
 !endif
 
@@ -98,7 +98,7 @@
   ${LangFileString} MUI_TEXT_FINISH_REBOOTLATER "Ezê paşê ji nû ve vekim."
   ${LangFileString} MUI_TEXT_FINISH_RUN "Bernameya $(^NameDA) bixebitîne"
   ${LangFileString} MUI_TEXT_FINISH_SHOWREADME "Dosiya min bixwîne/readme &nîşan bide"
-  ${LangFileString} MUI_BUTTONTEXT_FINISH "&Biqedîne"
+  ${LangFileString} MUI_BUTTONTEXT_FINISH "&Biqedîne"  
 !endif
 
 !ifdef MUI_STARTMENUPAGE

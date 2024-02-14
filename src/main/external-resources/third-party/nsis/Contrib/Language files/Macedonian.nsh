@@ -97,7 +97,7 @@
   ${LangFileString} MUI_TEXT_FINISH_REBOOTLATER "Ако сакате да го рестартирате подоцна"
   ${LangFileString} MUI_TEXT_FINISH_RUN "Пок&рени го $(^NameDA)"
   ${LangFileString} MUI_TEXT_FINISH_SHOWREADME "Отвор&и 'Прочитај Ме'"
-  ${LangFileString} MUI_BUTTONTEXT_FINISH "&Крај"
+  ${LangFileString} MUI_BUTTONTEXT_FINISH "&Крај"  
 !endif
 
 !ifdef MUI_STARTMENUPAGE

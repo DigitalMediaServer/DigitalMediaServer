@@ -97,7 +97,7 @@
   ${LangFileString} MUI_TEXT_FINISH_REBOOTLATER "Θα επανεκκινήσω τον υπολογιστή μου αργότερα"
   ${LangFileString} MUI_TEXT_FINISH_RUN "&Εκτέλεση του '$(^NameDA)'"
   ${LangFileString} MUI_TEXT_FINISH_SHOWREADME "Εμφάνιση του &αρχείου Readme"
-  ${LangFileString} MUI_BUTTONTEXT_FINISH "&Τέλος"
+  ${LangFileString} MUI_BUTTONTEXT_FINISH "&Τέλος"  
 !endif
 
 !ifdef MUI_STARTMENUPAGE

@@ -97,7 +97,7 @@
   ${LangFileString} MUI_TEXT_FINISH_REBOOTLATER "Deseo reaniciar manualmente más sero"
   ${LangFileString} MUI_TEXT_FINISH_RUN "&Executar $(^NameDA)"
   ${LangFileString} MUI_TEXT_FINISH_SHOWREADME "&Ver Lléame"
-  ${LangFileString} MUI_BUTTONTEXT_FINISH "&Finar"
+  ${LangFileString} MUI_BUTTONTEXT_FINISH "&Finar"  
 !endif
 
 !ifdef MUI_STARTMENUPAGE

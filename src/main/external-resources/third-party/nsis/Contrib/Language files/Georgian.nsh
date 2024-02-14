@@ -97,7 +97,7 @@
   ${LangFileString} MUI_TEXT_FINISH_REBOOTLATER "არა, მოგვიანებით გადავტვირთავ კომპიუტერს"
   ${LangFileString} MUI_TEXT_FINISH_RUN "$(^NameDA)–ის &ჩართვა"
   ${LangFileString} MUI_TEXT_FINISH_SHOWREADME "ReadMe &ფაილის ჩვენება" #FIXME: BUGBUG "ReadMe"?
-  ${LangFileString} MUI_BUTTONTEXT_FINISH "&მზადაა"
+  ${LangFileString} MUI_BUTTONTEXT_FINISH "&მზადაა"  
 !endif
 
 !ifdef MUI_STARTMENUPAGE

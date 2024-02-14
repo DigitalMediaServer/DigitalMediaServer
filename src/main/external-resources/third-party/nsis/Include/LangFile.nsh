@@ -5,7 +5,7 @@ LangFile.nsh
 Header file to create language files that can be
 included with a single command.
 
-Copyright 2008-2018 Joost Verburg, Anders Kjersem
+Copyright 2008-2023 Joost Verburg, Anders Kjersem
 
 * Either LANGFILE_INCLUDE or LANGFILE_INCLUDE_WITHDEFAULT
   can be called from the script to include a language file.
@@ -19,14 +19,14 @@ Copyright 2008-2018 Joost Verburg, Anders Kjersem
 
 * There are two types of language header files:
 
-  - NSIS multi-lang support; these must start with the LANGFILE macro and
-    provide strings for features like MUI and MultiUser. If you are adding
-    support for a new language to NSIS you should make a copy of English.nsh
+  - NSIS multi-lang support; these must start with the LANGFILE macro and 
+    provide strings for features like MUI and MultiUser. If you are adding 
+    support for a new language to NSIS you should make a copy of English.nsh 
     and translate this .nsh along with the .nlf.
-  - Custom installer strings; these must start with the LANGFILE_EXT macro and
-    contain translated versions of
+  - Custom installer strings; these must start with the LANGFILE_EXT macro and 
+    contain translated versions of 
     custom strings used in a particular installer.
-    This is useful if you want to put the translations for each language in
+    This is useful if you want to put the translations for each language in 
     their own separate file.
 
 * Example:
@@ -106,7 +106,7 @@ Copyright 2008-2018 Joost Verburg, Anders Kjersem
   ; NATIVENAME: Native name of language. (In Unicode)
   ; NATIVEASCIINAME: Native name of language using only ASCII, "=" if it is the same as NATIVENAME
 
-  ; Example: LANGFILE "Swedish" = "Svenska" =
+  ; Example: LANGFILE "Swedish" = "Svenska" = (This is the same as LANGFILE "Swedish" "Swedish" "Svenska" "Svenska")
   ; For more examples, see French.nsh, Greek.nsh and PortugueseBR.nsh
 
   !ifdef LANGFILE_SETNAMES
