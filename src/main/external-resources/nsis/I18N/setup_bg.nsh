@@ -1,6 +1,6 @@
-# This file has been generated automatically, modifications will be overwritten. If you'd like to change the content, please do so at Crowdin.
+﻿# This file has been generated automatically, modifications will be overwritten. If you'd like to change the content, please do so at Crowdin.
 
-${LangFileString} CannotOpen ""
+${LangFileString} CannotOpen "Нормалното деинсталиране е невъзможно, защото $\"uninstall.log$\" липсва.$\r$\nИскате ли вместо това да изтриете папката с инсталация?"
 ${LangFileString} DownloadingFile "Изтегляне на файл:"
 ${LangFileString} Downloaded "Изтеглено:"
 ${LangFileString} TimeRemaining "Оставащо време:"
@@ -17,10 +17,10 @@ ${LangFileString} ServiceStopError "Не може да спре услугата
 ${LangFileString} ServiceUninstallError "Не може да се деинсталира услугата на Digital Media Server"
 ${LangFileString} SectionServer "Медиен сървър"
 ${LangFileString} SectionShortcuts "Пряк път в Старт менюто"
-${LangFileString} SectionCleanInstall ""
+${LangFileString} SectionCleanInstall "Прясна инсталация"
 ${LangFileString} SectionWindowsFirewall "Правилата за защитната стена на Windows"
 ${LangFileString} SectionDownloadJava "Изтегляне и инсталиране на Java"
-${LangFileString} SectionHeapSize ""
+${LangFileString} SectionHeapSize "Задаване на максимален heap size за Java"
 ${LangFileString} SectionDescriptionServer "Инсталира ядрото от файлове на Digital Media Server."
 ${LangFileString} SectionDescriptionShortcuts "Създава преки пътища в Старт менюто за Digital Media Server."
 ${LangFileString} SectionDescriptionCleanInstall ""
@@ -28,7 +28,7 @@ ${LangFileString} SectionDescriptionWindowsFirewall "Инсталира прав
 ${LangFileString} SectionDescriptionInstallJava ""
 ${LangFileString} SectionDescriptionHeapSize "Задава максималния размер на паметта, който Digital Media Server е разрешено да използва. Препоръчва се употребата на стойността по подразбиране за стандартни инсталации."
 ${LangFileString} SectionDescriptionAviSynth ""
-${LangFileString} SectionUninstallComplete ""
-${LangFileString} SectionDescriptionCompleteUninstall ""
-${LangFileString} SectionDescriptionStandardUninstall ""
+${LangFileString} SectionUninstallComplete "Файлове с конфигурация и база от данни"
+${LangFileString} SectionDescriptionCompleteUninstall "Премахнете всички, включително конфигурацията, базата от данни и на всички потребителски файлове."
+${LangFileString} SectionDescriptionStandardUninstall "Деинсталиране на приложението, но оставяне на конфигурацията и базата от данни."
 ${LangFileString} CleanInstallWarning ""

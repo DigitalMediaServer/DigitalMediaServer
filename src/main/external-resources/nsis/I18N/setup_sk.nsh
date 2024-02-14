@@ -1,4 +1,4 @@
-# This file has been generated automatically, modifications will be overwritten. If you'd like to change the content, please do so at Crowdin.
+﻿# This file has been generated automatically, modifications will be overwritten. If you'd like to change the content, please do so at Crowdin.
 
 ${LangFileString} CannotOpen ""
 ${LangFileString} DownloadingFile "Preberanie súboru:"

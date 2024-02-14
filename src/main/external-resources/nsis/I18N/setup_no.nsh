@@ -1,4 +1,4 @@
-# This file has been generated automatically, modifications will be overwritten. If you'd like to change the content, please do so at Crowdin.
+﻿# This file has been generated automatically, modifications will be overwritten. If you'd like to change the content, please do so at Crowdin.
 
 ${LangFileString} CannotOpen "Vanlig avinstallasjon er ikke mulig fordi $\"uninstall.log$\" mangler.$\r$\nØnsker du å slette installasjonsmappen i stedet?"
 ${LangFileString} DownloadingFile "Laster ned fil:"
