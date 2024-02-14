@@ -1,12 +1,12 @@
-# This file has been generated automatically, modifications will be overwritten. If you'd like to change the content, please do so at Crowdin.
+﻿# This file has been generated automatically, modifications will be overwritten. If you'd like to change the content, please do so at Crowdin.
 
-${LangFileString} CannotOpen "Normal afinstallation er ikke mulig, da $\"uninstall.log$\" mangler.$\r$\nVil du i stedet slette installationsmappen?"
+${LangFileString} CannotOpen "Normal afinstallation er ikke mulig, da $\"uninstall.log$\" mangler.$\r$\nSlet i stedet installationsmappen?"
 ${LangFileString} DownloadingFile "Downloader fil:"
 ${LangFileString} Downloaded "Downloadet:"
 ${LangFileString} TimeRemaining "Resterende tid:"
 ${LangFileString} Speed "Hastighed:"
 ${LangFileString} CancelButton "Annullér"
-${LangFileString} ConfirmCancel "Sikker på, at du vil afbryde download ad Java?"
+${LangFileString} ConfirmCancel "Sikker på, at du vil afbryde download af Java?"
 ${LangFileString} Downloading "Downloader %s"
 ${LangFileString} DesktopShortcut "Opret skrivebordsgenvej"
 ${LangFileString} OpenWebSite "Besøg vores websted"
@@ -17,7 +17,7 @@ ${LangFileString} ServiceStopError "Kunne ikke stoppe Digital Media Server-tjene
 ${LangFileString} ServiceUninstallError "Kunne ikke afinstallere Digital Media Server-tjenesten"
 ${LangFileString} SectionServer "Medieserver"
 ${LangFileString} SectionShortcuts "Startmenugenveje"
-${LangFileString} SectionCleanInstall "$\"Ren$\" installation"
+${LangFileString} SectionCleanInstall "Ren installation"
 ${LangFileString} SectionWindowsFirewall "Windows Firewall-regler"
 ${LangFileString} SectionDownloadJava "Download og installér Java"
 ${LangFileString} SectionHeapSize "Maksimal Java heap-størrelse"
@@ -31,4 +31,4 @@ ${LangFileString} SectionDescriptionAviSynth "Installér AviSynth 2.6.0 MT til b
 ${LangFileString} SectionUninstallComplete "Opsætning og databasefiler"
 ${LangFileString} SectionDescriptionCompleteUninstall "Fjern alt, herunder opsætningen, databasen og evt. tilpassede filer."
 ${LangFileString} SectionDescriptionStandardUninstall "Afinstallér programmet, men efterlad opsætningen og databasen."
-${LangFileString} CleanInstallWarning ""
+${LangFileString} CleanInstallWarning "Sikker på, at du permanent vil slette mediebiblioteket, tilpassede filer i programmappen samt alle opsætningsfiler?"
