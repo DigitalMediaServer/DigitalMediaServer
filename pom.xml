@@ -618,7 +618,7 @@
 				<plugin>
 					<groupId>org.digitalmediaserver</groupId>
 					<artifactId>crowdin-maven-plugin</artifactId>
-					<version>1.1.0</version>
+					<version>1.1.2</version>
 					<configuration>
 						<downloadFolder>${project.basedir}/extras/crowdin</downloadFolder>
 						<crowdinServerId>crowdin-dms</crowdinServerId>
@@ -647,6 +647,7 @@
 								<baseFileName>setup_en.nsh</baseFileName>
 								<languageFilesFolder>${project.basedir}/src/main/external-resources/nsis/I18N</languageFilesFolder>
 								<fileNameWhenExported>setup_%osx_locale%.nsh</fileNameWhenExported>
+								<writeBOM>true</writeBOM>
 								<updateOption>update_as_unapproved</updateOption>
 								<excludes>
 									<exclude>setup_bn.nsh</exclude>
