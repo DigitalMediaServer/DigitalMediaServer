@@ -97,7 +97,7 @@
   ${LangFileString} MUI_TEXT_FINISH_REBOOTLATER "Atosóidh mé de láimh níos déanaí"
   ${LangFileString} MUI_TEXT_FINISH_RUN "&Rith $(^NameDA)"
   ${LangFileString} MUI_TEXT_FINISH_SHOWREADME "Tai&speáin comhad README"
-  ${LangFileString} MUI_BUTTONTEXT_FINISH "&Críochnaigh"
+  ${LangFileString} MUI_BUTTONTEXT_FINISH "&Críochnaigh"  
 !endif
 
 !ifdef MUI_STARTMENUPAGE

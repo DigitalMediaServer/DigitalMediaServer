@@ -1,5 +1,5 @@
 AdvSplash.dll - small (5.5k), simple plugin that lets you throw 
-up a splash screen in NSIS installers with cool
+up a splash screen in NSIS installers with cool 
 fading effects (Win2000+) and transparency.
 
 To use:

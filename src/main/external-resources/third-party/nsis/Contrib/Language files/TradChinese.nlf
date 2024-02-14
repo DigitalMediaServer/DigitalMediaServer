@@ -89,31 +89,31 @@ $(^Name) 解除安裝
 # ^ComponentsText
 勾選想要安裝的元件，並解除勾選不想安裝的元件。 $_CLICK
 # ^ComponentsSubText1
-選取安裝的類型:
+選取安裝的類型: 
 # ^ComponentsSubText2_NoInstTypes
-選取安裝的元件:
+選取安裝的元件: 
 # ^ComponentsSubText2
-又或者，自訂選取想安裝的元件:
+又或者，自訂選取想安裝的元件: 
 # ^UnComponentsText
 勾選想要解除安裝的元件，並解除勾選不想解除安裝的元件。 $_CLICK
 # ^UnComponentsSubText1
-選取解除安裝的類型:
+選取解除安裝的類型: 
 # ^UnComponentsSubText2_NoInstTypes
-選取要解除安裝的元件:
+選取要解除安裝的元件: 
 # ^UnComponentsSubText2
-又或者，選擇想要解除安裝的可選項元件:
+又或者，選擇想要解除安裝的可選項元件: 
 # ^DirText
 安裝程式會將 $(^NameDA) 安裝在以下資料夾。要安裝到不同的資料夾，按「瀏覽(B)...」並選擇其他資料夾。 $_CLICK
 # ^DirSubText
 目標資料夾
 # ^DirBrowseText
-選取要安裝 $(^NameDA) 的資料夾:
+選取要安裝 $(^NameDA) 的資料夾: 
 # ^UnDirText
 安裝程式會自以下資料夾解除安裝 $(^NameDA) 。要解除安裝不同的資料夾，按「瀏覽(B)...」並選擇其他資料夾。 $_CLICK
 # ^UnDirSubText
 ""
 # ^UnDirBrowseText
-選取要解除安裝 $(^NameDA) 的資料夾:
+選取要解除安裝 $(^NameDA) 的資料夾: 
 # ^SpaceAvailable
 "可用空間: "
 # ^SpaceRequired
@@ -121,7 +121,7 @@ $(^Name) 解除安裝
 # ^UninstallingText
 會自以下資料夾解除安裝 $(^NameDA) 。 $_CLICK
 # ^UninstallingSubText
-解除安裝目錄:
+解除安裝目錄: 
 # ^FileError
 無法開啟要寫入的檔案: \r\n\t"$0"\r\n按「中止」停止安裝，\r\n「重試」重新嘗試寫入檔案，或\r\n「忽略」略過此檔案。
 # ^FileError_NoIgnore
@@ -141,7 +141,7 @@ $(^Name) 解除安裝
 # ^CouldNotLoad
 "無法載入: "
 # ^CreateFolder
-"建立資料夾: "
+"建立資料夾: " 
 # ^CreateShortcut
 "建立捷徑: "
 # ^CreatedUninstaller

@@ -97,7 +97,7 @@
   ${LangFileString} MUI_TEXT_FINISH_REBOOTLATER "Без поновног покретања"
   ${LangFileString} MUI_TEXT_FINISH_RUN "Покрени програм $(^NameDA)"
   ${LangFileString} MUI_TEXT_FINISH_SHOWREADME "Прикажи ПрочитајМе фајл"
-  ${LangFileString} MUI_BUTTONTEXT_FINISH "Крај"
+  ${LangFileString} MUI_BUTTONTEXT_FINISH "Крај"  
 !endif
 
 !ifdef MUI_STARTMENUPAGE

@@ -97,7 +97,7 @@
   ${LangFileString} MUI_TEXT_FINISH_REBOOTLATER "Eg vil starta på nytt seinare"
   ${LangFileString} MUI_TEXT_FINISH_RUN "&Køyr $(^NameDA)"
   ${LangFileString} MUI_TEXT_FINISH_SHOWREADME "&Syn lesmeg"
-  ${LangFileString} MUI_BUTTONTEXT_FINISH "&Fullfør"
+  ${LangFileString} MUI_BUTTONTEXT_FINISH "&Fullfør"  
 !endif
 
 !ifdef MUI_STARTMENUPAGE

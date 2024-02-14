@@ -97,7 +97,7 @@
   ${LangFileString} MUI_TEXT_FINISH_REBOOTLATER "ברצוני לאתחל ידנית מאוחר יותר"
   ${LangFileString} MUI_TEXT_FINISH_RUN "&הרץ את $(^NameDA)"
   ${LangFileString} MUI_TEXT_FINISH_SHOWREADME "&הצג מסמך 'קרא אותי'"
-  ${LangFileString} MUI_BUTTONTEXT_FINISH "&סיים"
+  ${LangFileString} MUI_BUTTONTEXT_FINISH "&סיים"  
 !endif
 
 !ifdef MUI_STARTMENUPAGE

@@ -5,7 +5,7 @@
 ;New revision by Vlad Rusu (vlad@bitattack.ro)
 ;	- Use Romanian letters ăâîşţ
 ;	- ".. produsului" removed as unnecessary
-;	- "Elimină" related terms replaced with more appropiate "Dezinstalează"
+;	- "Elimină" related terms replaced with more appropriate "Dezinstalează"
 ;	- Misc language tweaks
 
 !insertmacro LANGFILE "Romanian" = "Română" "Romana"
@@ -55,7 +55,7 @@
   !ifndef NSIS_CONFIG_COMPONENTPAGE_ALTERNATIVE
     ${LangFileString} MUI_INNERTEXT_COMPONENTS_DESCRIPTION_INFO "Aşezaţi mouse-ul deasupra fiecărei componente pentru a vizualiza descrierea acesteia."
   !else
-    #FIXME:MUI_INNERTEXT_COMPONENTS_DESCRIPTION_INFO
+    #FIXME:MUI_INNERTEXT_COMPONENTS_DESCRIPTION_INFO 
   !endif
 !endif
 
