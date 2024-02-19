@@ -144,6 +144,7 @@ public class LoggingConfig {
 		Path file = null;
 
 		if (!setContextAndRoot()) {
+			logFilePaths = Collections.emptyMap();
 			return;
 		}
 
@@ -179,64 +180,34 @@ public class LoggingConfig {
 					PropertiesUtil.getProjectProperties().get("project.logback.headless") + ", " : "") +
 					PropertiesUtil.getProjectProperties().get("project.logback"));
 			LOGGER.warn("Falling back to somewhat unpredictable defaults, probably only logging to console.");
-			return;
-		}
+			CreateFallbackConfiguration();
+		} else {
+			// Now get logback to actually use the config file
 
-		// Now get logback to actually use the config file
-
-		JoranConfigurator configurator = new JoranConfigurator();
-		configurator.setContext(loggerContext);
-		try {
-			// the context was probably already configured by
-			// default configuration rules
-			loggerContext.reset();
-			loggerContext.getStatusManager().clear();
-			// Do not log between loggerContext.reset() and CacheLogger.initContext()
-			configurator.doConfigure(file.toFile());
-			if (CacheLogger.isActive()) {
-				CacheLogger.initContext();
-			}
-			// Save the file path after loading the file
-			filepath = file.toAbsolutePath();
-			LOGGER.debug("LogBack started with configuration file: {}", filepath);
-		} catch (JoranException je) {
+			JoranConfigurator configurator = new JoranConfigurator();
+			configurator.setContext(loggerContext);
 			try {
-				System.err.println("LogBack configuration failed: " + je.getLocalizedMessage());
-				System.err.println("Trying to create \"emergency\" configuration");
-				// Try to create "emergency" appenders for some logging if configuration fails
-				if (PMS.isHeadless()) {
-					ConsoleAppender<ILoggingEvent> ca = new ConsoleAppender<>();
-					PatternLayoutEncoder pe = new PatternLayoutEncoder();
-					pe.setPattern("%-5level %d{HH:mm:ss.SSS} [%thread] %logger %msg%n");
-					pe.setContext(loggerContext);
-					pe.start();
-					ca.setEncoder(pe);
-					ca.setContext(loggerContext);
-					ca.setName("Emergency Console");
-					ca.start();
-					loggerContext.getLogger(Logger.ROOT_LOGGER_NAME).addAppender(ca);
-				} else {
-					FrameAppender<ILoggingEvent> fa = new FrameAppender<>();
-					PatternLayoutEncoder pe = new PatternLayoutEncoder();
-					pe.setPattern("%-5level %d{HH:mm:ss.SSS} [%thread] %logger %msg%n");
-					pe.setContext(loggerContext);
-					pe.start();
-					fa.setEncoder(pe);
-					fa.setContext(loggerContext);
-					fa.setName("Emergency Frame");
-					fa.start();
-					loggerContext.getLogger(Logger.ROOT_LOGGER_NAME).addAppender(fa);
+				// The context was probably already configured by the default configuration rules
+				loggerContext.reset();
+				loggerContext.getStatusManager().clear();
+				// Do not log between loggerContext.reset() and CacheLogger.initContext()
+				configurator.doConfigure(file.toFile());
+				if (CacheLogger.isActive()) {
+					CacheLogger.initContext();
 				}
-				System.err.println("LogBack \"emergency\" configuration applied.");
-			} catch (Exception e) {
-				System.err.println("LogBack \"emergency\" configuration failed with: " + e);
+				// Save the file path after loading the file
+				filepath = file.toAbsolutePath();
+				LOGGER.debug("LogBack started with configuration file: {}", filepath);
+			} catch (JoranException je) {
+				System.err.println("LogBack configuration failed: " + je.getMessage());
+				// The CacheAppender was detached with reset() above, reattach it.
+				if (CacheLogger.isActive()) {
+					CacheLogger.attachCacheAppender();
+				}
+				CreateFallbackConfiguration();
+				LOGGER.error("Logback configuration failed with: {}", je.getMessage());
+				StatusPrinter.printInCaseOfErrorsOrWarnings(loggerContext);
 			}
-			if (CacheLogger.isActive()) {
-				CacheLogger.initContext();
-			}
-			LOGGER.error("Logback configuration failed with: {}", je.getLocalizedMessage());
-			StatusPrinter.printInCaseOfErrorsOrWarnings(loggerContext);
-			return;
 		}
 
 		// Build the iterator
@@ -302,6 +273,83 @@ public class LoggingConfig {
 		setConfigurableFilters(true, true);
 
 		StatusPrinter.printInCaseOfErrorsOrWarnings(loggerContext);
+	}
+
+	private static void CreateFallbackConfiguration() {
+		boolean cacheActive = CacheLogger.isActive();
+		boolean found = false;
+		System.err.println("Trying to create LogBack fallback configuration");
+		// Try to create fallback appenders to have at least basic logging if configuration fails
+		try {
+			if (PMS.isHeadless()) {
+				ConsoleAppender<ILoggingEvent> ca = null;
+				Iterator<Appender<ILoggingEvent>> iterator = cacheActive ?
+					CacheLogger.iteratorForAppenders() :
+					rootLogger.iteratorForAppenders();
+				Appender<ILoggingEvent> appender;
+				while (iterator.hasNext()) {
+					appender = iterator.next();
+					if (appender instanceof ConsoleAppender) {
+						ca = (ConsoleAppender<ILoggingEvent>) appender;
+						found = true;
+						break;
+					}
+				}
+				if (ca == null) {
+					ca = new ConsoleAppender<>();
+				}
+				PatternLayoutEncoder pe = new PatternLayoutEncoder();
+				pe.setPattern("%-5level %d{HH:mm:ss.SSS} [%thread] %logger %msg%n");
+				pe.setContext(loggerContext);
+				pe.start();
+				ca.setEncoder(pe);
+				ca.setContext(loggerContext);
+				ca.setName("Fallback Console");
+				ca.start();
+				if (!found) {
+					if (cacheActive) {
+						CacheLogger.addAppender(ca);
+					} else {
+						rootLogger.addAppender(ca);
+					}
+				}
+			} else {
+				FrameAppender<ILoggingEvent> fa = null;
+				Iterator<Appender<ILoggingEvent>> iterator = cacheActive ?
+					CacheLogger.iteratorForAppenders() :
+					rootLogger.iteratorForAppenders();
+				Appender<ILoggingEvent> appender;
+				while (iterator.hasNext()) {
+					appender = iterator.next();
+					if (appender instanceof FrameAppender) {
+						fa = (FrameAppender<ILoggingEvent>) appender;
+						found = true;
+						break;
+					}
+				}
+				if (fa == null) {
+					fa = new FrameAppender<>();
+				}
+				PatternLayoutEncoder pe = new PatternLayoutEncoder();
+				pe.setPattern("%-5level %d{HH:mm:ss.SSS} [%thread] %logger %msg%n");
+				pe.setContext(loggerContext);
+				pe.start();
+				fa.setEncoder(pe);
+				fa.setContext(loggerContext);
+				fa.setName("Fallback Frame");
+				fa.start();
+				if (!found) {
+					if (cacheActive) {
+						CacheLogger.addAppender(fa);
+					} else {
+						rootLogger.addAppender(fa);
+					}
+				}
+			}
+			System.err.println("LogBack fallback configuration applied.");
+		} catch (Exception e) {
+			System.err.println("LogBack fallback configuration failed with: " + e);
+		}
 	}
 
 	private static synchronized void setConfigurableFilters(boolean setConsole, boolean setTraces) {

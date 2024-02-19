@@ -1452,7 +1452,7 @@ public class PMS {
 			// Check TRACE mode
 			if (traceMode == 2) {
 				LoggingConfig.setRootLevel(LogLevel.TRACE);
-				LOGGER.debug("Forcing debug level to TRACE");
+				LOGGER.debug("Forcing log level to TRACE");
 			} else {
 				// Remember whether logging level was TRACE/ALL at startup
 				traceMode = LoggingConfig.getRootLevel().toInt() <= Level.TRACE_INT ? 1 : 0;

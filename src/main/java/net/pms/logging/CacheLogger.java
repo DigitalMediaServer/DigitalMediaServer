@@ -89,12 +89,21 @@ public class CacheLogger {
 		rootLogger = loggerContext.getLogger(Logger.ROOT_LOGGER_NAME);
 		disposeOfAppenders();
 		detachRootAppenders();
-		if (!rootLogger.isAttached(cacheAppender)) {
-			rootLogger.addAppender(cacheAppender);
-		}
 		cacheAppender.setContext(loggerContext);
 		cacheAppender.setName("CacheAppender");
-		cacheAppender.start();
+		attachCacheAppender();
+	}
+
+	/**
+	 * Attaches the {@link CacheAppender} to the current root {@link Logger} if
+	 * the {@link CacheAppender} has been created, the root {@link Logger} has
+	 * been identified and the {@link CacheAppender} isn't already attached.
+	 */
+	public static synchronized void attachCacheAppender() {
+		if (rootLogger != null && cacheAppender != null && !rootLogger.isAttached(cacheAppender)) {
+			rootLogger.addAppender(cacheAppender);
+			cacheAppender.start();
+		}
 	}
 
 	public static synchronized void startCaching() {
