@@ -37,10 +37,6 @@ RequestExecutionLevel admin
 AllowSkipFiles off
 ManifestSupportedOS all ; Left here to remember to add GUI ID in case Windows 11 or above appear before NSIS add their support by default
 
-; Get install folder from registry for updates
-
-InstallDirRegKey HKCU "${REG_KEY_SOFTWARE}" ""
-
 !define MUI_ABORTWARNING
 !define MUI_CUSTOMFUNCTION_GUIINIT onGUIInit
 !define MUI_UI "${PROJECT_BASEDIR}\src\main\external-resources\third-party\nsis\Contrib\UIs\modern.exe" ; UltraModern.exe
@@ -55,7 +51,7 @@ InstallDirRegKey HKCU "${REG_KEY_SOFTWARE}" ""
 !define MUI_LANGDLL_ALWAYSSHOW
 !define MUI_LANGDLL_ALLLANGUAGES
 ; Remember the installer language (Language selection in dialog settings)
-!define MUI_LANGDLL_REGISTRY_ROOT "HKCU"
+!define MUI_LANGDLL_REGISTRY_ROOT "HKLM"
 !define MUI_LANGDLL_REGISTRY_KEY "${REG_KEY_SOFTWARE}"
 !define MUI_LANGDLL_REGISTRY_VALUENAME "Installer Language"
 !define MUI_WELCOMEPAGE_TITLE_3LINES
@@ -70,7 +66,9 @@ InstallDirRegKey HKCU "${REG_KEY_SOFTWARE}" ""
 !define MUI_CUSTOMFUNCTION_ONMOUSEOVERSECTION hideRequiredSize
 !insertmacro MUI_COMPONENTSPAGE_INTERFACE
 !insertmacro MUI_PAGEDECLARATION_COMPONENTS
+!define MUI_PAGE_CUSTOMFUNCTION_LEAVE DirectoryLeave
 !insertmacro MUI_PAGE_DIRECTORY
+Page Custom LockedListShow LockedListLeave
 !insertmacro MUI_PAGE_INSTFILES
 !define MUI_PAGE_CUSTOMFUNCTION_SHOW showHiDPI
 !define MUI_FINISHPAGE_TITLE_3LINES
@@ -96,6 +94,7 @@ InstallDirRegKey HKCU "${REG_KEY_SOFTWARE}" ""
 !define MUI_UNCOMPONENTSPAGE_SMALLDESC
 !define MUI_UNCOMPONENTSPAGE_TEXT_TOP " "
 !insertmacro MUI_UNPAGE_COMPONENTS
+UninstPage Custom "un.LockedListShow"
 !insertmacro MUI_UNPAGE_INSTFILES
 !define MUI_PAGE_CUSTOMFUNCTION_SHOW "un.showHiDPI"
 !define MUI_FINISHPAGE_TITLE_3LINES
@@ -141,15 +140,16 @@ Section /o "-CleanDelegate" secCleanDelegate
 	RMDir /r "$INSTDIR"
 SectionEnd
 
-Section "!$(SectionServer)" sec1
+Section "!$(SectionServer)" sectionServer
 	SetDetailsPrint both
 
 	SetOutPath "$INSTDIR"
+	LogSet on
 	SetOverwrite on
 
 	File /r /x "Thumbs.db" "${PROJECT_BASEDIR}\src\main\external-resources\documentation"
 	File /r /x "Thumbs.db" "${PROJECT_BASEDIR}\src\main\external-resources\renderers"
-	File /r /x "Thumbs.db" /x "ffmpeg*.*" /x "avisynth" /x "MediaInfo64.dll" "${PROJECT_BASEDIR}\target\bin\win32"
+	File /r /x "Thumbs.db" /x "ffmpe*.*" /x "avisynth" /x "MediaIn*.dll" "${PROJECT_BASEDIR}\target\bin\win32"
 	File "${PROJECT_BUILD_DIR}\${PROJECT_NAME_SHORT}.exe"
 	File "${PROJECT_BASEDIR}\src\main\external-resources\${PROJECT_NAME_SHORT}.bat"
 	File /r /x "Thumbs.db" "${PROJECT_BASEDIR}\src\main\external-resources\web"
@@ -158,7 +158,7 @@ Section "!$(SectionServer)" sec1
 	File "${PROJECT_BASEDIR}\EULA.rtf"
 	File "${PROJECT_BASEDIR}\README.*"
 	File "${PROJECT_BASEDIR}\LICENSE.txt"
-	File "${PROJECT_BASEDIR}\src\main\external-resources\logback*.xml"
+	File "${PROJECT_BASEDIR}\src\main\external-resources\logba*.xml"
 	File /oname=${PROJECT_ARTIFACT_ID}.ico "${PROJECT_BASEDIR}\src\main\resources\images\logo.ico"
 	File "${PROJECT_BASEDIR}\src\main\external-resources\DummyInput.*"
 
@@ -170,11 +170,10 @@ Section "!$(SectionServer)" sec1
 
 	; The user may have set the installation folder as the profile folder, so we can't clobber this
 	SetOutPath "$INSTDIR"
-	SetOverwrite off
 	File "${PROJECT_BASEDIR}\src\main\external-resources\*.conf"
 
 	; Store install folder
-	WriteRegStr HKCU "${REG_KEY_SOFTWARE}" "" "$INSTDIR"
+	WriteRegStr HKLM "${REG_KEY_SOFTWARE}" "" "$INSTDIR"
 
 	; Create uninstaller
 	WriteRegStr HKLM "${REG_KEY_UNINSTALL}" "DisplayName" "${PROJECT_NAME}"
@@ -187,17 +186,20 @@ Section "!$(SectionServer)" sec1
 	WriteRegDWORD HKLM "${REG_KEY_UNINSTALL}" "NoRepair" 0x00000001
 
 	SetOutPath "$INSTDIR"
-	SetOverwrite on
 	WriteUninstaller "$INSTDIR\${UninstallEXE}"
 
 	ReadEnvStr $R0 "ALLUSERSPROFILE"
-	SetOutPath "$R0\${PROJECT_NAME_CAMEL}"
 	CreateDirectory "$R0\${PROJECT_NAME_CAMEL}\data"
 	AccessControl::GrantOnFile "$R0\${PROJECT_NAME_CAMEL}" "(BU)" "GenericRead + GenericExecute + GenericWrite + Delete + FullAccess"
 	Pop $0
+	SetOutPath "$R0\${PROJECT_NAME_CAMEL}"
+	SetOverwrite off
+	File "${PROJECT_BASEDIR}\src\main\external-resources\*.conf"
+	File "${PROJECT_BASEDIR}\src\main\external-resources\logba*.xml"
+	SetOverwrite on
 SectionEnd
 
-Section $(SectionShortcuts) sec7
+Section $(SectionShortcuts) sectionShortcuts
 	SetShellVarContext all
 	CreateDirectory "$SMPROGRAMS\${PROJECT_NAME}"
 	CreateShortCut "$SMPROGRAMS\${PROJECT_NAME}\${PROJECT_NAME_SHORT} (Select Profile).lnk" "$INSTDIR\${PROJECT_NAME_SHORT}.exe" "profiles" "" "" SW_SHOWNORMAL
@@ -209,16 +211,15 @@ Section /o "-32-bit" sec32Bit
 	SetOverwrite on
 	SetOutPath "$INSTDIR\win32"
 	File "${PROJECT_BASEDIR}\target\bin\win32\ffmpeg.exe"
-	LockedList::AddModule "$INSTDIR\win32\MediaInfo.dll"
+	File "${PROJECT_BASEDIR}\target\bin\win32\MediaInfo.dll"
 SectionEnd
 
 Section /o "-64-bit" sec64Bit
 	SetOverwrite on
 	SetOutPath "$INSTDIR\win32"
 	File "${PROJECT_BASEDIR}\target\bin\win32\ffmpeg64.exe"
-	LockedList::AddModule "$INSTDIR\win32\MediaInfo.dll"
+	File "${PROJECT_BASEDIR}\target\bin\win32\MediaInfo.dll"
 	File "${PROJECT_BASEDIR}\target\bin\win32\MediaInfo64.dll"
-	LockedList::AddModule "$INSTDIR\win32\MediaInfo64.dll"
 SectionEnd
 
 Section /o "-XP" secXP
@@ -227,10 +228,10 @@ Section /o "-XP" secXP
 	File /r /x "Thumbs.db" "${PROJECT_BASEDIR}\src\main\external-resources\lib\winxp"
 SectionEnd
 
-Section /o $(SectionCleanInstall) secClean
+Section /o $(SectionCleanInstall) sectionCleanInstall
 SectionEnd
 
-Section /o $(SectionWindowsFirewall) sec2
+Section /o $(SectionWindowsFirewall) sectionFirewall
 	WriteRegStr HKLM "${REG_KEY_UNINSTALL}" "FirewallRules" "1"
 
 	${If} ${IsWinXP}
@@ -256,7 +257,7 @@ Section /o $(SectionWindowsFirewall) sec2
 	; To check if other firewalls are blocking ports: netstat -ano | findstr -i "5252" or portqry.exe -n x.x.x.x -e 5252
 SectionEnd
 
-Section /o $(SectionDownloadJava) sec3 ; http://www.oracle.com/technetwork/java/javase/windows-diskspace-140460.html
+Section /o $(SectionDownloadJava) sectionInstallJava ; http://www.oracle.com/technetwork/java/javase/windows-diskspace-140460.html
 
 	${If} ${AtMostWin2008}
 		${If} ${RunningX64}
@@ -296,33 +297,33 @@ Section /o $(SectionDownloadJava) sec3 ; http://www.oracle.com/technetwork/java/
 	End:
 SectionEnd
 
-SectionGroup $(SectionHeapSize) sec4 ; http://www.oracle.com/technetwork/java/hotspotfaq-138619.html#gc_heap_32bit
-	Section /o "512 MB" sec41
-		WriteRegStr HKCU "${REG_KEY_SOFTWARE}" "HeapMem" "512M"
+SectionGroup $(SectionHeapSize) sectionHeapSize ; http://www.oracle.com/technetwork/java/hotspotfaq-138619.html#gc_heap_32bit
+	Section /o "512 MB" sectionHeapSize_1
+		WriteRegStr HKLM "${REG_KEY_SOFTWARE}" "HeapMem" "512M"
 	SectionEnd
 
-	Section /o "768 MB" sec42
-		WriteRegStr HKCU "${REG_KEY_SOFTWARE}" "HeapMem" "768M"
+	Section /o "768 MB" sectionHeapSize_2
+		WriteRegStr HKLM "${REG_KEY_SOFTWARE}" "HeapMem" "768M"
 	SectionEnd
 
-	Section /o "1280 MB" sec43
-		WriteRegStr HKCU "${REG_KEY_SOFTWARE}" "HeapMem" "1280M"
+	Section /o "1280 MB" sectionHeapSize_3
+		WriteRegStr HKLM "${REG_KEY_SOFTWARE}" "HeapMem" "1280M"
 	SectionEnd
 
-	Section /o "1536 MB" sec44
-		WriteRegStr HKCU "${REG_KEY_SOFTWARE}" "HeapMem" "1536M"
+	Section /o "1536 MB" sectionHeapSize_4
+		WriteRegStr HKLM "${REG_KEY_SOFTWARE}" "HeapMem" "1536M"
 	SectionEnd
 
-	Section /o "4096 MB" sec46
-		WriteRegStr HKCU "${REG_KEY_SOFTWARE}" "HeapMem" "4096M"
+	Section /o "4096 MB" sectionHeapSize_5
+		WriteRegStr HKLM "${REG_KEY_SOFTWARE}" "HeapMem" "4096M"
 	SectionEnd
 
-	Section /o "6144 MB" sec47
-		WriteRegStr HKCU "${REG_KEY_SOFTWARE}" "HeapMem" "6144M"
+	Section /o "6144 MB" sectionHeapSize_6
+		WriteRegStr HKLM "${REG_KEY_SOFTWARE}" "HeapMem" "6144M"
 	SectionEnd
 SectionGroupEnd
 
-Section /o "AviSynth" sec6
+Section /o "AviSynth" sectionInstallAviSynth
 	; https://forum.doom9.org/showthread.php?t=148782
 	; https://nightly.mpc-hc.org/mpc-hc_apps/vsfilter/
 	; A more up to date sofware with a 64-bit version and multithreading support like AviSynth+ or VapourSynth could replace AviSynth and be directly downloaded from their website:
@@ -334,30 +335,30 @@ Section /o "AviSynth" sec6
 	ExecWait "$INSTDIR\win32\avisynth\avisynth.exe"
 SectionEnd
 
-Section "-EstimatedSize" sec8
+Section "-EstimatedSize" sectionEstimatedSize
 	${GetSize} "$INSTDIR" "/S=0B" $0 $1 $2
 	IntFmt $0 "0x%08x" $0 ; https://msdn.microsoft.com/en-us/library/windows/desktop/ms647550(v=vs.85).aspx
 	WriteRegDWORD HKLM "${REG_KEY_UNINSTALL}" "EstimatedSize" "$0" ; Used by Windows
 SectionEnd
 
 !insertmacro MUI_FUNCTION_DESCRIPTION_BEGIN
-	!insertmacro MUI_DESCRIPTION_TEXT ${sec1} $(SectionDescriptionServer)
-	!insertmacro MUI_DESCRIPTION_TEXT ${sec7} $(SectionDescriptionShortcuts)
-	!insertmacro MUI_DESCRIPTION_TEXT ${secClean} $(SectionDescriptionCleanInstall)
-	!insertmacro MUI_DESCRIPTION_TEXT ${sec2} $(SectionDescriptionWindowsFirewall)
-	!insertmacro MUI_DESCRIPTION_TEXT ${sec3} $(SectionDescriptionInstallJava)
-	!insertmacro MUI_DESCRIPTION_TEXT ${sec4} $(SectionDescriptionHeapSize)
-	!insertmacro MUI_DESCRIPTION_TEXT ${sec41} $(SectionDescriptionHeapSize)
-	!insertmacro MUI_DESCRIPTION_TEXT ${sec42} $(SectionDescriptionHeapSize)
-	!insertmacro MUI_DESCRIPTION_TEXT ${sec43} $(SectionDescriptionHeapSize)
-	!insertmacro MUI_DESCRIPTION_TEXT ${sec44} $(SectionDescriptionHeapSize)
-	!insertmacro MUI_DESCRIPTION_TEXT ${sec46} $(SectionDescriptionHeapSize)
-	!insertmacro MUI_DESCRIPTION_TEXT ${sec47} $(SectionDescriptionHeapSize)
-	!insertmacro MUI_DESCRIPTION_TEXT ${sec6} $(SectionDescriptionAviSynth)
+	!insertmacro MUI_DESCRIPTION_TEXT ${sectionServer} $(SectionDescriptionServer)
+	!insertmacro MUI_DESCRIPTION_TEXT ${sectionShortcuts} $(SectionDescriptionShortcuts)
+	!insertmacro MUI_DESCRIPTION_TEXT ${sectionCleanInstall} $(SectionDescriptionCleanInstall)
+	!insertmacro MUI_DESCRIPTION_TEXT ${sectionFirewall} $(SectionDescriptionWindowsFirewall)
+	!insertmacro MUI_DESCRIPTION_TEXT ${sectionInstallJava} $(SectionDescriptionInstallJava)
+	!insertmacro MUI_DESCRIPTION_TEXT ${sectionHeapSize} $(SectionDescriptionHeapSize)
+	!insertmacro MUI_DESCRIPTION_TEXT ${sectionHeapSize_1} $(SectionDescriptionHeapSize)
+	!insertmacro MUI_DESCRIPTION_TEXT ${sectionHeapSize_2} $(SectionDescriptionHeapSize)
+	!insertmacro MUI_DESCRIPTION_TEXT ${sectionHeapSize_3} $(SectionDescriptionHeapSize)
+	!insertmacro MUI_DESCRIPTION_TEXT ${sectionHeapSize_4} $(SectionDescriptionHeapSize)
+	!insertmacro MUI_DESCRIPTION_TEXT ${sectionHeapSize_5} $(SectionDescriptionHeapSize)
+	!insertmacro MUI_DESCRIPTION_TEXT ${sectionHeapSize_6} $(SectionDescriptionHeapSize)
+	!insertmacro MUI_DESCRIPTION_TEXT ${sectionInstallAviSynth} $(SectionDescriptionAviSynth)
 !insertmacro MUI_FUNCTION_DESCRIPTION_END
 
 Function .onSelChange
-	SectionGetFlags ${sec3} $1
+	SectionGetFlags ${sectionInstallJava} $1
 	${If} $1 != 0
 		FindWindow $1 "#32770" "" $HWNDPARENT
 		GetDlgItem $1 $1 1023 ; Required disk space control
@@ -368,7 +369,7 @@ Function .onSelChange
 		ShowWindow $1 ${SW_SHOW}
 	${EndIf}
 
-	SectionGetFlags ${sec1} $1
+	SectionGetFlags ${sectionServer} $1
 	${If} $1 == 8
 		SectionSetFlags ${sec32Bit} 0
 		SectionSetFlags ${sec64Bit} 0
@@ -386,11 +387,11 @@ Function .onSelChange
 		${EndSelect}
 	${EndIf}
 
-	SectionGetFlags ${secClean} $1
+	SectionGetFlags ${sectionCleanInstall} $1
 	${If} $1 != $Clean
 		${If} $1 != 0
 			MessageBox MB_ICONEXCLAMATION|MB_YESNO|MB_DEFBUTTON2 $(CleanInstallWarning) IDYES +3
-			SectionSetFlags ${secClean} 0
+			SectionSetFlags ${sectionCleanInstall} 0
 			StrCpy $1 0
 		${EndIf}
 		SectionSetFlags ${secCleanDelegate} $1
@@ -403,36 +404,36 @@ Function .onSelChange
 	OnlyOneRadioButtonSelected:
 		Push $R2
 		StrCpy $R2 ${SF_SELECTED}
-		SectionGetFlags ${sec41} $0
+		SectionGetFlags ${sectionHeapSize_1} $0
 		IntOp $R2 $R2 & $0
-		SectionGetFlags ${sec42} $0
+		SectionGetFlags ${sectionHeapSize_2} $0
 		IntOp $R2 $R2 & $0
-		SectionGetFlags ${sec43} $0
+		SectionGetFlags ${sectionHeapSize_3} $0
 		IntOp $R2 $R2 & $0
-		SectionGetFlags ${sec44} $0
+		SectionGetFlags ${sectionHeapSize_4} $0
 		IntOp $R2 $R2 & $0
-		SectionGetFlags ${sec46} $0
+		SectionGetFlags ${sectionHeapSize_5} $0
 		IntOp $R2 $R2 & $0
-		SectionGetFlags ${sec47} $0
+		SectionGetFlags ${sectionHeapSize_6} $0
 		IntOp $R2 $R2 & $0
 
 		StrCmp $R2 0 NotAllSelected
-			SectionSetFlags ${sec41} 0
-			SectionSetFlags ${sec42} 0
-			SectionSetFlags ${sec43} 0
-			SectionSetFlags ${sec44} 0
-			SectionSetFlags ${sec46} 0
-			SectionSetFlags ${sec47} 0
+			SectionSetFlags ${sectionHeapSize_1} 0
+			SectionSetFlags ${sectionHeapSize_2} 0
+			SectionSetFlags ${sectionHeapSize_3} 0
+			SectionSetFlags ${sectionHeapSize_4} 0
+			SectionSetFlags ${sectionHeapSize_5} 0
+			SectionSetFlags ${sectionHeapSize_6} 0
 
 	NotAllSelected:
 		Pop $R2
 		!insertmacro StartRadioButtons $R4
-			!insertmacro RadioButton ${sec41}
-			!insertmacro RadioButton ${sec42}
-			!insertmacro RadioButton ${sec43}
-			!insertmacro RadioButton ${sec44}
-			!insertmacro RadioButton ${sec46}
-			!insertmacro RadioButton ${sec47}
+			!insertmacro RadioButton ${sectionHeapSize_1}
+			!insertmacro RadioButton ${sectionHeapSize_2}
+			!insertmacro RadioButton ${sectionHeapSize_3}
+			!insertmacro RadioButton ${sectionHeapSize_4}
+			!insertmacro RadioButton ${sectionHeapSize_5}
+			!insertmacro RadioButton ${sectionHeapSize_6}
 		!insertmacro EndRadioButtons
 
 	StrCmp $2 0 0 +3
@@ -455,17 +456,22 @@ Function .onInit
 	${If} ${RunningX64}
 		StrCpy $X64 "1"
 		SetRegView 64
-		StrCpy "$INSTDIR" "$PROGRAMFILES64\${PROJECT_NAME}"
-	${Else}
+		${If} $INSTDIR == ""
+			StrCpy "$INSTDIR" "$PROGRAMFILES64\${PROJECT_NAME}"
+		${EndIf}
+	${ElseIf} $INSTDIR == ""
 		StrCpy "$INSTDIR" "$PROGRAMFILES\${PROJECT_NAME}"
 	${EndIf}
 
-	Push $INSTDIR
-	ReadEnvStr $1 "ALLUSERSPROFILE"
-	CreateDirectory "$1\${PROJECT_NAME_CAMEL}"
-	StrCpy $INSTDIR "$1\${PROJECT_NAME_CAMEL}"
-	LogSet on
-	Pop $INSTDIR
+	; Get install folder from registry for updates
+	ReadRegStr $1 HKLM "${REG_KEY_SOFTWARE}" ""
+	IfErrors readRegInstLocDone
+	${If} $1 != ""
+		StrCpy $INSTDIR $1
+	${EndIf}
+
+	readRegInstLocDone:
+	ClearErrors
 
 	InitPluginsDir
 
@@ -498,12 +504,13 @@ Function .onInit
 			Abort
 	launch:
 
+	SectionSetFlags ${sectionServer} 17 ; ${SF_SELECTED} | ${SF_RO}
 	${If} ${RunningX64}
-		SectionSetFlags ${sec32Bit} ${SECTION_OFF}
+		SectionSetFlags ${sec32Bit} 0
 		SectionSetFlags ${sec64Bit} ${SF_SELECTED}
 	${Else}
 		SectionSetFlags ${sec32Bit} ${SF_SELECTED}
-		SectionSetFlags ${sec64Bit} ${SECTION_OFF}
+		SectionSetFlags ${sec64Bit} 0
 	${EndIf}
 
 	${IfNot} ${AtLeastWinXP}
@@ -511,16 +518,24 @@ Function .onInit
 		Quit
 	${EndIf}
 	${If} ${IsWinXP}
-	${AndIfNot} ${AtLeastServicePack} 3
-		MessageBox MB_OK|MB_ICONEXCLAMATION $(TooLowSP)
-		Quit
+		${If} ${RunningX64}
+			${IfNot} ${AtLeastServicePack} 2
+				MessageBox MB_OK|MB_ICONEXCLAMATION $(TooLowSP64)
+				Quit
+			${EndIf}
+		${Else}
+			${IfNot} ${AtLeastServicePack} 3
+				MessageBox MB_OK|MB_ICONEXCLAMATION $(TooLowSP)
+				Quit
+			${EndIf}
+		${EndIf}
 	${EndIf}
 
 	${If} ${IsWinXP}
 		StrCpy $XP "1"
 		SectionSetFlags ${secXP} ${SF_SELECTED}
 	${Else}
-		SectionSetFlags ${secXP} ${SECTION_OFF}
+		SectionSetFlags ${secXP} 0
 	${EndIf}
 
 	!insertmacro MUI_LANGDLL_DISPLAY
@@ -539,11 +554,11 @@ Function .onInit
 
 	; Choose the maximum Java memory heap size
 	${If} $4 > 4000
-		SectionSetFlags ${sec43} ${SF_SELECTED}
-		StrCpy $R4 ${sec43}
+		SectionSetFlags ${sectionHeapSize_3} ${SF_SELECTED}
+		StrCpy $R4 ${sectionHeapSize_3}
 	${Else}
-		SectionSetFlags ${sec42} ${SF_SELECTED}
-		StrCpy $R4 ${sec42}
+		SectionSetFlags ${sectionHeapSize_2} ${SF_SELECTED}
+		StrCpy $R4 ${sectionHeapSize_2}
 	${EndIf}
 	StrCpy $RAM $4
 
@@ -560,12 +575,12 @@ Function .onInit
 
 	${If} $JavaBitness == "64"
 		IntCmpU $RAM 6000 +2 0 +2
-		SectionSetText ${sec46} ""
+		SectionSetText ${sectionHeapSize_5} ""
 		IntCmpU $RAM 8000 +2 0 +2
-		SectionSetText ${sec47} ""
+		SectionSetText ${sectionHeapSize_6} ""
 	${Else}
-		SectionSetText ${sec47} ""
-		SectionSetText ${sec46} ""
+		SectionSetText ${sectionHeapSize_6} ""
+		SectionSetText ${sectionHeapSize_5} ""
 	${EndIf}
 
 	${If} ${RunningX64}
@@ -574,13 +589,13 @@ Function .onInit
 		ReadRegStr $0 HKLM "SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\AviSynth" "DisplayVersion"
 	${EndIf}
 	${If} $0 S== "2.6.0 MT"
-		SectionSetText ${sec6} ""
+		SectionSetText ${sectionInstallAviSynth} ""
 	${EndIf}
 
-	SectionSetFlags ${sec2} 1
+	SectionSetFlags ${sectionFirewall} 1
 
 	${If} $JavaLocation == ""
-		SectionSetFlags ${sec3} 1
+		SectionSetFlags ${sectionInstallJava} 1
 	${EndIf}
 
 	SetOutPath "$PLUGINSDIR\Header"
@@ -599,16 +614,55 @@ Function .onInit
 	File /nonfatal "Images\Installer@120.bmp"
 	File /nonfatal "Images\Installer@96.bmp"
 
-	SectionSetFlags ${sec8} ${SF_SELECTED}
-	SetOutPath "$INSTDIR"
+	SectionSetFlags ${sectionEstimatedSize} ${SF_SELECTED}
 FunctionEnd
 
 Function onGUIInit
 	Aero::Apply ; Apply Aero if available
 FunctionEnd
 
+Function LockedListShow
+	StrCmp $R9 0 +2 ; Skip the page if clicking Back from the next page.
+		Abort
+	!insertmacro MUI_HEADER_TEXT $(LockedTitle) $(LockedSubtitle)
+
+	LockedList::AddModule "$INSTDIR\${PROJECT_NAME_SHORT}.exe"
+	${If} ${RunningX64}
+		File /oname=$PLUGINSDIR\LockedList64.dll `${NSISDIR}\Plugins\x64-unicode\LockedList64.dll`
+		LockedList::AddModule "$INSTDIR\win32\MediaInfo64.dll"
+	${Else}
+		LockedList::AddModule "$INSTDIR\win32\MediaInfo.dll"
+	${EndIf}
+
+	LockedList::Dialog /autonext /heading $(LockedHeading) /colheadings $(LockedApplication) $(LockedProcess) /noprograms $(LockedNoProcesses) /searching $(LockedSearching) /endsearch $(LockedEndSearch) /endmonitor $(LockedEndMonitor) /menuitems $(LockedClose) $(LockedCopy) /autoclose $(LockedAutoClose) $(LockedAutoTerminate) $(LockedTerminateFailed) $(LockedProceed)
+	Pop $R0
+FunctionEnd
+
+Function DirectoryLeave
+	StrCpy $R9 0
+FunctionEnd
+
+Function LockedListLeave
+	StrCpy $R9 1
+FunctionEnd
+
+Function un.LockedListShow
+	!insertmacro MUI_HEADER_TEXT $(LockedTitle) $(LockedSubtitle)
+
+	LockedList::AddModule "$INSTDIR\${PROJECT_NAME_SHORT}.exe"
+	${If} ${RunningX64}
+		File /oname=$PLUGINSDIR\LockedList64.dll `${NSISDIR}\Plugins\x64-unicode\LockedList64.dll`
+		LockedList::AddModule "$INSTDIR\win32\MediaInfo64.dll"
+	${Else}
+		LockedList::AddModule "$INSTDIR\win32\MediaInfo.dll"
+	${EndIf}
+
+	LockedList::Dialog /autonext /heading $(LockedHeading) /colheadings $(LockedApplication) $(LockedProcess) /noprograms $(LockedNoProcesses) /searching $(LockedSearching) /endsearch $(LockedEndSearch) /endmonitor $(LockedEndMonitor) /menuitems $(LockedClose) $(LockedCopy) /autoclose $(LockedAutoClose) $(LockedAutoTerminate) $(LockedTerminateFailed) $(LockedProceed)
+	Pop $R0
+FunctionEnd
+
 Function hideRequiredSize
-	SectionGetFlags ${sec3} $1
+	SectionGetFlags ${sectionInstallJava} $1
 	${If} $JavaLocation == ""
 	${AndIf} $1 != 0
 		FindWindow $1 "#32770" "" $HWNDPARENT
@@ -675,14 +729,14 @@ Function showHiDPI
 	SetBrandingImage /IMGID=1046 /RESIZETOFIT "$PLUGINSDIR\Header\$R6"
 FunctionEnd
 
-Section /o "-un.RemoveDataAndSettings" sec100
+Section /o "-un.RemoveDataAndSettings" sectionRemoveDataAndSettings
 SectionEnd
 
-Section "un.${PROJECT_NAME}" sec101
+Section "un.${PROJECT_NAME}" sectionUnStandard
 	SectionIn RO
 	SetShellVarContext all
 	ReadEnvStr $R0 "ALLUSERSPROFILE"
-	SectionGetFlags ${sec100} $R1
+	SectionGetFlags ${sectionRemoveDataAndSettings} $R1
 	SetOutPath $TEMP ; Make sure $InstDir is not the current folder so we can remove it
 
 	Delete /REBOOTOK "$INSTDIR\uninst.exe"
@@ -710,6 +764,7 @@ Section "un.${PROJECT_NAME}" sec101
 	Delete /REBOOTOK "$INSTDIR\DummyInput.ass"
 	Delete /REBOOTOK "$INSTDIR\DummyInput.jpg"
 	Delete /REBOOTOK "$INSTDIR\VirtualFolders.conf"
+	Delete /REBOOTOK "$INSTDIR\install.log"
 	Delete /REBOOTOK "$INSTDIR\${UninstallEXE}"
 	RMDir /REBOOTOK "$INSTDIR"
 
@@ -725,7 +780,7 @@ Section "un.${PROJECT_NAME}" sec101
 		RMDir /r /REBOOTOK "$TEMP\fontconfig"
 		RMDir /r /REBOOTOK "$LOCALAPPDATA\fontconfig"
 		RMDir /r /REBOOTOK "$INSTDIR"
-		DeleteRegKey HKCU "${REG_KEY_SOFTWARE}"
+		DeleteRegKey HKLM "${REG_KEY_SOFTWARE}"
 
 	serviceRunningTest:
 		!insertmacro SERVICE "running" "${PROJECT_NAME}" ""
@@ -771,7 +826,7 @@ Section "un.${PROJECT_NAME}" sec101
 
 SectionEnd
 
-Section /o "un.$(SectionUninstallComplete)" sec102
+Section /o "un.$(SectionUninstallComplete)" sectionUnComplete
 SectionEnd
 
 Function un.onInit
@@ -784,8 +839,8 @@ Function un.onInit
 FunctionEnd
 
 !insertmacro MUI_UNFUNCTION_DESCRIPTION_BEGIN
-	!insertmacro MUI_DESCRIPTION_TEXT ${sec101} $(SectionDescriptionStandardUninstall)
-	!insertmacro MUI_DESCRIPTION_TEXT ${sec102} $(SectionDescriptionCompleteUninstall)
+	!insertmacro MUI_DESCRIPTION_TEXT ${sectionUnStandard} $(SectionDescriptionStandardUninstall)
+	!insertmacro MUI_DESCRIPTION_TEXT ${sectionUnComplete} $(SectionDescriptionCompleteUninstall)
 !insertmacro MUI_UNFUNCTION_DESCRIPTION_END
 
 Function un.showHiDPI
@@ -826,18 +881,18 @@ Function un.showHiDPI
 	${NSD_SetStretchedImage} $mui.WelcomePage.Image "$PLUGINSDIR\Wizard\$R7" $mui.WelcomePage.Image.Bitmap
 	${NSD_SetStretchedImage} $mui.FinishPage.Image "$PLUGINSDIR\Wizard\$R7" $mui.FinishPage.Image.Bitmap
 	SetBrandingImage /IMGID=1046 /RESIZETOFIT "$PLUGINSDIR\Header\$R6"
-	SetOutPath "$INSTDIR"
+	SetOutPath $TEMP
 FunctionEnd
 
 Function un.onSelChange
-	SectionGetFlags ${sec102} $1
+	SectionGetFlags ${sectionUnComplete} $1
 	${If} $1 != $Clean
 		${If} $1 != 0
 			MessageBox MB_ICONEXCLAMATION|MB_YESNO|MB_DEFBUTTON2 $(CleanInstallWarning) IDYES +3
-			SectionSetFlags ${sec102} 0
+			SectionSetFlags ${sectionUnComplete} 0
 			StrCpy $1 0
 		${EndIf}
-		SectionSetFlags ${sec100} $1
+		SectionSetFlags ${sectionRemoveDataAndSettings} $1
 		StrCpy $Clean $1
 	${EndIf}
 FunctionEnd
