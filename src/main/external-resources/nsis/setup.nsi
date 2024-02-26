@@ -66,7 +66,9 @@ ManifestSupportedOS all ; Left here to remember to add GUI ID in case Windows 11
 !define MUI_CUSTOMFUNCTION_ONMOUSEOVERSECTION hideRequiredSize
 !insertmacro MUI_COMPONENTSPAGE_INTERFACE
 !insertmacro MUI_PAGEDECLARATION_COMPONENTS
+!define MUI_PAGE_CUSTOMFUNCTION_LEAVE DirectoryLeave
 !insertmacro MUI_PAGE_DIRECTORY
+Page Custom LockedListShow LockedListLeave
 !insertmacro MUI_PAGE_INSTFILES
 !define MUI_PAGE_CUSTOMFUNCTION_SHOW showHiDPI
 !define MUI_FINISHPAGE_TITLE_3LINES
@@ -92,6 +94,7 @@ ManifestSupportedOS all ; Left here to remember to add GUI ID in case Windows 11
 !define MUI_UNCOMPONENTSPAGE_SMALLDESC
 !define MUI_UNCOMPONENTSPAGE_TEXT_TOP " "
 !insertmacro MUI_UNPAGE_COMPONENTS
+UninstPage Custom "un.LockedListShow"
 !insertmacro MUI_UNPAGE_INSTFILES
 !define MUI_PAGE_CUSTOMFUNCTION_SHOW "un.showHiDPI"
 !define MUI_FINISHPAGE_TITLE_3LINES
@@ -614,6 +617,44 @@ FunctionEnd
 
 Function onGUIInit
 	Aero::Apply ; Apply Aero if available
+FunctionEnd
+
+Function LockedListShow
+	StrCmp $R9 0 +2 ; Skip the page if clicking Back from the next page.
+		Abort
+	!insertmacro MUI_HEADER_TEXT $(LockedTitle) $(LockedSubtitle)
+
+	LockedList::AddModule "$INSTDIR\${PROJECT_NAME_SHORT}.exe"
+	LockedList::AddModule "$INSTDIR\win32\MediaInfo.dll"
+	${If} ${RunningX64}
+		File /oname=$PLUGINSDIR\LockedList64.dll `${NSISDIR}\Plugins\x64-unicode\LockedList64.dll`
+		LockedList::AddModule "$INSTDIR\win32\MediaInfo64.dll"
+	${EndIf}
+
+	LockedList::Dialog /autonext /heading $(LockedHeading) /colheadings $(LockedApplication) $(LockedProcess) /noprograms $(LockedNoProcesses) /searching $(LockedSearching) /endsearch $(LockedEndSearch) /endmonitor $(LockedEndMonitor) /menuitems $(LockedClose) $(LockedCopy) /autoclose $(LockedAutoClose) $(LockedAutoTerminate) $(LockedTerminateFailed) $(LockedProceed)
+	Pop $R0
+FunctionEnd
+
+Function DirectoryLeave
+	StrCpy $R9 0
+FunctionEnd
+
+Function LockedListLeave
+	StrCpy $R9 1
+FunctionEnd
+
+Function un.LockedListShow
+	!insertmacro MUI_HEADER_TEXT $(LockedTitle) $(LockedSubtitle)
+
+	LockedList::AddModule "$INSTDIR\${PROJECT_NAME_SHORT}.exe"
+	LockedList::AddModule "$INSTDIR\win32\MediaInfo.dll"
+	${If} ${RunningX64}
+		File /oname=$PLUGINSDIR\LockedList64.dll `${NSISDIR}\Plugins\x64-unicode\LockedList64.dll`
+		LockedList::AddModule "$INSTDIR\win32\MediaInfo64.dll"
+	${EndIf}
+
+	LockedList::Dialog /autonext /heading $(LockedHeading) /colheadings $(LockedApplication) $(LockedProcess) /noprograms $(LockedNoProcesses) /searching $(LockedSearching) /endsearch $(LockedEndSearch) /endmonitor $(LockedEndMonitor) /menuitems $(LockedClose) $(LockedCopy) /autoclose $(LockedAutoClose) $(LockedAutoTerminate) $(LockedTerminateFailed) $(LockedProceed)
+	Pop $R0
 FunctionEnd
 
 Function hideRequiredSize
