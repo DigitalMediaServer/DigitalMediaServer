@@ -109,7 +109,7 @@ public class RemoteWeb {
 
 			// Add context handlers
 			addCtx("/", new RemoteStartHandler(this));
-			addCtx("/browse", new RemoteBrowseHandler(this));
+			addCtx("/browse/", new RemoteBrowseHandler(this));
 			RemotePlayHandler playHandler = new RemotePlayHandler(this);
 			addCtx("/play", playHandler);
 			addCtx("/playstatus", playHandler);

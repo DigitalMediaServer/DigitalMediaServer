@@ -48,14 +48,23 @@ public class RemoteUtil {
 	public static final String MIME_PNG = "image/png";
 	public static final String MIME_JPG = "image/jpeg";
 	public static final String FAVICONS_HEADER =
-		"<link rel=\"apple-touch-icon\" sizes=\"180x180\" href=\"/apple-touch-icon.png\">\n" +
-		"<link rel=\"icon\" type=\"image/png\" sizes=\"32x32\" href=\"/favicon-32x32.png\">\n" +
-		"<link rel=\"icon\" type=\"image/png\" sizes=\"16x16\" href=\"/favicon-16x16.png\">\n" +
-		"<link rel=\"manifest\" href=\"/site.webmanifest\">\n" +
-		"<link rel=\"mask-icon\" href=\"/safari-pinned-tab.svg\" color=\"#5bbad5\">\n" +
-		"<meta name=\"msapplication-TileColor\" content=\"#603cba\">\n" +
-		"<meta name=\"msapplication-TileImage\" content=\"/mstile-144x144.png\">\n" +
-		"<meta name=\"theme-color\" content=\"#ffffff\">\n";
+		"\t\t<link rel=\"apple-touch-icon\" sizes=\"180x180\" href=\"/apple-touch-icon.png\">\n" +
+		"\t\t<link rel=\"icon\" type=\"image/x-icon\" sizes=\"16x16 24x24 32x32 48x48 64x64\" href=\"/favicon.ico\">\n" +
+		"\t\t<link rel=\"icon\" type=\"image/png\" sizes=\"16x16\" href=\"/favicon-16x16.png\">\n" +
+		"\t\t<link rel=\"icon\" type=\"image/png\" sizes=\"24x24\" href=\"/favicon-24x24.png\">\n" +
+		"\t\t<link rel=\"icon\" type=\"image/png\" sizes=\"32x32\" href=\"/favicon-32x32.png\">\n" +
+		"\t\t<link rel=\"icon\" type=\"image/png\" sizes=\"48x48\" href=\"/favicon-48x48.png\">\n" +
+		"\t\t<link rel=\"icon\" type=\"image/png\" sizes=\"64x64\" href=\"/favicon-64x64.png\">\n" +
+		"\t\t<link rel=\"icon\" type=\"image/png\" sizes=\"128x128\" href=\"/favicon-128x128.png\">\n" +
+		"\t\t<link rel=\"manifest\" href=\"/webmanifest.json\">\n" +
+		"\t\t<link rel=\"mask-icon\" href=\"/safari-pinned-tab.svg\" color=\"#603cba\">\n" +
+		"\t\t<meta name=\"msapplication-TileColor\" content=\"#603cba\">\n" +
+		"\t\t<meta name=\"msapplication-TileImage\" content=\"/mstile-144x144.png\">\n" +
+		"\t\t<meta name=\"msapplication-square70x70logo\" content=\"/mstile-70x70.png\">\n" +
+		"\t\t<meta name=\"msapplication-square150x150logo\" content=\"/mstile-150x150.png\">\n" +
+		"\t\t<meta name=\"msapplication-wide310x150logo\" content=\"/mstile-310x150.png\">\n" +
+		"\t\t<meta name=\"msapplication-square310x310logo\" content=\"/mstile-310x310.png\">\n" +
+		"\t\t<meta name=\"theme-color\" content=\"#603cba\">\n";
 
 	public static void respond(HttpExchange t, String response, int status, String mime) {
 		if (response != null) {
