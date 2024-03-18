@@ -620,21 +620,23 @@
 				<plugin>
 					<groupId>org.digitalmediaserver</groupId>
 					<artifactId>crowdin-maven-plugin</artifactId>
-					<version>1.1.2</version>
+					<version>2.0.0</version>
 					<configuration>
 						<downloadFolder>${project.basedir}/extras/crowdin</downloadFolder>
 						<crowdinServerId>crowdin-dms</crowdinServerId>
 						<projectName>Digital Media Server</projectName>
-						<updateOption>update_as_unapproved</updateOption>
+						<projectId>226385</projectId>
+						<updateOption>keep_translations</updateOption>
 						<lineSeparator>\n</lineSeparator>
 						<translationFileSets>
 							<translationFileSet>
 								<title>Digital Media Server</title>
+								<type>properties</type>
 								<baseFileName>messages.properties</baseFileName>
 								<languageFilesFolder>${project.basedir}/src/main/resources/i18n</languageFilesFolder>
-								<fileNameWhenExported>messages_%locale_with_underscore%.properties</fileNameWhenExported>
+								<exportPattern>messages_%locale_with_underscore%.properties</exportPattern>
 								<targetFileName>messages_%crowdin_code_with_underscore%.properties</targetFileName>
-								<updateOption>update_as_unapproved</updateOption>
+								<updateOption>keep_translations</updateOption>
 								<conversions>
 									<conversion><from>es-ES</from><to>es</to></conversion>
 									<conversion><from>he</from><to>iw</to></conversion>
@@ -646,11 +648,12 @@
 							</translationFileSet>
 							<translationFileSet>
 								<title>Windows installer</title>
+								<type>nsh</type>
 								<baseFileName>setup_en.nsh</baseFileName>
 								<languageFilesFolder>${project.basedir}/src/main/external-resources/nsis/I18N</languageFilesFolder>
-								<fileNameWhenExported>setup_%osx_locale%.nsh</fileNameWhenExported>
+								<exportPattern>setup_%osx_locale%.nsh</exportPattern>
 								<writeBOM>true</writeBOM>
-								<updateOption>update_as_unapproved</updateOption>
+								<updateOption>keep_translations</updateOption>
 								<excludes>
 									<exclude>setup_bn.nsh</exclude>
 									<exclude>setup_ceb.nsh</exclude>
