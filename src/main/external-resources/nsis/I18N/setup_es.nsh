@@ -20,7 +20,7 @@ ${LangFileString} SectionDescriptionServer "Instala los archivos principales de 
 ${LangFileString} SectionDescriptionShortcuts "Crea accesos directos del menú Inicio para Digital Media Server."
 ${LangFileString} SectionDescriptionCleanInstall ""
 ${LangFileString} SectionDescriptionWindowsFirewall "Instala reglas del cortafuegos de Windows que permiten a Digital Media Server comunicarse con otros dispositivos."
-${LangFileString} SectionDescriptionInstallJava ""
+${LangFileString} SectionDescriptionInstallJava "Descarga e instala la última versión de Oracle Java 8. Esto es necesario para utilizar Digital Media Server a menos que ya tenga una versión compatible de Java instalada."
 ${LangFileString} SectionDescriptionHeapSize "Establece la cantidad máxima de memoria que Digital Media Server puede utilizar. El valor predeterminado se recomienda para instalaciones estándar."
 ${LangFileString} SectionDescriptionAviSynth "Instala AviSynth 2.6.0 MT para usarlo durante la transcodificación. AviSynth se puede utilizar entre otros para activar InterFrame resultando en una velocidad de fotogramas mayor y una mejor reproducción de vídeo."
 ${LangFileString} SectionUninstallComplete ""

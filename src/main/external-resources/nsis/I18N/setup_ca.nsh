@@ -20,7 +20,7 @@ ${LangFileString} SectionDescriptionServer "Instal·la els fitxers principals de
 ${LangFileString} SectionDescriptionShortcuts "Crea dreceres del menú Inici per a Digital Media Server."
 ${LangFileString} SectionDescriptionCleanInstall ""
 ${LangFileString} SectionDescriptionWindowsFirewall "Instal·la regles de tallafocs pel tallafoc de Windows que permeten a Digital Media Server comunicar-se amb altres dispositius."
-${LangFileString} SectionDescriptionInstallJava ""
+${LangFileString} SectionDescriptionInstallJava "Descarrega i instal·la l'última versió de Oracle Java 8. Això és necessari per utilitzar el Oracle llevat que ja disposeu d'una versió de Java compatible instal·lada."
 ${LangFileString} SectionDescriptionHeapSize "Estableix la mida màxima de memòria que el Digital Media Server pot utilitzar. El valor per defecte es recomana per a instal·lacions estàndards."
 ${LangFileString} SectionDescriptionAviSynth "Instal·la AviSynth 2.6.0 MT per a la transcodificació. AviSynth pot utilitzar-se entre altres per activar InterFrame i així augmentar la ratio de fotogrames el que permet una millor reproducció de vídeo."
 ${LangFileString} SectionUninstallComplete ""

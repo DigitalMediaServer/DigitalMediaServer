@@ -20,7 +20,7 @@ ${LangFileString} SectionDescriptionServer "Memasang file inti Digital Media Ser
 ${LangFileString} SectionDescriptionShortcuts "Buat pintasan Mulai Menu untuk meluncurkan Digital Media Server."
 ${LangFileString} SectionDescriptionCleanInstall ""
 ${LangFileString} SectionDescriptionWindowsFirewall "Instal aturan firewall di Windows Firewall untuk mengizinkan Digital Media Server berkomunikasi dengan perangkat lain."
-${LangFileString} SectionDescriptionInstallJava ""
+${LangFileString} SectionDescriptionInstallJava "Unduh dan instal versi terbaru dari Oracle Java 8. Ini diperlukan untuk menggunakan Digital Media Server kecuali Anda sudah memiliki versi Java yang kompatibel."
 ${LangFileString} SectionDescriptionHeapSize "Mengatur jumlah maksimum memori Digital Media Server yang diizinkan untuk digunakan. Dalam kebanyakan kasus, nilai default dianjurkan."
 ${LangFileString} SectionDescriptionAviSynth "Instal AviSynth 2.6.0 MT untuk digunakan saat transcoding. Hal ini diperlukan untuk menggunakan InterFrame untuk meningkatkan frame rate untuk pemutaran video yang lebih halus."
 ${LangFileString} SectionUninstallComplete ""
