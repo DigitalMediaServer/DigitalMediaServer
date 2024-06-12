@@ -362,10 +362,6 @@ public class VLCVideo extends Player {
 			// Convert value from Mb to Kb
 			defaultMaxBitrates[0] = 1000 * defaultMaxBitrates[0];
 
-			if (params.mediaRenderer.isHalveBitrate()) {
-				defaultMaxBitrates[0] /= 2;
-			}
-
 			int bufSize = 1835;
 			boolean bitrateLevel41Limited = false;
 
